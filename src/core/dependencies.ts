@@ -1,29 +1,35 @@
+import type { AgentRuntime } from "../agents/agent-runtime.js";
+import type { AgentResult } from "../contracts/agent-execution.js";
 import type { RequestEnvelope } from "../contracts/request-envelope.js";
+import type { TaskResponse } from "../contracts/task-response.js";
 import type { Logger } from "../logging/logger.js";
+import type { Clock } from "../ports/clock.js";
 import type { Validator } from "../validation/validation.js";
 import type { ExecutionContextBuilder } from "./execution-context-builder.js";
 import type { Router } from "./routing/router.js";
 
+export type { Clock } from "../ports/clock.js";
+
 export type IdentifierScope =
   | "context"
   | "decision"
+  | "invocation"
   | "plan"
   | "plan_step"
   | "task";
-
-export interface Clock {
-  now(): Date;
-}
 
 export interface IdentifierGenerator {
   next(scope: IdentifierScope): string;
 }
 
 export interface CoreBrainDependencies {
+  readonly agentResultValidator: Validator<AgentResult>;
+  readonly agentRuntime: AgentRuntime;
   readonly clock: Clock;
   readonly contextBuilder: ExecutionContextBuilder;
   readonly identifiers: IdentifierGenerator;
   readonly logger: Logger;
   readonly requestValidator: Validator<RequestEnvelope>;
   readonly router: Router;
+  readonly taskResponseValidator: Validator<TaskResponse>;
 }

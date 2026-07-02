@@ -4,9 +4,9 @@ import type {
   AgentMemoryAccess,
   AgentRiskLevel,
   AgentStatus,
-  ContractReference,
   MemoryCategory,
 } from "../agents/agent-manifest.js";
+import { readContractReference } from "./agent-contract-readers.js";
 import {
   readOptionalNumber,
   readRequiredBoolean,
@@ -185,36 +185,6 @@ export class AgentManifestValidator implements Validator<AgentManifest> {
       workflowProposals,
     });
   }
-}
-
-function readContractReference(
-  value: unknown,
-  path: string,
-  issues: ValidationIssue[],
-): ContractReference | undefined {
-  const record = asRecord(value);
-  if (record === undefined) {
-    issues.push({
-      code: value === undefined ? "required" : "invalid_type",
-      message: `${path} must be an object`,
-      path,
-    });
-    return undefined;
-  }
-
-  const contractId = readRequiredString(record, "contractId", issues, path);
-  const contractVersion = readRequiredString(
-    record,
-    "contractVersion",
-    issues,
-    path,
-  );
-
-  if (contractId === undefined || contractVersion === undefined) {
-    return undefined;
-  }
-
-  return { contractId, contractVersion };
 }
 
 function readMemoryAccess(

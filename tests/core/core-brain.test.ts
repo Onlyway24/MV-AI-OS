@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   AgentManifestValidator,
+  AgentInvocationValidator,
+  AgentResultValidator,
   CoreBrain,
+  InProcessAgentRuntime,
   ImmutableAgentRegistry,
   RegistryRouter,
   RequestEnvelopeValidator,
   RequestExecutionContextBuilder,
+  TaskResponseValidator,
 } from "../../src/index.js";
 import {
   FixedClock,
@@ -99,11 +103,19 @@ function createCoreBrain(logger: RecordingLogger): CoreBrain {
   );
 
   return new CoreBrain({
+    agentResultValidator: new AgentResultValidator(),
+    agentRuntime: new InProcessAgentRuntime(
+      [],
+      new AgentInvocationValidator(),
+      new AgentResultValidator(),
+      clock,
+    ),
     clock,
     contextBuilder: new RequestExecutionContextBuilder(),
     identifiers,
     logger,
     requestValidator: new RequestEnvelopeValidator(),
     router: new RegistryRouter(registry, clock, identifiers),
+    taskResponseValidator: new TaskResponseValidator(),
   });
 }

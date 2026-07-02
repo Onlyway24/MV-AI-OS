@@ -8,10 +8,27 @@ export type {
   ContractReference,
   MemoryCategory,
 } from "./agents/agent-manifest.js";
+export type {
+  AgentExecutor,
+  AgentRuntime,
+} from "./agents/agent-runtime.js";
 export {
   ImmutableAgentRegistry,
   type AgentRegistry,
 } from "./agents/agent-registry.js";
+export { InProcessAgentRuntime } from "./agents/in-process-agent-runtime.js";
+export { ContentAgent } from "./agents/content/content-agent.js";
+export { CONTENT_AGENT_MANIFEST } from "./agents/content/content-agent-manifest.js";
+export type { ContentOutput } from "./agents/content/content-output.js";
+export { ContentOutputValidator } from "./agents/content/content-output-validator.js";
+export type {
+  AgentInvocation,
+  AgentInvocationLimits,
+  AgentResult,
+  AgentResultStatus,
+  EvidenceReference,
+  EvidenceSource,
+} from "./contracts/agent-execution.js";
 export type { ErrorCategory, ErrorRecord } from "./contracts/error-record.js";
 export type {
   JsonArray,
@@ -50,6 +67,12 @@ export type {
   SupplementalContextItem,
   SupplementalContextSource,
 } from "./core/models/execution-context.js";
+export { createAgentInvocation } from "./core/models/agent-invocation.js";
+export {
+  applyAgentResult,
+  applyExecutionError,
+  type ExecutionOutcome,
+} from "./core/models/execution-outcome.js";
 export {
   createExecutionPlan,
   type AgentInvocationPlanStep,
@@ -57,10 +80,13 @@ export {
 } from "./core/models/plan.js";
 export {
   createTask,
+  failTask,
   isTaskTransitionAllowed,
   routeTask,
+  startTask,
   transitionTask,
   type RoutedTask,
+  type RunningTask,
   type TaskIntent,
   type TaskRecord,
   type TaskState,
@@ -75,6 +101,7 @@ export type {
   Router,
 } from "./core/routing/router.js";
 export {
+  AgentRuntimeError,
   CoreError,
   InvariantError,
   RegistryError,
@@ -84,8 +111,11 @@ export {
   normalizeCoreError,
 } from "./errors/core-error.js";
 export type { LogEntry, Logger, LogLevel } from "./logging/logger.js";
+export { AgentInvocationValidator } from "./validation/agent-invocation-validator.js";
 export { AgentManifestValidator } from "./validation/agent-manifest-validator.js";
+export { AgentResultValidator } from "./validation/agent-result-validator.js";
 export { RequestEnvelopeValidator } from "./validation/request-envelope-validator.js";
+export { TaskResponseValidator } from "./validation/task-response-validator.js";
 export type {
   ValidationIssue,
   ValidationResult,

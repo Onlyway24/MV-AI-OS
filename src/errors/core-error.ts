@@ -113,6 +113,25 @@ export class TaskStateError extends CoreError {
   }
 }
 
+export class AgentRuntimeError extends CoreError {
+  public constructor(
+    code:
+      | "agent_invocation_invalid"
+      | "agent_result_invalid"
+      | "agent_runtime_invariant",
+    message: string,
+    details?: JsonObject,
+  ) {
+    super({
+      category: code === "agent_runtime_invariant" ? "internal" : "validation",
+      code,
+      ...(details === undefined ? {} : { details }),
+      message,
+      stage: "agent_runtime",
+    });
+  }
+}
+
 export class InvariantError extends CoreError {
   public constructor(message: string, stage: string, details?: JsonObject) {
     super({

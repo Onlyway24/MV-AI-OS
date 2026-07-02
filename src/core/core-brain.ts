@@ -1,14 +1,26 @@
+import type {
+  AgentInvocation,
+  AgentResult,
+} from "../contracts/agent-execution.js";
 import type { RequestEnvelope } from "../contracts/request-envelope.js";
+import type { TaskResponse } from "../contracts/task-response.js";
 import {
+  AgentRuntimeError,
   InvariantError,
   RequestValidationError,
   normalizeCoreError,
 } from "../errors/core-error.js";
 import type { CoreBrainDependencies } from "./dependencies.js";
+import { createAgentInvocation } from "./models/agent-invocation.js";
+import {
+  applyAgentResult,
+  applyExecutionError,
+} from "./models/execution-outcome.js";
 import { createExecutionPlan } from "./models/plan.js";
 import {
   createTask,
   routeTask,
+  startTask,
   transitionTask,
 } from "./models/task.js";
 import type { PreparedExecution } from "./prepared-execution.js";
@@ -151,6 +163,137 @@ export class CoreBrain {
       throw normalized;
     }
   }
+
+  public async execute(value: unknown): Promise<TaskResponse> {
+    const prepared = await this.prepare(value);
+    const invocation = createAgentInvocation(
+      prepared,
+      nextIdentifier(
+        this.#dependencies.identifiers,
+        "invocation",
+        "agent_invocation",
+      ),
+    );
+    const runningTask = startTask(
+      prepared.task,
+      currentTimestamp(this.#dependencies.clock, "agent_invocation"),
+    );
+
+    this.#dependencies.logger.log({
+      correlationId: prepared.context.correlationId,
+      event: "core.agent.started",
+      level: "info",
+      message: "Agent invocation started",
+      metadata: {
+        agentId: invocation.agent.agentId,
+        agentVersion: invocation.agent.version,
+        invocationId: invocation.invocationId,
+      },
+      requestId: prepared.context.requestId,
+      taskId: prepared.task.taskId,
+    });
+
+    try {
+      const candidate = await this.#dependencies.agentRuntime.execute(
+        invocation,
+      );
+      const resultValidation =
+        this.#dependencies.agentResultValidator.validate(candidate);
+      if (!resultValidation.ok) {
+        throw new AgentRuntimeError(
+          "agent_result_invalid",
+          "Agent Runtime returned an invalid result",
+          {
+            issues: resultValidation.issues.map(
+              ({ code, message, path }) => ({
+                code,
+                message,
+                path,
+              }),
+            ),
+          },
+        );
+      }
+
+      const result = resultValidation.value;
+      assertResultOwnership(result, invocation);
+      const outcome = applyAgentResult(
+        runningTask,
+        result,
+        currentTimestamp(this.#dependencies.clock, "result_synthesis"),
+      );
+      const response = this.#validatedResponse(outcome.response);
+
+      this.#dependencies.logger.log({
+        correlationId: prepared.context.correlationId,
+        event:
+          response.status === "completed"
+            ? "core.task.completed"
+            : response.status === "failed"
+              ? "core.task.failed"
+              : "core.task.paused",
+        level: response.status === "failed" ? "error" : "info",
+        message: "Agent result processed",
+        metadata: {
+          agentStatus: result.status,
+          invocationId: invocation.invocationId,
+          taskStatus: response.status,
+        },
+        requestId: prepared.context.requestId,
+        taskId: prepared.task.taskId,
+      });
+
+      return response;
+    } catch (error) {
+      const normalized = normalizeCoreError(error, "agent_execution");
+      const occurredAt = currentTimestamp(
+        this.#dependencies.clock,
+        "result_synthesis",
+      );
+      const outcome = applyExecutionError(
+        runningTask,
+        normalized.toRecord(occurredAt),
+        occurredAt,
+      );
+      const response = this.#validatedResponse(outcome.response);
+
+      this.#dependencies.logger.log({
+        correlationId: prepared.context.correlationId,
+        event: "core.task.failed",
+        level: "error",
+        message: normalized.message,
+        metadata: {
+          category: normalized.category,
+          code: normalized.code,
+          invocationId: invocation.invocationId,
+          stage: normalized.stage,
+        },
+        requestId: prepared.context.requestId,
+        taskId: prepared.task.taskId,
+      });
+
+      return response;
+    }
+  }
+
+  #validatedResponse(response: TaskResponse): TaskResponse {
+    const validation =
+      this.#dependencies.taskResponseValidator.validate(response);
+    if (!validation.ok) {
+      throw new InvariantError(
+        "Core Brain generated an invalid TaskResponse",
+        "result_synthesis",
+        {
+          issues: validation.issues.map(({ code, message, path }) => ({
+            code,
+            message,
+            path,
+          })),
+        },
+      );
+    }
+    return validation.value;
+  }
 }
 
 function assertContextOwnership(
@@ -200,6 +343,29 @@ function assertRouteOwnership(
         agentVersion,
         decisionTaskId: decision.taskId,
         taskId,
+      },
+    );
+  }
+}
+
+function assertResultOwnership(
+  result: AgentResult,
+  invocation: AgentInvocation,
+): void {
+  if (
+    result.invocationId !== invocation.invocationId ||
+    result.taskId !== invocation.taskId ||
+    result.agent.agentId !== invocation.agent.agentId ||
+    result.agent.version !== invocation.agent.version
+  ) {
+    throw new AgentRuntimeError(
+      "agent_result_invalid",
+      "Agent result identity does not match its invocation",
+      {
+        invocationId: invocation.invocationId,
+        resultInvocationId: result.invocationId,
+        resultTaskId: result.taskId,
+        taskId: invocation.taskId,
       },
     );
   }

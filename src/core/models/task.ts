@@ -47,6 +47,12 @@ export interface RoutedTask extends TaskRecord {
   readonly selectedAgent: AgentReference;
 }
 
+export interface RunningTask extends TaskRecord {
+  readonly state: "running";
+  readonly plan: ExecutionPlan;
+  readonly selectedAgent: AgentReference;
+}
+
 const ALLOWED_TRANSITIONS: Readonly<
   Record<TaskState, readonly TaskState[]>
 > = {
@@ -139,6 +145,33 @@ export function routeTask(
     plan,
     selectedAgent: Object.freeze({ ...decision.selectedAgent }),
     state: "routed",
+    updatedAt,
+  });
+}
+
+export function startTask(
+  task: RoutedTask,
+  updatedAt: string,
+): RunningTask {
+  assertTransition(task.state, "running");
+  return Object.freeze({
+    ...task,
+    attemptCount: task.attemptCount + 1,
+    state: "running",
+    updatedAt,
+  });
+}
+
+export function failTask(
+  task: TaskRecord,
+  error: ErrorRecord,
+  updatedAt: string,
+): TaskRecord {
+  assertTransition(task.state, "failed");
+  return Object.freeze({
+    ...task,
+    error,
+    state: "failed",
     updatedAt,
   });
 }

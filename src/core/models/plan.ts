@@ -1,4 +1,5 @@
 import type {
+  AgentLimits,
   AgentManifest,
   AgentReference,
   ContractReference,
@@ -13,6 +14,8 @@ export interface AgentInvocationPlanStep {
   readonly objective: string;
   readonly agent: AgentReference;
   readonly expectedOutput: ContractReference;
+  readonly limits: AgentLimits;
+  readonly modelProfile: string;
   readonly dependsOn: readonly string[];
 }
 
@@ -42,11 +45,14 @@ export function createExecutionPlan(
     version: input.agent.version,
   });
   const expectedOutput = Object.freeze({ ...input.agent.outputContract });
+  const limits = Object.freeze({ ...input.agent.limits });
   const step = Object.freeze({
     agent,
     dependsOn: Object.freeze([]),
     expectedOutput,
     kind: "agent.invoke" as const,
+    limits,
+    modelProfile: input.agent.modelProfile,
     objective: input.objective,
     sequence: 1 as const,
     status: "pending" as const,
