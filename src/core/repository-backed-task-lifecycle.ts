@@ -209,6 +209,16 @@ export class RepositoryBackedTaskLifecycle {
     });
   }
 
+  public audit(
+    task: TaskRecord,
+    audit: TransitionAudit,
+    occurredAt: string,
+  ): Promise<void> {
+    return this.#repositories.transaction(({ audits }) =>
+      audits.append(this.#event(task, occurredAt, audit)),
+    );
+  }
+
   public complete(
     previous: TaskRecord,
     next: TaskRecord,

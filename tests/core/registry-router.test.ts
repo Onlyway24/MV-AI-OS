@@ -4,14 +4,12 @@ import {
   AgentManifestValidator,
   ImmutableAgentRegistry,
   RegistryRouter,
-  RequestExecutionContextBuilder,
   createTask,
   transitionTask,
 } from "../../src/index.js";
 import {
   FixedClock,
   SequenceIdentifierGenerator,
-  createEmptyMemoryService,
   createManifest,
   createRequest,
 } from "../support/fixtures.js";
@@ -36,15 +34,7 @@ describe("RegistryRouter", () => {
       "context_ready",
       "2026-07-02T10:00:01.000Z",
     );
-    const context = await new RequestExecutionContextBuilder().build({
-      contextId: "context-001",
-      createdAt: "2026-07-02T10:00:01.000Z",
-      memory: createEmptyMemoryService(clock),
-      request,
-      taskId: task.taskId,
-    });
-
-    const result = await router.route({ context, task });
+    const result = await router.route({ request, task });
 
     expect(result.agent).toBe(registry.get("content", "1.0.0"));
     expect(result.decision).toMatchObject({
@@ -78,15 +68,7 @@ describe("RegistryRouter", () => {
       "context_ready",
       "2026-07-02T10:00:01.000Z",
     );
-    const context = await new RequestExecutionContextBuilder().build({
-      contextId: "context-001",
-      createdAt: "2026-07-02T10:00:01.000Z",
-      memory: createEmptyMemoryService(new FixedClock()),
-      request,
-      taskId: task.taskId,
-    });
-
-    await expect(router.route({ context, task })).rejects.toMatchObject({
+    await expect(router.route({ request, task })).rejects.toMatchObject({
       code: "route_not_found",
     });
   });
@@ -114,15 +96,7 @@ describe("RegistryRouter", () => {
       "context_ready",
       "2026-07-02T10:00:01.000Z",
     );
-    const context = await new RequestExecutionContextBuilder().build({
-      contextId: "context-001",
-      createdAt: "2026-07-02T10:00:01.000Z",
-      memory: createEmptyMemoryService(new FixedClock()),
-      request,
-      taskId: task.taskId,
-    });
-
-    await expect(router.route({ context, task })).rejects.toMatchObject({
+    await expect(router.route({ request, task })).rejects.toMatchObject({
       code: "route_ambiguous",
     });
   });

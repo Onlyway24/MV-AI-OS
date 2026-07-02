@@ -18,6 +18,7 @@ import {
   RecordingLogger,
   SequenceIdentifierGenerator,
   createEmptyMemoryService,
+  createAllowDeclaredPolicyDependencies,
   createManifest,
   createRepositories,
   createRequest,
@@ -48,6 +49,7 @@ describe("Core Brain agent runtime boundary", () => {
       identifiers,
       logger: new RecordingLogger(),
       memoryService: createEmptyMemoryService(clock),
+      ...createAllowDeclaredPolicyDependencies(),
       requestValidator: new RequestEnvelopeValidator(),
       repositories: createRepositories(),
       router: new RegistryRouter(registry, clock, identifiers),
@@ -69,7 +71,13 @@ describe("Core Brain agent runtime boundary", () => {
         contractId: "contract-test-output",
         contractVersion: "1",
       },
-      permissions: [],
+      permissions: [
+        "memory:read:conversation",
+        "memory:read:semantic",
+        "memory:read:user",
+        "memory:write:proposal",
+        "model:invoke:content-quality",
+      ],
     });
     expect(response).toMatchObject({
       result: { executedBy: "contract-test-runtime" },

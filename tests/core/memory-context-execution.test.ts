@@ -26,6 +26,7 @@ import {
   RecordingLogger,
   SequenceIdentifierGenerator,
   createRepositories,
+  createAllowDeclaredPolicyDependencies,
   createRequest,
 } from "../support/fixtures.js";
 
@@ -71,11 +72,11 @@ describe("Core Brain memory context", () => {
       clock,
       contextBuilder: new MemoryExecutionContextBuilder(
         new RequestExecutionContextBuilder(),
-        ["memory:read:semantic", "memory:read:user"],
       ),
       identifiers,
       logger: new RecordingLogger(),
       memoryService,
+      ...createAllowDeclaredPolicyDependencies(),
       requestValidator: new RequestEnvelopeValidator(),
       repositories: createRepositories(),
       router: new RegistryRouter(registry, clock, identifiers),

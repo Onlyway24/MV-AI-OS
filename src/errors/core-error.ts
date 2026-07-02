@@ -208,6 +208,35 @@ export class RequestInProgressError extends CoreError {
   }
 }
 
+export class PolicyDecisionValidationError extends CoreError {
+  public constructor(issues: readonly ValidationIssue[]) {
+    super({
+      category: "policy",
+      code: "policy_decision_invalid",
+      details: {
+        issues: issues.map(({ code, message, path }) => ({
+          code,
+          message,
+          path,
+        })),
+      },
+      message: "The policy evaluator returned an invalid decision",
+      stage: "policy_evaluation",
+    });
+  }
+}
+
+export class PolicyEvaluationError extends CoreError {
+  public constructor() {
+    super({
+      category: "policy",
+      code: "policy_evaluation_failed",
+      message: "Permission evaluation failed",
+      stage: "policy_evaluation",
+    });
+  }
+}
+
 export function normalizeCoreError(error: unknown, stage: string): CoreError {
   if (error instanceof CoreError) {
     return error;

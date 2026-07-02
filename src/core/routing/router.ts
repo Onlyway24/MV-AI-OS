@@ -1,11 +1,11 @@
 import type { AgentManifest } from "../../agents/agent-manifest.js";
-import type { ExecutionContext } from "../models/execution-context.js";
+import type { RequestEnvelope } from "../../contracts/request-envelope.js";
 import type { RoutingDecision } from "../models/decision.js";
 import type { TaskRecord } from "../models/task.js";
 
 export interface RouteInput {
   readonly task: TaskRecord;
-  readonly context: ExecutionContext;
+  readonly request: RequestEnvelope;
 }
 
 export interface RouteResult {

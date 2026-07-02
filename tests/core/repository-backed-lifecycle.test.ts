@@ -23,6 +23,7 @@ import {
   RecordingLogger,
   SequenceIdentifierGenerator,
   createEmptyMemoryService,
+  createAllowDeclaredPolicyDependencies,
   createRequest,
 } from "../support/fixtures.js";
 
@@ -63,6 +64,7 @@ describe("Repository-backed Core Brain lifecycle", () => {
     expect(stored.auditEvents.map(({ eventType }) => eventType)).toEqual([
       "request.accepted",
       "task.validated",
+      "policy.evaluated",
       "task.context_ready",
       "task.routed",
       "agent.started",
@@ -243,6 +245,7 @@ function createFixture(): {
     identifiers,
     logger: new RecordingLogger(),
     memoryService: createEmptyMemoryService(clock),
+    ...createAllowDeclaredPolicyDependencies(),
     repositories,
     requestValidator: new RequestEnvelopeValidator(),
     router: new RegistryRouter(registry, clock, identifiers),

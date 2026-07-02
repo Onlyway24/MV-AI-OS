@@ -56,7 +56,9 @@ export function createAgentInvocation(
     }),
     objective: step.objective,
     outputContract: Object.freeze({ ...step.expectedOutput }),
-    permissions: Object.freeze([]),
+    permissions: Object.freeze([
+      ...prepared.policyDecision.effectivePermissions,
+    ]),
     taskId: prepared.task.taskId,
   });
 }

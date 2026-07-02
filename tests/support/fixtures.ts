@@ -10,6 +10,8 @@ import type {
   RequestEnvelope,
 } from "../../src/index.js";
 
+export { createAllowDeclaredPolicyDependencies } from "./policy-fixtures.js";
+
 export function createRequest(
   overrides: Partial<RequestEnvelope> = {},
 ): RequestEnvelope {

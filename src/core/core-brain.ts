@@ -7,12 +7,17 @@ import type { TaskResponse } from "../contracts/task-response.js";
 import {
   AgentRuntimeError,
   InvariantError,
+  PolicyDecisionValidationError,
+  PolicyEvaluationError,
   RequestAlreadyCompletedError,
   RequestIdConflictError,
   RequestValidationError,
   normalizeCoreError,
 } from "../errors/core-error.js";
 import { createRequestFingerprint } from "../persistence/request-identity.js";
+import { permissionsDeclaredByAgent } from "../policy/effective-permissions.js";
+import type { PolicyDecision } from "../policy/policy-decision.js";
+import type { AgentManifest } from "../agents/agent-manifest.js";
 import type { CoreBrainDependencies } from "./dependencies.js";
 import { createAgentInvocation } from "./models/agent-invocation.js";
 import {
@@ -117,7 +122,69 @@ export class CoreBrain {
       });
       task = validatedTask;
 
+      const route = await this.#dependencies.router.route({
+        request,
+        task,
+      });
+      const { agent, decision } = route;
+      assertRouteOwnership(agent.agentId, agent.version, decision, taskId);
+
+      const policyDecisionId = nextIdentifier(
+        this.#dependencies.identifiers,
+        "policy_decision",
+        "policy_evaluation",
+      );
+      const policyEvaluatedAt = currentTimestamp(
+        this.#dependencies.clock,
+        "policy_evaluation",
+      );
+      let policyCandidate: PolicyDecision;
+      try {
+        policyCandidate = await this.#dependencies.policyEvaluator.evaluate({
+          actorId: request.actorId,
+          agent,
+          contractVersion: request.contractVersion,
+          decisionId: policyDecisionId,
+          evaluatedAt: policyEvaluatedAt,
+          taskId,
+          taskType: request.taskType,
+          workspaceId: request.workspaceId,
+        });
+      } catch {
+        throw new PolicyEvaluationError();
+      }
+      const policyValidation =
+        this.#dependencies.policyDecisionValidator.validate(policyCandidate);
+      if (!policyValidation.ok) {
+        throw new PolicyDecisionValidationError(policyValidation.issues);
+      }
+      const policyDecision = freezePolicyDecision(policyValidation.value);
+      assertPolicyDecisionOwnership(
+        policyDecision,
+        policyDecisionId,
+        policyEvaluatedAt,
+        request,
+        agent,
+        taskId,
+      );
+      await this.#lifecycle.audit(
+        task,
+        {
+          action: "policy.evaluate",
+          eventType: "policy.evaluated",
+          metadata: {
+            agentId: agent.agentId,
+            agentVersion: agent.version,
+            decisionId: policyDecision.decisionId,
+            deniedPermissions: policyDecision.deniedPermissions,
+            effectivePermissions: policyDecision.effectivePermissions,
+          },
+        },
+        policyDecision.evaluatedAt,
+      );
+
       const context = await this.#dependencies.contextBuilder.build({
+        agent: decision.selectedAgent,
         contextId: nextIdentifier(
           this.#dependencies.identifiers,
           "context",
@@ -127,6 +194,7 @@ export class CoreBrain {
           this.#dependencies.clock,
           "context_assembly",
         ),
+        effectivePermissions: policyDecision.effectivePermissions,
         memory: this.#dependencies.memoryService,
         request,
         taskId,
@@ -147,12 +215,6 @@ export class CoreBrain {
       });
       task = contextReadyTask;
 
-      const route = await this.#dependencies.router.route({
-        context,
-        task,
-      });
-      const { agent, decision } = route;
-      assertRouteOwnership(agent.agentId, agent.version, decision, taskId);
       const plan = createExecutionPlan({
         agent,
         createdAt: currentTimestamp(
@@ -207,6 +269,7 @@ export class CoreBrain {
       return Object.freeze({
         context,
         decision,
+        policyDecision,
         task: routedTask,
       });
     } catch (error) {
@@ -492,7 +555,12 @@ export class CoreBrain {
 function isPreparedExecution(
   value: PreparedExecution | TaskResponse,
 ): value is PreparedExecution {
-  return "context" in value && "decision" in value && "task" in value;
+  return (
+    "context" in value &&
+    "decision" in value &&
+    "policyDecision" in value &&
+    "task" in value
+  );
 }
 
 function assertContextOwnership(
@@ -545,6 +613,62 @@ function assertRouteOwnership(
       },
     );
   }
+}
+
+function assertPolicyDecisionOwnership(
+  decision: PolicyDecision,
+  decisionId: string,
+  evaluatedAt: string,
+  request: RequestEnvelope,
+  agent: AgentManifest,
+  taskId: string,
+): void {
+  const declaredPermissions = permissionsDeclaredByAgent(agent);
+  if (
+    decision.decisionId !== decisionId ||
+    decision.evaluatedAt !== evaluatedAt ||
+    decision.taskId !== taskId ||
+    decision.actorId !== request.actorId ||
+    decision.workspaceId !== request.workspaceId ||
+    decision.agent.agentId !== agent.agentId ||
+    decision.agent.version !== agent.version ||
+    !samePermissions(decision.requestedPermissions, declaredPermissions)
+  ) {
+    throw new PolicyDecisionValidationError([
+      {
+        code: "ownership_mismatch",
+        message:
+          "Policy decision identity or requested permissions do not match the evaluation input",
+        path: "$",
+      },
+    ]);
+  }
+}
+
+function freezePolicyDecision(
+  decision: PolicyDecision,
+): PolicyDecision {
+  return Object.freeze({
+    ...decision,
+    agent: Object.freeze({ ...decision.agent }),
+    deniedPermissions: Object.freeze([...decision.deniedPermissions]),
+    effectivePermissions: Object.freeze([
+      ...decision.effectivePermissions,
+    ]),
+    requestedPermissions: Object.freeze([
+      ...decision.requestedPermissions,
+    ]),
+  });
+}
+
+function samePermissions(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((permission, index) => permission === right[index])
+  );
 }
 
 function assertResultOwnership(

@@ -2,7 +2,7 @@ import type {
   MemoryReadPermission,
   MemoryScope,
 } from "./memory-scope.js";
-import type { MemoryCategory } from "./memory-record.js";
+import { isMemoryReadPermission } from "./memory-scope.js";
 import {
   readOptionalString,
   readRequiredString,
@@ -16,14 +16,6 @@ import {
   validationFailure,
   validationSuccess,
 } from "../validation/validation.js";
-
-const MEMORY_CATEGORIES = new Set<MemoryCategory>([
-  "conversation",
-  "operational",
-  "semantic",
-  "user",
-  "working",
-]);
 
 export class MemoryScopeValidator implements Validator<MemoryScope> {
   public validate(value: unknown): ValidationResult<MemoryScope> {
@@ -87,14 +79,4 @@ export class MemoryScopeValidator implements Validator<MemoryScope> {
       workspaceId,
     });
   }
-}
-
-function isMemoryReadPermission(
-  value: string,
-): value is MemoryReadPermission {
-  const prefix = "memory:read:";
-  return (
-    value.startsWith(prefix) &&
-    MEMORY_CATEGORIES.has(value.slice(prefix.length) as MemoryCategory)
-  );
 }

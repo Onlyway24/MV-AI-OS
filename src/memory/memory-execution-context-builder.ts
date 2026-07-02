@@ -9,19 +9,17 @@ import type {
 import type { JsonObject } from "../contracts/json.js";
 import type { MemoryCategory } from "./memory-record.js";
 import type { MemoryReadPermission } from "./memory-scope.js";
+import { isMemoryReadPermission } from "./memory-scope.js";
 
 export class MemoryExecutionContextBuilder implements ExecutionContextBuilder {
   readonly #baseBuilder: ExecutionContextBuilder;
   readonly #limit: number;
-  readonly #permissions: readonly MemoryReadPermission[];
 
   public constructor(
     baseBuilder: ExecutionContextBuilder,
-    permissions: readonly MemoryReadPermission[],
     limit = 20,
   ) {
     this.#baseBuilder = baseBuilder;
-    this.#permissions = Object.freeze([...permissions]);
     this.#limit = limit;
   }
 
@@ -29,8 +27,11 @@ export class MemoryExecutionContextBuilder implements ExecutionContextBuilder {
     input: BuildExecutionContextInput,
   ): Promise<ExecutionContext> {
     const base = await this.#baseBuilder.build(input);
+    const permissions = Object.freeze(
+      input.effectivePermissions.filter(isMemoryReadPermission),
+    );
     const categories = categoriesForScope(
-      this.#permissions,
+      permissions,
       input.request.sessionId,
     );
     if (categories.length === 0) {
@@ -44,7 +45,8 @@ export class MemoryExecutionContextBuilder implements ExecutionContextBuilder {
       queryId: `memory:${input.contextId}`,
       scope: {
         actorId: input.request.actorId,
-        permissions: this.#permissions,
+        agentId: input.agent.agentId,
+        permissions,
         permissionTags: Object.freeze([]),
         ...(input.request.sessionId === undefined
           ? {}

@@ -1,5 +1,7 @@
+import type { AgentReference } from "../agents/agent-manifest.js";
 import type { RequestEnvelope } from "../contracts/request-envelope.js";
 import type { MemoryReader } from "../memory/memory-service.js";
+import type { EffectivePermission } from "../policy/effective-permissions.js";
 import type { ExecutionContext } from "./models/execution-context.js";
 
 export interface BuildExecutionContextInput {
@@ -8,6 +10,8 @@ export interface BuildExecutionContextInput {
   readonly request: RequestEnvelope;
   readonly createdAt: string;
   readonly memory: MemoryReader;
+  readonly agent: AgentReference;
+  readonly effectivePermissions: readonly EffectivePermission[];
 }
 
 export interface ExecutionContextBuilder {

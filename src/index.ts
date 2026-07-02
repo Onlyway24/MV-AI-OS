@@ -109,6 +109,8 @@ export {
   AgentRuntimeError,
   CoreError,
   InvariantError,
+  PolicyDecisionValidationError,
+  PolicyEvaluationError,
   RepositoryConflictError,
   RepositoryValidationError,
   RegistryError,
@@ -195,6 +197,21 @@ export {
   ValidatedLlmGateway,
   type ValidatedLlmGatewayDependencies,
 } from "./models/validated-llm-gateway.js";
+export { DefaultDenyPolicyEvaluator } from "./policy/default-deny-policy-evaluator.js";
+export {
+  calculateEffectivePermissions,
+  isEffectivePermission,
+  permissionsDeclaredByAgent,
+  type EffectivePermission,
+  type PermissionGrantSet,
+} from "./policy/effective-permissions.js";
+export type { PolicyDecision } from "./policy/policy-decision.js";
+export type {
+  PermissionGrantResolutionInput,
+  PermissionGrantResolver,
+  PolicyEvaluationInput,
+  PolicyEvaluator,
+} from "./policy/policy-evaluator.js";
 export type { AuditRepository } from "./persistence/audit-repository.js";
 export {
   STORED_REQUEST_SCHEMA_VERSION,
@@ -216,6 +233,7 @@ export { AgentResultValidator } from "./validation/agent-result-validator.js";
 export { ModelProfileValidator } from "./validation/model-profile-validator.js";
 export { ModelRequestValidator } from "./validation/model-request-validator.js";
 export { ModelResponseValidator } from "./validation/model-response-validator.js";
+export { PolicyDecisionValidator } from "./validation/policy-decision-validator.js";
 export { RequestEnvelopeValidator } from "./validation/request-envelope-validator.js";
 export { TaskResponseValidator } from "./validation/task-response-validator.js";
 export type {
