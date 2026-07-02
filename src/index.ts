@@ -159,6 +159,42 @@ export type {
   MemoryScope,
 } from "./memory/memory-scope.js";
 export { MemoryScopeValidator } from "./memory/memory-scope-validator.js";
+export type { LlmGateway } from "./models/llm-gateway.js";
+export type {
+  ModelError,
+  ModelErrorCategory,
+} from "./models/model-error.js";
+export {
+  ModelGatewayInvariantError,
+  ModelRequestValidationError,
+} from "./models/model-gateway-error.js";
+export type { ModelProvider } from "./models/model-provider.js";
+export type {
+  ModelOutputFormat,
+  ModelProfile,
+  ModelProfileLimits,
+} from "./models/model-profile.js";
+export type {
+  ModelMessage,
+  ModelMessageRole,
+  ModelRequest,
+  ModelRequestLimits,
+  ModelRequestOutput,
+} from "./models/model-request.js";
+export type {
+  FailedModelResponse,
+  ModelOutput,
+  ModelProviderReference,
+  ModelResponse,
+  SuccessfulModelResponse,
+} from "./models/model-response.js";
+export type { ModelSelectionPolicy } from "./models/model-selection-policy.js";
+export type { ModelUsage } from "./models/model-usage.js";
+export type { ProviderRegistry } from "./models/provider-registry.js";
+export {
+  ValidatedLlmGateway,
+  type ValidatedLlmGatewayDependencies,
+} from "./models/validated-llm-gateway.js";
 export type { AuditRepository } from "./persistence/audit-repository.js";
 export {
   STORED_REQUEST_SCHEMA_VERSION,
@@ -177,6 +213,9 @@ export { AuditEventValidator } from "./validation/audit-event-validator.js";
 export { AgentInvocationValidator } from "./validation/agent-invocation-validator.js";
 export { AgentManifestValidator } from "./validation/agent-manifest-validator.js";
 export { AgentResultValidator } from "./validation/agent-result-validator.js";
+export { ModelProfileValidator } from "./validation/model-profile-validator.js";
+export { ModelRequestValidator } from "./validation/model-request-validator.js";
+export { ModelResponseValidator } from "./validation/model-response-validator.js";
 export { RequestEnvelopeValidator } from "./validation/request-envelope-validator.js";
 export { TaskResponseValidator } from "./validation/task-response-validator.js";
 export type {
