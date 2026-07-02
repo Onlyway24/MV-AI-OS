@@ -2,13 +2,6 @@ export type AgentStatus = "active" | "disabled" | "experimental";
 
 export type AgentRiskLevel = "high" | "low" | "medium";
 
-export type MemoryCategory =
-  | "conversation"
-  | "operational"
-  | "semantic"
-  | "user"
-  | "working";
-
 export interface AgentReference {
   readonly agentId: string;
   readonly version: string;
@@ -51,3 +44,6 @@ export interface AgentManifest {
   readonly handoffTargets: readonly string[];
   readonly riskLevel: AgentRiskLevel;
 }
+import type { MemoryCategory } from "../memory/memory-record.js";
+
+export type { MemoryCategory } from "../memory/memory-record.js";

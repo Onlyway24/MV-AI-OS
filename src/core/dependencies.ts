@@ -3,6 +3,7 @@ import type { AgentResult } from "../contracts/agent-execution.js";
 import type { RequestEnvelope } from "../contracts/request-envelope.js";
 import type { TaskResponse } from "../contracts/task-response.js";
 import type { Logger } from "../logging/logger.js";
+import type { MemoryReader } from "../memory/memory-service.js";
 import type { Clock } from "../ports/clock.js";
 import type { Validator } from "../validation/validation.js";
 import type { ExecutionContextBuilder } from "./execution-context-builder.js";
@@ -29,6 +30,7 @@ export interface CoreBrainDependencies {
   readonly contextBuilder: ExecutionContextBuilder;
   readonly identifiers: IdentifierGenerator;
   readonly logger: Logger;
+  readonly memoryService: MemoryReader;
   readonly requestValidator: Validator<RequestEnvelope>;
   readonly router: Router;
   readonly taskResponseValidator: Validator<TaskResponse>;

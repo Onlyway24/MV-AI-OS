@@ -20,6 +20,7 @@ import {
   FixedClock,
   RecordingLogger,
   SequenceIdentifierGenerator,
+  createEmptyMemoryService,
   createRequest,
 } from "../support/fixtures.js";
 
@@ -186,6 +187,7 @@ function createExecutableCore(
     contextBuilder: new RequestExecutionContextBuilder(),
     identifiers,
     logger: new RecordingLogger(),
+    memoryService: createEmptyMemoryService(clock),
     requestValidator: new RequestEnvelopeValidator(),
     router: new RegistryRouter(registry, clock, identifiers),
     taskResponseValidator: new TaskResponseValidator(),

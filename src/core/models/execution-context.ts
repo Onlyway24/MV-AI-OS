@@ -10,6 +10,7 @@ export interface SupplementalContextItem {
   readonly referenceId: string;
   readonly source: SupplementalContextSource;
   readonly content: JsonObject;
+  readonly metadata?: JsonObject;
 }
 
 export interface ExecutionContext {

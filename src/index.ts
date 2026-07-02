@@ -111,6 +111,44 @@ export {
   normalizeCoreError,
 } from "./errors/core-error.js";
 export type { LogEntry, Logger, LogLevel } from "./logging/logger.js";
+export {
+  MemoryConflictError,
+  MemoryPermissionError,
+  MemoryValidationError,
+} from "./memory/memory-error.js";
+export { MemoryExecutionContextBuilder } from "./memory/memory-execution-context-builder.js";
+export type {
+  MemoryExcerpt,
+  MemoryQuery,
+  MemoryRetrievalResult,
+} from "./memory/memory-query.js";
+export { MemoryQueryValidator } from "./memory/memory-query-validator.js";
+export {
+  MEMORY_SCHEMA_VERSION,
+  type BaseMemoryRecord,
+  type ConversationMemoryRecord,
+  type MemoryProvenance,
+  type MemoryRecord,
+  type MemorySensitivity,
+  type MemoryVisibility,
+  type OperationalMemoryRecord,
+  type SemanticMemoryRecord,
+  type UserMemoryRecord,
+  type WorkingMemoryRecord,
+} from "./memory/memory-record.js";
+export { MemoryRecordValidator } from "./memory/memory-record-validator.js";
+export type {
+  MemoryDeleteRequest,
+  MemoryReader,
+  MemoryService,
+  MemoryWriteRequest,
+  MemoryWriter,
+} from "./memory/memory-service.js";
+export type {
+  MemoryReadPermission,
+  MemoryScope,
+} from "./memory/memory-scope.js";
+export { MemoryScopeValidator } from "./memory/memory-scope-validator.js";
 export { AgentInvocationValidator } from "./validation/agent-invocation-validator.js";
 export { AgentManifestValidator } from "./validation/agent-manifest-validator.js";
 export { AgentResultValidator } from "./validation/agent-result-validator.js";

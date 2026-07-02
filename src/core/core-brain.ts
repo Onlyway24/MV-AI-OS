@@ -80,6 +80,7 @@ export class CoreBrain {
           this.#dependencies.clock,
           "context_assembly",
         ),
+        memory: this.#dependencies.memoryService,
         request,
         taskId,
       });

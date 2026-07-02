@@ -1,3 +1,4 @@
+import { InMemoryMemoryService } from "../../src/memory/testing/in-memory-memory-service.js";
 import type {
   AgentManifest,
   Clock,
@@ -91,4 +92,10 @@ export class RecordingLogger implements Logger {
   public log(entry: LogEntry): void {
     this.entries.push(entry);
   }
+}
+
+export function createEmptyMemoryService(
+  clock: Clock,
+): InMemoryMemoryService {
+  return new InMemoryMemoryService([], clock);
 }

@@ -31,8 +31,9 @@ export function createAgentInvocation(
       ? {}
       : { sessionId: prepared.context.sessionId }),
     supplementalContext: prepared.context.supplementalContext.map(
-      ({ content, referenceId, source }) => ({
+      ({ content, metadata, referenceId, source }) => ({
         content,
+        ...(metadata === undefined ? {} : { metadata }),
         referenceId,
         source,
       }),

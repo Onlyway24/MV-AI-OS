@@ -1,4 +1,5 @@
 import type { RequestEnvelope } from "../contracts/request-envelope.js";
+import type { MemoryReader } from "../memory/memory-service.js";
 import type { ExecutionContext } from "./models/execution-context.js";
 
 export interface BuildExecutionContextInput {
@@ -6,6 +7,7 @@ export interface BuildExecutionContextInput {
   readonly taskId: string;
   readonly request: RequestEnvelope;
   readonly createdAt: string;
+  readonly memory: MemoryReader;
 }
 
 export interface ExecutionContextBuilder {

@@ -11,6 +11,7 @@ import {
 import {
   FixedClock,
   SequenceIdentifierGenerator,
+  createEmptyMemoryService,
   createManifest,
   createRequest,
 } from "../support/fixtures.js";
@@ -38,6 +39,7 @@ describe("RegistryRouter", () => {
     const context = await new RequestExecutionContextBuilder().build({
       contextId: "context-001",
       createdAt: "2026-07-02T10:00:01.000Z",
+      memory: createEmptyMemoryService(clock),
       request,
       taskId: task.taskId,
     });
@@ -79,6 +81,7 @@ describe("RegistryRouter", () => {
     const context = await new RequestExecutionContextBuilder().build({
       contextId: "context-001",
       createdAt: "2026-07-02T10:00:01.000Z",
+      memory: createEmptyMemoryService(new FixedClock()),
       request,
       taskId: task.taskId,
     });
@@ -114,6 +117,7 @@ describe("RegistryRouter", () => {
     const context = await new RequestExecutionContextBuilder().build({
       contextId: "context-001",
       createdAt: "2026-07-02T10:00:01.000Z",
+      memory: createEmptyMemoryService(new FixedClock()),
       request,
       taskId: task.taskId,
     });

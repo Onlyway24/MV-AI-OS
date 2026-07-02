@@ -17,6 +17,7 @@ import {
   RecordingLogger,
   SequenceIdentifierGenerator,
   createManifest,
+  createEmptyMemoryService,
   createRequest,
 } from "../support/fixtures.js";
 
@@ -114,6 +115,7 @@ function createCoreBrain(logger: RecordingLogger): CoreBrain {
     contextBuilder: new RequestExecutionContextBuilder(),
     identifiers,
     logger,
+    memoryService: createEmptyMemoryService(clock),
     requestValidator: new RequestEnvelopeValidator(),
     router: new RegistryRouter(registry, clock, identifiers),
     taskResponseValidator: new TaskResponseValidator(),

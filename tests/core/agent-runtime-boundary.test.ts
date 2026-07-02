@@ -17,6 +17,7 @@ import {
   FixedClock,
   RecordingLogger,
   SequenceIdentifierGenerator,
+  createEmptyMemoryService,
   createManifest,
   createRequest,
 } from "../support/fixtures.js";
@@ -45,6 +46,7 @@ describe("Core Brain agent runtime boundary", () => {
       contextBuilder: new RequestExecutionContextBuilder(),
       identifiers,
       logger: new RecordingLogger(),
+      memoryService: createEmptyMemoryService(clock),
       requestValidator: new RequestEnvelopeValidator(),
       router: new RegistryRouter(registry, clock, identifiers),
       taskResponseValidator: new TaskResponseValidator(),
