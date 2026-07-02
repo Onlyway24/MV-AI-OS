@@ -19,6 +19,7 @@ import {
   SequenceIdentifierGenerator,
   createEmptyMemoryService,
   createManifest,
+  createRepositories,
   createRequest,
 } from "../support/fixtures.js";
 
@@ -48,6 +49,7 @@ describe("Core Brain agent runtime boundary", () => {
       logger: new RecordingLogger(),
       memoryService: createEmptyMemoryService(clock),
       requestValidator: new RequestEnvelopeValidator(),
+      repositories: createRepositories(),
       router: new RegistryRouter(registry, clock, identifiers),
       taskResponseValidator: new TaskResponseValidator(),
     });

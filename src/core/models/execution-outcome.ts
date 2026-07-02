@@ -84,7 +84,7 @@ export function applyAgentResult(
 }
 
 export function applyExecutionError(
-  task: RunningTask,
+  task: TaskRecord,
   error: ErrorRecord,
   updatedAt: string,
 ): ExecutionOutcome {

@@ -18,6 +18,7 @@ import {
   SequenceIdentifierGenerator,
   createManifest,
   createEmptyMemoryService,
+  createRepositories,
   createRequest,
 } from "../support/fixtures.js";
 
@@ -117,6 +118,7 @@ function createCoreBrain(logger: RecordingLogger): CoreBrain {
     logger,
     memoryService: createEmptyMemoryService(clock),
     requestValidator: new RequestEnvelopeValidator(),
+    repositories: createRepositories(),
     router: new RegistryRouter(registry, clock, identifiers),
     taskResponseValidator: new TaskResponseValidator(),
   });

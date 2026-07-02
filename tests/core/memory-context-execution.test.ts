@@ -25,6 +25,7 @@ import {
   FixedClock,
   RecordingLogger,
   SequenceIdentifierGenerator,
+  createRepositories,
   createRequest,
 } from "../support/fixtures.js";
 
@@ -76,6 +77,7 @@ describe("Core Brain memory context", () => {
       logger: new RecordingLogger(),
       memoryService,
       requestValidator: new RequestEnvelopeValidator(),
+      repositories: createRepositories(),
       router: new RegistryRouter(registry, clock, identifiers),
       taskResponseValidator: new TaskResponseValidator(),
     });

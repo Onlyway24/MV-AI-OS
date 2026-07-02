@@ -144,6 +144,70 @@ export class InvariantError extends CoreError {
   }
 }
 
+export class RepositoryConflictError extends CoreError {
+  public constructor(message: string, details?: JsonObject) {
+    super({
+      category: "conflict",
+      code: "repository_conflict",
+      ...(details === undefined ? {} : { details }),
+      message,
+      stage: "persistence",
+    });
+  }
+}
+
+export class RepositoryValidationError extends CoreError {
+  public constructor(message: string, details?: JsonObject) {
+    super({
+      category: "validation",
+      code: "repository_record_invalid",
+      ...(details === undefined ? {} : { details }),
+      message,
+      stage: "persistence",
+    });
+  }
+}
+
+export class RequestIdConflictError extends CoreError {
+  public constructor(requestId: string, taskId?: string) {
+    super({
+      category: "conflict",
+      code: "request_id_conflict",
+      details: {
+        requestId,
+        ...(taskId === undefined ? {} : { taskId }),
+      },
+      message: "The request ID is already associated with a different payload",
+      stage: "request_idempotency",
+    });
+  }
+}
+
+export class RequestAlreadyCompletedError extends CoreError {
+  public constructor(requestId: string, taskId: string) {
+    super({
+      category: "conflict",
+      code: "request_already_completed",
+      details: { requestId, taskId },
+      message: "The request already has a stored outcome",
+      stage: "request_idempotency",
+    });
+  }
+}
+
+export class RequestInProgressError extends CoreError {
+  public constructor(requestId: string, taskId: string, state: string) {
+    super({
+      category: "conflict",
+      code: "request_in_progress",
+      details: { requestId, state, taskId },
+      message: "The request is already being processed",
+      retryable: true,
+      stage: "request_idempotency",
+    });
+  }
+}
+
 export function normalizeCoreError(error: unknown, stage: string): CoreError {
   if (error instanceof CoreError) {
     return error;

@@ -7,9 +7,12 @@ import type { TaskResponse } from "../contracts/task-response.js";
 import {
   AgentRuntimeError,
   InvariantError,
+  RequestAlreadyCompletedError,
+  RequestIdConflictError,
   RequestValidationError,
   normalizeCoreError,
 } from "../errors/core-error.js";
+import { createRequestFingerprint } from "../persistence/request-identity.js";
 import type { CoreBrainDependencies } from "./dependencies.js";
 import { createAgentInvocation } from "./models/agent-invocation.js";
 import {
@@ -22,8 +25,10 @@ import {
   routeTask,
   startTask,
   transitionTask,
+  type TaskRecord,
 } from "./models/task.js";
 import type { PreparedExecution } from "./prepared-execution.js";
+import { RepositoryBackedTaskLifecycle } from "./repository-backed-task-lifecycle.js";
 import {
   currentTimestamp,
   nextIdentifier,
@@ -31,21 +36,43 @@ import {
 
 export class CoreBrain {
   readonly #dependencies: CoreBrainDependencies;
+  readonly #inFlightRequests = new Map<
+    string,
+    {
+      readonly execution: Promise<TaskResponse>;
+      readonly requestFingerprint: string;
+    }
+  >();
+  readonly #lifecycle: RepositoryBackedTaskLifecycle;
 
   public constructor(dependencies: CoreBrainDependencies) {
     this.#dependencies = dependencies;
+    this.#lifecycle = new RepositoryBackedTaskLifecycle(
+      dependencies.repositories,
+      dependencies.identifiers,
+    );
   }
 
   public async prepare(value: unknown): Promise<PreparedExecution> {
-    let request: RequestEnvelope | undefined;
+    const request = this.#validatedRequest(value);
+    const prepared = await this.#prepare(request, false);
+    if (!isPreparedExecution(prepared)) {
+      throw new RequestAlreadyCompletedError(
+        prepared.requestId,
+        prepared.taskId,
+      );
+    }
+    return prepared;
+  }
+
+  async #prepare(
+    request: RequestEnvelope,
+    returnFailureResponse: boolean,
+  ): Promise<PreparedExecution | TaskResponse> {
+    let task: TaskRecord | undefined;
+    let taskAccepted = false;
 
     try {
-      const validation = this.#dependencies.requestValidator.validate(value);
-      if (!validation.ok) {
-        throw new RequestValidationError(validation.issues);
-      }
-
-      request = validation.value;
       this.#dependencies.logger.log({
         correlationId: request.correlationId,
         event: "core.request.validated",
@@ -63,12 +90,32 @@ export class CoreBrain {
         "task",
         "task_creation",
       );
-      let task = createTask(request, taskId, createdAt);
-      task = transitionTask(
+      task = createTask(request, taskId, createdAt);
+      const acceptance = await this.#lifecycle.accept(request, task);
+      if (acceptance.kind === "replayed") {
+        this.#dependencies.logger.log({
+          correlationId: request.correlationId,
+          event: "core.request.replayed",
+          level: "info",
+          message: "Stored task response returned for duplicate request",
+          requestId: request.requestId,
+          taskId: acceptance.task.taskId,
+        });
+        return acceptance.response;
+      }
+      task = acceptance.task;
+      taskAccepted = true;
+
+      const validatedTask = transitionTask(
         task,
         "validated",
         currentTimestamp(this.#dependencies.clock, "task_validation"),
       );
+      await this.#lifecycle.transition(task, validatedTask, {
+        action: "task.validate",
+        eventType: "task.validated",
+      });
+      task = validatedTask;
 
       const context = await this.#dependencies.contextBuilder.build({
         contextId: nextIdentifier(
@@ -85,11 +132,20 @@ export class CoreBrain {
         taskId,
       });
       assertContextOwnership(context, request, taskId);
-      task = transitionTask(
+      const contextReadyTask = transitionTask(
         task,
         "context_ready",
         currentTimestamp(this.#dependencies.clock, "context_assembly"),
       );
+      await this.#lifecycle.transition(task, contextReadyTask, {
+        action: "context.assemble",
+        eventType: "task.context_ready",
+        metadata: {
+          contextId: context.contextId,
+          supplementalContextCount: context.supplementalContext.length,
+        },
+      });
+      task = contextReadyTask;
 
       const route = await this.#dependencies.router.route({
         context,
@@ -122,6 +178,16 @@ export class CoreBrain {
         plan,
         currentTimestamp(this.#dependencies.clock, "task_routing"),
       );
+      await this.#lifecycle.transition(task, routedTask, {
+        action: "task.route",
+        eventType: "task.routed",
+        metadata: {
+          agentId: decision.selectedAgent.agentId,
+          agentVersion: decision.selectedAgent.version,
+          decisionId: decision.decisionId,
+          planId: plan.planId,
+        },
+      });
 
       this.#dependencies.logger.log({
         correlationId: request.correlationId,
@@ -145,13 +211,41 @@ export class CoreBrain {
       });
     } catch (error) {
       const normalized = normalizeCoreError(error, "core_brain");
+      let failureResponse: TaskResponse | undefined;
+      if (
+        task !== undefined &&
+        taskAccepted &&
+        normalized.stage !== "persistence"
+      ) {
+        const occurredAt = currentTimestamp(
+          this.#dependencies.clock,
+          "task_failure",
+        );
+        const outcome = applyExecutionError(
+          task,
+          normalized.toRecord(occurredAt),
+          occurredAt,
+        );
+        const response = this.#validatedResponse(outcome.response);
+        failureResponse = response;
+        await this.#lifecycle.complete(
+          task,
+          outcome.task,
+          response,
+          {
+            action: "task.prepare",
+            eventType: "task.failed",
+            metadata: {
+              category: normalized.category,
+              code: normalized.code,
+              stage: normalized.stage,
+            },
+            outcome: "failure",
+          },
+        );
+      }
       this.#dependencies.logger.log({
-        ...(request === undefined
-          ? {}
-          : {
-              correlationId: request.correlationId,
-              requestId: request.requestId,
-            }),
+        correlationId: request.correlationId,
         event: "core.request.failed",
         level: "error",
         message: normalized.message,
@@ -160,13 +254,47 @@ export class CoreBrain {
           code: normalized.code,
           stage: normalized.stage,
         },
+        requestId: request.requestId,
       });
+      if (returnFailureResponse && failureResponse !== undefined) {
+        return failureResponse;
+      }
       throw normalized;
     }
   }
 
   public async execute(value: unknown): Promise<TaskResponse> {
-    const prepared = await this.prepare(value);
+    const request = this.#validatedRequest(value);
+    const requestFingerprint = createRequestFingerprint(request);
+    const inFlight = this.#inFlightRequests.get(request.requestId);
+    if (inFlight !== undefined) {
+      if (inFlight.requestFingerprint !== requestFingerprint) {
+        throw new RequestIdConflictError(request.requestId);
+      }
+      return inFlight.execution;
+    }
+
+    const execution = this.#execute(request);
+    this.#inFlightRequests.set(
+      request.requestId,
+      Object.freeze({ execution, requestFingerprint }),
+    );
+    try {
+      return await execution;
+    } finally {
+      const current = this.#inFlightRequests.get(request.requestId);
+      if (current?.execution === execution) {
+        this.#inFlightRequests.delete(request.requestId);
+      }
+    }
+  }
+
+  async #execute(request: RequestEnvelope): Promise<TaskResponse> {
+    const preparation = await this.#prepare(request, true);
+    if (!isPreparedExecution(preparation)) {
+      return preparation;
+    }
+    const prepared = preparation;
     const invocation = createAgentInvocation(
       prepared,
       nextIdentifier(
@@ -179,6 +307,15 @@ export class CoreBrain {
       prepared.task,
       currentTimestamp(this.#dependencies.clock, "agent_invocation"),
     );
+    await this.#lifecycle.transition(prepared.task, runningTask, {
+      action: "agent.invoke",
+      eventType: "agent.started",
+      metadata: {
+        agentId: invocation.agent.agentId,
+        agentVersion: invocation.agent.version,
+        invocationId: invocation.invocationId,
+      },
+    });
 
     this.#dependencies.logger.log({
       correlationId: prepared.context.correlationId,
@@ -224,6 +361,25 @@ export class CoreBrain {
         currentTimestamp(this.#dependencies.clock, "result_synthesis"),
       );
       const response = this.#validatedResponse(outcome.response);
+      await this.#lifecycle.complete(
+        runningTask,
+        outcome.task,
+        response,
+        {
+          action: "agent.result.process",
+          eventType:
+            response.status === "completed"
+              ? "task.completed"
+              : response.status === "failed"
+                ? "task.failed"
+                : "task.paused",
+          metadata: {
+            agentStatus: result.status,
+            invocationId: invocation.invocationId,
+          },
+          outcome: response.status === "failed" ? "failure" : "success",
+        },
+      );
 
       this.#dependencies.logger.log({
         correlationId: prepared.context.correlationId,
@@ -257,6 +413,22 @@ export class CoreBrain {
         occurredAt,
       );
       const response = this.#validatedResponse(outcome.response);
+      await this.#lifecycle.complete(
+        runningTask,
+        outcome.task,
+        response,
+        {
+          action: "agent.result.process",
+          eventType: "task.failed",
+          metadata: {
+            category: normalized.category,
+            code: normalized.code,
+            invocationId: invocation.invocationId,
+            stage: normalized.stage,
+          },
+          outcome: "failure",
+        },
+      );
 
       this.#dependencies.logger.log({
         correlationId: prepared.context.correlationId,
@@ -295,6 +467,32 @@ export class CoreBrain {
     }
     return validation.value;
   }
+
+  #validatedRequest(value: unknown): RequestEnvelope {
+    const validation = this.#dependencies.requestValidator.validate(value);
+    if (validation.ok) {
+      return validation.value;
+    }
+
+    const error = new RequestValidationError(validation.issues);
+    this.#dependencies.logger.log({
+      event: "core.request.failed",
+      level: "error",
+      message: error.message,
+      metadata: {
+        category: error.category,
+        code: error.code,
+        stage: error.stage,
+      },
+    });
+    throw error;
+  }
+}
+
+function isPreparedExecution(
+  value: PreparedExecution | TaskResponse,
+): value is PreparedExecution {
+  return "context" in value && "decision" in value && "task" in value;
 }
 
 function assertContextOwnership(

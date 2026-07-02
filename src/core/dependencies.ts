@@ -4,6 +4,7 @@ import type { RequestEnvelope } from "../contracts/request-envelope.js";
 import type { TaskResponse } from "../contracts/task-response.js";
 import type { Logger } from "../logging/logger.js";
 import type { MemoryReader } from "../memory/memory-service.js";
+import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { Clock } from "../ports/clock.js";
 import type { Validator } from "../validation/validation.js";
 import type { ExecutionContextBuilder } from "./execution-context-builder.js";
@@ -12,6 +13,7 @@ import type { Router } from "./routing/router.js";
 export type { Clock } from "../ports/clock.js";
 
 export type IdentifierScope =
+  | "audit"
   | "context"
   | "decision"
   | "invocation"
@@ -31,6 +33,7 @@ export interface CoreBrainDependencies {
   readonly identifiers: IdentifierGenerator;
   readonly logger: Logger;
   readonly memoryService: MemoryReader;
+  readonly repositories: RepositoryTransactionRunner;
   readonly requestValidator: Validator<RequestEnvelope>;
   readonly router: Router;
   readonly taskResponseValidator: Validator<TaskResponse>;

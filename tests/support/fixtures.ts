@@ -1,4 +1,5 @@
 import { InMemoryMemoryService } from "../../src/memory/testing/in-memory-memory-service.js";
+import { InMemoryRepositoryTransactionRunner } from "./in-memory-repositories.js";
 import type {
   AgentManifest,
   Clock,
@@ -98,4 +99,8 @@ export function createEmptyMemoryService(
   clock: Clock,
 ): InMemoryMemoryService {
   return new InMemoryMemoryService([], clock);
+}
+
+export function createRepositories(): InMemoryRepositoryTransactionRunner {
+  return new InMemoryRepositoryTransactionRunner();
 }

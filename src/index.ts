@@ -29,6 +29,11 @@ export type {
   EvidenceReference,
   EvidenceSource,
 } from "./contracts/agent-execution.js";
+export {
+  AUDIT_SCHEMA_VERSION,
+  type AuditEvent,
+  type AuditOutcome,
+} from "./contracts/audit-event.js";
 export type { ErrorCategory, ErrorRecord } from "./contracts/error-record.js";
 export type {
   JsonArray,
@@ -104,7 +109,12 @@ export {
   AgentRuntimeError,
   CoreError,
   InvariantError,
+  RepositoryConflictError,
+  RepositoryValidationError,
   RegistryError,
+  RequestAlreadyCompletedError,
+  RequestIdConflictError,
+  RequestInProgressError,
   RequestValidationError,
   RoutingError,
   TaskStateError,
@@ -149,6 +159,21 @@ export type {
   MemoryScope,
 } from "./memory/memory-scope.js";
 export { MemoryScopeValidator } from "./memory/memory-scope-validator.js";
+export type { AuditRepository } from "./persistence/audit-repository.js";
+export {
+  STORED_REQUEST_SCHEMA_VERSION,
+  type RequestRepository,
+  type StoredRequest,
+} from "./persistence/request-repository.js";
+export type {
+  RepositoryTransaction,
+  RepositoryTransactionRunner,
+} from "./persistence/repository-transaction.js";
+export type {
+  TaskRepository,
+  TaskUpdateExpectation,
+} from "./persistence/task-repository.js";
+export { AuditEventValidator } from "./validation/audit-event-validator.js";
 export { AgentInvocationValidator } from "./validation/agent-invocation-validator.js";
 export { AgentManifestValidator } from "./validation/agent-manifest-validator.js";
 export { AgentResultValidator } from "./validation/agent-result-validator.js";
