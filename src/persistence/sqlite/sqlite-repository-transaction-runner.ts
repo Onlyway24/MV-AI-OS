@@ -4,19 +4,15 @@ import type {
   RepositoryTransaction,
   RepositoryTransactionRunner,
 } from "../repository-transaction.js";
+import type { SqliteConnectionConfig } from "./sqlite-connection-config.js";
+import { openSqliteDatabase } from "./sqlite-database.js";
 import {
-  SqliteConnectionConfigValidator,
-  type SqliteConnectionConfig,
-} from "./sqlite-connection-config.js";
-import {
-  SqliteConfigurationError,
   SqliteRepositoryError,
   withSqliteErrors,
 } from "./sqlite-error.js";
 import { SqliteAuditRepository } from "./sqlite-audit-repository.js";
 import { SqliteRecordCodec } from "./sqlite-record-codec.js";
 import { SqliteRequestRepository } from "./sqlite-request-repository.js";
-import { initializeSqliteSchema } from "./sqlite-schema.js";
 import { SqliteTaskRepository } from "./sqlite-task-repository.js";
 import type { SqliteTransactionScope } from "./sqlite-transaction-scope.js";
 
@@ -32,35 +28,9 @@ export class SqliteRepositoryTransactionRunner
   #closePromise: Promise<void> | undefined;
 
   public constructor(config: unknown) {
-    const validation = new SqliteConnectionConfigValidator().validate(config);
-    if (!validation.ok) {
-      throw new SqliteConfigurationError(validation.issues);
-    }
-    this.config = Object.freeze({ ...validation.value });
-
-    try {
-      this.#database = new DatabaseSync(this.config.path, {
-        allowExtension: false,
-        enableDoubleQuotedStringLiterals: false,
-        enableForeignKeyConstraints: true,
-        readBigInts: false,
-        returnArrays: false,
-        timeout: this.config.timeoutMs,
-      });
-    } catch {
-      throw new SqliteRepositoryError(
-        "Unable to open the configured SQLite database",
-        "connection.open",
-      );
-    }
-
-    try {
-      this.#database.exec("PRAGMA synchronous = FULL");
-      initializeSqliteSchema(this.#database);
-    } catch (error) {
-      this.#database.close();
-      throw error;
-    }
+    const opened = openSqliteDatabase(config);
+    this.config = opened.config;
+    this.#database = opened.database;
   }
 
   public transaction<T>(

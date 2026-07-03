@@ -3,6 +3,8 @@ import type { RequestContractVersion } from "../contracts/request-envelope.js";
 import type { MemoryCategory } from "./memory-record.js";
 import type { MemoryScope } from "./memory-scope.js";
 
+export const MAX_MEMORY_RESULTS = 100;
+
 export interface MemoryQuery {
   readonly contractVersion: RequestContractVersion;
   readonly queryId: string;

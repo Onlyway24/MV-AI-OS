@@ -1,4 +1,7 @@
-import type { MemoryQuery } from "./memory-query.js";
+import {
+  MAX_MEMORY_RESULTS,
+  type MemoryQuery,
+} from "./memory-query.js";
 import type { MemoryCategory } from "./memory-record.js";
 import { MemoryScopeValidator } from "./memory-scope-validator.js";
 import { REQUEST_CONTRACT_VERSION } from "../contracts/request-envelope.js";
@@ -24,8 +27,6 @@ const MEMORY_CATEGORIES = new Set<MemoryCategory>([
   "user",
   "working",
 ]);
-const MAX_MEMORY_RESULTS = 100;
-
 export class MemoryQueryValidator implements Validator<MemoryQuery> {
   readonly #scopeValidator = new MemoryScopeValidator();
 

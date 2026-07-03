@@ -206,7 +206,13 @@ export type {
   MemoryQuery,
   MemoryRetrievalResult,
 } from "./memory/memory-query.js";
+export { MAX_MEMORY_RESULTS } from "./memory/memory-query.js";
 export { MemoryQueryValidator } from "./memory/memory-query-validator.js";
+export type {
+  MemoryRepository,
+  MemoryRepositorySearch,
+  MemoryUpdateExpectation,
+} from "./memory/memory-repository.js";
 export {
   MEMORY_SCHEMA_VERSION,
   type BaseMemoryRecord,
@@ -228,6 +234,10 @@ export type {
   MemoryWriteRequest,
   MemoryWriter,
 } from "./memory/memory-service.js";
+export {
+  RepositoryBackedMemoryService,
+  type RepositoryBackedMemoryServiceDependencies,
+} from "./memory/repository-backed-memory-service.js";
 export type {
   MemoryReadPermission,
   MemoryScope,
@@ -304,6 +314,9 @@ export {
 export {
   SqliteRepositoryTransactionRunner,
 } from "./persistence/sqlite/sqlite-repository-transaction-runner.js";
+export {
+  SqliteMemoryRepository,
+} from "./persistence/sqlite/sqlite-memory-repository.js";
 export type {
   TaskRepository,
   TaskUpdateExpectation,

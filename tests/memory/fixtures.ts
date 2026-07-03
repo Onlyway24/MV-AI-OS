@@ -3,6 +3,7 @@ import type {
   ConversationMemoryRecord,
   MemoryQuery,
   MemoryReadPermission,
+  MemoryRepositorySearch,
   MemoryScope,
   SemanticMemoryRecord,
   UserMemoryRecord,
@@ -90,6 +91,20 @@ export function createMemoryQuery(
     limit: 20,
     queryId: "memory-query-001",
     scope,
+    ...overrides,
+  };
+}
+
+export function createMemoryRepositorySearch(
+  overrides: Partial<MemoryRepositorySearch> = {},
+): MemoryRepositorySearch {
+  return {
+    activeAt: "2026-07-02T10:00:00.000Z",
+    actorId: "actor-local",
+    categories: ["semantic"],
+    limit: 20,
+    permissionTags: [],
+    workspaceId: "workspace-local",
     ...overrides,
   };
 }

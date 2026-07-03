@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest known commit: `1f9a45a feat: add governed model-backed content execution`.
-- The durable SQLite task lifecycle is currently an uncommitted working-tree change.
+- Latest known commit: `e3cfee5 feat: add SQLite task lifecycle persistence`.
+- Durable SQLite memory persistence is currently an uncommitted working-tree change.
 - Current package version: `0.1.0`.
 - Runtime: Node.js `22.23.x`, strict TypeScript, ECMAScript modules.
 - Package manager: npm `10.9.8`.
@@ -39,7 +39,7 @@ RequestEnvelope
 
 Supporting modules are isolated behind interfaces:
 
-- repositories for task, request, and audit state;
+- repositories for task, request, audit, memory, and knowledge state;
 - registries for agents, agent specifications, workflow specifications, and tools;
 - services for memory and knowledge;
 - provider-neutral gateways for models and tools;
@@ -67,6 +67,7 @@ provider, n8n, or external SDK types.
 13. Permanent project-state memory system.
 14. Governed model-backed Content Agent vertical execution slice.
 15. Durable SQLite task/request/audit lifecycle.
+16. Durable SQLite Memory persistence.
 
 ## Implemented modules
 
@@ -88,7 +89,11 @@ provider, n8n, or external SDK types.
 ### Memory and knowledge
 
 - Memory record, scope, query, retention, permission, and lifecycle contracts.
-- In-memory Memory Service under the testing namespace.
+- Repository-backed Memory Service with policy-first permission checks and deterministic
+  scope filtering.
+- In-memory Memory Service and Memory Repository under the testing namespace.
+- SQLite-backed Memory Repository with durable writes, optimistic updates, expiry,
+  soft deletion, permission tags, and deterministic retrieval.
 - Knowledge records, source provenance, scope, query, repository, service, and
   deterministic retrieval rules.
 - Repository-backed Knowledge Service.
@@ -100,8 +105,9 @@ provider, n8n, or external SDK types.
 - SQLite-backed task, request, and audit repository adapters.
 - Serialized atomic SQLite transactions with deterministic close behavior.
 - Versioned schema initialization and database identity verification.
+- Forward migration from lifecycle schema version 1 to memory schema version 2.
 - Validated JSON serialization and deserialization for every persisted lifecycle
-  record.
+  and memory record.
 - Optimistic task transition conflicts, request replay, and append-only audit ordering
   preserved across process restarts.
 
@@ -136,6 +142,7 @@ provider, n8n, or external SDK types.
   interfaces.
 - `AuditEvent` and normalized `ErrorRecord`.
 - repository transaction, task, request, and audit interfaces.
+- memory repository search and optimistic-update interfaces.
 - SQLite connection configuration and schema-version contracts.
 - policy decision, effective permission, grant resolver, and evaluator interfaces.
 - memory record/query/scope/service contracts.
@@ -164,7 +171,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 33 test files and 175 passing tests covering:
+The latest verified suite contains 36 test files and 196 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -173,6 +180,9 @@ The latest verified suite contains 33 test files and 175 passing tests covering:
   corruption rejection, restart durability, replay, and post-restart request
   conflicts.
 - memory validation, permission filtering, retrieval, write, delete, and expiry.
+- memory repository conformance, SQLite restart durability, corruption rejection,
+  deterministic ordering, lifecycle-preserving schema migration, and post-restart
+  execution-context enrichment.
 - knowledge validation, repository conformance, scope, tag, source, freshness, and
   permission filtering.
 - model validation, deterministic provider behavior, provider neutrality, and
@@ -191,9 +201,9 @@ The latest verified suite contains 33 test files and 175 passing tests covering:
 ## Current maturity
 
 The repository is an early implementation with a stable orchestration kernel and
-strongly tested architectural foundations and its first durable local adapter. It is
-not production-ready. The project has meaningful executable behavior, but several
-completed foundations are not yet composed into one application runtime.
+strongly tested architectural foundations and durable local lifecycle and memory
+adapters. It is not production-ready. The project has meaningful executable behavior,
+but several completed foundations are not yet composed into one application runtime.
 
 ## What exists only as a foundation
 
@@ -205,8 +215,8 @@ completed foundations are not yet composed into one application runtime.
   exists.
 - The Knowledge Service can enrich Core Brain execution context through the injected
   decorator, but no durable knowledge adapter exists.
-- Durable persistence currently covers only task, request, and audit lifecycle state;
-  memory, knowledge, approvals, workflows, and configuration remain non-durable.
+- Durable persistence currently covers task, request, audit, and memory state;
+  knowledge, approvals, workflows, and configuration remain non-durable.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
 
 ## What is actually executable
@@ -224,6 +234,8 @@ completed foundations are not yet composed into one application runtime.
 - Duplicate requests replay stored results, and conflicting reuse fails.
 - The same lifecycle can use `SqliteRepositoryTransactionRunner`; completed requests,
   task state, and audit history survive closing and reopening the database.
+- `RepositoryBackedMemoryService` can use `SqliteMemoryRepository`; permitted memory,
+  deletion, and expiry state survive restart and can enrich later execution contexts.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
@@ -239,7 +251,7 @@ production composition root.
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
-- Durable memory, knowledge metadata, approval, and workflow persistence.
+- Durable knowledge metadata, approval, and workflow persistence.
 - Production model providers or external API calls.
 - Durable approvals and human-in-the-loop operations.
 - Configuration loading and secrets management.

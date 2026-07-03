@@ -2,6 +2,8 @@ import type { AuditEvent } from "../../contracts/audit-event.js";
 import type { TaskResponse } from "../../contracts/task-response.js";
 import type { TaskRecord } from "../../core/models/task.js";
 import { RepositoryValidationError } from "../../errors/core-error.js";
+import type { MemoryRecord } from "../../memory/memory-record.js";
+import { MemoryRecordValidator } from "../../memory/memory-record-validator.js";
 import type { StoredRequest } from "../request-repository.js";
 import { AuditEventValidator } from "../../validation/audit-event-validator.js";
 import { StoredRequestValidator } from "../../validation/stored-request-validator.js";
@@ -14,6 +16,7 @@ import type {
 
 export class SqliteRecordCodec {
   readonly #auditValidator = new AuditEventValidator();
+  readonly #memoryValidator = new MemoryRecordValidator();
   readonly #requestValidator = new StoredRequestValidator();
   readonly #responseValidator = new TaskResponseValidator();
   readonly #taskValidator = new TaskRecordValidator();
@@ -23,6 +26,21 @@ export class SqliteRecordCodec {
     readonly value: TaskRecord;
   } {
     return encodeValidated(value, this.#taskValidator, "Task record");
+  }
+
+  public encodeMemory(value: unknown): {
+    readonly json: string;
+    readonly value: MemoryRecord;
+  } {
+    return encodeValidated(value, this.#memoryValidator, "Memory record");
+  }
+
+  public decodeMemory(json: string): MemoryRecord {
+    return freezeValidated(
+      parseJson(json, "Memory record"),
+      this.#memoryValidator,
+      "Memory record",
+    );
   }
 
   public decodeTask(json: string): TaskRecord {
@@ -153,6 +171,22 @@ export function readTextColumn(
   if (typeof value !== "string") {
     throw new RepositoryValidationError(
       `SQLite row column ${column} must be text`,
+    );
+  }
+  return value;
+}
+
+export function readNullableTextColumn(
+  row: Readonly<Record<string, unknown>>,
+  column: string,
+): string | undefined {
+  const value = row[column];
+  if (value === null) {
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    throw new RepositoryValidationError(
+      `SQLite row column ${column} must be text or null`,
     );
   }
   return value;

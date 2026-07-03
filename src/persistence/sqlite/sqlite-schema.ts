@@ -4,14 +4,18 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 1;
+export const SQLITE_SCHEMA_VERSION = 2;
 
 const SQLITE_APPLICATION_ID = 0x4d564149;
-const EXPECTED_TABLES = Object.freeze([
+const VERSION_ONE_TABLES = Object.freeze([
   "audit_events",
   "requests",
   "schema_migrations",
   "tasks",
+]);
+const VERSION_TWO_TABLES = Object.freeze([
+  ...VERSION_ONE_TABLES,
+  "memory_records",
 ]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
@@ -37,6 +41,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     }
     applyInitialMigration(database);
   }
+  const currentVersion = readPragmaInteger(database, "user_version");
+  if (currentVersion === 1) {
+    verifyDatabaseIdentity(database, 1);
+    verifyExpectedTables(database, VERSION_ONE_TABLES);
+    verifyMigration(database, 1, "initial_task_lifecycle");
+    applyMemoryMigration(database);
+  }
 
   const finalVersion = readPragmaInteger(database, "user_version");
   const finalApplicationId = readPragmaInteger(
@@ -58,7 +69,9 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database);
+  verifyExpectedTables(database, VERSION_TWO_TABLES);
+  verifyMigration(database, 1, "initial_task_lifecycle");
+  verifyMigration(database, 2, "durable_memory");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -102,7 +115,7 @@ function applyInitialMigration(database: DatabaseSync): void {
       VALUES (1, 'initial_task_lifecycle');
 
       PRAGMA application_id = ${String(SQLITE_APPLICATION_ID)};
-      PRAGMA user_version = ${String(SQLITE_SCHEMA_VERSION)};
+      PRAGMA user_version = 1;
     `);
     database.exec("COMMIT");
   } catch {
@@ -115,30 +128,100 @@ function applyInitialMigration(database: DatabaseSync): void {
   }
 }
 
-function verifyExpectedTables(database: DatabaseSync): void {
+function applyMemoryMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE memory_records (
+        memory_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        owner_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        visibility TEXT NOT NULL,
+        task_id TEXT,
+        session_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        expires_at TEXT,
+        deleted_at TEXT,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+
+      CREATE INDEX memory_records_workspace_category_created
+        ON memory_records (workspace_id, category, created_at DESC, memory_id);
+
+      CREATE INDEX memory_records_owner
+        ON memory_records (workspace_id, owner_id);
+
+      INSERT INTO schema_migrations (version, name)
+      VALUES (2, 'durable_memory');
+
+      PRAGMA user_version = 2;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError(
+      "sqlite_schema_invalid",
+      "SQLite memory schema migration failed",
+    );
+  }
+}
+
+function verifyExpectedTables(
+  database: DatabaseSync,
+  expectedTables: readonly string[],
+): void {
   const actual = listUserTables(database).sort(compareText);
+  const expected = [...expectedTables].sort(compareText);
   if (
-    actual.length !== EXPECTED_TABLES.length ||
-    !actual.every((table, index) => table === EXPECTED_TABLES[index])
+    actual.length !== expected.length ||
+    !actual.every((table, index) => table === expected[index])
   ) {
     throw new SqliteSchemaError(
       "sqlite_schema_invalid",
       "SQLite schema tables do not match the expected version",
       {
         actualTables: actual,
-        expectedTables: EXPECTED_TABLES,
+        expectedTables: expected,
       },
     );
   }
+}
+
+function verifyMigration(
+  database: DatabaseSync,
+  version: number,
+  expectedName: string,
+): void {
   const migration = database
     .prepare(
       "SELECT name FROM schema_migrations WHERE version = ?",
     )
-    .get(SQLITE_SCHEMA_VERSION);
-  if (migration?.name !== "initial_task_lifecycle") {
+    .get(version);
+  if (migration?.name !== expectedName) {
     throw new SqliteSchemaError(
       "sqlite_schema_invalid",
       "SQLite migration history is incomplete",
+      { version },
+    );
+  }
+}
+
+function verifyDatabaseIdentity(
+  database: DatabaseSync,
+  version: number,
+): void {
+  const applicationId = readPragmaInteger(database, "application_id");
+  if (applicationId !== SQLITE_APPLICATION_ID) {
+    throw new SqliteSchemaError(
+      "sqlite_schema_unsupported",
+      "SQLite database identity is unsupported",
+      {
+        actualApplicationId: applicationId,
+        expectedApplicationId: SQLITE_APPLICATION_ID,
+        version,
+      },
     );
   }
 }

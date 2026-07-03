@@ -207,3 +207,30 @@ both representations agree.
 migration discipline, validation-on-read/write, and transaction semantics. Other
 storage engines remain valid only behind the existing interfaces and must pass the
 same conformance behavior.
+
+## ADR-012 — Memory policy remains in the service boundary
+
+**Context:** Durable memory must preserve the existing Memory Engine's default-deny
+permissions, workspace and actor visibility, task and session scope, permission tags,
+expiry, soft deletion, and deterministic ordering without making SQLite an
+authorization authority.
+
+**Decision:** `RepositoryBackedMemoryService` validates public memory requests and
+enforces category permissions and write scope before repository access. A
+storage-neutral `MemoryRepository` receives an already bounded search and independently
+enforces scope filters, validates every record, and returns deterministic results.
+SQLite stores complete validated JSON records with cross-checked indexed columns under
+schema version 2.
+
+**Reason:** Policy behavior remains consistent across in-memory, SQLite, and future
+storage adapters while the repository still fails closed if called directly or if
+stored data is corrupt.
+
+**Tradeoffs:** Permission and scope invariants are deliberately checked at both service
+and repository return boundaries. SQLite filtering currently combines indexed
+workspace/category narrowing with deterministic in-process checks rather than adding
+full-text or JSON extensions.
+
+**Future impact:** Future memory storage engines must pass the same repository
+conformance suite. New retrieval capabilities require explicit memory-contract changes
+and cannot be inferred from database-specific search features.
