@@ -1,18 +1,21 @@
 import type { AgentManifest } from "../agent-manifest.js";
+import { CONTENT_AGENT_INSTRUCTIONS_REF } from "./content-agent-instructions.js";
 
 export const CONTENT_AGENT_MANIFEST: AgentManifest = Object.freeze({
   agentId: "content",
   description:
-    "Produces deterministic structured business content from an approved invocation.",
+    "Produces structured business content from an approved invocation.",
   handoffTargets: Object.freeze([]),
   inputContract: Object.freeze({
     contractId: "business-content-input",
     contractVersion: "1",
   }),
-  instructionsRef: "module:content-agent@1.0.0",
-  knowledgeAccess: Object.freeze([]),
+  instructionsRef: CONTENT_AGENT_INSTRUCTIONS_REF,
+  knowledgeAccess: Object.freeze(["general"]),
   limits: Object.freeze({
+    maxCostUsd: 0.1,
     maxResultBytes: 262_144,
+    maxTokens: 2_048,
     maxToolCalls: 0,
     timeoutMs: 30_000,
   }),

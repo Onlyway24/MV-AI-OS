@@ -1,4 +1,8 @@
 import { CONTENT_AGENT_MANIFEST } from "./content-agent-manifest.js";
+import {
+  assertContentAgentInvocation,
+  collectContentEvidence,
+} from "./content-agent-boundary.js";
 import type { ContentOutput } from "./content-output.js";
 import type { AgentExecutor } from "../agent-runtime.js";
 import type {
@@ -6,7 +10,6 @@ import type {
   AgentResult,
   EvidenceReference,
 } from "../../contracts/agent-execution.js";
-import type { JsonObject } from "../../contracts/json.js";
 import { AgentRuntimeError } from "../../errors/core-error.js";
 import type { Clock } from "../../ports/clock.js";
 import {
@@ -30,14 +33,14 @@ export class ContentAgent implements AgentExecutor {
   }
 
   public execute(invocation: AgentInvocation): Promise<unknown> {
-    this.#assertInvocation(invocation);
+    assertContentAgentInvocation(invocation);
 
     const requestedOutput = asRecord(invocation.input.requestedOutput);
     const contentType = readString(requestedOutput?.contentType);
     if (contentType === undefined) {
       return Promise.resolve(
         this.#result(invocation, {
-          evidence: collectEvidence(invocation.context),
+          evidence: collectContentEvidence(invocation.context),
           status: "needs_input",
         }),
       );
@@ -59,7 +62,7 @@ export class ContentAgent implements AgentExecutor {
       (product === undefined
         ? `Draft ${toTitleCase(contentType)}`
         : `${product}: ${toTitleCase(contentType)}`);
-    const evidence = collectEvidence(invocation.context);
+    const evidence = collectContentEvidence(invocation.context);
     const output: ContentOutput = {
       assumptions: [
         ...(readString(constraints?.audience) === undefined
@@ -122,22 +125,6 @@ export class ContentAgent implements AgentExecutor {
     );
   }
 
-  #assertInvocation(invocation: AgentInvocation): void {
-    if (
-      invocation.agent.agentId !== this.agent.agentId ||
-      invocation.agent.version !== this.agent.version ||
-      invocation.outputContract.contractId !==
-        CONTENT_AGENT_MANIFEST.outputContract.contractId ||
-      invocation.outputContract.contractVersion !==
-        CONTENT_AGENT_MANIFEST.outputContract.contractVersion
-    ) {
-      throw new AgentRuntimeError(
-        "agent_invocation_invalid",
-        "Invocation does not match the Content Agent contract",
-      );
-    }
-  }
-
   #result(
     invocation: AgentInvocation,
     values:
@@ -180,38 +167,12 @@ export class ContentAgent implements AgentExecutor {
   }
 }
 
-function collectEvidence(context: JsonObject): readonly EvidenceReference[] {
-  const supplemental = context.supplementalContext;
-  if (!Array.isArray(supplemental)) {
-    return Object.freeze([]);
-  }
-
-  const evidence: EvidenceReference[] = [];
-  for (const item of supplemental) {
-    const record = asRecord(item);
-    const referenceId = readString(record?.referenceId);
-    const source = readEvidenceSource(record?.source);
-    if (referenceId !== undefined && source !== undefined) {
-      evidence.push({ referenceId, source });
-    }
-  }
-  return Object.freeze(evidence);
-}
-
 function readString(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : undefined;
-}
-
-function readEvidenceSource(
-  value: unknown,
-): EvidenceReference["source"] | undefined {
-  return value === "conversation" || value === "knowledge" || value === "memory"
-    ? value
-    : undefined;
 }
 
 function toTitleCase(value: string): string {

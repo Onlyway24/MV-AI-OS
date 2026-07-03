@@ -42,6 +42,19 @@ export {
 export { InProcessAgentRuntime } from "./agents/in-process-agent-runtime.js";
 export { ContentAgent } from "./agents/content/content-agent.js";
 export { CONTENT_AGENT_MANIFEST } from "./agents/content/content-agent-manifest.js";
+export {
+  CONTENT_AGENT_INSTRUCTIONS,
+  CONTENT_AGENT_INSTRUCTIONS_REF,
+} from "./agents/content/content-agent-instructions.js";
+export {
+  CONTENT_AGENT_SPECIFICATION,
+  CONTENT_OUTPUT_MODEL_SCHEMA,
+  MODEL_BACKED_CONTENT_AGENT_IMPLEMENTATION_REF,
+} from "./agents/content/content-agent-specification.js";
+export {
+  ModelBackedContentAgent,
+  type ModelBackedContentAgentDependencies,
+} from "./agents/content/model-backed-content-agent.js";
 export type { ContentOutput } from "./agents/content/content-output.js";
 export { ContentOutputValidator } from "./agents/content/content-output-validator.js";
 export type {
@@ -156,6 +169,7 @@ export {
   type KnowledgeQuery,
 } from "./knowledge/knowledge-query.js";
 export { KnowledgeQueryValidator } from "./knowledge/knowledge-query-validator.js";
+export { KnowledgeExecutionContextBuilder } from "./knowledge/knowledge-execution-context-builder.js";
 export type {
   KnowledgeRepository,
   KnowledgeRepositorySearch,
