@@ -2,90 +2,92 @@
 
 ## Milestone name
 
-Durable SQLite Knowledge Persistence
+Validated Local Runtime Composition
 
 ## Goal
 
-Make the existing policy-governed Knowledge Service durable across process restarts
-without changing Core Brain, Content Agent, knowledge contracts, or retrieval
-semantics.
+Create one production composition boundary that constructs a usable local MV AI OS
+runtime from validated configuration and the existing SQLite lifecycle, memory, and
+knowledge adapters without adding a transport or external provider.
 
 ## Why it matters
 
-Task lifecycle and approved memory now survive restart, but governed model-backed
-execution still loses its knowledge records when the process stops. The existing
-`KnowledgeRepository` and repository-backed service already define the required
-storage-neutral boundary, so a SQLite adapter adds real recoverability without a new
-foundation.
+The orchestration path and durable adapters are individually complete, but callers
+must still assemble many dependencies manually. A validated composition root turns the
+existing modules into one recoverable local runtime while preserving dependency
+injection and keeping Core Brain free of infrastructure concerns.
 
 ## Required scope
 
-- Implement SQLite storage behind the existing `KnowledgeRepository` interface.
-- Extend the existing SQLite schema through an explicit version 2 to version 3
-  migration.
-- Validate every knowledge record on write and read.
-- Preserve workspace, actor visibility, required scopes, permission tags, source
-  types, tags, freshness, expiry, deletion, text matching, result limits, and
-  deterministic ordering.
-- Reuse the existing knowledge repository conformance suite against SQLite.
-- Add restart tests proving permitted knowledge survives adapter reconstruction and
-  can enrich a later governed execution context.
-- Add corruption and migration tests that preserve existing lifecycle and memory data.
+- Define a minimal local runtime configuration contract and runtime validator.
+- Configure the SQLite database path and timeout through existing connection
+  configuration.
+- Compose Core Brain, task lifecycle repositories, repository-backed Memory and
+  Knowledge Services, default-deny policy, registries, router, runtime, validators,
+  clock, identifiers, and deterministic local Content Agent.
+- Return an explicit runtime handle with task execution and deterministic resource
+  shutdown.
+- Keep all constructors dependency-injected and permit deterministic test overrides
+  for clocks, identifiers, and agent execution.
+- Add restart tests proving a composed runtime replays completed tasks and reuses
+  durable permitted memory and knowledge.
+- Validate configuration before opening SQLite or executing requests.
 
 ## Forbidden scope
 
-- Workflow, approval, or tool persistence.
-- Changes to Core Brain, Content Agent, policy calculation, or knowledge contracts.
-- Vector search, embeddings, semantic similarity providers, or full-text extensions.
-- HTTP, dashboard, n8n, external APIs, SDKs, real model providers, or tool execution.
-- A second Knowledge Service or a parallel persistence abstraction.
+- HTTP, webhooks, dashboard, browser, filesystem tools, or network transports.
+- Real model providers, API keys, external APIs, SDKs, n8n, or tool execution.
+- Workflow execution, scheduling, retries, or approval persistence.
+- New memory, knowledge, task, request, or audit contracts.
+- Hidden global singletons, environment reads inside domain modules, or implicit
+  permissions.
+- A general dependency-injection container or plugin framework.
 
 ## Likely files to create
 
-- `src/persistence/sqlite/sqlite-knowledge-repository.ts`
-- `tests/knowledge/sqlite-knowledge-repository.test.ts`
+- `src/runtime/local-runtime-config.ts`
+- `src/runtime/local-runtime-config-validator.ts`
+- `src/runtime/local-runtime.ts`
+- `src/runtime/create-local-runtime.ts`
+- `tests/runtime/local-runtime.test.ts`
 
 ## Likely files to modify
 
-- `src/persistence/sqlite/sqlite-schema.ts`
-- `src/persistence/sqlite/sqlite-record-codec.ts`
 - `src/index.ts`
-- knowledge test fixtures or conformance utilities only where adapter-neutral reuse
-  requires it
+- existing local policy composition only if a production grant resolver is required
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
 - `docs/project-state/04_NEXT_TASK.md`
-- `docs/project-state/05_DECISIONS.md` if a durable knowledge decision is established
+- `docs/project-state/05_DECISIONS.md` if composition ownership establishes a durable
+  decision
 
 ## Tests required
 
-- Existing Knowledge Repository conformance against SQLite.
-- Valid and invalid knowledge record persistence.
-- Workspace and actor isolation.
-- Required-scope and permission-tag filtering.
-- Tag, source-type, freshness, expiry, deletion, and text filtering.
-- Deterministic bounded result ordering.
-- Restart durability and execution-context enrichment.
-- Corrupt stored knowledge rejection.
-- SQLite schema version 2 to version 3 migration.
-- Migration preserves task, request, audit, and memory records.
-- Existing Core Brain, Content Agent, Memory, and lifecycle tests continue passing.
+- Valid configuration creates a runtime.
+- Invalid configuration fails before database creation.
+- One content request executes through the composed runtime.
+- Closing and reopening the runtime replays the stored response without agent
+  re-execution.
+- Permitted durable memory and knowledge enrich execution after restart.
+- Missing grants remain denied by default.
+- Shutdown closes every owned SQLite adapter deterministically.
+- Existing Core Brain, Content Agent, repository, Memory, Knowledge, and migration
+  tests continue passing.
 
 ## Acceptance criteria
 
-- Permitted knowledge stored before shutdown is retrievable after reopening the same
-  SQLite database.
-- Unauthorized, expired, deleted, stale, or out-of-scope knowledge never enters an
-  execution context.
-- Knowledge and Core modules import no SQLite types.
-- Schema version 2 databases upgrade deterministically without losing existing state.
-- No behavior outside knowledge persistence changes.
+- A caller can construct and close one local runtime without manually wiring internal
+  dependencies.
+- Core Brain and agents import no SQLite or configuration-loader types.
+- Runtime restart preserves replay, audit, memory, and knowledge behavior.
+- Configuration and permissions fail closed.
+- No transport, external provider, or side effect outside SQLite is added.
 
 ## Definition of done
 
-- The SQLite Knowledge Repository is implemented and passes existing conformance.
-- Restart, corruption, migration, and governed-context tests pass.
-- Project-state documents accurately describe the new durable knowledge state.
+- The validated local composition root and runtime handle are implemented and tested.
+- Existing public contracts and execution behavior remain unchanged.
+- Project-state documents accurately describe the composed local runtime.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
 - No commit is created.
 - Final reporting waits for approval.

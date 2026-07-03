@@ -107,6 +107,7 @@ export function runKnowledgeRepositoryConformance(
           freshAfter: "2026-07-01T00:00:00.000Z",
           sourceTypes: ["document"],
           tags: ["release"],
+          text: "fresh-document",
         }),
       );
 
@@ -145,6 +146,20 @@ export function runKnowledgeRepositoryConformance(
         "knowledge-newest",
         "knowledge-a",
       ]);
+    });
+
+    it("rejects invalid repository searches", async () => {
+      const repository = createRepository();
+
+      await expect(
+        repository.search(
+          createRepositorySearch({
+            freshAfter: "invalid",
+          }),
+        ),
+      ).rejects.toMatchObject({
+        code: "repository_record_invalid",
+      });
     });
   });
 }

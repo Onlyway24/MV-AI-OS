@@ -132,8 +132,9 @@ describe("SQLite memory persistence", () => {
 
       const legacyDatabase = new DatabaseSync(databasePath);
       legacyDatabase.exec(`
+        DROP TABLE knowledge_records;
         DROP TABLE memory_records;
-        DELETE FROM schema_migrations WHERE version = 2;
+        DELETE FROM schema_migrations WHERE version IN (2, 3);
         PRAGMA user_version = 1;
       `);
       legacyDatabase.close();

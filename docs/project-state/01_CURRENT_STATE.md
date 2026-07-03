@@ -9,8 +9,9 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest known commit: `e3cfee5 feat: add SQLite task lifecycle persistence`.
-- Durable SQLite memory persistence is currently an uncommitted working-tree change.
+- Latest known commit: `c125993 feat: add SQLite memory persistence`.
+- Durable SQLite knowledge persistence is currently an uncommitted working-tree
+  change.
 - Current package version: `0.1.0`.
 - Runtime: Node.js `22.23.x`, strict TypeScript, ECMAScript modules.
 - Package manager: npm `10.9.8`.
@@ -68,6 +69,7 @@ provider, n8n, or external SDK types.
 14. Governed model-backed Content Agent vertical execution slice.
 15. Durable SQLite task/request/audit lifecycle.
 16. Durable SQLite Memory persistence.
+17. Durable SQLite Knowledge persistence.
 
 ## Implemented modules
 
@@ -98,6 +100,9 @@ provider, n8n, or external SDK types.
   deterministic retrieval rules.
 - Repository-backed Knowledge Service.
 - Test-only in-memory Knowledge Repository.
+- SQLite-backed Knowledge Repository with workspace and actor visibility, required
+  scopes, permission tags, sources, tags, freshness, expiry, deletion, text matching,
+  and deterministic retrieval.
 
 ### Persistence
 
@@ -106,8 +111,9 @@ provider, n8n, or external SDK types.
 - Serialized atomic SQLite transactions with deterministic close behavior.
 - Versioned schema initialization and database identity verification.
 - Forward migration from lifecycle schema version 1 to memory schema version 2.
+- Forward migration from memory schema version 2 to knowledge schema version 3.
 - Validated JSON serialization and deserialization for every persisted lifecycle
-  and memory record.
+  memory, and knowledge record.
 - Optimistic task transition conflicts, request replay, and append-only audit ordering
   preserved across process restarts.
 
@@ -171,7 +177,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 36 test files and 196 passing tests covering:
+The latest verified suite contains 37 test files and 206 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -185,6 +191,9 @@ The latest verified suite contains 36 test files and 196 passing tests covering:
   execution-context enrichment.
 - knowledge validation, repository conformance, scope, tag, source, freshness, and
   permission filtering.
+- SQLite knowledge restart durability, corruption rejection, deterministic retrieval,
+  governed context enrichment, and migration preserving lifecycle, audit, and memory
+  records.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - default-deny policy intersections and Core Brain enforcement.
@@ -201,9 +210,10 @@ The latest verified suite contains 36 test files and 196 passing tests covering:
 ## Current maturity
 
 The repository is an early implementation with a stable orchestration kernel and
-strongly tested architectural foundations and durable local lifecycle and memory
-adapters. It is not production-ready. The project has meaningful executable behavior,
-but several completed foundations are not yet composed into one application runtime.
+strongly tested architectural foundations and durable local lifecycle, memory, and
+knowledge adapters. It is not production-ready. The project has meaningful executable
+behavior, but several completed foundations are not yet composed into one application
+runtime.
 
 ## What exists only as a foundation
 
@@ -213,10 +223,8 @@ but several completed foundations are not yet composed into one application runt
 - The Tool Gateway authorizes access and validates results but cannot execute tools.
 - The LLM Gateway is used by the model-backed Content Agent, but no production provider
   exists.
-- The Knowledge Service can enrich Core Brain execution context through the injected
-  decorator, but no durable knowledge adapter exists.
-- Durable persistence currently covers task, request, audit, and memory state;
-  knowledge, approvals, workflows, and configuration remain non-durable.
+- Durable persistence currently covers task, request, audit, memory, and knowledge
+  state; approvals, workflows, and configuration remain non-durable.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
 
 ## What is actually executable
@@ -236,6 +244,8 @@ but several completed foundations are not yet composed into one application runt
   task state, and audit history survive closing and reopening the database.
 - `RepositoryBackedMemoryService` can use `SqliteMemoryRepository`; permitted memory,
   deletion, and expiry state survive restart and can enrich later execution contexts.
+- `RepositoryBackedKnowledgeService` can use `SqliteKnowledgeRepository`; permitted
+  knowledge survives restart and can enrich later governed execution contexts.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
@@ -251,7 +261,7 @@ production composition root.
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
-- Durable knowledge metadata, approval, and workflow persistence.
+- Durable approval and workflow persistence.
 - Production model providers or external API calls.
 - Durable approvals and human-in-the-loop operations.
 - Configuration loading and secrets management.

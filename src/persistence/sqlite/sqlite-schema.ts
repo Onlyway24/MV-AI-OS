@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 2;
+export const SQLITE_SCHEMA_VERSION = 3;
 
 const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -16,6 +16,10 @@ const VERSION_ONE_TABLES = Object.freeze([
 const VERSION_TWO_TABLES = Object.freeze([
   ...VERSION_ONE_TABLES,
   "memory_records",
+]);
+const VERSION_THREE_TABLES = Object.freeze([
+  ...VERSION_TWO_TABLES,
+  "knowledge_records",
 ]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
@@ -48,6 +52,14 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 1, "initial_task_lifecycle");
     applyMemoryMigration(database);
   }
+  const knowledgeVersion = readPragmaInteger(database, "user_version");
+  if (knowledgeVersion === 2) {
+    verifyDatabaseIdentity(database, 2);
+    verifyExpectedTables(database, VERSION_TWO_TABLES);
+    verifyMigration(database, 1, "initial_task_lifecycle");
+    verifyMigration(database, 2, "durable_memory");
+    applyKnowledgeMigration(database);
+  }
 
   const finalVersion = readPragmaInteger(database, "user_version");
   const finalApplicationId = readPragmaInteger(
@@ -69,9 +81,10 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_TWO_TABLES);
+  verifyExpectedTables(database, VERSION_THREE_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
+  verifyMigration(database, 3, "durable_knowledge");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -164,6 +177,46 @@ function applyMemoryMigration(database: DatabaseSync): void {
     throw new SqliteSchemaError(
       "sqlite_schema_invalid",
       "SQLite memory schema migration failed",
+    );
+  }
+}
+
+function applyKnowledgeMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE knowledge_records (
+        knowledge_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        owner_id TEXT NOT NULL,
+        visibility TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        verified_at TEXT NOT NULL,
+        expires_at TEXT,
+        deleted_at TEXT,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+
+      CREATE INDEX knowledge_records_workspace_verified
+        ON knowledge_records (workspace_id, verified_at DESC, knowledge_id);
+
+      CREATE INDEX knowledge_records_owner
+        ON knowledge_records (workspace_id, owner_id);
+
+      CREATE INDEX knowledge_records_source_type
+        ON knowledge_records (workspace_id, source_type);
+
+      INSERT INTO schema_migrations (version, name)
+      VALUES (3, 'durable_knowledge');
+
+      PRAGMA user_version = 3;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError(
+      "sqlite_schema_invalid",
+      "SQLite knowledge schema migration failed",
     );
   }
 }

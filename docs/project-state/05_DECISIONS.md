@@ -234,3 +234,29 @@ full-text or JSON extensions.
 **Future impact:** Future memory storage engines must pass the same repository
 conformance suite. New retrieval capabilities require explicit memory-contract changes
 and cannot be inferred from database-specific search features.
+
+## ADR-013 — Knowledge policy remains in the service boundary
+
+**Context:** Durable knowledge must preserve default-deny `knowledge:search`,
+workspace and actor visibility, declared agent scopes, permission tags, source and tag
+filters, freshness, expiry, deletion, text matching, and deterministic ordering without
+making SQLite a policy authority.
+
+**Decision:** Keep effective-permission enforcement and returned-record invariants in
+`RepositoryBackedKnowledgeService`. `SqliteKnowledgeRepository` implements only the
+existing storage-neutral repository contract, validates every stored and retrieved
+record, cross-checks indexed columns against JSON, and applies the existing
+deterministic matcher under schema version 3.
+
+**Reason:** The same authorization behavior remains valid for in-memory, SQLite, and
+future storage adapters while corrupt or out-of-scope data fails closed at both
+repository and service boundaries.
+
+**Tradeoffs:** SQLite narrows candidates by indexed workspace data and applies complex
+scope, tag, source, freshness, and text predicates deterministically in-process. This
+avoids database-specific JSON, full-text, embedding, or vector behavior at the cost of
+future query optimization work.
+
+**Future impact:** Other Knowledge Repository adapters must pass the same conformance
+suite. Search enhancements require explicit contract and policy review and cannot
+bypass the Knowledge Service.

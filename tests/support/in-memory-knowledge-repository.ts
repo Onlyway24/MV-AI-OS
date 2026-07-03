@@ -5,15 +5,14 @@ import type {
 } from "../../src/index.js";
 import {
   KnowledgeRecordValidator,
-  MAX_KNOWLEDGE_RESULTS,
   RepositoryConflictError,
   RepositoryValidationError,
 } from "../../src/index.js";
+import { validateKnowledgeRepositorySearch } from "../../src/knowledge/knowledge-repository-validation.js";
 import {
   compareKnowledgeRecords,
   matchesKnowledgeSearch,
 } from "../../src/knowledge/knowledge-retrieval.js";
-import { isRfc3339Timestamp } from "../../src/validation/primitives.js";
 
 export class InMemoryKnowledgeRepository
   implements KnowledgeRepository
@@ -62,7 +61,7 @@ export class InMemoryKnowledgeRepository
     query: KnowledgeRepositorySearch,
   ): Promise<readonly KnowledgeRecord[]> {
     return Promise.resolve().then(() => {
-      this.#validateSearch(query);
+      validateKnowledgeRepositorySearch(query);
       const records = [...this.#records.values()]
         .filter((record) => matchesKnowledgeSearch(record, query))
         .sort(compareKnowledgeRecords)
@@ -87,23 +86,6 @@ export class InMemoryKnowledgeRepository
       );
     }
     return validation.value;
-  }
-
-  #validateSearch(query: KnowledgeRepositorySearch): void {
-    if (
-      query.workspaceId.trim().length === 0 ||
-      query.actorId.trim().length === 0 ||
-      !Number.isSafeInteger(query.limit) ||
-      query.limit < 1 ||
-      query.limit > MAX_KNOWLEDGE_RESULTS ||
-      !isRfc3339Timestamp(query.activeAt) ||
-      (query.freshAfter !== undefined &&
-        !isRfc3339Timestamp(query.freshAfter))
-    ) {
-      throw new RepositoryValidationError(
-        "Knowledge repository search failed validation",
-      );
-    }
   }
 }
 

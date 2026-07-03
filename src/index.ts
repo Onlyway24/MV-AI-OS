@@ -317,6 +317,9 @@ export {
 export {
   SqliteMemoryRepository,
 } from "./persistence/sqlite/sqlite-memory-repository.js";
+export {
+  SqliteKnowledgeRepository,
+} from "./persistence/sqlite/sqlite-knowledge-repository.js";
 export type {
   TaskRepository,
   TaskUpdateExpectation,

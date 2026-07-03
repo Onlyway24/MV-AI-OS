@@ -130,10 +130,10 @@ preserving repository and provider boundaries.
 - No domain or Core module imports storage-specific types.
 - Local configuration starts deterministically and rejects invalid settings.
 
-**Status:** In progress. SQLite-backed task, request, audit, and memory persistence,
-schema migrations, conformance, rollback, restart replay, retention, and soft deletion
-are complete. The next milestone is durable SQLite knowledge persistence, specified
-in `04_NEXT_TASK.md`.
+**Status:** In progress. SQLite-backed task, request, audit, memory, and knowledge
+persistence, forward migrations, conformance, restart recovery, retention, and
+deletion filtering are complete. The next milestone is a validated local runtime
+composition root, specified in `04_NEXT_TASK.md`.
 
 ## Phase 5 — Production model capability
 

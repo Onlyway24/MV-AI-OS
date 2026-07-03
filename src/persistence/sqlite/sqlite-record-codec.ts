@@ -2,6 +2,8 @@ import type { AuditEvent } from "../../contracts/audit-event.js";
 import type { TaskResponse } from "../../contracts/task-response.js";
 import type { TaskRecord } from "../../core/models/task.js";
 import { RepositoryValidationError } from "../../errors/core-error.js";
+import type { KnowledgeRecord } from "../../knowledge/knowledge-record.js";
+import { KnowledgeRecordValidator } from "../../knowledge/knowledge-record-validator.js";
 import type { MemoryRecord } from "../../memory/memory-record.js";
 import { MemoryRecordValidator } from "../../memory/memory-record-validator.js";
 import type { StoredRequest } from "../request-repository.js";
@@ -16,6 +18,7 @@ import type {
 
 export class SqliteRecordCodec {
   readonly #auditValidator = new AuditEventValidator();
+  readonly #knowledgeValidator = new KnowledgeRecordValidator();
   readonly #memoryValidator = new MemoryRecordValidator();
   readonly #requestValidator = new StoredRequestValidator();
   readonly #responseValidator = new TaskResponseValidator();
@@ -33,6 +36,25 @@ export class SqliteRecordCodec {
     readonly value: MemoryRecord;
   } {
     return encodeValidated(value, this.#memoryValidator, "Memory record");
+  }
+
+  public encodeKnowledge(value: unknown): {
+    readonly json: string;
+    readonly value: KnowledgeRecord;
+  } {
+    return encodeValidated(
+      value,
+      this.#knowledgeValidator,
+      "Knowledge record",
+    );
+  }
+
+  public decodeKnowledge(json: string): KnowledgeRecord {
+    return freezeValidated(
+      parseJson(json, "Knowledge record"),
+      this.#knowledgeValidator,
+      "Knowledge record",
+    );
   }
 
   public decodeMemory(json: string): MemoryRecord {
