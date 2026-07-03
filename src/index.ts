@@ -124,6 +124,41 @@ export {
 } from "./errors/core-error.js";
 export type { LogEntry, Logger, LogLevel } from "./logging/logger.js";
 export {
+  KnowledgeInvariantError,
+  KnowledgePermissionError,
+  KnowledgeValidationError,
+} from "./knowledge/knowledge-error.js";
+export {
+  MAX_KNOWLEDGE_RESULTS,
+  type KnowledgeQuery,
+} from "./knowledge/knowledge-query.js";
+export { KnowledgeQueryValidator } from "./knowledge/knowledge-query-validator.js";
+export type {
+  KnowledgeRepository,
+  KnowledgeRepositorySearch,
+} from "./knowledge/knowledge-repository.js";
+export {
+  KNOWLEDGE_SCHEMA_VERSION,
+  type KnowledgeRecord,
+  type KnowledgeVisibility,
+} from "./knowledge/knowledge-record.js";
+export { KnowledgeRecordValidator } from "./knowledge/knowledge-record-validator.js";
+export type { KnowledgeScope } from "./knowledge/knowledge-scope.js";
+export { KnowledgeScopeValidator } from "./knowledge/knowledge-scope-validator.js";
+export type { KnowledgeSearchResult } from "./knowledge/knowledge-search-result.js";
+export { KnowledgeSearchResultValidator } from "./knowledge/knowledge-search-result-validator.js";
+export type { KnowledgeService } from "./knowledge/knowledge-service.js";
+export {
+  KNOWLEDGE_SOURCE_SCHEMA_VERSION,
+  type KnowledgeSource,
+  type KnowledgeSourceType,
+} from "./knowledge/knowledge-source.js";
+export { KnowledgeSourceValidator } from "./knowledge/knowledge-source-validator.js";
+export {
+  RepositoryBackedKnowledgeService,
+  type RepositoryBackedKnowledgeServiceDependencies,
+} from "./knowledge/repository-backed-knowledge-service.js";
+export {
   MemoryConflictError,
   MemoryPermissionError,
   MemoryValidationError,
