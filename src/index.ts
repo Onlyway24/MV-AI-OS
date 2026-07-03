@@ -299,3 +299,30 @@ export type {
   ValidationResult,
   Validator,
 } from "./validation/validation.js";
+export type {
+  WorkflowCondition,
+  WorkflowConditionOperator,
+  WorkflowConditionSource,
+} from "./workflows/specification/workflow-condition.js";
+export { WorkflowConditionValidator } from "./workflows/specification/workflow-condition-validator.js";
+export type {
+  WorkflowFailurePolicy,
+  WorkflowFailureStrategy,
+} from "./workflows/specification/workflow-failure-policy.js";
+export { WorkflowFailurePolicyValidator } from "./workflows/specification/workflow-failure-policy-validator.js";
+export type { WorkflowInput } from "./workflows/specification/workflow-input.js";
+export { WorkflowInputValidator } from "./workflows/specification/workflow-input-validator.js";
+export type { WorkflowOutput } from "./workflows/specification/workflow-output.js";
+export { WorkflowOutputValidator } from "./workflows/specification/workflow-output-validator.js";
+export {
+  WORKFLOW_SPECIFICATION_SCHEMA_VERSION,
+  type WorkflowSpecification,
+  type WorkflowSpecificationStatus,
+} from "./workflows/specification/workflow-specification.js";
+export { WorkflowSpecificationRegistryError } from "./workflows/specification/workflow-specification-error.js";
+export type { WorkflowSpecificationRegistry } from "./workflows/specification/workflow-specification-registry.js";
+export { WorkflowSpecificationValidator } from "./workflows/specification/workflow-specification-validator.js";
+export type { WorkflowStep } from "./workflows/specification/workflow-step.js";
+export { WorkflowStepValidator } from "./workflows/specification/workflow-step-validator.js";
+export type { WorkflowTransition } from "./workflows/specification/workflow-transition.js";
+export { WorkflowTransitionValidator } from "./workflows/specification/workflow-transition-validator.js";
