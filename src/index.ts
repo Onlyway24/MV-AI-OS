@@ -326,3 +326,38 @@ export type { WorkflowStep } from "./workflows/specification/workflow-step.js";
 export { WorkflowStepValidator } from "./workflows/specification/workflow-step-validator.js";
 export type { WorkflowTransition } from "./workflows/specification/workflow-transition.js";
 export { WorkflowTransitionValidator } from "./workflows/specification/workflow-transition-validator.js";
+export {
+  PolicyGovernedToolGateway,
+  type PolicyGovernedToolGatewayDependencies,
+} from "./tools/policy-governed-tool-gateway.js";
+export {
+  TOOL_DEFINITION_SCHEMA_VERSION,
+  type ToolDefinition,
+  type ToolIdempotency,
+  type ToolSideEffect,
+} from "./tools/tool-definition.js";
+export { ToolDefinitionValidator } from "./tools/tool-definition-validator.js";
+export {
+  ToolDefinitionRegistryError,
+  ToolGatewayError,
+} from "./tools/tool-gateway-error.js";
+export type { ToolGateway } from "./tools/tool-gateway.js";
+export type {
+  ToolApprovalMarker,
+  ToolInvocation,
+} from "./tools/tool-invocation.js";
+export { ToolInvocationValidator } from "./tools/tool-invocation-validator.js";
+export type {
+  ToolAccessPermission,
+  ToolPermission,
+} from "./tools/tool-permission.js";
+export { ToolPermissionValidator } from "./tools/tool-permission-validator.js";
+export type { ToolRegistry } from "./tools/tool-registry.js";
+export type {
+  FailedToolResult,
+  SuccessfulToolResult,
+  ToolResult,
+} from "./tools/tool-result.js";
+export { ToolResultValidator } from "./tools/tool-result-validator.js";
+export type { ToolRiskLevel } from "./tools/tool-risk-level.js";
+export { ToolRiskLevelValidator } from "./tools/tool-risk-level-validator.js";
