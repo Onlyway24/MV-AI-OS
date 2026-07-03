@@ -294,6 +294,16 @@ export type {
   RepositoryTransaction,
   RepositoryTransactionRunner,
 } from "./persistence/repository-transaction.js";
+export {
+  SqliteConnectionConfigValidator,
+  type SqliteConnectionConfig,
+} from "./persistence/sqlite/sqlite-connection-config.js";
+export {
+  SQLITE_SCHEMA_VERSION,
+} from "./persistence/sqlite/sqlite-schema.js";
+export {
+  SqliteRepositoryTransactionRunner,
+} from "./persistence/sqlite/sqlite-repository-transaction-runner.js";
 export type {
   TaskRepository,
   TaskUpdateExpectation,
@@ -308,6 +318,8 @@ export { ModelResponseValidator } from "./validation/model-response-validator.js
 export { PolicyDecisionValidator } from "./validation/policy-decision-validator.js";
 export { RequestEnvelopeValidator } from "./validation/request-envelope-validator.js";
 export { TaskResponseValidator } from "./validation/task-response-validator.js";
+export { StoredRequestValidator } from "./validation/stored-request-validator.js";
+export { TaskRecordValidator } from "./validation/task-record-validator.js";
 export type {
   ValidationIssue,
   ValidationResult,

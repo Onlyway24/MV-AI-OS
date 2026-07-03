@@ -9,9 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest known commit: `8e8a463 feat: add tool gateway foundation`.
-- The project-state system and governed model-backed vertical slice are currently
-  uncommitted working-tree changes.
+- Latest known commit: `1f9a45a feat: add governed model-backed content execution`.
+- The durable SQLite task lifecycle is currently an uncommitted working-tree change.
 - Current package version: `0.1.0`.
 - Runtime: Node.js `22.23.x`, strict TypeScript, ECMAScript modules.
 - Package manager: npm `10.9.8`.
@@ -67,6 +66,7 @@ provider, n8n, or external SDK types.
 12. Non-executing, policy-governed Tool Gateway foundation.
 13. Permanent project-state memory system.
 14. Governed model-backed Content Agent vertical execution slice.
+15. Durable SQLite task/request/audit lifecycle.
 
 ## Implemented modules
 
@@ -93,6 +93,17 @@ provider, n8n, or external SDK types.
   deterministic retrieval rules.
 - Repository-backed Knowledge Service.
 - Test-only in-memory Knowledge Repository.
+
+### Persistence
+
+- Storage-neutral task, request, audit, and transaction interfaces.
+- SQLite-backed task, request, and audit repository adapters.
+- Serialized atomic SQLite transactions with deterministic close behavior.
+- Versioned schema initialization and database identity verification.
+- Validated JSON serialization and deserialization for every persisted lifecycle
+  record.
+- Optimistic task transition conflicts, request replay, and append-only audit ordering
+  preserved across process restarts.
 
 ### Models
 
@@ -125,6 +136,7 @@ provider, n8n, or external SDK types.
   interfaces.
 - `AuditEvent` and normalized `ErrorRecord`.
 - repository transaction, task, request, and audit interfaces.
+- SQLite connection configuration and schema-version contracts.
 - policy decision, effective permission, grant resolver, and evaluator interfaces.
 - memory record/query/scope/service contracts.
 - knowledge record/source/query/scope/search-result/repository/service contracts.
@@ -139,6 +151,7 @@ provider, n8n, or external SDK types.
 
 - Request envelope, task response, audit event, agent manifest, agent invocation, and
   agent result validators.
+- Stored request, task record, and SQLite connection configuration validators.
 - Policy decision and effective-permission validation.
 - Memory record, scope, and query validators.
 - Knowledge source, scope, record, query, and result validators.
@@ -151,11 +164,14 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 32 test files and 160 passing tests covering:
+The latest verified suite contains 33 test files and 175 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
 - repository conformance, idempotency, conflicts, atomic transitions, and audit.
+- SQLite schema initialization, adapter conformance, whole-transaction rollback,
+  corruption rejection, restart durability, replay, and post-restart request
+  conflicts.
 - memory validation, permission filtering, retrieval, write, delete, and expiry.
 - knowledge validation, repository conformance, scope, tag, source, freshness, and
   permission filtering.
@@ -175,9 +191,9 @@ The latest verified suite contains 32 test files and 160 passing tests covering:
 ## Current maturity
 
 The repository is an early implementation with a stable orchestration kernel and
-strongly tested architectural foundations. It is not production-ready. The project
-has meaningful executable behavior, but several completed foundations are not yet
-composed into one application runtime.
+strongly tested architectural foundations and its first durable local adapter. It is
+not production-ready. The project has meaningful executable behavior, but several
+completed foundations are not yet composed into one application runtime.
 
 ## What exists only as a foundation
 
@@ -189,8 +205,8 @@ composed into one application runtime.
   exists.
 - The Knowledge Service can enrich Core Brain execution context through the injected
   decorator, but no durable knowledge adapter exists.
-- Repository interfaces and conformance suites exist, but no durable database adapter
-  exists.
+- Durable persistence currently covers only task, request, and audit lifecycle state;
+  memory, knowledge, approvals, workflows, and configuration remain non-durable.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
 
 ## What is actually executable
@@ -206,6 +222,8 @@ composed into one application runtime.
   `ValidatedLlmGateway`, validates `ContentOutput`, audits completion, and supports
   idempotent replay.
 - Duplicate requests replay stored results, and conflicting reuse fails.
+- The same lifecycle can use `SqliteRepositoryTransactionRunner`; completed requests,
+  task state, and audit history survive closing and reopening the database.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
@@ -221,7 +239,7 @@ production composition root.
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
-- Durable SQLite or other database persistence.
+- Durable memory, knowledge metadata, approval, and workflow persistence.
 - Production model providers or external API calls.
 - Durable approvals and human-in-the-loop operations.
 - Configuration loading and secrets management.

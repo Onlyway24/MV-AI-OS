@@ -178,3 +178,32 @@ and must be explicit at application construction.
 
 **Future impact:** Additional context sources follow the same bounded decorator pattern
 only when a concrete source is implemented.
+
+## ADR-011 — Built-in SQLite is the first durable lifecycle adapter
+
+**Context:** The repository-backed task lifecycle proved idempotency, conflict
+detection, atomic transitions, and audit behavior using only an in-memory test
+implementation. A usable local runtime requires those guarantees to survive process
+restart without coupling Core Brain to a database.
+
+**Decision:** Use the pinned Node runtime's built-in `node:sqlite` module behind the
+existing `RepositoryTransactionRunner`, `TaskRepository`, `RequestRepository`, and
+`AuditRepository` interfaces. Store complete validated domain records as JSON with
+indexed identity/state columns, explicit application identity, and schema version 1.
+Use serialized `BEGIN IMMEDIATE` transactions for atomic lifecycle writes.
+
+**Reason:** This adds local durability with no external dependency and preserves the
+existing storage-neutral contracts and conformance suite. Complete JSON records retain
+domain fidelity while indexed columns support lifecycle identity, ordering, and
+optimistic conflict checks.
+
+**Tradeoffs:** The adapter currently targets the pinned Node 22 runtime, where
+`node:sqlite` emits an experimental warning. SQLite access is serialized within one
+runner, and schema migration currently contains only the initial version. JSON plus
+indexed columns intentionally duplicates selected data, so every read verifies that
+both representations agree.
+
+**Future impact:** Later SQLite repositories must share the same database identity,
+migration discipline, validation-on-read/write, and transaction semantics. Other
+storage engines remain valid only behind the existing interfaces and must pass the
+same conformance behavior.

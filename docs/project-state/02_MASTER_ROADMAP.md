@@ -130,8 +130,9 @@ preserving repository and provider boundaries.
 - No domain or Core module imports storage-specific types.
 - Local configuration starts deterministically and rejects invalid settings.
 
-**Status:** Next phase. The first milestone is durable SQLite-backed task lifecycle
-adapters, specified in `04_NEXT_TASK.md`.
+**Status:** In progress. SQLite-backed task, request, and audit lifecycle persistence,
+schema versioning, conformance, rollback, and restart replay are complete. The next
+milestone is durable SQLite memory persistence, specified in `04_NEXT_TASK.md`.
 
 ## Phase 5 — Production model capability
 
