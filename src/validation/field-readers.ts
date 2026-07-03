@@ -200,6 +200,19 @@ export function readRequiredInteger(
   return value;
 }
 
+export function readOptionalInteger(
+  record: Readonly<Record<string, unknown>>,
+  key: string,
+  issues: ValidationIssue[],
+  pathPrefix = "",
+  minimum = 0,
+): number | undefined {
+  if (record[key] === undefined) {
+    return undefined;
+  }
+  return readRequiredInteger(record, key, issues, pathPrefix, minimum);
+}
+
 export function readOptionalNumber(
   record: Readonly<Record<string, unknown>>,
   key: string,

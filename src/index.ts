@@ -9,6 +9,29 @@ export type {
   MemoryCategory,
 } from "./agents/agent-manifest.js";
 export type {
+  AgentCapability,
+  AgentCapabilityType,
+} from "./agents/specification/agent-capability.js";
+export { AgentCapabilityValidator } from "./agents/specification/agent-capability-validator.js";
+export type { AgentInputSchema } from "./agents/specification/agent-input-schema.js";
+export { AgentInputSchemaValidator } from "./agents/specification/agent-input-schema-validator.js";
+export type { AgentLimit } from "./agents/specification/agent-limit.js";
+export { AgentLimitValidator } from "./agents/specification/agent-limit-validator.js";
+export type { AgentOutputSchema } from "./agents/specification/agent-output-schema.js";
+export { AgentOutputSchemaValidator } from "./agents/specification/agent-output-schema-validator.js";
+export type {
+  AgentPolicyRequirement,
+  AgentPolicyRequirementType,
+} from "./agents/specification/agent-policy-requirement.js";
+export { AgentPolicyRequirementValidator } from "./agents/specification/agent-policy-requirement-validator.js";
+export {
+  AGENT_SPECIFICATION_SCHEMA_VERSION,
+  type AgentSpecification,
+} from "./agents/specification/agent-specification.js";
+export { AgentSpecificationRegistryError } from "./agents/specification/agent-specification-error.js";
+export type { AgentSpecificationRegistry } from "./agents/specification/agent-specification-registry.js";
+export { AgentSpecificationValidator } from "./agents/specification/agent-specification-validator.js";
+export type {
   AgentExecutor,
   AgentRuntime,
 } from "./agents/agent-runtime.js";
