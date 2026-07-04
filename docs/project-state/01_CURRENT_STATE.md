@@ -9,16 +9,15 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest known commit: `98d55d2 feat: add SQLite knowledge persistence`.
-- Validated local runtime composition is currently an uncommitted working-tree
-  change.
+- Latest known commit: `87b2f05 docs: add AI engineering rules`.
+- Validated local runtime composition was committed in
+  `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
 - Runtime: Node.js `22.23.x`, strict TypeScript, ECMAScript modules.
 - Package manager: npm `10.9.8`.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
-- `AI_ENGINEERING_RULES.md` is present as a user-owned untracked file and is not part
-  of the latest known commit.
+- `AI_ENGINEERING_RULES.md` is tracked and was committed in the latest known commit.
 
 ## Current architecture
 
