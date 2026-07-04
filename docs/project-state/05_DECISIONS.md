@@ -260,3 +260,30 @@ future query optimization work.
 **Future impact:** Other Knowledge Repository adapters must pass the same conformance
 suite. Search enhancements require explicit contract and policy review and cannot
 bypass the Knowledge Service.
+
+## ADR-014 — The local composition root owns infrastructure lifetime
+
+**Context:** Durable adapters and orchestration modules existed independently, forcing
+callers to manually construct policy, registries, context decorators, agent runtime,
+and three SQLite-backed boundaries. Ad hoc construction could omit validation,
+authorization, or deterministic shutdown.
+
+**Decision:** `createLocalRuntime` is the single production composition boundary for
+the local process. It validates a versioned configuration before opening storage,
+binds grants to the configured actor and workspace, constructs existing modules
+through explicit dependency injection, and returns a narrow execute/close handle. It
+supports the deterministic Content Agent and the model-backed Content Agent through a
+deterministic local provider only.
+
+**Reason:** One reviewed composition path makes the implemented architecture usable
+without moving infrastructure concerns into Core Brain or agents. Explicit ownership
+also guarantees that in-flight requests finish before every SQLite connection closes.
+
+**Tradeoffs:** The runtime currently owns three SQLite connections to the same
+database and uses fixed built-in local model profile behavior. It does not load files
+or environment variables, expose a transport, execute workflows, or provide a real
+model provider.
+
+**Future impact:** Process entrypoints must create the runtime through this factory,
+must not reconstruct dependencies independently, and must close the returned handle.
+Future providers or transports remain adapters supplied outside Core Brain.

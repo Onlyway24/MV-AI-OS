@@ -2,92 +2,86 @@
 
 ## Milestone name
 
-Validated Local Runtime Composition
+Controlled Local CLI Entrypoint
 
 ## Goal
 
-Create one production composition boundary that constructs a usable local MV AI OS
-runtime from validated configuration and the existing SQLite lifecycle, memory, and
-knowledge adapters without adding a transport or external provider.
+Expose the validated local runtime through a small, deterministic command-line process
+boundary for local task submission and clean shutdown without adding HTTP, a
+dashboard, or external integrations.
 
 ## Why it matters
 
-The orchestration path and durable adapters are individually complete, but callers
-must still assemble many dependencies manually. A validated composition root turns the
-existing modules into one recoverable local runtime while preserving dependency
-injection and keeping Core Brain free of infrastructure concerns.
+MV AI OS now has one production composition root, but using it still requires a
+TypeScript caller. A controlled CLI is the smallest operational interface that proves
+the local runtime can be configured, started, invoked, and stopped as a real process
+while preserving the same validation and policy boundaries.
 
 ## Required scope
 
-- Define a minimal local runtime configuration contract and runtime validator.
-- Configure the SQLite database path and timeout through existing connection
-  configuration.
-- Compose Core Brain, task lifecycle repositories, repository-backed Memory and
-  Knowledge Services, default-deny policy, registries, router, runtime, validators,
-  clock, identifiers, and deterministic local Content Agent.
-- Return an explicit runtime handle with task execution and deterministic resource
-  shutdown.
-- Keep all constructors dependency-injected and permit deterministic test overrides
-  for clocks, identifiers, and agent execution.
-- Add restart tests proving a composed runtime replays completed tasks and reuses
-  durable permitted memory and knowledge.
-- Validate configuration before opening SQLite or executing requests.
+- Add a CLI/process entrypoint that calls `createLocalRuntime`.
+- Load one versioned non-secret local runtime configuration from an explicit path.
+- Accept one validated `RequestEnvelope` through a bounded JSON input mechanism.
+- Emit one structured `TaskResponse` or sanitized structured error.
+- Keep stdout machine-readable and send optional diagnostics to stderr.
+- Handle process termination by closing the runtime exactly once.
+- Reject missing, malformed, oversized, or unsupported configuration and request
+  input before execution.
+- Add process-level tests for success, validation failure, replay across invocations,
+  and clean shutdown.
 
 ## Forbidden scope
 
-- HTTP, webhooks, dashboard, browser, filesystem tools, or network transports.
-- Real model providers, API keys, external APIs, SDKs, n8n, or tool execution.
-- Workflow execution, scheduling, retries, or approval persistence.
-- New memory, knowledge, task, request, or audit contracts.
-- Hidden global singletons, environment reads inside domain modules, or implicit
-  permissions.
-- A general dependency-injection container or plugin framework.
+- HTTP, webhooks, dashboard, browser automation, or background server mode.
+- Environment-based secrets, API keys, real model providers, or provider SDKs.
+- n8n, workflow execution, approval persistence, scheduling, or retries.
+- Direct tools, filesystem mutation outside the configured SQLite database, vector
+  search, or embeddings.
+- Interactive prompts, shell execution, plugin loading, or a CLI framework dependency.
+- Reimplementation of runtime composition outside `createLocalRuntime`.
 
 ## Likely files to create
 
-- `src/runtime/local-runtime-config.ts`
-- `src/runtime/local-runtime-config-validator.ts`
-- `src/runtime/local-runtime.ts`
-- `src/runtime/create-local-runtime.ts`
-- `tests/runtime/local-runtime.test.ts`
+- `src/cli/local-runtime-cli.ts`
+- `src/cli/cli-error-response.ts`
+- `tests/cli/local-runtime-cli.test.ts`
 
 ## Likely files to modify
 
-- `src/index.ts`
-- existing local policy composition only if a production grant resolver is required
+- `package.json` only if an executable script or `bin` entry is strictly required
+- `src/index.ts` only for intentionally public CLI contracts
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
 - `docs/project-state/04_NEXT_TASK.md`
-- `docs/project-state/05_DECISIONS.md` if composition ownership establishes a durable
+- `docs/project-state/05_DECISIONS.md` if process ownership establishes a durable
   decision
 
 ## Tests required
 
-- Valid configuration creates a runtime.
+- Valid configuration and request produce one successful JSON response.
 - Invalid configuration fails before database creation.
-- One content request executes through the composed runtime.
-- Closing and reopening the runtime replays the stored response without agent
-  re-execution.
-- Permitted durable memory and knowledge enrich execution after restart.
-- Missing grants remain denied by default.
-- Shutdown closes every owned SQLite adapter deterministically.
-- Existing Core Brain, Content Agent, repository, Memory, Knowledge, and migration
-  tests continue passing.
+- Invalid or oversized request input produces a sanitized structured error.
+- Reusing the same database and request ID replays the stored response.
+- Actor/workspace mismatch fails closed.
+- SIGINT/SIGTERM or equivalent shutdown handling closes the runtime once.
+- stdout contains no diagnostic noise or secret material.
+- Existing runtime, Core Brain, persistence, Memory, Knowledge, and agent tests
+  continue passing.
 
 ## Acceptance criteria
 
-- A caller can construct and close one local runtime without manually wiring internal
-  dependencies.
-- Core Brain and agents import no SQLite or configuration-loader types.
-- Runtime restart preserves replay, audit, memory, and knowledge behavior.
-- Configuration and permissions fail closed.
-- No transport, external provider, or side effect outside SQLite is added.
+- A local operator can run one content task without writing application code.
+- The CLI uses `createLocalRuntime` and does not manually compose internal modules.
+- Inputs and outputs remain versioned JSON contracts.
+- Process failure paths return sanitized structured errors and non-zero status.
+- No network listener, external provider, or side effect outside SQLite is added.
 
 ## Definition of done
 
-- The validated local composition root and runtime handle are implemented and tested.
-- Existing public contracts and execution behavior remain unchanged.
-- Project-state documents accurately describe the composed local runtime.
+- The local CLI entrypoint is implemented and process-tested.
+- Runtime configuration, request validation, replay, and shutdown behavior remain
+  fail-closed.
+- Project-state documents accurately describe the operational CLI state.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
 - No commit is created.
 - Final reporting waits for approval.

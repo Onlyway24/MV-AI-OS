@@ -31,6 +31,7 @@ export {
 export { AgentSpecificationRegistryError } from "./agents/specification/agent-specification-error.js";
 export type { AgentSpecificationRegistry } from "./agents/specification/agent-specification-registry.js";
 export { AgentSpecificationValidator } from "./agents/specification/agent-specification-validator.js";
+export { ImmutableAgentSpecificationRegistry } from "./agents/specification/immutable-agent-specification-registry.js";
 export type {
   AgentExecutor,
   AgentRuntime,
@@ -336,6 +337,23 @@ export { RequestEnvelopeValidator } from "./validation/request-envelope-validato
 export { TaskResponseValidator } from "./validation/task-response-validator.js";
 export { StoredRequestValidator } from "./validation/stored-request-validator.js";
 export { TaskRecordValidator } from "./validation/task-record-validator.js";
+export {
+  LOCAL_RUNTIME_CONTRACT_VERSION,
+  type LocalContentAgentMode,
+  type LocalRuntimeConfig,
+  type LocalRuntimePermissionConfig,
+} from "./runtime/local-runtime-config.js";
+export { LocalRuntimeConfigValidator } from "./runtime/local-runtime-config-validator.js";
+export {
+  LocalRuntimeConfigurationError,
+  LocalRuntimeIdentityError,
+  LocalRuntimeStateError,
+} from "./runtime/local-runtime-error.js";
+export {
+  createLocalRuntime,
+  type LocalRuntimeOverrides,
+} from "./runtime/create-local-runtime.js";
+export type { LocalRuntime } from "./runtime/local-runtime.js";
 export type {
   ValidationIssue,
   ValidationResult,

@@ -131,9 +131,9 @@ preserving repository and provider boundaries.
 - Local configuration starts deterministically and rejects invalid settings.
 
 **Status:** In progress. SQLite-backed task, request, audit, memory, and knowledge
-persistence, forward migrations, conformance, restart recovery, retention, and
-deletion filtering are complete. The next milestone is a validated local runtime
-composition root, specified in `04_NEXT_TASK.md`.
+persistence, forward migrations, conformance, restart recovery, and the validated
+local runtime composition root are complete. The next milestone is a controlled local
+CLI entrypoint, specified in `04_NEXT_TASK.md`.
 
 ## Phase 5 — Production model capability
 

@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest known commit: `c125993 feat: add SQLite memory persistence`.
-- Durable SQLite knowledge persistence is currently an uncommitted working-tree
+- Latest known commit: `98d55d2 feat: add SQLite knowledge persistence`.
+- Validated local runtime composition is currently an uncommitted working-tree
   change.
 - Current package version: `0.1.0`.
 - Runtime: Node.js `22.23.x`, strict TypeScript, ECMAScript modules.
@@ -26,6 +26,7 @@ MV AI OS currently follows inward-pointing, contract-first boundaries:
 
 ```text
 RequestEnvelope
+  -> LocalRuntime
   -> CoreBrain
   -> repository-backed task lifecycle
   -> registry-based routing
@@ -70,11 +71,14 @@ provider, n8n, or external SDK types.
 15. Durable SQLite task/request/audit lifecycle.
 16. Durable SQLite Memory persistence.
 17. Durable SQLite Knowledge persistence.
+18. Validated Local Runtime composition.
 
 ## Implemented modules
 
 ### Executable orchestration
 
+- Validated local composition root with explicit configuration, actor/workspace
+  identity binding, runtime entrypoint, and graceful resource shutdown.
 - `CoreBrain` request preparation and execution.
 - Deterministic registry routing by task type.
 - Task state transitions and one-step execution planning.
@@ -87,6 +91,8 @@ provider, n8n, or external SDK types.
 - Policy-gated knowledge-enriched execution-context decorator.
 - Model-backed Content Agent using exact Agent Specifications and `LlmGateway`.
 - Versioned Content Agent instructions and production Content Agent specification.
+- Selectable deterministic Content Agent or model-backed Content Agent using the
+  deterministic local LLM provider.
 
 ### Memory and knowledge
 
@@ -126,6 +132,19 @@ provider, n8n, or external SDK types.
 - Deterministic model provider and provider registry only in tests.
 - Model-backed content execution is integrated through the gateway using deterministic
   providers in tests.
+- The local runtime can exercise the model-backed path through a deterministic,
+  provider-neutral local model adapter with no network access.
+
+### Runtime composition
+
+- Versioned local runtime configuration for SQLite, Content Agent mode, actor,
+  workspace, and explicit actor/task/policy grants.
+- Runtime validation occurs before any SQLite connection is opened.
+- Production immutable Agent Specification registry.
+- Explicit construction of lifecycle, Memory, Knowledge, policy, registry, routing,
+  context, Agent Runtime, and model boundaries.
+- Runtime shutdown waits for in-flight requests and closes every owned SQLite adapter
+  deterministically.
 
 ### Specifications and tools
 
@@ -150,6 +169,7 @@ provider, n8n, or external SDK types.
 - repository transaction, task, request, and audit interfaces.
 - memory repository search and optimistic-update interfaces.
 - SQLite connection configuration and schema-version contracts.
+- local runtime configuration, runtime handle, and test-override contracts.
 - policy decision, effective permission, grant resolver, and evaluator interfaces.
 - memory record/query/scope/service contracts.
 - knowledge record/source/query/scope/search-result/repository/service contracts.
@@ -165,6 +185,7 @@ provider, n8n, or external SDK types.
 - Request envelope, task response, audit event, agent manifest, agent invocation, and
   agent result validators.
 - Stored request, task record, and SQLite connection configuration validators.
+- Local runtime configuration validation.
 - Policy decision and effective-permission validation.
 - Memory record, scope, and query validators.
 - Knowledge source, scope, record, query, and result validators.
@@ -177,7 +198,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 37 test files and 206 passing tests covering:
+The latest verified suite contains 38 test files and 212 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -194,6 +215,9 @@ The latest verified suite contains 37 test files and 206 passing tests covering:
 - SQLite knowledge restart durability, corruption rejection, deterministic retrieval,
   governed context enrichment, and migration preserving lifecycle, audit, and memory
   records.
+- local runtime startup validation, deterministic and model-backed execution, default
+  denial, actor/workspace isolation, graceful shutdown, restart replay without
+  re-execution, and durable Memory/Knowledge reuse.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - default-deny policy intersections and Core Brain enforcement.
@@ -210,9 +234,9 @@ The latest verified suite contains 37 test files and 206 passing tests covering:
 ## Current maturity
 
 The repository is an early implementation with a stable orchestration kernel and
-strongly tested architectural foundations and durable local lifecycle, memory, and
-knowledge adapters. It is not production-ready. The project has meaningful executable
-behavior, but several completed foundations are not yet composed into one application
+strongly tested architectural foundations, durable local lifecycle, memory, and
+knowledge adapters, and an executable local composition root. It is not
+production-ready, but the implemented modules now compose into one validated local
 runtime.
 
 ## What exists only as a foundation
@@ -231,6 +255,8 @@ runtime.
 
 - A caller can construct `CoreBrain` with injected test/local adapters and execute a
   `business.content` request end to end.
+- A caller can use `createLocalRuntime` to validate configuration and construct the
+  complete local execution path without manually wiring internal dependencies.
 - The request is validated, persisted through repository interfaces, routed,
   authorized, optionally enriched with permitted memory, executed by the
   deterministic Content Agent, validated, audited, and returned as a `TaskResponse`.
@@ -246,6 +272,8 @@ runtime.
   deletion, and expiry state survive restart and can enrich later execution contexts.
 - `RepositoryBackedKnowledgeService` can use `SqliteKnowledgeRepository`; permitted
   knowledge survives restart and can enrich later governed execution contexts.
+- Runtime recreation preserves task replay and retrieves durable permitted memory and
+  knowledge for new requests.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
@@ -257,7 +285,7 @@ production composition root.
 
 ## Not implemented yet
 
-- A production application composition root for the integrated execution path.
+- A CLI/process entrypoint and configuration-file/environment loader.
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
