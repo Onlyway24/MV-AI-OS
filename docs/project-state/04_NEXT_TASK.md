@@ -2,58 +2,60 @@
 
 ## Milestone name
 
-Controlled Local Secret Resolution
+Controlled Production Model Provider Adapter
 
 ## Goal
 
-Add a controlled local secret-resolution boundary that can resolve already-validated
-secret references into ephemeral secret values for future provider adapters without
-exposing those values to Core Brain, agents, logs, errors, tests, or configuration
-records.
+Add the first production model-provider adapter behind the existing
+`ModelProvider` interface, using explicit local secret resolution for credentials
+without changing Core Brain, agents, runtime orchestration, repositories, memory,
+knowledge, tools, workflows, or CLI execution behavior.
 
 ## Why it matters
 
-MV AI OS now has explicit local application configuration and inert secret-reference
-contracts. The next operational gap is controlled resolution: a real model provider
-must eventually receive credentials, but those credentials must remain outside domain
-contracts, project files, public errors, and audit-like records.
+MV AI OS has a provider-neutral LLM Gateway, a governed model-backed Content Agent,
+validated local configuration, and a redaction-safe local secret-resolution boundary.
+The next gap is a real provider adapter that proves external model capability can be
+introduced as infrastructure while preserving the existing domain and orchestration
+contracts.
 
 ## Required scope
 
-- Define a `SecretResolver` interface.
-- Define ephemeral secret-value and resolution-result contracts.
-- Implement local environment-variable and local-file secret resolvers for validated
-  secret references only.
-- Add runtime validators for secret resolution inputs and outputs.
-- Redact secret values and secret locations from public errors.
-- Keep resolved secret values out of `LocalApplicationConfig`, `LocalRuntimeConfig`,
-  Core Brain, agents, memory, knowledge, persistence, and audit records.
-- Add deterministic tests using process-local test environment values and temporary
-  files.
+- Add one production `ModelProvider` adapter behind the existing provider-neutral
+  model contracts.
+- Accept credentials only through already-resolved ephemeral `SecretValue` input.
+- Keep provider-specific request/response translation inside the adapter.
+- Preserve existing `ValidatedLlmGateway` validation, limits, ownership checks, and
+  error normalization.
+- Add deterministic offline tests using a local fake transport; live provider calls
+  must be separately gated and disabled by default.
+- Redact credential values, credential references, provider diagnostics, and transport
+  details from public errors.
+- Document provider configuration boundaries and the separation between offline and
+  live integration tests.
 
 ## Forbidden scope
 
-- Real model providers, OpenAI, Anthropic, Gemini, provider SDKs, or external API
-  calls.
-- Cloud secret managers, network calls, HTTP, dashboard, n8n, MCP, tools, embeddings,
-  or vector search.
-- Changing Core Brain, agents, policy, memory, knowledge, workflow, tool, repository,
-  runtime, or CLI execution behavior.
-- Persisting resolved secret values.
-- Logging resolved secret values.
-- Adding environment-wide implicit configuration discovery.
+- Core Brain, agent, policy, memory, knowledge, workflow, tool, repository, SQLite,
+  CLI, or dashboard behavior changes.
+- Storing API keys or resolved secret values in configuration, source files,
+  persistence, audit records, snapshots, logs, or test fixtures.
+- Adding hidden environment discovery or implicit credential loading.
+- Replacing `LlmGateway` or allowing agents to call provider SDKs directly.
+- Workflow execution, tool execution, n8n, HTTP server mode, dashboard work,
+  embeddings, vector search, or multi-provider routing.
+- Live network tests in the default test suite.
 
 ## Likely files to create
 
-- `src/config/secret-resolver.ts`
-- `src/config/local-secret-resolver.ts`
-- `src/config/secret-value.ts`
-- `src/config/secret-resolution-validator.ts`
-- `tests/config/local-secret-resolver.test.ts`
+- `src/models/providers/openai-model-provider.ts`
+- `src/models/providers/openai-model-provider-config.ts`
+- `src/models/providers/openai-model-provider-validator.ts`
+- `tests/models/openai-model-provider.test.ts`
 
 ## Likely files to modify
 
-- `src/index.ts` for intentionally public secret-resolution contracts
+- `src/index.ts` for intentionally public provider-adapter contracts
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
 - `docs/project-state/04_NEXT_TASK.md`
@@ -61,24 +63,28 @@ contracts, project files, public errors, and audit-like records.
 
 ## Tests required
 
-- Environment secret references resolve only when explicitly supplied to the resolver.
-- Local-file secret references resolve from explicit local files only.
-- Missing environment variables and missing files fail closed.
-- Invalid secret references are rejected before resolution.
-- Resolved secret values are never serialized in public error details.
-- Existing configuration, runtime, CLI, persistence, backup, and restore tests continue
-  passing.
+- Valid provider-neutral model requests translate into provider transport requests.
+- Provider responses translate back into validated `ModelResponse` records.
+- Missing credentials fail before transport access.
+- Provider failures are normalized without leaking secrets or raw diagnostics.
+- Token, timeout, profile, and output ownership constraints remain enforced by the
+  existing gateway.
+- Default automated tests use no live network access.
+- Existing configuration, secret-resolution, runtime, CLI, persistence, backup,
+  restore, and governed model-content tests continue passing.
 
 ## Acceptance criteria
 
-- Secret resolution is explicit, deterministic, and redaction-safe.
-- Resolved values are ephemeral and never enter durable or public contracts.
-- Core Brain and agents remain unaware of secret resolution.
-- No provider integration or external network capability is introduced.
+- A production provider adapter exists behind `ModelProvider`.
+- Core Brain and agents remain provider-neutral.
+- Resolved credentials remain ephemeral and adapter-local.
+- Default validation is deterministic and offline.
+- No secret value appears in source, public errors, logs, or durable records.
 
 ## Definition of done
 
-- Secret-resolution contracts and local resolvers are implemented and tested.
-- Project-state documents accurately describe the new secret-resolution capability.
+- Provider adapter contracts and deterministic tests are implemented.
+- Project-state documents accurately describe the new provider capability.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- Final reporting waits for approval or follows the user’s explicit commit instruction.
+- Final reporting waits for approval or follows the user’s explicit commit
+  instruction.

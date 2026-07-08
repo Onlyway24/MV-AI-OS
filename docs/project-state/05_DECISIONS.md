@@ -362,3 +362,31 @@ explicit JSON input; no environment-wide implicit discovery exists.
 **Future impact:** A later secret-resolution boundary may resolve these references
 into ephemeral values for provider adapters. Resolved values must remain outside
 domain contracts and durable state.
+
+## ADR-018 — Local secret resolution is explicit and ephemeral
+
+**Context:** Local application configuration can carry inert secret references for
+future provider adapters, but a real provider eventually needs credential values.
+Resolving those values inside Core Brain, agents, runtime configuration, persistence,
+or public error handling would leak infrastructure credentials into domain contracts.
+
+**Decision:** Add a separate `SecretResolver` boundary with local environment-variable
+and local-file resolution for already-validated `SecretReference` records. Resolved
+values are represented as ephemeral `SecretValue` records and are intended only for
+adapter construction. Resolution is explicit: environment values must be supplied to
+the resolver, and local files are read only from explicit validated reference paths.
+Public resolution errors redact secret values and secret locations.
+
+**Reason:** Credentials are infrastructure concerns. Keeping resolution outside
+configuration, Core Brain, agents, memory, knowledge, repositories, audit, and CLI
+execution preserves provider neutrality and prevents secrets from becoming durable
+state or public diagnostics.
+
+**Tradeoffs:** The resolver can obtain local secret values, but nothing consumes them
+until a provider adapter is added. There is no cloud secret manager, rotation,
+encryption, implicit environment discovery, or production provider integration in
+this milestone.
+
+**Future impact:** Provider adapters may accept resolved `SecretValue` input at their
+own infrastructure boundary. They must not persist, log, echo, or expose the value,
+and they must preserve existing gateway normalization and redaction behavior.

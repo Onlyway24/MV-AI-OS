@@ -115,6 +115,24 @@ export {
 } from "./config/secret-reference.js";
 export { SecretReferenceValidator } from "./config/secret-reference-validator.js";
 export {
+  LocalSecretResolver,
+  SecretResolutionError,
+  type LocalSecretResolverDependencies,
+  type LocalSecretResolverReadFile,
+} from "./config/local-secret-resolver.js";
+export type { SecretResolver } from "./config/secret-resolver.js";
+export {
+  redactSecretValidationIssues,
+  SecretResolutionResultValidator,
+  SecretValueValidator,
+} from "./config/secret-resolution-validator.js";
+export {
+  MAX_SECRET_VALUE_BYTES,
+  SECRET_VALUE_CONTRACT_VERSION,
+  type SecretResolutionResult,
+  type SecretValue,
+} from "./config/secret-value.js";
+export {
   REQUEST_CONTRACT_VERSION,
   type RequestContractVersion,
   type RequestEnvelope,

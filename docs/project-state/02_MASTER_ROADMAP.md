@@ -130,14 +130,15 @@ preserving repository and provider boundaries.
 - No domain or Core module imports storage-specific types.
 - Local configuration starts deterministically and rejects invalid settings.
 
-**Status:** In progress. SQLite-backed task, request, audit, memory, and knowledge
-persistence, forward migrations, conformance, restart recovery, the validated local
-runtime composition root, the controlled local CLI, and controlled local SQLite
-backup/restore are complete. The local runtime now has bounded request intake,
-structured output, deterministic replay, graceful process shutdown, and a verified
-recovery path. Controlled local application configuration and inert secret references
-are complete. The next milestone is controlled local secret resolution, specified in
-`04_NEXT_TASK.md`.
+**Status:** Complete for the current local foundation. SQLite-backed task, request,
+audit, memory, and knowledge persistence, forward migrations, conformance, restart
+recovery, the validated local runtime composition root, the controlled local CLI,
+controlled local SQLite backup/restore, controlled local application configuration,
+and controlled local secret resolution are complete. The local runtime now has
+bounded request intake, structured output, deterministic replay, graceful process
+shutdown, verified recovery, explicit configuration input, and an ephemeral local
+credential-resolution boundary. The next milestone moves into Phase 5 production
+model capability, specified in `04_NEXT_TASK.md`.
 
 ## Phase 5 — Production model capability
 

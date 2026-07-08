@@ -10,7 +10,7 @@ and tests, not intended future behavior.
 
 - Current branch at the time of this snapshot: `main`.
 - Latest committed baseline before the current milestone:
-  `421911c feat: add controlled SQLite backup and restore`.
+  `4de8423 docs: add agent lab materials`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -19,8 +19,8 @@ and tests, not intended future behavior.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
-- The Controlled Local Configuration and Secret References milestone is implemented
-  in the current milestone.
+- The Controlled Local Secret Resolution milestone is implemented in the current
+  milestone.
 
 ## Current architecture
 
@@ -48,6 +48,10 @@ Local configuration and recovery are outside Core Brain:
 Validated local application configuration
   -> LocalRuntimeConfig and LocalCliConfig
   -> LocalRuntime or CLI adapter
+
+Validated secret reference
+  -> explicit LocalSecretResolver
+  -> ephemeral SecretValue for future provider adapters only
 
 Validated SQLite backup/restore request
   -> local SQLite recovery operation
@@ -91,6 +95,7 @@ provider, n8n, or external SDK types.
 19. Controlled Local CLI Entrypoint.
 20. Controlled Local SQLite Backup and Restore.
 21. Controlled Local Configuration and Secret References.
+22. Controlled Local Secret Resolution.
 
 ## Implemented modules
 
@@ -165,8 +170,11 @@ provider, n8n, or external SDK types.
 - Versioned local application configuration boundary that validates explicit local
   JSON input, assembles existing runtime and CLI configuration, and carries only
   inert secret references.
-- Secret-reference contracts for environment and local-file locations without secret
-  value resolution.
+- Secret-reference contracts for environment and local-file locations.
+- Explicit local secret-resolution boundary that resolves already-validated
+  environment and local-file references into ephemeral secret values for future
+  provider adapters without exposing values to Core Brain, agents, runtime
+  configuration, persistence, or public errors.
 - Runtime validation occurs before any SQLite connection is opened.
 - Production immutable Agent Specification registry.
 - Explicit construction of lifecycle, Memory, Knowledge, policy, registry, routing,
@@ -211,6 +219,7 @@ provider, n8n, or external SDK types.
 - SQLite connection configuration and schema-version contracts.
 - SQLite backup and restore configuration/result contracts.
 - local application configuration and secret-reference contracts.
+- secret resolver, secret value, and secret resolution result contracts.
 - local runtime configuration, runtime handle, and test-override contracts.
 - local CLI configuration, structured error response, exit-code, and process-host
   contracts.
@@ -231,6 +240,7 @@ provider, n8n, or external SDK types.
 - Stored request, task record, and SQLite connection configuration validators.
 - SQLite backup and restore configuration validators.
 - Local application configuration and secret-reference validators.
+- Secret value and secret resolution result validators.
 - Local runtime configuration validation.
 - Local CLI configuration validation and bounded local RequestEnvelope parsing.
 - Policy decision and effective-permission validation.
@@ -245,7 +255,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 41 test files and 237 passing tests covering:
+The latest verified suite contains 42 test files and 243 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -271,6 +281,9 @@ The latest verified suite contains 41 test files and 237 passing tests covering:
 - local application configuration loading, CLI/runtime config assembly,
   secret-reference validation, redacted validation errors, and runtime creation from
   loaded configuration.
+- explicit local secret resolution from supplied environment values and local files,
+  fail-closed missing-secret behavior, invalid-reference rejection, output contract
+  validation, and redaction-safe public errors.
 - SQLite backup and restore validation, successful backup, successful restore,
   schema mismatch rejection, invalid source and restore-file rejection, overwrite
   refusal, no partial restore, and preservation of lifecycle, request, audit, memory,
@@ -294,9 +307,10 @@ The repository is an early implementation with a stable orchestration kernel and
 strongly tested architectural foundations, durable local lifecycle, memory, and
 knowledge adapters, an executable local composition root, a controlled command-line
 process boundary, a controlled local backup/restore recovery path, and explicit local
-configuration loading with inert secret references. It is not production-ready, but
-the implemented modules now compose into one validated local runtime with recoverable
-SQLite state and controlled configuration input.
+configuration loading with controlled local secret resolution. It is not
+production-ready, but the implemented modules now compose into one validated local
+runtime with recoverable SQLite state, controlled configuration input, and an
+ephemeral credential boundary for future provider adapters.
 
 ## What exists only as a foundation
 
@@ -308,8 +322,8 @@ SQLite state and controlled configuration input.
   exists.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
-- Secret references are validated and redacted but are not yet resolved to secret
-  values.
+- Secret references can be resolved locally into ephemeral values, but no production
+  provider consumes them yet.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
 
 ## What is actually executable
@@ -319,6 +333,9 @@ SQLite state and controlled configuration input.
 - A caller can parse explicit local application configuration JSON into validated
   runtime and CLI configuration while carrying only secret references, never raw
   secret values.
+- A caller can explicitly resolve a validated environment-variable or local-file
+  secret reference into an ephemeral `SecretValue`; missing references and invalid
+  values fail closed without exposing secret values or locations in public errors.
 - A caller can construct `CoreBrain` with injected test/local adapters and execute a
   `business.content` request end to end.
 - A caller can use `createLocalRuntime` to validate configuration and construct the
@@ -353,7 +370,6 @@ There is no HTTP service, dashboard, background server, or external-provider pro
 
 ## Not implemented yet
 
-- Secret resolution from environment variables or local secret files.
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
