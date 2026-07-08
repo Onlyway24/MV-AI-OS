@@ -79,6 +79,20 @@ export type {
   JsonValue,
 } from "./contracts/json.js";
 export {
+  LOCAL_CLI_CONTRACT_VERSION,
+  MAX_LOCAL_CLI_CONFIG_BYTES,
+  MAX_LOCAL_CLI_REQUEST_BYTES,
+  type LocalCliConfig,
+} from "./cli/local-cli-config.js";
+export { LocalCliConfigValidator } from "./cli/local-cli-config-validator.js";
+export { CliRequestParser } from "./cli/cli-request-parser.js";
+export {
+  CLI_ERROR_RESPONSE_CONTRACT_VERSION,
+  CliBoundaryError,
+  createCliErrorResponse,
+  type CliErrorResponse,
+} from "./cli/cli-error-response.js";
+export {
   REQUEST_CONTRACT_VERSION,
   type RequestContractVersion,
   type RequestEnvelope,

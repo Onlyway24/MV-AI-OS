@@ -287,3 +287,27 @@ model provider.
 **Future impact:** Process entrypoints must create the runtime through this factory,
 must not reconstruct dependencies independently, and must close the returned handle.
 Future providers or transports remain adapters supplied outside Core Brain.
+
+## ADR-015 — The local CLI is a single-request transport adapter
+
+**Context:** The validated Local Runtime was executable only through a TypeScript
+caller. A local operator needed a process boundary that could not duplicate
+composition, orchestration, policy, or persistence behavior.
+
+**Decision:** The official local CLI accepts one explicit versioned configuration
+file and one bounded `RequestEnvelope` on standard input, calls
+`createLocalRuntime`, emits exactly one structured JSON response, and closes the
+runtime exactly once. It uses stable exit codes and handles SIGINT/SIGTERM during
+startup or execution without exposing internal diagnostics.
+
+**Reason:** A single-request adapter is the smallest operational interface that keeps
+the CLI outside the application core and preserves every existing validation,
+authorization, registry, and repository boundary.
+
+**Tradeoffs:** The CLI is intentionally non-interactive and starts a runtime for each
+request. Operators must provide complete JSON contracts, and no long-running service
+or environment-based configuration is available.
+
+**Future impact:** Other transports must remain equally thin and call application
+entrypoints rather than reconstructing internal modules. CLI expansion must not turn
+the process adapter into an orchestration or filesystem-tool layer.

@@ -9,7 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest known commit: `87b2f05 docs: add AI engineering rules`.
+- Latest committed baseline before the current milestone:
+  `a9a8260 docs: reconcile project state`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -17,14 +18,17 @@ and tests, not intended future behavior.
 - Package manager: npm `10.9.8`.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
-- `AI_ENGINEERING_RULES.md` is tracked and was committed in the latest known commit.
+- `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
+- The Controlled Local CLI Entrypoint is implemented in the current working tree and
+  is awaiting approval.
 
 ## Current architecture
 
 MV AI OS currently follows inward-pointing, contract-first boundaries:
 
 ```text
-RequestEnvelope
+Bounded CLI JSON input
+  -> RequestEnvelope
   -> LocalRuntime
   -> CoreBrain
   -> repository-backed task lifecycle
@@ -71,6 +75,7 @@ provider, n8n, or external SDK types.
 16. Durable SQLite Memory persistence.
 17. Durable SQLite Knowledge persistence.
 18. Validated Local Runtime composition.
+19. Controlled Local CLI Entrypoint.
 
 ## Implemented modules
 
@@ -145,6 +150,18 @@ provider, n8n, or external SDK types.
 - Runtime shutdown waits for in-flight requests and closes every owned SQLite adapter
   deterministically.
 
+### Local CLI
+
+- Official `mv-ai-os` executable and npm CLI script targeting the built entrypoint.
+- Versioned local CLI configuration with bounded request size and nested Local Runtime
+  configuration.
+- Explicit configuration-file loading and bounded JSON request intake from standard
+  input.
+- One structured JSON response on standard output with sanitized structured failures
+  and stable exit codes.
+- SIGINT/SIGTERM handling and exactly-once runtime cleanup, including signals received
+  during runtime creation.
+
 ### Specifications and tools
 
 - Versioned Agent Specification contracts, validators, and registry interface.
@@ -169,6 +186,8 @@ provider, n8n, or external SDK types.
 - memory repository search and optimistic-update interfaces.
 - SQLite connection configuration and schema-version contracts.
 - local runtime configuration, runtime handle, and test-override contracts.
+- local CLI configuration, structured error response, exit-code, and process-host
+  contracts.
 - policy decision, effective permission, grant resolver, and evaluator interfaces.
 - memory record/query/scope/service contracts.
 - knowledge record/source/query/scope/search-result/repository/service contracts.
@@ -185,6 +204,7 @@ provider, n8n, or external SDK types.
   agent result validators.
 - Stored request, task record, and SQLite connection configuration validators.
 - Local runtime configuration validation.
+- Local CLI configuration validation and bounded local RequestEnvelope parsing.
 - Policy decision and effective-permission validation.
 - Memory record, scope, and query validators.
 - Knowledge source, scope, record, query, and result validators.
@@ -197,7 +217,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 38 test files and 212 passing tests covering:
+The latest verified suite contains 39 test files and 223 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -217,6 +237,9 @@ The latest verified suite contains 38 test files and 212 passing tests covering:
 - local runtime startup validation, deterministic and model-backed execution, default
   denial, actor/workspace isolation, graceful shutdown, restart replay without
   re-execution, and durable Memory/Knowledge reuse.
+- local CLI configuration and request validation, deterministic process execution,
+  missing and oversized input, runtime creation failure normalization,
+  actor/workspace denial, durable replay, structured output, and graceful termination.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - default-deny policy intersections and Core Brain enforcement.
@@ -236,7 +259,7 @@ The repository is an early implementation with a stable orchestration kernel and
 strongly tested architectural foundations, durable local lifecycle, memory, and
 knowledge adapters, and an executable local composition root. It is not
 production-ready, but the implemented modules now compose into one validated local
-runtime.
+runtime with a controlled command-line process boundary.
 
 ## What exists only as a foundation
 
@@ -252,6 +275,8 @@ runtime.
 
 ## What is actually executable
 
+- A local operator can execute one bounded `RequestEnvelope` through the official CLI
+  using an explicit validated JSON configuration file and standard input.
 - A caller can construct `CoreBrain` with injected test/local adapters and execute a
   `business.content` request end to end.
 - A caller can use `createLocalRuntime` to validate configuration and construct the
@@ -279,12 +304,11 @@ runtime.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
-There is no packaged application entry point, CLI, HTTP service, dashboard, or
-production composition root.
+There is no HTTP service, dashboard, background server, or external-provider process.
 
 ## Not implemented yet
 
-- A CLI/process entrypoint and configuration-file/environment loader.
+- Environment-based configuration and secrets loading.
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.

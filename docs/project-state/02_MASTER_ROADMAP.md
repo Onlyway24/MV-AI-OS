@@ -132,8 +132,10 @@ preserving repository and provider boundaries.
 
 **Status:** In progress. SQLite-backed task, request, audit, memory, and knowledge
 persistence, forward migrations, conformance, restart recovery, and the validated
-local runtime composition root are complete. The next milestone is a controlled local
-CLI entrypoint, specified in `04_NEXT_TASK.md`.
+local runtime composition root are complete. The controlled local CLI now provides
+bounded configuration and request intake, structured output, deterministic replay,
+and graceful process shutdown. The next milestone is controlled local SQLite backup
+and restore, specified in `04_NEXT_TASK.md`.
 
 ## Phase 5 — Production model capability
 

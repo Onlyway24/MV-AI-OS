@@ -2,86 +2,78 @@
 
 ## Milestone name
 
-Controlled Local CLI Entrypoint
+Controlled Local SQLite Backup and Restore
 
 ## Goal
 
-Expose the validated local runtime through a small, deterministic command-line process
-boundary for local task submission and clean shutdown without adding HTTP, a
-dashboard, or external integrations.
+Add an operator-controlled, validated way to back up and restore the single local
+SQLite source of truth without changing repository contracts or runtime behavior.
 
 ## Why it matters
 
-MV AI OS now has one production composition root, but using it still requires a
-TypeScript caller. A controlled CLI is the smallest operational interface that proves
-the local runtime can be configured, started, invoked, and stopped as a real process
-while preserving the same validation and policy boundaries.
+The local runtime now persists task, request, audit, memory, and knowledge state and
+has an official process entrypoint. Recovery is the remaining operational safety gap:
+durability without a verified backup and restore path does not protect local state
+from file loss or corruption.
 
 ## Required scope
 
-- Add a CLI/process entrypoint that calls `createLocalRuntime`.
-- Load one versioned non-secret local runtime configuration from an explicit path.
-- Accept one validated `RequestEnvelope` through a bounded JSON input mechanism.
-- Emit one structured `TaskResponse` or sanitized structured error.
-- Keep stdout machine-readable and send optional diagnostics to stderr.
-- Handle process termination by closing the runtime exactly once.
-- Reject missing, malformed, oversized, or unsupported configuration and request
-  input before execution.
-- Add process-level tests for success, validation failure, replay across invocations,
-  and clean shutdown.
+- Define versioned backup and restore request/result contracts.
+- Validate source database identity and schema compatibility.
+- Produce a transactionally consistent SQLite backup at an explicit local path.
+- Restore only into an explicit, inactive destination after validation.
+- Refuse overwrite unless the exact operation explicitly permits it.
+- Preserve lifecycle, audit, memory, and knowledge records without reinterpretation.
+- Keep backup/restore outside Core Brain and behind a narrow local operations
+  boundary.
+- Add restart verification against restored data.
 
 ## Forbidden scope
 
-- HTTP, webhooks, dashboard, browser automation, or background server mode.
-- Environment-based secrets, API keys, real model providers, or provider SDKs.
-- n8n, workflow execution, approval persistence, scheduling, or retries.
-- Direct tools, filesystem mutation outside the configured SQLite database, vector
-  search, or embeddings.
-- Interactive prompts, shell execution, plugin loading, or a CLI framework dependency.
-- Reimplementation of runtime composition outside `createLocalRuntime`.
+- Changes to Core Brain, agents, policy, memory, knowledge, or repository contracts.
+- Online restore into a running Local Runtime.
+- Cloud storage, remote transfer, HTTP, dashboard, n8n, or external APIs.
+- Encryption/key management, scheduling, retention automation, or background jobs.
+- Vector search, embeddings, provider SDKs, or tool execution.
+- General filesystem tools or arbitrary file-copy capabilities.
 
 ## Likely files to create
 
-- `src/cli/local-runtime-cli.ts`
-- `src/cli/cli-error-response.ts`
-- `tests/cli/local-runtime-cli.test.ts`
+- `src/persistence/sqlite/sqlite-backup.ts`
+- `src/persistence/sqlite/sqlite-backup-contract.ts`
+- `src/persistence/sqlite/sqlite-backup-validator.ts`
+- `tests/persistence/sqlite-backup.test.ts`
 
 ## Likely files to modify
 
-- `package.json` only if an executable script or `bin` entry is strictly required
-- `src/index.ts` only for intentionally public CLI contracts
+- `src/index.ts` for intentionally public local-operation contracts
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
 - `docs/project-state/04_NEXT_TASK.md`
-- `docs/project-state/05_DECISIONS.md` if process ownership establishes a durable
-  decision
+- `docs/project-state/05_DECISIONS.md`
 
 ## Tests required
 
-- Valid configuration and request produce one successful JSON response.
-- Invalid configuration fails before database creation.
-- Invalid or oversized request input produces a sanitized structured error.
-- Reusing the same database and request ID replays the stored response.
-- Actor/workspace mismatch fails closed.
-- SIGINT/SIGTERM or equivalent shutdown handling closes the runtime once.
-- stdout contains no diagnostic noise or secret material.
-- Existing runtime, Core Brain, persistence, Memory, Knowledge, and agent tests
-  continue passing.
+- A valid backup contains all lifecycle, audit, memory, and knowledge data.
+- A restored database passes schema identity checks and replays stored task results.
+- Backup creation is consistent while writes are bounded by the operation.
+- Missing, corrupt, incompatible, or non-MV-AI-OS source databases fail closed.
+- Existing destinations are not overwritten without explicit authorization.
+- Failed restore leaves no partially accepted destination database.
+- Existing persistence, runtime, and CLI tests continue passing.
 
 ## Acceptance criteria
 
-- A local operator can run one content task without writing application code.
-- The CLI uses `createLocalRuntime` and does not manually compose internal modules.
-- Inputs and outputs remain versioned JSON contracts.
-- Process failure paths return sanitized structured errors and non-zero status.
-- No network listener, external provider, or side effect outside SQLite is added.
+- A local operator can create and verify a recoverable SQLite backup.
+- Restore produces a database accepted by every existing SQLite adapter.
+- Repository and domain contracts remain unchanged.
+- No network access or unrelated filesystem capability is introduced.
 
 ## Definition of done
 
-- The local CLI entrypoint is implemented and process-tested.
-- Runtime configuration, request validation, replay, and shutdown behavior remain
-  fail-closed.
-- Project-state documents accurately describe the operational CLI state.
+- Backup and restore operations are runtime validated and integration-tested.
+- Restored state is proven usable through Local Runtime recreation and request replay.
+- Project-state documents accurately describe recovery capability.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
 - No commit is created.
 - Final reporting waits for approval.
