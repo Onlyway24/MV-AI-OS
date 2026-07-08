@@ -781,3 +781,40 @@ layer. Later delegation, operator protocol, agent-company, workflow, tool, dashb
 or cloud milestones must continue to consume this boundary without bypassing Policy,
 Operator Safety, approval, Model Gateway, Tool Gateway, Workflow Specifications, or
 Core Brain ownership.
+
+## ADR-032 — Guardian Consultation is a supplied-signal decision gate
+
+**Context:** Only Way Assistant has a validated specification and deterministic
+runtime boundary. It can consume Operator Safety context, but safety consultation
+logic needs to be reusable by later operator decisioning, delegation policy, mission
+planning, and agent-company milestones without running guardians automatically or
+creating hidden autonomy.
+
+**Decision:** Implement Guardian Consultation as a deterministic, redaction-safe
+boundary that consumes only an explicit `GuardianConsultationRequest`, a validated
+`GuardianConsultationPolicy`, and an optional supplied `OperatorSafetyReport`. It
+maps Operator Safety status, safety-to-autonomy posture, requested escalation
+categories, required guardian coverage, and approval requirements into a validated
+`GuardianConsultationDecision`: may continue, continue with warning, require operator
+confirmation, require approval, or block. It does not execute guardians, collect
+signals, call models, call providers, execute tools, execute workflows, delegate to
+agents, persist ledgers, mutate state, schedule work, send alerts, use network
+behavior, or act autonomously.
+
+**Reason:** Fabio needs one clear decision gate before escalation so he remains the
+operator instead of babysitting scattered guardian outputs. A supplied-signal boundary
+keeps safety decisions deterministic and testable while preserving future room for
+dashboards, alerts, workflow runtime, or autonomous checks only after separate
+authorization, audit, persistence, and redaction milestones.
+
+**Tradeoffs:** The consultation boundary cannot determine safety by itself. It is only
+as current and complete as the supplied Operator Safety Report and policy. It does
+not enforce approvals or block external systems by itself; it produces a decision for
+later operator decisioning and execution layers to consume.
+
+**Future impact:** Operator Decision Engine Foundation must consume
+`GuardianConsultationDecision` rather than recalculating guardian policy from raw
+guardian reports. Later delegation, mission planning, workflow execution, tool
+execution, dashboard, cloud/VPS, scheduler, or alerting milestones must preserve this
+boundary and add explicit policy, approval, audit, persistence, and redaction behavior
+before taking action.

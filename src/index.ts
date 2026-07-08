@@ -70,6 +70,30 @@ export {
   MainAssistantInvocationValidator,
   MainAssistantResultValidator,
 } from "./assistants/main-assistant-runtime-validator.js";
+export {
+  DEFAULT_GUARDIAN_CONSULTATION_POLICY,
+  DEFAULT_GUARDIAN_CONSULTATION_POLICY_ID,
+  GUARDIAN_CONSULTATION_CONTRACT_VERSION,
+  GuardianConsultationValidationError,
+  sortEscalationTypes,
+  sortSafetyDomains,
+  type GuardianConsultationApprovalRequirement,
+  type GuardianConsultationDecision,
+  type GuardianConsultationDecisionKind,
+  type GuardianConsultationEvaluator,
+  type GuardianConsultationPolicy,
+  type GuardianConsultationReason,
+  type GuardianConsultationReasonCode,
+  type GuardianConsultationReasonSeverity,
+  type GuardianConsultationRequest,
+  type GuardianConsultationSafetyRequirement,
+} from "./assistants/guardian-consultation.js";
+export { DeterministicGuardianConsultationEvaluator } from "./assistants/deterministic-guardian-consultation.js";
+export {
+  GuardianConsultationDecisionValidator,
+  GuardianConsultationPolicyValidator,
+  GuardianConsultationRequestValidator,
+} from "./assistants/guardian-consultation-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

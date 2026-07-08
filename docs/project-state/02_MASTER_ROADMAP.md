@@ -203,11 +203,16 @@ that validates operator input, consumes supplied Operator Safety context, refuse
 unsafe or under-specified requests, surfaces approval requirements, and returns
 redaction-safe operator-facing results without model calls, provider calls, tool
 execution, workflow execution, storage, network behavior, autonomous loops, or
-guardian execution. Durable usage ledgers, aggregated budget windows, broader
-operational telemetry, live smoke-test gating, autonomous guardians, dashboards,
-guardian consultation policy, delegation execution, and full Main Assistant
-orchestration remain future work, with the next milestone specified in
-`04_NEXT_TASK.md`.
+guardian execution. Guardian Consultation Boundary now adds a deterministic local
+decision gate that consumes supplied Operator Safety state, requested escalation
+categories, safety-to-autonomy posture, guardian coverage, and approval requirements
+to produce redaction-safe may-continue, warning, confirmation, approval-required, or
+blocked outcomes without running guardians, models, tools, workflows, persistence,
+network behavior, scheduling, or autonomous action. Durable usage ledgers,
+aggregated budget windows, broader operational telemetry, live smoke-test gating,
+autonomous guardians, dashboards, delegation execution, operator decisioning, and
+full Main Assistant orchestration remain future work, with the next milestone
+specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

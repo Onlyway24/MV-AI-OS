@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Main Assistant / Orchestrator Runtime
-  Boundary milestone: `a0f3248 feat: add main assistant specification foundation`.
+- Latest committed baseline before the Guardian Consultation Boundary milestone:
+  `ba3a371 feat: add main assistant runtime boundary`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -43,8 +43,11 @@ and tests, not intended future behavior.
   in this repository state and was committed in
   `a0f3248 feat: add main assistant specification foundation`.
 - The Main Assistant / Orchestrator Runtime Boundary milestone is completed in this
-  repository state and is the current commit candidate.
-- The next milestone is Guardian Consultation Boundary.
+  repository state and was committed in
+  `ba3a371 feat: add main assistant runtime boundary`.
+- The Guardian Consultation Boundary milestone is completed in this repository state
+  and is the current commit candidate.
+- The next milestone is Operator Decision Engine Foundation.
 
 ## Current architecture
 
@@ -133,6 +136,7 @@ provider, n8n, or external SDK types.
 33. Operator Safety Report.
 34. Main Assistant / Orchestrator Specification Foundation.
 35. Main Assistant / Orchestrator Runtime Boundary.
+36. Guardian Consultation Boundary.
 
 ## Implemented modules
 
@@ -341,6 +345,10 @@ provider, n8n, or external SDK types.
   Operator Safety context, refusing unsafe or under-specified requests, and producing
   redaction-safe operator-facing results without provider, tool, workflow, network,
   persistence, or autonomous behavior.
+- Versioned Guardian Consultation Boundary contracts and deterministic evaluator for
+  mapping supplied Operator Safety state, safety-to-autonomy posture, requested
+  escalation categories, approval requirements, and required guardian coverage into
+  redaction-safe continue, warning, confirmation, approval, or blocking decisions.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -395,6 +403,9 @@ provider, n8n, or external SDK types.
 - Main Assistant / Orchestrator invocation, safety-preflight context, result,
   runtime-interface, runtime safety-decision, result-status, invocation-intent, and
   invocation-risk contracts.
+- Guardian consultation request, decision, policy, reason, required approval,
+  required safety-domain, decision-kind, reason-code, reason-severity, evaluator, and
+  validation-error contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -426,6 +437,7 @@ provider, n8n, or external SDK types.
 - Operator Safety evaluation-input and report validators.
 - Main Assistant / Orchestrator specification validator.
 - Main Assistant / Orchestrator invocation and result validators.
+- Guardian consultation request, policy, and decision validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -435,7 +447,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 55 test files and 369 tests covering:
+The latest verified suite contains 56 test files and 380 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -527,6 +539,11 @@ The latest verified suite contains 55 test files and 369 tests covering:
   missing or unknown safety preflight handling, critical Operator Safety blocking,
   approval markers for side-effecting escalation requests, and redaction-safe output
   without provider, tool, network, workflow, persistence, or autonomous behavior.
+- Guardian Consultation Boundary validation, healthy continuation, attention warning
+  and acknowledgement behavior, critical safety blocking, unknown or missing safety
+  confirmation/blocking behavior, deterministic safety-to-autonomy mapping,
+  deterministic approval mapping, invalid policy rejection, and redaction-safe
+  decision boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -567,7 +584,10 @@ operator-facing mission, safety preflights, approvals, forbidden capabilities, a
 future delegation policy, plus a deterministic local runtime boundary that validates
 operator invocations, consumes supplied Operator Safety context, refuses unsafe or
 under-specified requests, and produces structured operator-facing results without
-full orchestration or side effects.
+full orchestration or side effects. Guardian Consultation Boundary now isolates the
+deterministic safety consultation decision for supplied Operator Safety reports,
+requested escalation categories, safety-to-autonomy posture, required guardian
+coverage, and approval requirements without executing guardians or adding autonomy.
 
 ## What exists only as a foundation
 
@@ -616,6 +636,11 @@ full orchestration or side effects.
   execute guardian services, delegate work, execute tools, execute workflows, mutate
   state, persist runtime ledgers, schedule work, use the network, or operate
   autonomously.
+- Guardian Consultation can evaluate supplied Operator Safety context and requested
+  escalation categories into a validated decision, but it does not collect signals,
+  execute guardians, enforce approvals, invoke models, execute tools, execute
+  workflows, persist ledgers, schedule work, run in the background, send alerts, use
+  the network, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -705,6 +730,11 @@ full orchestration or side effects.
   requirements for escalation, and returns a validated redaction-safe
   `MainAssistantResult` without calling providers, tools, workflows, storage, or
   network resources.
+- A caller can instantiate `DeterministicGuardianConsultationEvaluator`, supply a
+  validated `GuardianConsultationRequest` and policy, and receive a validated
+  redaction-safe `GuardianConsultationDecision` that maps healthy, attention,
+  critical, unknown, or missing Operator Safety state plus requested operations into
+  may-continue, warning, confirmation, approval-required, or blocked outcomes.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -720,7 +750,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Guardian Consultation Boundary.
+- Operator Decision Engine Foundation.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
