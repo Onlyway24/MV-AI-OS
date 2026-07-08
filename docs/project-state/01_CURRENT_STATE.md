@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Main Assistant / Orchestrator Specification
-  Foundation milestone: `2322089 feat: add operator safety report`.
+- Latest committed baseline before the Main Assistant / Orchestrator Runtime
+  Boundary milestone: `a0f3248 feat: add main assistant specification foundation`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -40,8 +40,11 @@ and tests, not intended future behavior.
 - The Operator Safety Report milestone is completed in this repository state and was
   committed in `2322089 feat: add operator safety report`.
 - The Main Assistant / Orchestrator Specification Foundation milestone is completed
-  in this repository state and is the current commit candidate.
-- The next milestone is Main Assistant / Orchestrator Runtime Boundary.
+  in this repository state and was committed in
+  `a0f3248 feat: add main assistant specification foundation`.
+- The Main Assistant / Orchestrator Runtime Boundary milestone is completed in this
+  repository state and is the current commit candidate.
+- The next milestone is Guardian Consultation Boundary.
 
 ## Current architecture
 
@@ -129,6 +132,7 @@ provider, n8n, or external SDK types.
 32. Quality Guardian Foundation.
 33. Operator Safety Report.
 34. Main Assistant / Orchestrator Specification Foundation.
+35. Main Assistant / Orchestrator Runtime Boundary.
 
 ## Implemented modules
 
@@ -332,6 +336,11 @@ provider, n8n, or external SDK types.
 - Versioned Main Assistant / Orchestrator specification foundation for Only Way
   Assistant, built on the existing Agent Specification contract and explicit
   operator-safety, guardian, approval, and delegation requirements.
+- Versioned Main Assistant / Orchestrator runtime boundary contracts and
+  deterministic local runtime for validating operator invocations, consuming supplied
+  Operator Safety context, refusing unsafe or under-specified requests, and producing
+  redaction-safe operator-facing results without provider, tool, workflow, network,
+  persistence, or autonomous behavior.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -383,6 +392,9 @@ provider, n8n, or external SDK types.
 - Main Assistant / Orchestrator specification, safety-domain, escalation,
   forbidden-capability, approval, delegation-policy, delegation-target, output-rule,
   and Only Way Assistant default specification contracts.
+- Main Assistant / Orchestrator invocation, safety-preflight context, result,
+  runtime-interface, runtime safety-decision, result-status, invocation-intent, and
+  invocation-risk contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -413,6 +425,7 @@ provider, n8n, or external SDK types.
 - Quality Guardian evaluation-input and report validators.
 - Operator Safety evaluation-input and report validators.
 - Main Assistant / Orchestrator specification validator.
+- Main Assistant / Orchestrator invocation and result validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -422,7 +435,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 54 test files and 357 tests covering:
+The latest verified suite contains 55 test files and 369 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -509,6 +522,11 @@ The latest verified suite contains 54 test files and 357 tests covering:
   direct tool/provider capabilities, input/output schema validation, policy and
   approval coverage, handoff/delegation alignment, immutable default specification,
   and redaction-safe boundary validation.
+- Main Assistant / Orchestrator Runtime Boundary validation, deterministic accepted,
+  attention-required, refused, and blocked results, under-specified input refusal,
+  missing or unknown safety preflight handling, critical Operator Safety blocking,
+  approval markers for side-effecting escalation requests, and redaction-safe output
+  without provider, tool, network, workflow, persistence, or autonomous behavior.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -546,7 +564,10 @@ model calls, tool execution, dashboards, or persistence. The Main Assistant /
 Orchestrator chapter now has a declarative Only Way Assistant specification
 foundation that reuses the existing Agent Specification system and defines
 operator-facing mission, safety preflights, approvals, forbidden capabilities, and
-future delegation policy without adding runtime execution.
+future delegation policy, plus a deterministic local runtime boundary that validates
+operator invocations, consumes supplied Operator Safety context, refuses unsafe or
+under-specified requests, and produces structured operator-facing results without
+full orchestration or side effects.
 
 ## What exists only as a foundation
 
@@ -590,10 +611,11 @@ future delegation policy without adding runtime execution.
   not collect signals, scan files, read secrets, call models, send alerts, schedule
   checks, mutate state, execute tools, render dashboards, persist ledgers, or act
   autonomously.
-- Only Way Assistant is defined as a validated Main Assistant / Orchestrator
-  specification foundation, but it is not executable yet and does not run planning
-  loops, call models, consult guardians, delegate work, execute tools, execute
-  workflows, mutate state, or operate autonomously.
+- Only Way Assistant has a validated Main Assistant / Orchestrator specification and
+  a deterministic runtime boundary, but it does not run planning loops, call models,
+  execute guardian services, delegate work, execute tools, execute workflows, mutate
+  state, persist runtime ledgers, schedule work, use the network, or operate
+  autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -677,6 +699,12 @@ future delegation policy without adding runtime execution.
 - A caller can validate the immutable Only Way Assistant specification and confirm it
   conforms to the existing Agent Specification contract plus Main Assistant
   safety/preflight/delegation requirements.
+- A caller can invoke `DeterministicMainAssistantRuntime` with a validated
+  `MainAssistantInvocation`; it consumes only supplied Operator Safety context,
+  refuses missing/unknown/critical safety states where appropriate, surfaces approval
+  requirements for escalation, and returns a validated redaction-safe
+  `MainAssistantResult` without calling providers, tools, workflows, storage, or
+  network resources.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -692,7 +720,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Main Assistant / Orchestrator Runtime Boundary.
+- Guardian Consultation Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

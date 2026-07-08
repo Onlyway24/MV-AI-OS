@@ -197,10 +197,17 @@ without dashboards, alerts, scheduling, autonomy, persistence, network, model ca
 or tool execution. Main Assistant / Orchestrator Specification Foundation now defines
 Only Way Assistant declaratively on top of the existing Agent Specification boundary
 with safety preflights, approval requirements, forbidden capabilities, and future
-delegation policy, without adding runtime execution. Durable usage ledgers,
-aggregated budget windows, broader operational telemetry, live smoke-test gating,
-autonomous guardians, dashboards, and Main Assistant runtime execution remain future
-work, with the next milestone specified in `04_NEXT_TASK.md`.
+delegation policy, without adding full runtime orchestration. Main Assistant /
+Orchestrator Runtime Boundary now adds a deterministic local invocation boundary
+that validates operator input, consumes supplied Operator Safety context, refuses
+unsafe or under-specified requests, surfaces approval requirements, and returns
+redaction-safe operator-facing results without model calls, provider calls, tool
+execution, workflow execution, storage, network behavior, autonomous loops, or
+guardian execution. Durable usage ledgers, aggregated budget windows, broader
+operational telemetry, live smoke-test gating, autonomous guardians, dashboards,
+guardian consultation policy, delegation execution, and full Main Assistant
+orchestration remain future work, with the next milestone specified in
+`04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

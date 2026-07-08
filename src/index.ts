@@ -53,6 +53,23 @@ export {
   type MainAssistantSpecification,
 } from "./assistants/main-assistant-specification.js";
 export { MainAssistantSpecificationValidator } from "./assistants/main-assistant-specification-validator.js";
+export { DeterministicMainAssistantRuntime } from "./assistants/deterministic-main-assistant-runtime.js";
+export {
+  MAIN_ASSISTANT_RUNTIME_CONTRACT_VERSION,
+  MainAssistantRuntimeValidationError,
+  type MainAssistantInvocation,
+  type MainAssistantInvocationIntent,
+  type MainAssistantInvocationRiskLevel,
+  type MainAssistantResult,
+  type MainAssistantResultStatus,
+  type MainAssistantRuntime,
+  type MainAssistantRuntimeSafetyDecision,
+  type MainAssistantSafetyPreflightContext,
+} from "./assistants/main-assistant-runtime.js";
+export {
+  MainAssistantInvocationValidator,
+  MainAssistantResultValidator,
+} from "./assistants/main-assistant-runtime-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

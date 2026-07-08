@@ -746,3 +746,38 @@ operator responses until later runtime milestones are implemented.
 and operator protocol milestones must consume this specification rather than
 inventing new identities or bypassing Agent Specification, Policy, Operator Safety,
 Model Gateway, Memory, Knowledge, Workflow Specification, or Tool Gateway boundaries.
+
+## ADR-031 — Main Assistant runtime boundary is deterministic and side-effect free
+
+**Context:** Only Way Assistant now has a validated declarative specification, but
+Fabio needs a controlled first executable boundary before any future multi-agent,
+workflow, tool, dashboard, or autonomous behavior is introduced. A full orchestrator
+at this point would risk mixing operator interaction with provider calls, guardian
+execution, delegation, workflows, tools, persistence, or hidden side effects.
+
+**Decision:** Implement `MainAssistantRuntime` as a narrow deterministic local
+boundary. It validates `MainAssistantInvocation`, consumes only supplied Operator
+Safety context, uses the existing Only Way Assistant specification as its identity
+and contract source, refuses unsafe or under-specified requests, surfaces approval
+requirements for escalation categories, and returns a validated redaction-safe
+`MainAssistantResult`. It does not call models, call providers, execute guardians,
+execute tools, execute workflows, delegate to agents, mutate memory or knowledge,
+write repositories, schedule work, use network behavior, persist ledgers, or operate
+autonomously.
+
+**Reason:** This gives Fabio the first safe operator-facing assistant invocation
+surface while preserving every established MV AI OS boundary. It proves how the main
+assistant can make bounded continuation/refusal decisions without becoming a parallel
+Core Brain or a hidden automation loop.
+
+**Tradeoffs:** The runtime cannot yet consult guardians through a formal policy,
+delegate to specialists, invoke model reasoning, produce rich conversational output,
+or execute multi-step plans. It depends on callers supplying current Operator Safety
+context and remains a local deterministic component.
+
+**Future impact:** Guardian Consultation Boundary must extract the safety decision
+policy from this first runtime behavior into a dedicated validated consultation
+layer. Later delegation, operator protocol, agent-company, workflow, tool, dashboard,
+or cloud milestones must continue to consume this boundary without bypassing Policy,
+Operator Safety, approval, Model Gateway, Tool Gateway, Workflow Specifications, or
+Core Brain ownership.
