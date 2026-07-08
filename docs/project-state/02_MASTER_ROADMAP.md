@@ -170,9 +170,12 @@ explicit `model-backed-openai` runtime composition with supplied secret referenc
 resolver, and fake or production transport while preserving the deterministic offline
 path. Controlled Model Operation Limits now bound provider invocation through
 provider-neutral gateway controls for request size, output tokens, timeout, provider
-call count, retry exhaustion, and reported usage/cost where available. Full model
-pricing configuration, durable usage accounting, telemetry, and live smoke-test gating
-remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
+call count, retry exhaustion, and reported usage/cost where available. Controlled
+Model Usage Accounting now adds explicit provider-neutral pricing configuration and
+deterministic estimated-cost calculation from validated model usage without storing
+prompts, secrets, provider payloads, or raw diagnostics. Durable usage ledgers, budget
+enforcement, Cost Guardian reporting, telemetry, and live smoke-test gating remain
+future work, with the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

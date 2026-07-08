@@ -5,6 +5,7 @@ import {
   type LocalRuntimeConfig,
   type LocalRuntimePermissionConfig,
 } from "./local-runtime-config.js";
+import { ModelUsageAccountingConfigValidator } from "../models/model-pricing-validator.js";
 import {
   DEFAULT_OPENAI_BASE_URL,
   MAX_OPENAI_BASE_URL_LENGTH,
@@ -52,6 +53,8 @@ export class LocalRuntimeConfigValidator
 {
   readonly #modelOperationLimitsValidator =
     new ModelOperationLimitsValidator();
+  readonly #modelUsageAccountingValidator =
+    new ModelUsageAccountingConfigValidator();
   readonly #sqliteValidator = new SqliteConnectionConfigValidator();
 
   public validate(value: unknown): ValidationResult<LocalRuntimeConfig> {
@@ -90,6 +93,12 @@ export class LocalRuntimeConfigValidator
         : this.#modelOperationLimitsValidator.validate(
             record.modelOperationLimits,
           );
+    const modelUsageAccountingValidation =
+      record.modelUsageAccounting === undefined
+        ? undefined
+        : this.#modelUsageAccountingValidator.validate(
+            record.modelUsageAccounting,
+          );
     const sqliteValidation = this.#sqliteValidator.validate(record.sqlite);
     const workspaceId = readRequiredString(record, "workspaceId", issues);
     if (!sqliteValidation.ok) {
@@ -114,6 +123,23 @@ export class LocalRuntimeConfigValidator
               path === "$"
                 ? "modelOperationLimits"
                 : `modelOperationLimits.${path}`,
+          }),
+        ),
+      );
+    }
+    if (
+      modelUsageAccountingValidation !== undefined &&
+      !modelUsageAccountingValidation.ok
+    ) {
+      issues.push(
+        ...modelUsageAccountingValidation.issues.map(
+          ({ code, message, path }) => ({
+            code,
+            message,
+            path:
+              path === "$"
+                ? "modelUsageAccounting"
+                : `modelUsageAccounting.${path}`,
           }),
         ),
       );
@@ -152,6 +178,8 @@ export class LocalRuntimeConfigValidator
       modelProvider === false ||
       (modelOperationLimitsValidation !== undefined &&
         !modelOperationLimitsValidation.ok) ||
+      (modelUsageAccountingValidation !== undefined &&
+        !modelUsageAccountingValidation.ok) ||
       !sqliteValidation.ok ||
       workspaceId === undefined
     ) {
@@ -169,6 +197,12 @@ export class LocalRuntimeConfigValidator
               modelOperationLimitsValidation.value,
           }),
       ...(modelProvider === undefined ? {} : { modelProvider }),
+      ...(modelUsageAccountingValidation === undefined
+        ? {}
+        : {
+            modelUsageAccounting:
+              modelUsageAccountingValidation.value,
+          }),
       permissions,
       sqlite: sqliteValidation.value,
       workspaceId,

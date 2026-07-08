@@ -2,56 +2,54 @@
 
 ## Milestone name
 
-Controlled Model Usage Accounting
+Controlled Model Budget Enforcement
 
 ## Goal
 
-Add provider-neutral model usage accounting so MV AI OS can report model usage and
-estimated cost from validated model responses without coupling Core Brain or agents to
-provider pricing details.
+Add provider-neutral budget enforcement for model usage so MV AI OS can deny model
+requests that would exceed explicit local model budgets before deeper autonomy or
+broader provider use is enabled.
 
 ## Why it matters
 
-Controlled Model Operation Limits now prevent unbounded provider calls, oversized
-requests, excessive output-token requests, excessive timeout requests, and retry
-loops. The next production-model risk is operator visibility: Fabio needs a
-deterministic way to understand usage and estimated cost after model calls without
-storing prompts, secrets, provider payloads, or raw diagnostics.
+Controlled Model Usage Accounting makes per-response estimated cost visible from
+validated usage and explicit pricing. The next risk is uncontrolled spend across
+requests: Fabio needs deterministic budget gates before model autonomy, live provider
+expansion, scheduled work, or guardian agents can safely grow.
 
 ## Required scope
 
-- Define a provider-neutral model pricing/usage-accounting contract.
-- Validate pricing/accounting configuration at the local runtime boundary.
-- Calculate estimated usage cost only from validated `ModelUsage` and explicit
-  pricing configuration.
-- Keep the calculation outside Core Brain and agents.
-- Preserve existing gateway operation limits and provider failure normalization.
+- Define provider-neutral model budget contracts.
+- Validate budget configuration at the local runtime boundary.
+- Enforce budgets outside Core Brain and agents.
+- Use explicit budgets only; do not infer spend from provider billing systems.
+- Preserve existing model operation limits and usage accounting.
 - Keep automated tests deterministic and offline.
-- Ensure accounting output contains no prompts, provider payloads, API keys, resolved
+- Ensure budget failures contain no prompts, provider payloads, API keys, resolved
   secret values, or raw provider diagnostics.
 
 ## Forbidden scope
 
-- Live provider calls in the default test suite.
-- Billing, payments, subscriptions, quotas, dashboards, external monitoring,
-  telemetry exporters, HTTP, n8n, MCP, workflow execution, real tool execution,
-  embeddings, vector search, or browser automation.
-- Hardcoding provider pricing without explicit local configuration.
-- Persisting prompts, provider payloads, resolved secrets, raw provider diagnostics,
-  or full model outputs solely for accounting.
+- Billing, payments, subscriptions, dashboards, external telemetry, HTTP, n8n, MCP,
+  workflow execution, real tool execution, embeddings, vector search, browser
+  automation, or live provider calls in the default test suite.
+- Durable usage ledgers unless strictly required by the budget contract and kept
+  behind existing persistence boundaries.
+- Hardcoded pricing or budgets.
 - Changing Core Brain, agent, memory, knowledge, repository, SQLite, backup/restore,
-  workflow, tool, or CLI request behavior unless strictly required by the accounting
+  workflow, tool, or CLI request behavior unless strictly required by the budget
   boundary.
 
 ## Likely files to create
 
-- `src/models/model-pricing.ts`
-- `src/models/model-pricing-validator.ts`
-- `src/models/model-usage-accounting.ts`
-- `tests/models/model-usage-accounting.test.ts`
+- `src/models/model-budget.ts`
+- `src/models/model-budget-validator.ts`
+- `src/models/model-budget-enforcer.ts`
+- `tests/models/model-budget-enforcement.test.ts`
 
 ## Likely files to modify
 
+- `src/models/validated-llm-gateway.ts`
 - `src/runtime/local-runtime-config.ts`
 - `src/runtime/local-runtime-config-validator.ts`
 - `src/runtime/create-local-runtime.ts`
@@ -63,29 +61,28 @@ storing prompts, secrets, provider payloads, or raw diagnostics.
 
 ## Tests required
 
-- Valid pricing/accounting configuration is accepted.
-- Invalid pricing/accounting configuration fails closed.
-- Estimated cost is calculated deterministically from validated usage.
-- Missing usage does not invent cost.
-- Unknown model/profile pricing fails closed where pricing is required.
-- Accounting results never include prompts, secret values, raw provider diagnostics,
-  or provider payloads.
-- Existing operation-limit, OpenAI fake-transport, runtime, CLI, persistence, backup,
-  restore, and governed model-content tests continue passing.
+- Valid budget configuration is accepted.
+- Invalid budget configuration fails closed.
+- Requests with configured maximum per-call cost pass when within budget.
+- Requests are denied when requested or estimated usage cost exceeds budget.
+- Missing accounting data does not invent spend.
+- Budget failures are redaction-safe.
+- Existing model operation-limit, usage-accounting, OpenAI fake-transport, runtime,
+  CLI, persistence, backup, restore, and governed content tests continue passing.
 
 ## Acceptance criteria
 
-- Model usage accounting is provider-neutral, deterministic, and runtime validated.
-- Cost estimates come only from explicit pricing configuration and validated usage.
-- Core Brain and agents remain provider-neutral and unaware of provider pricing.
+- Model budget enforcement is provider-neutral, deterministic, runtime validated, and
+  outside Core Brain and agents.
+- Budgets are explicit and fail closed when required budget data is missing.
+- Operation limits and usage accounting continue to work unchanged.
 - No live network access is introduced into default tests.
-- No sensitive data is stored or surfaced for accounting.
+- No sensitive data is stored or surfaced for budgeting.
 
 ## Definition of done
 
-- Usage-accounting contracts, validators, implementation, and deterministic tests are
-  complete.
-- Project-state documents accurately describe the new accounting boundary.
+- Budget contracts, validators, enforcement implementation, and deterministic tests
+  are complete.
+- Project-state documents accurately describe the budget boundary.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- Final reporting waits for approval or follows the user's explicit commit
-  instruction.
+- The milestone is committed before continuing to Cost Guardian Foundation.

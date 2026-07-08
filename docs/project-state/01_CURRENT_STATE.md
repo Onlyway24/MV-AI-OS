@@ -10,7 +10,7 @@ and tests, not intended future behavior.
 
 - Current branch at the time of this snapshot: `main`.
 - Latest committed baseline before the Controlled Model Usage Accounting milestone:
-  `394cb16 feat: add controlled model operation limits`.
+  `84a8ff8 docs: add AI agent operating doctrine`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -23,7 +23,9 @@ and tests, not intended future behavior.
   `649c3a7 feat: wire controlled local OpenAI provider`.
 - The Controlled Model Operation Limits milestone is completed and committed in
   `394cb16 feat: add controlled model operation limits`.
-- The current milestone is Controlled Model Usage Accounting.
+- The Controlled Model Usage Accounting milestone is completed in this repository
+  state and is the current commit candidate.
+- The next milestone is Controlled Model Budget Enforcement.
 
 ## Current architecture
 
@@ -102,6 +104,7 @@ provider, n8n, or external SDK types.
 23. Controlled Production Model Provider Adapter.
 24. Controlled Local OpenAI Provider Wiring.
 25. Controlled Model Operation Limits.
+26. Controlled Model Usage Accounting.
 
 ## Implemented modules
 
@@ -163,9 +166,12 @@ provider, n8n, or external SDK types.
   selection policy, and error contracts.
 - Provider-neutral model operation-limit contract for maximum input characters,
   output tokens, provider calls, timeout, total tokens, and reported cost.
+- Provider-neutral model pricing and usage-accounting contracts for explicit USD
+  per-million-token pricing and deterministic estimated-cost calculation.
 - Validated LLM Gateway with provider/profile selection, limit checks, failure
   normalization, response ownership validation, bounded provider invocation attempts,
-  timeout handling, operation-limit enforcement, and injected dependencies.
+  timeout handling, operation-limit enforcement, optional usage accounting, and
+  injected dependencies.
 - Deterministic model provider and provider registry only in tests.
 - Production OpenAI Responses API model provider adapter behind `ModelProvider`,
   with validated configuration, resolved ephemeral credential input, provider-neutral
@@ -179,8 +185,8 @@ provider, n8n, or external SDK types.
 ### Runtime composition
 
 - Versioned local runtime configuration for SQLite, Content Agent mode, actor,
-  workspace, explicit actor/task/policy grants, and OpenAI provider selection without
-  resolved secret values.
+  workspace, explicit actor/task/policy grants, model operation limits, optional model
+  usage accounting, and OpenAI provider selection without resolved secret values.
 - Versioned local application configuration boundary that validates explicit local
   JSON input, assembles existing runtime and CLI configuration, and carries only
   inert secret references.
@@ -246,6 +252,7 @@ provider, n8n, or external SDK types.
 - model request/response/profile/usage/error/provider/gateway contracts.
 - OpenAI provider configuration, transport, and adapter contracts.
 - Model operation-limit contracts.
+- Model pricing and usage-accounting contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -267,6 +274,7 @@ provider, n8n, or external SDK types.
 - Knowledge source, scope, record, query, and result validators.
 - Model request, response, and profile validators.
 - Model operation-limit validator.
+- Model usage-accounting configuration validator.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -276,7 +284,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 45 test files and 266 passing tests covering:
+The latest verified suite contains 46 test files covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -323,6 +331,10 @@ The latest verified suite contains 45 test files and 266 passing tests covering:
   provider transport access, bounded retry behavior, timeout normalization,
   non-retryable failure handling, response usage enforcement, and OpenAI fake-transport
   denial when operation limits fail.
+- model usage-accounting configuration validation, deterministic estimated-cost
+  calculation from validated usage and explicit pricing, missing-usage behavior,
+  fail-closed required-pricing behavior, runtime configuration validation, and
+  redaction-safe accounting failures.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -345,7 +357,8 @@ provider wiring, and provider-neutral model operation limits. It is not
 production-ready, but the implemented modules now compose into one validated local
 runtime with recoverable SQLite state, controlled configuration input, and an
 ephemeral credential boundary plus a production OpenAI provider adapter wired through
-controlled local runtime composition and bounded model-provider invocation behavior.
+controlled local runtime composition, bounded model-provider invocation behavior, and
+provider-neutral estimated model cost calculation when explicit pricing is configured.
 
 ## What exists only as a foundation
 
@@ -357,8 +370,10 @@ controlled local runtime composition and bounded model-provider invocation behav
   provider and OpenAI provider composition paths, but provider telemetry and live
   integration gating remain basic.
 - Model operation limits bound request size, output size, provider-call count,
-  timeout, and reported usage/cost where available, but they do not yet provide full
-  model pricing configuration or durable usage accounting.
+  timeout, and reported usage/cost where available.
+- Model usage accounting can deterministically estimate per-response cost from
+  explicit pricing and validated usage, but it is not yet a durable usage ledger and
+  does not enforce budgets.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -413,6 +428,10 @@ controlled local runtime composition and bounded model-provider invocation behav
 - The Validated LLM Gateway rejects invalid operation limits, oversized requests,
   excessive output-token or timeout requests, and usage-budget violations with
   redaction-safe provider-neutral failures before exposing provider details.
+- The Validated LLM Gateway can optionally apply explicit model usage-accounting
+  pricing, normalize `usage.costUsd` from validated usage, reject invalid accounting
+  configuration before provider access, and fail closed when pricing is required but
+  missing for the selected provider/model/profile.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -425,8 +444,8 @@ path.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
 - Durable approval and workflow persistence.
-- Live-provider integration test gating, provider telemetry, and full model
-  cost-accounting configuration.
+- Live-provider integration test gating, provider telemetry, durable model usage
+  ledgers, budget enforcement, and Cost Guardian reporting.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

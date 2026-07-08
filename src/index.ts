@@ -348,6 +348,20 @@ export {
   DEFAULT_MODEL_OPERATION_LIMITS,
   ModelOperationLimitsValidator,
 } from "./models/model-operation-limits-validator.js";
+export {
+  MODEL_PRICING_CONTRACT_VERSION,
+  MODEL_PRICING_CURRENCY,
+  type ModelPricingCurrency,
+  type ModelPricingRule,
+  type ModelUsageAccountingConfig,
+  type ModelUsageAccountingResult,
+} from "./models/model-pricing.js";
+export { ModelUsageAccountingConfigValidator } from "./models/model-pricing-validator.js";
+export {
+  applyModelUsageAccounting,
+  calculateModelUsageAccounting,
+  ModelUsageAccountingError,
+} from "./models/model-usage-accounting.js";
 export type {
   FailedModelResponse,
   ModelOutput,

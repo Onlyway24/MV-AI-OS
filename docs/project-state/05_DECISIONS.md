@@ -478,3 +478,30 @@ enforced only when a request or provider response carries cost data.
 instead of bypassing it. Any new provider must remain behind `ModelProvider`, use fake
 transport tests by default, and rely on gateway-level operation limits for shared
 provider-neutral behavior.
+
+## ADR-022 — Model usage accounting uses explicit pricing only
+
+**Context:** Operation limits can bound reported usage, but Fabio also needs operator
+visibility into estimated model cost without leaking prompts, secrets, provider
+payloads, raw diagnostics, or provider-specific pricing logic into agents or Core
+Brain.
+
+**Decision:** Add provider-neutral pricing and usage-accounting contracts. The local
+runtime may supply explicit USD per-million-token pricing rules keyed by provider,
+model, and profile. `ValidatedLlmGateway` validates accounting configuration, computes
+estimated cost only from validated `ModelUsage`, and normalizes `usage.costUsd` before
+operation-limit cost checks. If accounting is required and no exact pricing rule
+exists, the gateway fails closed with a redaction-safe model error.
+
+**Reason:** Cost visibility belongs at the model boundary where model responses are
+already validated and provider-neutral. Agents and Core Brain should consume
+normalized usage, not own pricing tables or provider billing rules.
+
+**Tradeoffs:** Accounting is per-response only. It does not yet persist usage ledgers,
+aggregate spend, enforce budgets over time windows, export telemetry, or prove live
+provider billing reconciliation. Pricing must be configured explicitly and maintained
+by the operator.
+
+**Future impact:** Budget enforcement and Cost Guardian reporting must use this
+accounting boundary instead of recalculating model cost inside agents, Core Brain, or
+provider adapters.

@@ -212,6 +212,9 @@ async function createContentAgent(
     requestValidator: new ModelRequestValidator(),
     responseValidator: new ModelResponseValidator(),
     selectionPolicy: new FixedModelSelectionPolicy(profile),
+    ...(config.modelUsageAccounting === undefined
+      ? {}
+      : { usageAccountingConfig: config.modelUsageAccounting }),
   });
   return new ModelBackedContentAgent({
     clock,
@@ -423,6 +426,18 @@ function freezeConfig(config: LocalRuntimeConfig): LocalRuntimeConfig {
     ...(config.modelProvider === undefined
       ? {}
       : { modelProvider: Object.freeze({ ...config.modelProvider }) }),
+    ...(config.modelUsageAccounting === undefined
+      ? {}
+      : {
+          modelUsageAccounting: Object.freeze({
+            ...config.modelUsageAccounting,
+            pricing: Object.freeze(
+              config.modelUsageAccounting.pricing.map((rule) =>
+                Object.freeze({ ...rule }),
+              ),
+            ),
+          }),
+        }),
     ...(config.modelOperationLimits === undefined
       ? {}
       : {

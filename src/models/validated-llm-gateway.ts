@@ -12,6 +12,12 @@ import {
   DEFAULT_MODEL_OPERATION_LIMITS,
   ModelOperationLimitsValidator,
 } from "./model-operation-limits-validator.js";
+import type { ModelUsageAccountingConfig } from "./model-pricing.js";
+import { ModelUsageAccountingConfigValidator } from "./model-pricing-validator.js";
+import {
+  applyModelUsageAccounting,
+  ModelUsageAccountingError,
+} from "./model-usage-accounting.js";
 import type { ModelProfile } from "./model-profile.js";
 import type { ModelProvider } from "./model-provider.js";
 import type { ModelRequest } from "./model-request.js";
@@ -28,6 +34,8 @@ export interface ValidatedLlmGatewayDependencies {
   readonly requestValidator: Validator<ModelRequest>;
   readonly responseValidator: Validator<ModelResponse>;
   readonly selectionPolicy: ModelSelectionPolicy;
+  readonly usageAccountingConfig?: ModelUsageAccountingConfig;
+  readonly usageAccountingConfigValidator?: Validator<ModelUsageAccountingConfig>;
 }
 
 export class ValidatedLlmGateway implements LlmGateway {
@@ -69,6 +77,35 @@ export class ValidatedLlmGateway implements LlmGateway {
       });
     }
     const operationLimits = operationLimitsValidation.value;
+    const usageAccountingValidation =
+      this.#dependencies.usageAccountingConfig === undefined
+        ? undefined
+        : (
+            this.#dependencies.usageAccountingConfigValidator ??
+            new ModelUsageAccountingConfigValidator()
+          ).validate(this.#dependencies.usageAccountingConfig);
+    if (
+      usageAccountingValidation !== undefined &&
+      !usageAccountingValidation.ok
+    ) {
+      return this.#failure(validRequest, {
+        category: "validation",
+        code: "model_usage_accounting_invalid",
+        details: {
+          issues: usageAccountingValidation.issues.map(
+            ({ code, message, path }) => ({
+              code,
+              message,
+              path,
+            }),
+          ),
+        },
+        message: "The model usage accounting configuration is invalid",
+        retryable: false,
+        stage: "usage_accounting",
+      });
+    }
+    const usageAccountingConfig = usageAccountingValidation?.value;
     const requestLimitViolation = modelOperationLimitViolation(
       validRequest,
       operationLimits,
@@ -153,6 +190,7 @@ export class ValidatedLlmGateway implements LlmGateway {
       profile,
       provider,
       operationLimits,
+      usageAccountingConfig,
     );
   }
 
@@ -161,6 +199,7 @@ export class ValidatedLlmGateway implements LlmGateway {
     profile: ModelProfile,
     provider: ModelProvider,
     operationLimits: ModelOperationLimits,
+    usageAccountingConfig: ModelUsageAccountingConfig | undefined,
   ): Promise<ModelResponse> {
     let lastRetryableFailure:
       | "provider"
@@ -265,8 +304,61 @@ export class ValidatedLlmGateway implements LlmGateway {
         );
       }
 
+      let accountedResponse: ModelResponse;
+      try {
+        accountedResponse = applyModelUsageAccounting(
+          response,
+          profile,
+          usageAccountingConfig,
+        );
+      } catch (error) {
+        if (error instanceof ModelUsageAccountingError) {
+          return this.#failure(
+            validRequest,
+            {
+              category: "validation",
+              code: error.code,
+              details: {
+                modelId: profile.modelId,
+                profileId: profile.profileId,
+                providerId: profile.providerId,
+              },
+              message: error.message,
+              retryable: false,
+              stage: "usage_accounting",
+            },
+            profile,
+          );
+        }
+        throw error;
+      }
+      const accountedResponseValidation =
+        this.#dependencies.responseValidator.validate(accountedResponse);
+      if (!accountedResponseValidation.ok) {
+        return this.#failure(
+          validRequest,
+          {
+            category: "validation",
+            code: "model_usage_accounting_invalid",
+            details: {
+              issues: accountedResponseValidation.issues.map(
+                ({ code, message, path }) => ({
+                  code,
+                  message,
+                  path,
+                }),
+              ),
+            },
+            message: "Model usage accounting produced an invalid response",
+            retryable: false,
+            stage: "usage_accounting",
+          },
+          profile,
+        );
+      }
+      const normalizedResponse = accountedResponseValidation.value;
       const usageViolation = modelOperationUsageViolation(
-        response,
+        normalizedResponse,
         operationLimits,
       );
       if (usageViolation !== undefined) {
@@ -284,7 +376,10 @@ export class ValidatedLlmGateway implements LlmGateway {
         );
       }
 
-      if (response.status === "failed" && response.error.retryable) {
+      if (
+        normalizedResponse.status === "failed" &&
+        normalizedResponse.error.retryable
+      ) {
         lastRetryableFailure = "response";
         if (call < operationLimits.maxProviderCalls) {
           continue;
@@ -292,11 +387,11 @@ export class ValidatedLlmGateway implements LlmGateway {
         return this.#failure(
           validRequest,
           {
-            category: response.error.category,
+            category: normalizedResponse.error.category,
             code:
               operationLimits.maxProviderCalls > 1
                 ? "model_provider_retry_exhausted"
-                : response.error.code,
+                : normalizedResponse.error.code,
             ...(operationLimits.maxProviderCalls > 1
               ? {
                   details: {
@@ -307,7 +402,7 @@ export class ValidatedLlmGateway implements LlmGateway {
             message:
               operationLimits.maxProviderCalls > 1
                 ? "The model provider retry budget was exhausted"
-                : response.error.message,
+                : normalizedResponse.error.message,
             retryable: true,
             stage: "provider_invocation",
           },
@@ -315,7 +410,7 @@ export class ValidatedLlmGateway implements LlmGateway {
         );
       }
 
-      return response;
+      return normalizedResponse;
     }
 
     return this.#failure(
