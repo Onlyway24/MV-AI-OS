@@ -213,6 +213,28 @@ export {
   TaskStateError,
   normalizeCoreError,
 } from "./errors/core-error.js";
+export {
+  COST_GUARDIAN_CONTRACT_VERSION,
+  type CostGuardian,
+  type CostGuardianEvaluationInput,
+  type CostGuardianFinding,
+  type CostGuardianFindingCategory,
+  type CostGuardianFindingEvidence,
+  type CostGuardianRecordStatus,
+  type CostGuardianReport,
+  type CostGuardianReportSummary,
+  type CostGuardianSeverity,
+  type CostGuardianThresholds,
+  type CostGuardianUsageRecord,
+} from "./guardians/cost-guardian.js";
+export {
+  CostGuardianEvaluationInputValidator,
+  CostGuardianReportValidator,
+} from "./guardians/cost-guardian-validator.js";
+export {
+  CostGuardianValidationError,
+  DeterministicCostGuardian,
+} from "./guardians/cost-guardian-service.js";
 export type { LogEntry, Logger, LogLevel } from "./logging/logger.js";
 export {
   KnowledgeInvariantError,

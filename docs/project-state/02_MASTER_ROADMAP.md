@@ -176,9 +176,12 @@ deterministic estimated-cost calculation from validated model usage without stor
 prompts, secrets, provider payloads, or raw diagnostics. Controlled Model Budget
 Enforcement now adds explicit per-provider/model/profile requested-cost and
 estimated-cost gates at the model gateway boundary without adding billing, telemetry,
-dashboards, or durable ledgers. Durable usage ledgers, aggregated budget windows, Cost
-Guardian reporting, telemetry, and live smoke-test gating remain future work, with
-the next milestone specified in `04_NEXT_TASK.md`.
+dashboards, or durable ledgers. Cost Guardian Foundation now adds deterministic,
+report-only, redaction-safe operator warnings from supplied sanitized cost signals
+without autonomous action, alerts, scheduling, provider calls, or persistence. Durable
+usage ledgers, aggregated budget windows, broader operational telemetry, live
+smoke-test gating, and autonomous guardians remain future work, with the next
+milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

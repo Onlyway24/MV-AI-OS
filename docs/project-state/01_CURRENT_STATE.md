@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Controlled Model Budget Enforcement milestone:
-  `3d3b279 feat: add controlled model usage accounting`.
+- Latest committed baseline before the Cost Guardian Foundation milestone:
+  `238fcbe feat: add controlled model budget enforcement`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -26,8 +26,10 @@ and tests, not intended future behavior.
 - The Controlled Model Usage Accounting milestone is completed in this repository
   state and was committed in `3d3b279 feat: add controlled model usage accounting`.
 - The Controlled Model Budget Enforcement milestone is completed in this repository
-  state and is the current commit candidate.
-- The next milestone is Cost Guardian Foundation.
+  state and was committed in `238fcbe feat: add controlled model budget enforcement`.
+- The Cost Guardian Foundation milestone is completed in this repository state and is
+  the current commit candidate.
+- The next milestone is Security Guardian Foundation.
 
 ## Current architecture
 
@@ -108,6 +110,7 @@ provider, n8n, or external SDK types.
 25. Controlled Model Operation Limits.
 26. Controlled Model Usage Accounting.
 27. Controlled Model Budget Enforcement.
+28. Cost Guardian Foundation.
 
 ## Implemented modules
 
@@ -187,6 +190,22 @@ provider, n8n, or external SDK types.
 - The local runtime can exercise the model-backed path through a deterministic,
   provider-neutral local model adapter with no network access.
 
+### Guardians
+
+- Deterministic Cost Guardian foundation that consumes only supplied sanitized model
+  usage, operation-limit, provider-failure, and budget-enforcement signals.
+- Cost Guardian report, finding, severity, evidence, usage-record, threshold, and
+  evaluator contracts.
+- Runtime-validated Cost Guardian input and report boundaries that reject prompts,
+  completions, provider payloads, raw diagnostics, API keys, secret references,
+  resolved secret values, and other unsupported raw fields.
+- Report-only warning generation for missing budgets, missing usage accounting,
+  budget-nearing-limit, budget-exceeded, unusual provider-call count,
+  operation-limit blocks, repeated limit failures, and provider failure spikes.
+- No autonomous execution, scheduling, alerts, model calls, network calls, background
+  work, tool execution, durable guardian ledger, pricing invention, or
+  provider-specific Cost Guardian logic exists.
+
 ### Runtime composition
 
 - Versioned local runtime configuration for SQLite, Content Agent mode, actor,
@@ -260,6 +279,8 @@ provider, n8n, or external SDK types.
 - Model operation-limit contracts.
 - Model pricing and usage-accounting contracts.
 - Model budget enforcement contracts.
+- Cost Guardian evaluation, usage-record, threshold, report, finding, severity, and
+  evidence contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -283,6 +304,7 @@ provider, n8n, or external SDK types.
 - Model operation-limit validator.
 - Model usage-accounting configuration validator.
 - Model budget configuration validator.
+- Cost Guardian evaluation-input and report validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -292,7 +314,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 47 test files covering:
+The latest verified suite contains 48 test files and 293 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -347,6 +369,10 @@ The latest verified suite contains 47 test files covering:
   post-accounting estimated-cost denial, fail-closed missing required budget data,
   missing-cost behavior without invented spend, runtime configuration validation, and
   redaction-safe budget failures.
+- Cost Guardian validation, deterministic report generation, normal usage,
+  warning-state analysis, critical over-budget reporting, missing-budget reporting,
+  duplicate signal rejection, invalid report rejection, and redaction-safe report
+  boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -371,7 +397,8 @@ runtime with recoverable SQLite state, controlled configuration input, and an
 ephemeral credential boundary plus a production OpenAI provider adapter wired through
 controlled local runtime composition, bounded model-provider invocation behavior,
 provider-neutral estimated model cost calculation when explicit pricing is configured,
-and provider-neutral model budget enforcement.
+provider-neutral model budget enforcement, and deterministic local Cost Guardian
+reporting from sanitized cost signals.
 
 ## What exists only as a foundation
 
@@ -390,6 +417,10 @@ and provider-neutral model budget enforcement.
 - Model budget enforcement can deny requests before provider access or responses after
   accounting when explicit per-profile budget rules are exceeded, but it does not yet
   aggregate spend across durable time windows.
+- Cost Guardian can evaluate supplied sanitized cost signals and produce validated
+  operator-facing reports, but it is not an autonomous agent, scheduler, alerting
+  system, dashboard, durable usage ledger, billing integration, or provider telemetry
+  collector.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -451,6 +482,9 @@ and provider-neutral model budget enforcement.
 - The Validated LLM Gateway can optionally enforce explicit model budgets, reject
   invalid budget configuration before provider access, deny over-budget requested cost
   before provider access, and deny over-budget estimated usage cost after accounting.
+- A caller can instantiate the deterministic Cost Guardian, supply sanitized model
+  cost and failure signals, and receive a validated redaction-safe report with
+  warnings and recommendations.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -464,7 +498,8 @@ path.
 - Real tool implementations or direct tool execution.
 - Durable approval and workflow persistence.
 - Live-provider integration test gating, provider telemetry, durable model usage
-  ledgers, aggregated budget windows, and Cost Guardian reporting.
+  ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
+  dashboards, and external notification channels.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

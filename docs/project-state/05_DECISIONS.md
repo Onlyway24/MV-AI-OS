@@ -530,3 +530,29 @@ provider billing, export telemetry, display dashboards, or create a Cost Guardia
 **Future impact:** Cost Guardian and future durable usage ledgers must consume this
 provider-neutral budget/accounting boundary rather than duplicating pricing or spend
 logic in agents, Core Brain, or provider adapters.
+
+## ADR-024 — Cost Guardian is deterministic report-only infrastructure
+
+**Context:** Operation limits, usage accounting, and budget enforcement now protect
+the model gateway boundary, but Fabio also needs operator-facing cost-risk visibility
+before expanding live model usage, autonomy, alerts, dashboards, or scheduled work.
+
+**Decision:** Implement Cost Guardian as a provider-neutral, deterministic,
+non-autonomous analysis component. It consumes only supplied sanitized usage,
+operation-limit, provider-failure, and budget-enforcement signals, validates every
+input and report, and emits redaction-safe findings and recommendations. It does not
+call models, execute tools, run in the background, schedule itself, send alerts,
+persist ledgers, invent pricing, or mutate external systems.
+
+**Reason:** Money-safety visibility should exist before broader autonomy, but the
+guardian itself must not become a new spender or operator. Keeping it report-only
+preserves the existing gateway as the only automatic model-budget blocking path.
+
+**Tradeoffs:** The guardian can identify risk from supplied records, but it cannot
+collect telemetry, reconcile provider billing, aggregate durable budget windows,
+notify Fabio, or automatically stop systems. Callers must provide sanitized signals.
+
+**Future impact:** Future guardian agents, dashboards, alerts, durable usage ledgers,
+or budget-window enforcement must build on this redaction-safe report boundary and
+must add separate authorization, persistence, scheduling, and operator-approval
+contracts before taking action.
