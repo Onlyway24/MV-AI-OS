@@ -194,9 +194,13 @@ models, publishing, mutating outputs, sending alerts, scheduling work, or mutati
 state. Operator Safety Report now adds deterministic, report-only, redaction-safe
 aggregation of supplied guardian reports into one operator-facing safety summary
 without dashboards, alerts, scheduling, autonomy, persistence, network, model calls,
-or tool execution. Durable usage ledgers, aggregated budget windows, broader
-operational telemetry, live smoke-test gating, autonomous guardians, and dashboards
-remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
+or tool execution. Main Assistant / Orchestrator Specification Foundation now defines
+Only Way Assistant declaratively on top of the existing Agent Specification boundary
+with safety preflights, approval requirements, forbidden capabilities, and future
+delegation policy, without adding runtime execution. Durable usage ledgers,
+aggregated budget windows, broader operational telemetry, live smoke-test gating,
+autonomous guardians, dashboards, and Main Assistant runtime execution remain future
+work, with the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

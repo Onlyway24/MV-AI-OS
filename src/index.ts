@@ -32,6 +32,27 @@ export { AgentSpecificationRegistryError } from "./agents/specification/agent-sp
 export type { AgentSpecificationRegistry } from "./agents/specification/agent-specification-registry.js";
 export { AgentSpecificationValidator } from "./agents/specification/agent-specification-validator.js";
 export { ImmutableAgentSpecificationRegistry } from "./agents/specification/immutable-agent-specification-registry.js";
+export {
+  MAIN_ASSISTANT_SPECIFICATION_CONTRACT_VERSION,
+  ONLY_WAY_ASSISTANT_ID,
+  ONLY_WAY_ASSISTANT_INPUT_SCHEMA,
+  ONLY_WAY_ASSISTANT_INSTRUCTIONS,
+  ONLY_WAY_ASSISTANT_INSTRUCTIONS_REF,
+  ONLY_WAY_ASSISTANT_OUTPUT_SCHEMA,
+  ONLY_WAY_ASSISTANT_SPECIFICATION,
+  type MainAssistantDelegationPolicy,
+  type MainAssistantDelegationTarget,
+  type MainAssistantDelegationTargetRole,
+  type MainAssistantEscalationType,
+  type MainAssistantForbiddenCapability,
+  type MainAssistantForbiddenDelegationMode,
+  type MainAssistantHumanApprovalRequirement,
+  type MainAssistantOutputRule,
+  type MainAssistantSafetyDomain,
+  type MainAssistantSafetyPreflightRequirement,
+  type MainAssistantSpecification,
+} from "./assistants/main-assistant-specification.js";
+export { MainAssistantSpecificationValidator } from "./assistants/main-assistant-specification-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

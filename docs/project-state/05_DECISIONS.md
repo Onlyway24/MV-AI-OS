@@ -714,3 +714,35 @@ Report as an operator-facing safety input, not as an autonomous permission to ac
 Any future dashboard, alerting, durable safety ledger, scheduler, monitor, or
 automatic pause/remediation behavior requires separate policy, approval, audit,
 idempotency, persistence, and redaction milestones.
+
+## ADR-030 — Only Way Assistant starts as a specification, not a runtime
+
+**Context:** MV AI OS now has a report-only control-plane safety foundation. The
+next product direction is a single operator-facing assistant so Fabio does not
+babysit many visible agents. That assistant must eventually coordinate specialist
+agents, memory, knowledge, models, tools, workflows, guardians, and approvals, but
+adding execution too early would risk hidden autonomy, provider calls, tool use,
+workflow side effects, and policy bypass.
+
+**Decision:** Define Only Way Assistant first as a validated Main Assistant /
+Orchestrator specification built on the existing `AgentSpecification` contract. The
+specification records identity, mission, structured input/output schemas,
+capabilities, policy requirements, forbidden capabilities, safety preflights, human
+approval requirements, future delegation policy, non-responsibilities, and
+operator-facing output rules. It does not add a runtime, call models, execute tools,
+execute workflows, consult guardians automatically, mutate state, schedule work, or
+perform any external action.
+
+**Reason:** The main assistant should fit the existing architecture instead of
+creating a parallel agent system. A declarative, validated foundation gives Fabio one
+future interface while preserving provider neutrality, policy boundaries, guardian
+discipline, and human approval before dangerous action.
+
+**Tradeoffs:** The assistant is not executable yet. It cannot process operator
+requests, delegate work, invoke models, enforce safety checks, or produce live
+operator responses until later runtime milestones are implemented.
+
+**Future impact:** Main Assistant runtime, guardian consultation, delegation policy,
+and operator protocol milestones must consume this specification rather than
+inventing new identities or bypassing Agent Specification, Policy, Operator Safety,
+Model Gateway, Memory, Knowledge, Workflow Specification, or Tool Gateway boundaries.
