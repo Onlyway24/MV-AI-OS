@@ -33,6 +33,7 @@ import type { ModelProvider } from "../models/model-provider.js";
 import type { ModelRequest } from "../models/model-request.js";
 import type { ModelSelectionPolicy } from "../models/model-selection-policy.js";
 import type { ProviderRegistry } from "../models/provider-registry.js";
+import { DEFAULT_MODEL_OPERATION_LIMITS } from "../models/model-operation-limits-validator.js";
 import {
   OpenAIModelProvider,
   type OpenAIResponsesTransport,
@@ -204,6 +205,8 @@ async function createContentAgent(
       : LOCAL_DETERMINISTIC_MODEL_PROFILE;
   const gateway = new ValidatedLlmGateway({
     clock,
+    operationLimits:
+      config.modelOperationLimits ?? DEFAULT_MODEL_OPERATION_LIMITS,
     profileValidator: new ModelProfileValidator(),
     providerRegistry: new SingleProviderRegistry(provider),
     requestValidator: new ModelRequestValidator(),
@@ -420,6 +423,13 @@ function freezeConfig(config: LocalRuntimeConfig): LocalRuntimeConfig {
     ...(config.modelProvider === undefined
       ? {}
       : { modelProvider: Object.freeze({ ...config.modelProvider }) }),
+    ...(config.modelOperationLimits === undefined
+      ? {}
+      : {
+          modelOperationLimits: Object.freeze({
+            ...config.modelOperationLimits,
+          }),
+        }),
     sqlite: Object.freeze({ ...config.sqlite }),
   });
 }

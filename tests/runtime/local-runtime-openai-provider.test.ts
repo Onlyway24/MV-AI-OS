@@ -108,6 +108,49 @@ describe("Controlled local OpenAI provider wiring", () => {
     });
   });
 
+  it("blocks OpenAI transport access when operation limits reject the model request", async () => {
+    await withTemporaryDatabase(async (databasePath) => {
+      const transport = new FakeOpenAITransport({
+        body: createOpenAIContentResponse(),
+        status: 200,
+      });
+      const runtime = await createLocalRuntime(
+        {
+          ...createRuntimeConfig(databasePath, "model-backed-openai"),
+          modelOperationLimits: {
+            contractVersion: "1",
+            maxCostUsd: 0.1,
+            maxInputCharacters: 300_000,
+            maxOutputTokens: 1,
+            maxProviderCalls: 1,
+            maxTotalTokens: 32_000,
+            timeoutMs: 30_000,
+          },
+        },
+        {
+          clock: new FixedClock(),
+          openAIResponsesTransport: transport,
+          secretReferences: [createEnvironmentSecretReference()],
+          secretResolver: new LocalSecretResolver({
+            environment: {
+              MV_AI_OS_OPENAI_API_KEY: "resolved-openai-key",
+            },
+          }),
+        },
+      );
+
+      await expect(runtime.execute(createRequest())).resolves.toMatchObject({
+        error: {
+          code: "model_operation_limit_exceeded",
+          stage: "operation_limits",
+        },
+        status: "failed",
+      });
+      expect(transport.requests).toEqual([]);
+      await runtime.close();
+    });
+  });
+
   it("requires explicit secret reference and resolver before transport access", async () => {
     await withTemporaryDatabase(async (databasePath) => {
       const transport = new FakeOpenAITransport({

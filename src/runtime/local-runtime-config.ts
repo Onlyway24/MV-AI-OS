@@ -1,5 +1,6 @@
 import type { SqliteConnectionConfig } from "../persistence/sqlite/sqlite-connection-config.js";
 import type { EffectivePermission } from "../policy/effective-permissions.js";
+import type { ModelOperationLimits } from "../models/model-operation-limits.js";
 
 export const LOCAL_RUNTIME_CONTRACT_VERSION = "1" as const;
 
@@ -31,6 +32,7 @@ export interface LocalRuntimeConfig {
   readonly actorId: string;
   readonly contractVersion: typeof LOCAL_RUNTIME_CONTRACT_VERSION;
   readonly contentAgentMode: LocalContentAgentMode;
+  readonly modelOperationLimits?: ModelOperationLimits;
   readonly modelProvider?: LocalModelProviderConfig;
   readonly permissions: LocalRuntimePermissionConfig;
   readonly sqlite: SqliteConnectionConfig;

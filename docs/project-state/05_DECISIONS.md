@@ -448,3 +448,33 @@ provider telemetry, or advanced retry/cost controls.
 selection, no implicit credential lookup, no resolved secrets in runtime config or
 durable records, fake transport coverage by default, and provider-specific behavior
 contained behind `ModelProvider`.
+
+## ADR-021 — Model operation limits are enforced at the gateway boundary
+
+**Context:** MV AI OS can now compose deterministic and OpenAI-backed model providers.
+Without an explicit operational guard, provider use could accidentally exceed request
+size, output size, timeout, retry, or usage budgets before future telemetry and cost
+accounting are available.
+
+**Decision:** Add provider-neutral `ModelOperationLimits` and validate them inside
+`ValidatedLlmGateway` before provider invocation. The gateway enforces maximum input
+characters, requested output tokens, requested timeout, provider-call count, and
+reported total-token or cost limits when usage is available. Retryable provider
+failures are retried only within the configured call budget; non-retryable failures
+are not retried. Timeout and retry-exhaustion failures are normalized into
+redaction-safe `ModelError` responses. Local runtime composition supplies validated
+operation limits without exposing Core Brain or agents to provider details.
+
+**Reason:** Model safety and spend control must be centralized at the existing model
+boundary. Agents and Core Brain should request model capability through contracts, not
+own provider retry loops, timeout behavior, or operational cost guards.
+
+**Tradeoffs:** This milestone bounds usage but does not implement full provider
+pricing, durable usage ledgers, dashboards, live integration gating, cancellation for
+non-cooperative in-process providers, or external monitoring. Currency limits are
+enforced only when a request or provider response carries cost data.
+
+**Future impact:** Future cost accounting and telemetry must build on this boundary
+instead of bypassing it. Any new provider must remain behind `ModelProvider`, use fake
+transport tests by default, and rely on gateway-level operation limits for shared
+provider-neutral behavior.

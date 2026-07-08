@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the current milestone:
-  `649c3a7 feat: wire controlled local OpenAI provider`.
+- Latest committed baseline before the Controlled Model Operation Limits milestone:
+  `dc8ec37 docs: reconcile OpenAI provider wiring state`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -21,7 +21,8 @@ and tests, not intended future behavior.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
 - The Controlled Local OpenAI Provider Wiring milestone is completed and committed in
   `649c3a7 feat: wire controlled local OpenAI provider`.
-- The current milestone is Controlled Model Operation Limits.
+- Controlled Model Operation Limits is implemented in the current working tree and
+  awaiting its milestone commit.
 
 ## Current architecture
 
@@ -99,6 +100,7 @@ provider, n8n, or external SDK types.
 22. Controlled Local Secret Resolution.
 23. Controlled Production Model Provider Adapter.
 24. Controlled Local OpenAI Provider Wiring.
+25. Controlled Model Operation Limits.
 
 ## Implemented modules
 
@@ -158,8 +160,11 @@ provider, n8n, or external SDK types.
 
 - Provider-neutral model request, response, profile, usage, provider, registry,
   selection policy, and error contracts.
+- Provider-neutral model operation-limit contract for maximum input characters,
+  output tokens, provider calls, timeout, total tokens, and reported cost.
 - Validated LLM Gateway with provider/profile selection, limit checks, failure
-  normalization, response ownership validation, and injected dependencies.
+  normalization, response ownership validation, bounded provider invocation attempts,
+  timeout handling, operation-limit enforcement, and injected dependencies.
 - Deterministic model provider and provider registry only in tests.
 - Production OpenAI Responses API model provider adapter behind `ModelProvider`,
   with validated configuration, resolved ephemeral credential input, provider-neutral
@@ -239,6 +244,7 @@ provider, n8n, or external SDK types.
 - knowledge record/source/query/scope/search-result/repository/service contracts.
 - model request/response/profile/usage/error/provider/gateway contracts.
 - OpenAI provider configuration, transport, and adapter contracts.
+- Model operation-limit contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -259,6 +265,7 @@ provider, n8n, or external SDK types.
 - Memory record, scope, and query validators.
 - Knowledge source, scope, record, query, and result validators.
 - Model request, response, and profile validators.
+- Model operation-limit validator.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -268,7 +275,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 44 test files and 255 passing tests covering:
+The latest verified suite contains 45 test files and 266 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -311,6 +318,10 @@ The latest verified suite contains 44 test files and 255 passing tests covering:
   secret-reference and resolver requirements, fail-closed unused secret references,
   fake-transport end-to-end execution through `ValidatedLlmGateway`, and redaction of
   secret values and provider diagnostics from public task failures.
+- model operation-limit validation, oversized input and output-token blocking before
+  provider transport access, bounded retry behavior, timeout normalization,
+  non-retryable failure handling, response usage enforcement, and OpenAI fake-transport
+  denial when operation limits fail.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -327,12 +338,13 @@ The latest verified suite contains 44 test files and 255 passing tests covering:
 The repository is an early implementation with a stable orchestration kernel and
 strongly tested architectural foundations, durable local lifecycle, memory, and
 knowledge adapters, an executable local composition root, a controlled command-line
-process boundary, a controlled local backup/restore recovery path, and explicit local
-configuration loading with controlled local secret resolution. It is not
+process boundary, a controlled local backup/restore recovery path, explicit local
+configuration loading with controlled local secret resolution, production OpenAI
+provider wiring, and provider-neutral model operation limits. It is not
 production-ready, but the implemented modules now compose into one validated local
 runtime with recoverable SQLite state, controlled configuration input, and an
 ephemeral credential boundary plus a production OpenAI provider adapter wired through
-controlled local runtime composition.
+controlled local runtime composition and bounded model-provider invocation behavior.
 
 ## What exists only as a foundation
 
@@ -343,6 +355,9 @@ controlled local runtime composition.
 - The LLM Gateway is used by the model-backed Content Agent with deterministic local
   provider and OpenAI provider composition paths, but provider telemetry and live
   integration gating remain basic.
+- Model operation limits bound request size, output size, provider-call count,
+  timeout, and reported usage/cost where available, but they do not yet provide full
+  model pricing configuration or durable usage accounting.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -394,6 +409,9 @@ controlled local runtime composition.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
+- The Validated LLM Gateway rejects invalid operation limits, oversized requests,
+  excessive output-token or timeout requests, and usage-budget violations with
+  redaction-safe provider-neutral failures before exposing provider details.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -406,7 +424,8 @@ path.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
 - Durable approval and workflow persistence.
-- Live-provider integration test gating and operational model controls.
+- Live-provider integration test gating, provider telemetry, and full model
+  cost-accounting configuration.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

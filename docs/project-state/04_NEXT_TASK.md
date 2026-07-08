@@ -2,59 +2,59 @@
 
 ## Milestone name
 
-Controlled Model Operation Limits
+Controlled Model Usage Accounting
 
 ## Goal
 
-Add explicit model-operation controls for timeout, retry, and cost handling around
-provider invocation while preserving the existing provider-neutral `LlmGateway`,
-Core Brain, agents, local runtime contracts, and deterministic offline test path.
+Add provider-neutral model usage accounting so MV AI OS can report model usage and
+estimated cost from validated model responses without coupling Core Brain or agents to
+provider pricing details.
 
 ## Why it matters
 
-MV AI OS can now compose the production OpenAI provider through controlled local
-runtime configuration and secret resolution. The next operational risk is unmanaged
-provider behavior: production model calls need bounded invocation attempts,
-deterministic timeout handling, and cost-limit enforcement without leaking provider
-details or changing agent contracts.
+Controlled Model Operation Limits now prevent unbounded provider calls, oversized
+requests, excessive output-token requests, excessive timeout requests, and retry
+loops. The next production-model risk is operator visibility: Fabio needs a
+deterministic way to understand usage and estimated cost after model calls without
+storing prompts, secrets, provider payloads, or raw diagnostics.
 
 ## Required scope
 
-- Define versioned model operation limit contracts for timeout, retry, and cost
-  behavior.
-- Apply operation limits at the model gateway/provider invocation boundary, not in
-  Core Brain or agents.
-- Preserve existing request/profile compatibility checks and response ownership
-  validation.
-- Keep deterministic local and fake OpenAI transport tests offline by default.
-- Normalize timeout, retry-exhausted, and cost-limit failures into safe
-  provider-neutral model errors.
-- Ensure public errors do not expose API keys, secret references, raw provider
-  diagnostics, transport payloads, or full prompts.
+- Define a provider-neutral model pricing/usage-accounting contract.
+- Validate pricing/accounting configuration at the local runtime boundary.
+- Calculate estimated usage cost only from validated `ModelUsage` and explicit
+  pricing configuration.
+- Keep the calculation outside Core Brain and agents.
+- Preserve existing gateway operation limits and provider failure normalization.
+- Keep automated tests deterministic and offline.
+- Ensure accounting output contains no prompts, provider payloads, API keys, resolved
+  secret values, or raw provider diagnostics.
 
 ## Forbidden scope
 
-- Core Brain, agent, memory, knowledge, repository, SQLite, backup/restore, workflow,
-  tool, CLI request, dashboard, HTTP, n8n, embedding, or vector-search behavior
-  changes.
 - Live provider calls in the default test suite.
-- Persisting model prompts, provider payloads, API keys, resolved secret values, or
-  raw provider diagnostics.
-- Adding multi-provider routing, scheduling, telemetry exporters, or dashboard UI.
-- Changing the OpenAI adapter into an agent-visible dependency.
+- Billing, payments, subscriptions, quotas, dashboards, external monitoring,
+  telemetry exporters, HTTP, n8n, MCP, workflow execution, real tool execution,
+  embeddings, vector search, or browser automation.
+- Hardcoding provider pricing without explicit local configuration.
+- Persisting prompts, provider payloads, resolved secrets, raw provider diagnostics,
+  or full model outputs solely for accounting.
+- Changing Core Brain, agent, memory, knowledge, repository, SQLite, backup/restore,
+  workflow, tool, or CLI request behavior unless strictly required by the accounting
+  boundary.
 
 ## Likely files to create
 
-- `src/models/model-operation-limits.ts`
-- `src/models/model-operation-limits-validator.ts`
-- `tests/models/model-operation-limits.test.ts`
+- `src/models/model-pricing.ts`
+- `src/models/model-pricing-validator.ts`
+- `src/models/model-usage-accounting.ts`
+- `tests/models/model-usage-accounting.test.ts`
 
 ## Likely files to modify
 
-- `src/models/validated-llm-gateway.ts`
-- `src/runtime/create-local-runtime.ts`
 - `src/runtime/local-runtime-config.ts`
 - `src/runtime/local-runtime-config-validator.ts`
+- `src/runtime/create-local-runtime.ts`
 - `src/index.ts`
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
@@ -63,28 +63,29 @@ details or changing agent contracts.
 
 ## Tests required
 
-- Timeout limits produce deterministic provider-neutral timeout failures.
-- Retryable provider failures are retried only within the configured bounded budget.
-- Non-retryable failures are not retried.
-- Retry exhaustion produces a safe normalized failure without raw diagnostics.
-- Cost limits remain enforced against request/profile/response usage.
-- Deterministic local provider and fake OpenAI transport paths remain offline.
-- Existing configuration, secret-resolution, provider-adapter, runtime, CLI,
-  persistence, backup, restore, and governed model-content tests continue passing.
+- Valid pricing/accounting configuration is accepted.
+- Invalid pricing/accounting configuration fails closed.
+- Estimated cost is calculated deterministically from validated usage.
+- Missing usage does not invent cost.
+- Unknown model/profile pricing fails closed where pricing is required.
+- Accounting results never include prompts, secret values, raw provider diagnostics,
+  or provider payloads.
+- Existing operation-limit, OpenAI fake-transport, runtime, CLI, persistence, backup,
+  restore, and governed model-content tests continue passing.
 
 ## Acceptance criteria
 
-- Provider invocation behavior is bounded by explicit operation limits.
-- Gateway and provider errors remain normalized and redaction-safe.
-- Core Brain and agents remain provider-neutral.
+- Model usage accounting is provider-neutral, deterministic, and runtime validated.
+- Cost estimates come only from explicit pricing configuration and validated usage.
+- Core Brain and agents remain provider-neutral and unaware of provider pricing.
 - No live network access is introduced into default tests.
-- No secret value, raw provider diagnostic, or full prompt appears in public errors or
-  durable records.
+- No sensitive data is stored or surfaced for accounting.
 
 ## Definition of done
 
-- Model operation-limit contracts and deterministic tests are implemented.
-- Project-state documents accurately describe the new model-operation controls.
+- Usage-accounting contracts, validators, implementation, and deterministic tests are
+  complete.
+- Project-state documents accurately describe the new accounting boundary.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- Final reporting waits for approval or follows the user’s explicit commit
+- Final reporting waits for approval or follows the user's explicit commit
   instruction.

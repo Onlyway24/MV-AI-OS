@@ -343,6 +343,11 @@ export type {
   ModelRequestLimits,
   ModelRequestOutput,
 } from "./models/model-request.js";
+export type { ModelOperationLimits } from "./models/model-operation-limits.js";
+export {
+  DEFAULT_MODEL_OPERATION_LIMITS,
+  ModelOperationLimitsValidator,
+} from "./models/model-operation-limits-validator.js";
 export type {
   FailedModelResponse,
   ModelOutput,

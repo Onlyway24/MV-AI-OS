@@ -165,11 +165,14 @@ types into agents or Core Brain.
 **Status:** In progress. The first production OpenAI Responses API provider adapter
 is implemented behind `ModelProvider` with validated configuration, ephemeral
 credential input, injectable transport, deterministic offline tests, and gateway
-normalization coverage. Controlled local OpenAI provider wiring is also complete,
-allowing explicit `model-backed-openai` runtime composition with supplied secret
-references, a resolver, and fake or production transport while preserving the
-deterministic offline path. The next milestone is controlled model operation limits,
-specified in `04_NEXT_TASK.md`.
+normalization coverage. Controlled local OpenAI provider wiring is complete, allowing
+explicit `model-backed-openai` runtime composition with supplied secret references, a
+resolver, and fake or production transport while preserving the deterministic offline
+path. Controlled Model Operation Limits now bound provider invocation through
+provider-neutral gateway controls for request size, output tokens, timeout, provider
+call count, retry exhaustion, and reported usage/cost where available. Full model
+pricing configuration, durable usage accounting, telemetry, and live smoke-test gating
+remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

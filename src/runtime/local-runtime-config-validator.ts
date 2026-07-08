@@ -11,6 +11,7 @@ import {
   MAX_OPENAI_HEADER_VALUE_LENGTH,
   OPENAI_MODEL_PROVIDER_ID,
 } from "../models/providers/openai-model-provider-config.js";
+import { ModelOperationLimitsValidator } from "../models/model-operation-limits-validator.js";
 import { SqliteConnectionConfigValidator } from "../persistence/sqlite/sqlite-connection-config.js";
 import {
   isEffectivePermission,
@@ -49,6 +50,8 @@ const HEADER_VALUE_PATTERN = /^[A-Za-z0-9_.:-]{1,256}$/u;
 export class LocalRuntimeConfigValidator
   implements Validator<LocalRuntimeConfig>
 {
+  readonly #modelOperationLimitsValidator =
+    new ModelOperationLimitsValidator();
   readonly #sqliteValidator = new SqliteConnectionConfigValidator();
 
   public validate(value: unknown): ValidationResult<LocalRuntimeConfig> {
@@ -81,6 +84,12 @@ export class LocalRuntimeConfigValidator
       contentAgentMode,
       issues,
     );
+    const modelOperationLimitsValidation =
+      record.modelOperationLimits === undefined
+        ? undefined
+        : this.#modelOperationLimitsValidator.validate(
+            record.modelOperationLimits,
+          );
     const sqliteValidation = this.#sqliteValidator.validate(record.sqlite);
     const workspaceId = readRequiredString(record, "workspaceId", issues);
     if (!sqliteValidation.ok) {
@@ -90,6 +99,23 @@ export class LocalRuntimeConfigValidator
           message,
           path: path === "$" ? "sqlite" : `sqlite.${path}`,
         })),
+      );
+    }
+    if (
+      modelOperationLimitsValidation !== undefined &&
+      !modelOperationLimitsValidation.ok
+    ) {
+      issues.push(
+        ...modelOperationLimitsValidation.issues.map(
+          ({ code, message, path }) => ({
+            code,
+            message,
+            path:
+              path === "$"
+                ? "modelOperationLimits"
+                : `modelOperationLimits.${path}`,
+          }),
+        ),
       );
     }
 
@@ -124,6 +150,8 @@ export class LocalRuntimeConfigValidator
       ) ||
       permissions === undefined ||
       modelProvider === false ||
+      (modelOperationLimitsValidation !== undefined &&
+        !modelOperationLimitsValidation.ok) ||
       !sqliteValidation.ok ||
       workspaceId === undefined
     ) {
@@ -134,6 +162,12 @@ export class LocalRuntimeConfigValidator
       actorId,
       contentAgentMode: contentAgentMode as LocalContentAgentMode,
       contractVersion,
+      ...(modelOperationLimitsValidation === undefined
+        ? {}
+        : {
+            modelOperationLimits:
+              modelOperationLimitsValidation.value,
+          }),
       ...(modelProvider === undefined ? {} : { modelProvider }),
       permissions,
       sqlite: sqliteValidation.value,
