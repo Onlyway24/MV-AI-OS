@@ -418,3 +418,33 @@ construction by a caller.
 credentials remain ephemeral and adapter-local, provider diagnostics are redacted, and
 default tests stay deterministic and offline. Runtime wiring must compose providers
 without allowing agents or Core Brain to import provider-specific types.
+
+## ADR-020 — Local OpenAI provider wiring is explicit composition
+
+**Context:** The OpenAI provider adapter exists behind `ModelProvider`, and local
+secret resolution can produce ephemeral credentials. Wiring that provider into the
+local runtime could accidentally introduce implicit credential discovery, live network
+behavior in tests, provider-specific agent contracts, or resolved secret values in
+runtime configuration.
+
+**Decision:** Add an explicit `model-backed-openai` local content mode with a narrow
+OpenAI provider selection in `LocalRuntimeConfig`. The runtime config carries only
+provider metadata and an opaque secret-reference ID. `createLocalRuntime` requires the
+matching `SecretReference` and `SecretResolver` to be supplied explicitly before it
+constructs the OpenAI adapter. Tests use an injected fake OpenAI transport; the
+deterministic local model path remains the default offline path.
+
+**Reason:** Provider selection is local infrastructure composition. Keeping the
+selection explicit, the credential ephemeral, and the transport injectable lets the
+runtime use production provider infrastructure without changing Core Brain, agents,
+policy, memory, knowledge, repositories, workflow, tool, or CLI request semantics.
+
+**Tradeoffs:** OpenAI mode requires more explicit setup from local callers: provider
+config, matching secret references, a resolver, and optionally a fake transport for
+offline tests. The runtime still does not provide live integration-test gating,
+provider telemetry, or advanced retry/cost controls.
+
+**Future impact:** Future provider wiring must follow the same pattern: explicit mode
+selection, no implicit credential lookup, no resolved secrets in runtime config or
+durable records, fake transport coverage by default, and provider-specific behavior
+contained behind `ModelProvider`.

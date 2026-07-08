@@ -439,6 +439,9 @@ export { TaskRecordValidator } from "./validation/task-record-validator.js";
 export {
   LOCAL_RUNTIME_CONTRACT_VERSION,
   type LocalContentAgentMode,
+  type LocalModelProviderConfig,
+  type LocalModelProviderId,
+  type LocalOpenAIModelProviderConfig,
   type LocalRuntimeConfig,
   type LocalRuntimePermissionConfig,
 } from "./runtime/local-runtime-config.js";

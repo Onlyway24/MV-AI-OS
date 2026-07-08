@@ -10,7 +10,7 @@ and tests, not intended future behavior.
 
 - Current branch at the time of this snapshot: `main`.
 - Latest committed baseline before the current milestone:
-  `da8199a feat: add controlled local secret resolution`.
+  `5cbf209 feat: add controlled production model provider adapter`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -19,8 +19,8 @@ and tests, not intended future behavior.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
-- The Controlled Production Model Provider Adapter milestone is implemented in the
-  current milestone.
+- The Controlled Local OpenAI Provider Wiring milestone is implemented in the current
+  milestone.
 
 ## Current architecture
 
@@ -97,6 +97,7 @@ provider, n8n, or external SDK types.
 21. Controlled Local Configuration and Secret References.
 22. Controlled Local Secret Resolution.
 23. Controlled Production Model Provider Adapter.
+24. Controlled Local OpenAI Provider Wiring.
 
 ## Implemented modules
 
@@ -164,22 +165,25 @@ provider, n8n, or external SDK types.
   request/response translation, injectable transport, and deterministic offline
   tests.
 - Model-backed content execution is integrated through the gateway using deterministic
-  providers in tests.
+  providers and the OpenAI provider through local runtime composition.
 - The local runtime can exercise the model-backed path through a deterministic,
   provider-neutral local model adapter with no network access.
 
 ### Runtime composition
 
 - Versioned local runtime configuration for SQLite, Content Agent mode, actor,
-  workspace, and explicit actor/task/policy grants.
+  workspace, explicit actor/task/policy grants, and OpenAI provider selection without
+  resolved secret values.
 - Versioned local application configuration boundary that validates explicit local
   JSON input, assembles existing runtime and CLI configuration, and carries only
   inert secret references.
 - Secret-reference contracts for environment and local-file locations.
 - Explicit local secret-resolution boundary that resolves already-validated
-  environment and local-file references into ephemeral secret values for future
-  provider adapters without exposing values to Core Brain, agents, runtime
-  configuration, persistence, or public errors.
+  environment and local-file references into ephemeral secret values for provider
+  adapters without exposing values to Core Brain, agents, runtime configuration,
+  persistence, or public errors.
+- Controlled local OpenAI provider wiring through the local composition root using an
+  explicit provider mode, referenced secret, resolver, and injectable transport.
 - Runtime validation occurs before any SQLite connection is opened.
 - Production immutable Agent Specification registry.
 - Explicit construction of lifecycle, Memory, Knowledge, policy, registry, routing,
@@ -225,7 +229,8 @@ provider, n8n, or external SDK types.
 - SQLite backup and restore configuration/result contracts.
 - local application configuration and secret-reference contracts.
 - secret resolver, secret value, and secret resolution result contracts.
-- local runtime configuration, runtime handle, and test-override contracts.
+- local runtime configuration, runtime handle, model-provider selection, and
+  test-override contracts.
 - local CLI configuration, structured error response, exit-code, and process-host
   contracts.
 - policy decision, effective permission, grant resolver, and evaluator interfaces.
@@ -262,7 +267,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 43 test files and 250 passing tests covering:
+The latest verified suite contains 44 test files and 255 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -301,6 +306,10 @@ The latest verified suite contains 43 test files and 250 passing tests covering:
   translation, text and JSON response translation, HTTP failure redaction, transport
   failure normalization through `ValidatedLlmGateway`, and retained gateway usage
   limit enforcement.
+- local OpenAI provider runtime wiring, deterministic-mode preservation, explicit
+  secret-reference and resolver requirements, fail-closed unused secret references,
+  fake-transport end-to-end execution through `ValidatedLlmGateway`, and redaction of
+  secret values and provider diagnostics from public task failures.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -321,8 +330,8 @@ process boundary, a controlled local backup/restore recovery path, and explicit 
 configuration loading with controlled local secret resolution. It is not
 production-ready, but the implemented modules now compose into one validated local
 runtime with recoverable SQLite state, controlled configuration input, and an
-ephemeral credential boundary plus a production OpenAI provider adapter that is not
-yet wired into local runtime composition.
+ephemeral credential boundary plus a production OpenAI provider adapter wired through
+controlled local runtime composition.
 
 ## What exists only as a foundation
 
@@ -330,13 +339,13 @@ yet wired into local runtime composition.
   context path, but are not yet universally enforced by every Agent Runtime executor.
 - Workflow Specifications are validated and registrable but are not executed.
 - The Tool Gateway authorizes access and validates results but cannot execute tools.
-- The LLM Gateway is used by the model-backed Content Agent, and a production OpenAI
-  provider adapter exists, but local runtime composition still uses the deterministic
-  local provider.
+- The LLM Gateway is used by the model-backed Content Agent with deterministic local
+  provider and OpenAI provider composition paths, but provider telemetry and live
+  integration gating remain basic.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
-- Secret references can be resolved locally into ephemeral values; the OpenAI provider
-  adapter can consume them, but runtime configuration does not wire that path yet.
+- Secret references can be resolved locally into ephemeral values and consumed by the
+  OpenAI provider adapter through controlled runtime wiring.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
 
 ## What is actually executable
@@ -353,6 +362,10 @@ yet wired into local runtime composition.
   key and injected transport; provider-neutral model requests are translated to
   OpenAI Responses API requests, and text or structured JSON responses are translated
   back to validated `ModelResponse` records.
+- A caller can configure `createLocalRuntime` for `model-backed-openai` mode with an
+  explicit OpenAI provider config, supplied secret reference, secret resolver, and
+  optional fake or production transport; deterministic local mode remains the default
+  offline path.
 - A caller can construct `CoreBrain` with injected test/local adapters and execute a
   `business.content` request end to end.
 - A caller can use `createLocalRuntime` to validate configuration and construct the
@@ -383,7 +396,8 @@ yet wired into local runtime composition.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
-There is no HTTP service, dashboard, background server, or external-provider process.
+There is no HTTP service, dashboard, background server, or default live-provider test
+path.
 
 ## Not implemented yet
 
@@ -391,7 +405,7 @@ There is no HTTP service, dashboard, background server, or external-provider pro
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
 - Durable approval and workflow persistence.
-- Wiring production model providers into local runtime configuration.
+- Live-provider integration test gating and operational model controls.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

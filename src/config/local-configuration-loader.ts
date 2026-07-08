@@ -110,15 +110,32 @@ export function redactValidationIssues(
   return Object.freeze(
     issues.map(({ code, message, path }) => ({
       code,
-      message,
+      message: isSecretPath(path)
+        ? "secret reference configuration is invalid"
+        : message,
       path: redactSecretPath(path),
     })),
   );
 }
 
-function redactSecretPath(path: string): string {
-  return path.replace(
-    /secretReferences\[(\d+)\]\.(secretId|variableName|path)/gu,
-    "secretReferences[$1].<redacted>",
+function isSecretPath(path: string): boolean {
+  return (
+    (path.startsWith("secretReferences[") &&
+      (path.endsWith(".secretId") ||
+        path.endsWith(".variableName") ||
+        path.endsWith(".path"))) ||
+    path.includes("runtime.modelProvider.apiKeySecretId")
   );
+}
+
+function redactSecretPath(path: string): string {
+  return path
+    .replace(
+      /secretReferences\[(\d+)\]\.(secretId|variableName|path)/gu,
+      "secretReferences[$1].<redacted>",
+    )
+    .replace(
+      /runtime\.modelProvider\.(apiKeySecretId)/gu,
+      "runtime.modelProvider.<redacted>",
+    );
 }

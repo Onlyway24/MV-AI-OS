@@ -2,54 +2,56 @@
 
 ## Milestone name
 
-Controlled Local OpenAI Provider Wiring
+Controlled Model Operation Limits
 
 ## Goal
 
-Wire the production OpenAI model provider into the existing local configuration and
-runtime composition path using explicit secret resolution, without changing Core
-Brain, agents, policy, memory, knowledge, repositories, workflows, tools, or CLI
-request semantics.
+Add explicit model-operation controls for timeout, retry, and cost handling around
+provider invocation while preserving the existing provider-neutral `LlmGateway`,
+Core Brain, agents, local runtime contracts, and deterministic offline test path.
 
 ## Why it matters
 
-MV AI OS now has a provider-neutral LLM Gateway, a governed model-backed Content
-Agent, controlled local secret resolution, and a production OpenAI provider adapter.
-The remaining gap is controlled composition: local operators need a validated way to
-select the production provider while keeping credentials ephemeral and preserving the
-deterministic local mode for offline development and tests.
+MV AI OS can now compose the production OpenAI provider through controlled local
+runtime configuration and secret resolution. The next operational risk is unmanaged
+provider behavior: production model calls need bounded invocation attempts,
+deterministic timeout handling, and cost-limit enforcement without leaking provider
+details or changing agent contracts.
 
 ## Required scope
 
-- Extend local application configuration with an explicit model-provider selection.
-- Resolve only referenced secrets that are explicitly required by the selected
-  provider.
-- Construct the OpenAI provider adapter through the existing local composition root.
-- Preserve deterministic local provider mode as the default offline/test path.
-- Keep resolved secret values out of `LocalRuntimeConfig`, CLI JSON output, durable
-  records, audit-like data, logs, and public errors.
-- Add deterministic offline composition tests with fake transport only.
-- Keep live OpenAI calls disabled by default and outside the standard test suite.
+- Define versioned model operation limit contracts for timeout, retry, and cost
+  behavior.
+- Apply operation limits at the model gateway/provider invocation boundary, not in
+  Core Brain or agents.
+- Preserve existing request/profile compatibility checks and response ownership
+  validation.
+- Keep deterministic local and fake OpenAI transport tests offline by default.
+- Normalize timeout, retry-exhausted, and cost-limit failures into safe
+  provider-neutral model errors.
+- Ensure public errors do not expose API keys, secret references, raw provider
+  diagnostics, transport payloads, or full prompts.
 
 ## Forbidden scope
 
-- Core Brain, agent, policy, memory, knowledge, workflow, tool, repository, SQLite
-  schema, backup/restore, or request contract changes.
-- Hidden environment discovery, implicit API-key loading, or fallback credential
-  lookup.
-- Persisting, logging, snapshotting, or echoing resolved secret values.
-- Dashboard, HTTP server, n8n, scheduling, embeddings, vector search, tool execution,
-  or multi-provider routing.
-- Live network calls in default tests.
+- Core Brain, agent, memory, knowledge, repository, SQLite, backup/restore, workflow,
+  tool, CLI request, dashboard, HTTP, n8n, embedding, or vector-search behavior
+  changes.
+- Live provider calls in the default test suite.
+- Persisting model prompts, provider payloads, API keys, resolved secret values, or
+  raw provider diagnostics.
+- Adding multi-provider routing, scheduling, telemetry exporters, or dashboard UI.
+- Changing the OpenAI adapter into an agent-visible dependency.
 
 ## Likely files to create
 
-- `tests/runtime/local-runtime-openai-provider.test.ts`
+- `src/models/model-operation-limits.ts`
+- `src/models/model-operation-limits-validator.ts`
+- `tests/models/model-operation-limits.test.ts`
 
 ## Likely files to modify
 
-- `src/config/local-application-config.ts`
-- `src/config/local-application-config-validator.ts`
+- `src/models/validated-llm-gateway.ts`
 - `src/runtime/create-local-runtime.ts`
 - `src/runtime/local-runtime-config.ts`
 - `src/runtime/local-runtime-config-validator.ts`
@@ -61,30 +63,28 @@ deterministic local mode for offline development and tests.
 
 ## Tests required
 
-- Deterministic local provider mode remains the default and continues passing.
-- OpenAI provider mode requires an explicit valid secret reference and resolved
-  ephemeral `SecretValue`.
-- Missing, duplicate, invalid, or unused secret references fail closed.
-- Fake OpenAI transport proves end-to-end runtime execution through
-  `ValidatedLlmGateway` without live network access.
-- Public errors redact secret values, secret IDs, secret locations, and provider
-  diagnostics.
+- Timeout limits produce deterministic provider-neutral timeout failures.
+- Retryable provider failures are retried only within the configured bounded budget.
+- Non-retryable failures are not retried.
+- Retry exhaustion produces a safe normalized failure without raw diagnostics.
+- Cost limits remain enforced against request/profile/response usage.
+- Deterministic local provider and fake OpenAI transport paths remain offline.
 - Existing configuration, secret-resolution, provider-adapter, runtime, CLI,
   persistence, backup, restore, and governed model-content tests continue passing.
 
 ## Acceptance criteria
 
-- Local runtime can be composed with the OpenAI provider adapter through explicit
-  configuration.
+- Provider invocation behavior is bounded by explicit operation limits.
+- Gateway and provider errors remain normalized and redaction-safe.
 - Core Brain and agents remain provider-neutral.
-- Credentials remain ephemeral and adapter-local.
-- Offline deterministic tests remain the default.
-- No secret value appears in source, public errors, logs, or durable records.
+- No live network access is introduced into default tests.
+- No secret value, raw provider diagnostic, or full prompt appears in public errors or
+  durable records.
 
 ## Definition of done
 
-- Local provider wiring is implemented and integration-tested with fake transport.
-- Project-state documents accurately describe the new composition capability.
+- Model operation-limit contracts and deterministic tests are implemented.
+- Project-state documents accurately describe the new model-operation controls.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
 - Final reporting waits for approval or follows the user’s explicit commit
   instruction.

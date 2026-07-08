@@ -84,6 +84,13 @@ export class LocalApplicationConfigValidator
         })),
       );
     }
+    if (runtimeValidation.ok && secretReferences !== undefined) {
+      validateSelectedProviderSecrets(
+        runtimeValidation.value.modelProvider,
+        secretReferences,
+        issues,
+      );
+    }
 
     if (
       issues.length > 0 ||
@@ -156,6 +163,40 @@ export class LocalApplicationConfigValidator
     return issues.some((issue) => issue.path.startsWith("secretReferences"))
       ? undefined
       : Object.freeze(references);
+  }
+}
+
+function validateSelectedProviderSecrets(
+  modelProvider:
+    | { readonly apiKeySecretId: string; readonly providerId: string }
+    | undefined,
+  secretReferences: readonly SecretReference[],
+  issues: ValidationIssue[],
+): void {
+  if (modelProvider?.providerId !== "openai") {
+    return;
+  }
+  const usedSecretIds = new Set([modelProvider.apiKeySecretId]);
+  if (
+    !secretReferences.some(
+      ({ secretId }) => secretId === modelProvider.apiKeySecretId,
+    )
+  ) {
+    issues.push({
+      code: "required",
+      message: "modelProvider.apiKeySecretId must reference a configured secret",
+      path: "runtime.modelProvider.apiKeySecretId",
+    });
+  }
+  for (const [index, reference] of secretReferences.entries()) {
+    if (!usedSecretIds.has(reference.secretId)) {
+      issues.push({
+        code: "unexpected",
+        message:
+          "secretReferences must not contain unused entries for the selected provider",
+        path: `secretReferences[${String(index)}].secretId`,
+      });
+    }
   }
 }
 

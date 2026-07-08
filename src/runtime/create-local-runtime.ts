@@ -33,6 +33,14 @@ import type { ModelProvider } from "../models/model-provider.js";
 import type { ModelRequest } from "../models/model-request.js";
 import type { ModelSelectionPolicy } from "../models/model-selection-policy.js";
 import type { ProviderRegistry } from "../models/provider-registry.js";
+import {
+  OpenAIModelProvider,
+  type OpenAIResponsesTransport,
+} from "../models/providers/openai-model-provider.js";
+import {
+  OPENAI_MODEL_PROVIDER_CONFIG_CONTRACT_VERSION,
+  OPENAI_MODEL_PROVIDER_ID,
+} from "../models/providers/openai-model-provider-config.js";
 import { ValidatedLlmGateway } from "../models/validated-llm-gateway.js";
 import { SqliteKnowledgeRepository } from "../persistence/sqlite/sqlite-knowledge-repository.js";
 import { SqliteMemoryRepository } from "../persistence/sqlite/sqlite-memory-repository.js";
@@ -59,6 +67,8 @@ import {
 import type { LocalRuntimeConfig } from "./local-runtime-config.js";
 import { LocalRuntimeConfigValidator } from "./local-runtime-config-validator.js";
 import { LocalRuntimeConfigurationError } from "./local-runtime-error.js";
+import type { SecretReference } from "../config/secret-reference.js";
+import type { SecretResolver } from "../config/secret-resolver.js";
 import {
   ComposedLocalRuntime,
   type LocalRuntime,
@@ -70,6 +80,9 @@ export interface LocalRuntimeOverrides {
   readonly contentAgentExecutor?: AgentExecutor;
   readonly identifiers?: IdentifierGenerator;
   readonly logger?: Logger;
+  readonly openAIResponsesTransport?: OpenAIResponsesTransport;
+  readonly secretReferences?: readonly SecretReference[];
+  readonly secretResolver?: SecretResolver;
 }
 
 export async function createLocalRuntime(
@@ -96,7 +109,7 @@ export async function createLocalRuntime(
   );
   const executor =
     overrides.contentAgentExecutor ??
-    createContentAgent(config, clock, specifications);
+    (await createContentAgent(config, clock, specifications, overrides));
   assertContentExecutor(executor);
   const resultValidator = new AgentResultValidator();
   const agentRuntime = new InProcessAgentRuntime(
@@ -171,25 +184,31 @@ export async function createLocalRuntime(
   }
 }
 
-function createContentAgent(
+async function createContentAgent(
   config: LocalRuntimeConfig,
   clock: Clock,
   specifications: ImmutableAgentSpecificationRegistry,
-): AgentExecutor {
+  overrides: LocalRuntimeOverrides,
+): Promise<AgentExecutor> {
   if (config.contentAgentMode === "deterministic") {
     return new ContentAgent(clock, new ContentOutputValidator());
   }
 
-  const provider = new DeterministicLocalModelProvider(clock);
+  const provider =
+    config.contentAgentMode === "model-backed-openai"
+      ? await createOpenAIProvider(config, clock, overrides)
+      : new DeterministicLocalModelProvider(clock);
+  const profile =
+    config.contentAgentMode === "model-backed-openai"
+      ? createOpenAIModelProfile(config)
+      : LOCAL_DETERMINISTIC_MODEL_PROFILE;
   const gateway = new ValidatedLlmGateway({
     clock,
     profileValidator: new ModelProfileValidator(),
     providerRegistry: new SingleProviderRegistry(provider),
     requestValidator: new ModelRequestValidator(),
     responseValidator: new ModelResponseValidator(),
-    selectionPolicy: new FixedModelSelectionPolicy(
-      LOCAL_DETERMINISTIC_MODEL_PROFILE,
-    ),
+    selectionPolicy: new FixedModelSelectionPolicy(profile),
   });
   return new ModelBackedContentAgent({
     clock,
@@ -197,6 +216,94 @@ function createContentAgent(
     outputValidator: new ContentOutputValidator(),
     specifications,
   });
+}
+
+async function createOpenAIProvider(
+  config: LocalRuntimeConfig,
+  clock: Clock,
+  overrides: LocalRuntimeOverrides,
+): Promise<ModelProvider> {
+  const modelProvider = config.modelProvider;
+  if (modelProvider === undefined) {
+    throw new LocalRuntimeConfigurationError([
+      {
+        code: "required",
+        message:
+          "modelProvider must configure OpenAI when contentAgentMode is model-backed-openai",
+        path: "modelProvider",
+      },
+    ]);
+  }
+  const reference = overrides.secretReferences?.find(
+    ({ secretId }) => secretId === modelProvider.apiKeySecretId,
+  );
+  if (reference === undefined) {
+    throw new LocalRuntimeConfigurationError([
+      {
+        code: "required",
+        message:
+          "the configured OpenAI API key secret reference was not supplied",
+        path: "modelProvider.<redacted>",
+      },
+    ]);
+  }
+  if (overrides.secretResolver === undefined) {
+    throw new LocalRuntimeConfigurationError([
+      {
+        code: "required",
+        message:
+          "secretResolver is required when contentAgentMode is model-backed-openai",
+        path: "overrides.secretResolver",
+      },
+    ]);
+  }
+
+  const resolved = await overrides.secretResolver.resolve(reference);
+  return new OpenAIModelProvider({
+    clock,
+    config: {
+      apiKey: resolved.value,
+      baseUrl: modelProvider.baseUrl,
+      contractVersion: OPENAI_MODEL_PROVIDER_CONFIG_CONTRACT_VERSION,
+      ...(modelProvider.organizationId === undefined
+        ? {}
+        : { organizationId: modelProvider.organizationId }),
+      ...(modelProvider.projectId === undefined
+        ? {}
+        : { projectId: modelProvider.projectId }),
+      providerId: OPENAI_MODEL_PROVIDER_ID,
+    },
+    ...(overrides.openAIResponsesTransport === undefined
+      ? {}
+      : { transport: overrides.openAIResponsesTransport }),
+  });
+}
+
+function createOpenAIModelProfile(config: LocalRuntimeConfig): ModelProfile {
+  const modelProvider = config.modelProvider;
+  if (modelProvider === undefined) {
+    throw new LocalRuntimeConfigurationError([
+      {
+        code: "required",
+        message:
+          "modelProvider must configure OpenAI when contentAgentMode is model-backed-openai",
+        path: "modelProvider",
+      },
+    ]);
+  }
+  return {
+    contractVersion: "1",
+    limits: {
+      maxCostUsd: 0.1,
+      maxInputCharacters: 300_000,
+      maxOutputTokens: 2_048,
+      timeoutMs: 30_000,
+    },
+    modelId: modelProvider.modelId,
+    profileId: "content-quality",
+    providerId: OPENAI_MODEL_PROVIDER_ID,
+    supportedOutputFormats: ["json"],
+  };
 }
 
 function assertContentExecutor(executor: AgentExecutor): void {
@@ -310,6 +417,9 @@ function freezeConfig(config: LocalRuntimeConfig): LocalRuntimeConfig {
       policyGrants: Object.freeze([...config.permissions.policyGrants]),
       taskGrants: Object.freeze([...config.permissions.taskGrants]),
     }),
+    ...(config.modelProvider === undefined
+      ? {}
+      : { modelProvider: Object.freeze({ ...config.modelProvider }) }),
     sqlite: Object.freeze({ ...config.sqlite }),
   });
 }
