@@ -191,10 +191,12 @@ external systems, scheduling work, or mutating state. Quality Guardian Foundatio
 adds deterministic, report-only, redaction-safe operator warnings from supplied
 sanitized output/process-quality signals without judging content with AI, calling
 models, publishing, mutating outputs, sending alerts, scheduling work, or mutating
-state. Durable usage ledgers, aggregated budget windows, broader operational
-telemetry, live smoke-test gating, autonomous guardians, and aggregate operator
-safety reporting remain future work, with the next milestone specified in
-`04_NEXT_TASK.md`.
+state. Operator Safety Report now adds deterministic, report-only, redaction-safe
+aggregation of supplied guardian reports into one operator-facing safety summary
+without dashboards, alerts, scheduling, autonomy, persistence, network, model calls,
+or tool execution. Durable usage ledgers, aggregated budget windows, broader
+operational telemetry, live smoke-test gating, autonomous guardians, and dashboards
+remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

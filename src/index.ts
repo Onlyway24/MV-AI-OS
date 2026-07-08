@@ -280,6 +280,30 @@ export {
   QualityGuardianValidationError,
 } from "./guardians/quality-guardian-service.js";
 export {
+  OPERATOR_SAFETY_REPORT_CONTRACT_VERSION,
+  type OperatorRecommendedAction,
+  type OperatorSafetyAutonomyDecision,
+  type OperatorSafetyCoverageSummary,
+  type OperatorSafetyDomain,
+  type OperatorSafetyEvaluationInput,
+  type OperatorSafetyFindingSummary,
+  type OperatorSafetyGuardianReports,
+  type OperatorSafetyGuardianSummary,
+  type OperatorSafetyReport,
+  type OperatorSafetyReporter,
+  type OperatorSafetyReportSummary,
+  type OperatorSafetySeverity,
+  type OperatorSafetyStatus,
+} from "./guardians/operator-safety-report.js";
+export {
+  OperatorSafetyEvaluationInputValidator,
+  OperatorSafetyReportValidator,
+} from "./guardians/operator-safety-report-validator.js";
+export {
+  DeterministicOperatorSafetyReporter,
+  OperatorSafetyReportValidationError,
+} from "./guardians/operator-safety-report-service.js";
+export {
   COST_GUARDIAN_CONTRACT_VERSION,
   type CostGuardian,
   type CostGuardianEvaluationInput,

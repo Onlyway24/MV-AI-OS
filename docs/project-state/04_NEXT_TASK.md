@@ -2,63 +2,62 @@
 
 ## Milestone name
 
-Operator Safety Report
+Main Assistant / Orchestrator Specification Foundation
 
 ## Goal
 
-Create a deterministic local operator-safety report that aggregates existing
-redaction-safe guardian reports into one safe, operator-facing view without adding
-autonomy, scheduling, alerts, dashboards, network calls, model calls, tool execution,
-or persistence.
+Define a formal, validated Main Assistant / Orchestrator specification that describes
+Fabio's single operator-facing assistant boundary before any multi-agent exposure,
+autonomous execution, dashboards, n8n workflows, schedulers, alerts, or tool
+execution are added.
 
 ## Why it matters
 
-MV AI OS now has report-only Cost, Security, Backup, Incident, and Quality Guardian
-foundations. Fabio needs one consolidated local safety picture before adding any
-dashboard, scheduler, external alerting, workflow execution, n8n, cloud/VPS
-operation, or autonomous guardian behavior.
+The Control Plane Safety foundations are now complete as deterministic report-only
+components. The next safe step is to define the single operator-facing assistant that
+will eventually coordinate existing Core Brain, policy, memory, knowledge, model,
+guardian, agent specification, workflow specification, and tool-gateway boundaries
+without exposing Fabio to chaotic visible sub-agents or hidden autonomy.
 
 ## Required scope
 
-- Define an Operator Safety Report contract.
-- Define sanitized guardian-summary input contracts.
-- Validate Operator Safety Report inputs and outputs at runtime.
-- Aggregate supplied Cost, Security, Backup, Incident, and Quality Guardian summaries
-  without importing raw prompts, completions, provider payloads, diagnostics, secret
-  references, resolved secret values, sensitive paths, database records, transcripts,
-  knowledge, memory, generated content, or transport internals.
-- Produce deterministic report-only recommendations and a deterministic overall
-  readiness/safety posture.
-- Preserve provider neutrality, storage neutrality, and dependency injection.
-- Keep the report outside Core Brain execution behavior unless strictly required.
+- Define the Main Assistant / Orchestrator specification contract.
+- Define its mission, operator-facing responsibilities, forbidden behavior, required
+  safety inputs, handoff boundaries, and escalation semantics.
+- Integrate conceptually with existing Agent Specification, Policy, Guardian, Model
+  Gateway, Knowledge, Memory, Tool Gateway, and Workflow Specification boundaries
+  without executing them.
+- Add runtime validators for all public Main Assistant / Orchestrator specification
+  contracts.
+- Add deterministic tests for valid specifications, invalid specifications,
+  permission/policy requirements, forbidden capabilities, guardian-report awareness,
+  and operator-facing boundaries.
+- Keep implementation provider-neutral, deterministic, local, and fully testable.
 
 ## Forbidden scope
 
+- Executing the Main Assistant.
+- Changing Core Brain behavior.
+- Changing Content Agent behavior.
+- Adding autonomous planning loops.
 - Calling models.
 - Calling providers.
-- Reading secrets.
-- Scanning source code, filesystems, databases, backups, transcripts, memory, or
-  knowledge.
-- Running in the background.
-- Scheduling checks.
-- Sending Telegram, email, Slack, webhook, HTTP, dashboard, or other alerts.
-- Mutating files, backups, runtime state, repository state, workflows, tasks,
-  content, or external systems.
 - Executing tools.
-- Adding HTTP, REST APIs, n8n, MCP, dashboards, browser automation, embeddings,
-  vector search, cloud integrations, external monitoring, durable ledgers, or new
-  persistence.
-- Autonomous blocking, remediation, escalation, or approval behavior.
-- Changes to Core Brain, agents, memory, knowledge, repositories, SQLite,
-  backup/restore operations, workflow, tool, CLI, or model request behavior unless
-  strictly required by the report boundary.
+- Executing workflows.
+- Adding n8n, HTTP, dashboards, MCP, browser automation, filesystem tools, schedulers,
+  alerts, email, Telegram, Slack, external monitoring, embeddings, vector search,
+  cloud deployment, or network behavior.
+- Adding new persistence.
+- Mutating memory, knowledge, tasks, audits, files, backups, or external systems.
+- Replacing existing Agent Specification, Workflow Specification, Policy, Tool
+  Gateway, Model Gateway, Guardian, Memory, Knowledge, Runtime, CLI, or repository
+  boundaries.
 
 ## Likely files to create
 
-- `src/guardians/operator-safety-report.ts`
-- `src/guardians/operator-safety-report-validator.ts`
-- `src/guardians/operator-safety-report-service.ts`
-- `tests/guardians/operator-safety-report.test.ts`
+- `src/assistants/main-assistant-specification.ts`
+- `src/assistants/main-assistant-specification-validator.ts`
+- `tests/assistants/main-assistant-specification.test.ts`
 
 ## Likely files to modify
 
@@ -70,34 +69,32 @@ operation, or autonomous guardian behavior.
 
 ## Tests required
 
-- Valid sanitized guardian-summary input is accepted.
-- Invalid input and reports are rejected.
-- Healthy guardian summaries produce a healthy operator report.
-- Warning and critical guardian summaries produce deterministic aggregate findings.
-- Missing guardian summaries are reported safely.
-- Overall posture is deterministic.
-- Report output is redaction-safe and excludes prompts, completions, generated
-  content, provider payloads, raw diagnostics, secret identifiers, secret values,
-  sensitive paths, raw database records, transcripts, knowledge, memory, and
-  transport internals.
-- Existing cost, security, backup, incident, quality, model, runtime, CLI,
-  persistence, backup/restore, and governed content tests continue passing.
+- Valid Main Assistant / Orchestrator specifications are accepted.
+- Invalid specifications are rejected.
+- Required operator-facing mission and responsibility fields are enforced.
+- Forbidden autonomy, tool execution, workflow execution, dashboard, network, and
+  provider-specific capabilities are rejected.
+- Required policy, guardian, approval, and escalation references are validated.
+- Specification output remains deterministic and redaction-safe.
+- Existing guardian, model, runtime, CLI, persistence, backup/restore, and governed
+  content tests continue passing.
 
 ## Acceptance criteria
 
-- Operator Safety Report is local, report-only, provider-neutral, deterministic,
-  runtime validated, and consumes only supplied sanitized guardian summaries.
-- No external integrations, background behavior, source scanning, filesystem scanning,
-  model calls, tool execution, persistence, dashboard, alerting, or autonomous action
-  are added.
-- Existing policy, runtime validation, model-gateway, guardian, backup/restore, and
-  repository boundaries remain unchanged.
+- The Main Assistant / Orchestrator exists only as a validated specification
+  foundation.
+- No execution engine, model call, tool call, workflow call, dashboard, scheduler,
+  alerting, persistence, network behavior, or autonomous behavior is added.
+- Existing Core Brain, policy, runtime, guardian, model, memory, knowledge, tool,
+  workflow, and repository boundaries remain unchanged.
+- The specification makes Fabio the operator and keeps sub-agents internal behind
+  controlled boundaries.
 
 ## Definition of done
 
-- Operator Safety Report contracts, validators, deterministic reporting
-  implementation, and tests are complete.
-- Project-state documents accurately describe the Operator Safety Report milestone.
+- Main Assistant / Orchestrator specification contracts, validators, and tests are
+  complete.
+- Project-state documents accurately describe the new specification foundation.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- The milestone is committed before moving to Main Assistant / Orchestrator
-  Specification Foundation.
+- The milestone is committed before any Main Assistant execution or integration work
+  begins.

@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Quality Guardian Foundation milestone:
-  `293bde1 feat: add incident guardian foundation`.
+- Latest committed baseline before the Operator Safety Report milestone:
+  `afee733 feat: add quality guardian foundation`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -36,8 +36,10 @@ and tests, not intended future behavior.
 - The Incident Guardian Foundation milestone is completed in this repository state
   and was committed in `293bde1 feat: add incident guardian foundation`.
 - The Quality Guardian Foundation milestone is completed in this repository state
-  and is the current commit candidate.
-- The next milestone is Operator Safety Report.
+  and was committed in `afee733 feat: add quality guardian foundation`.
+- The Operator Safety Report milestone is completed in this repository state and is
+  the current commit candidate.
+- The next milestone is Main Assistant / Orchestrator Specification Foundation.
 
 ## Current architecture
 
@@ -123,6 +125,7 @@ provider, n8n, or external SDK types.
 30. Backup Guardian Foundation.
 31. Incident Guardian Foundation.
 32. Quality Guardian Foundation.
+33. Operator Safety Report.
 
 ## Implemented modules
 
@@ -270,6 +273,17 @@ provider, n8n, or external SDK types.
   results, incomplete task results, missing evidence/source references, missing human
   review, low readiness scores, repeated rejected outputs, validation-failure
   thresholds, model-output rejection, and unsafe content pipeline state.
+- Deterministic Operator Safety Report foundation that consumes only supplied
+  redaction-safe Cost, Security, Backup, Incident, and Quality Guardian reports.
+- Operator Safety Report, domain summary, finding summary, recommended-action,
+  coverage, status, severity, safety-to-autonomy decision, and evaluator contracts.
+- Runtime-validated Operator Safety input and report boundaries that reject raw
+  prompts, completions, provider payloads, diagnostics, API keys, secret references,
+  resolved secret values, sensitive paths, raw database records, raw transcripts, raw
+  knowledge, raw memory, generated content, and other unsupported raw fields.
+- Report-only aggregation for overall system status, highest severity, guardian
+  coverage, missing guardian reports, per-domain summaries, deterministic
+  recommended actions, primary attention domain, and safety-to-autonomy decision.
 - No autonomous execution, scheduling, alerts, model calls, network calls, background
   work, tool execution, durable guardian ledger, pricing invention, or
   provider-specific Guardian logic exists.
@@ -357,6 +371,9 @@ provider, n8n, or external SDK types.
   finding, severity, and evidence contracts.
 - Quality Guardian evaluation, quality-state, report, finding, severity, and evidence
   contracts.
+- Operator Safety Report evaluation, guardian-report input, coverage, domain summary,
+  finding summary, recommended-action, status, severity, autonomy-decision, and report
+  contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -385,6 +402,7 @@ provider, n8n, or external SDK types.
 - Backup Guardian evaluation-input and report validators.
 - Incident Guardian evaluation-input and report validators.
 - Quality Guardian evaluation-input and report validators.
+- Operator Safety evaluation-input and report validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -394,7 +412,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 52 test files and 333 tests covering:
+The latest verified suite contains 53 test files and 344 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -471,6 +489,11 @@ The latest verified suite contains 52 test files and 333 tests covering:
   reporting, human-review requirement reporting, readiness and validation-failure
   analysis, unsafe content pipeline reporting, invalid report rejection, evidence
   validation, and redaction-safe report boundaries.
+- Operator Safety Report validation, deterministic aggregation, healthy guardian
+  coverage, mixed warning aggregation, critical severity dominance, missing guardian
+  handling, per-guardian summary inclusion, deterministic action ordering, highest
+  severity calculation, safety-to-autonomy decision calculation, invalid nested
+  guardian report rejection, and redaction-safe aggregate report boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -500,7 +523,11 @@ reporting from sanitized cost signals, deterministic local Security Guardian
 reporting from sanitized safety-posture state, deterministic local Backup Guardian
 reporting from sanitized backup-readiness state, deterministic local Incident
 Guardian reporting from sanitized operational incident signals, and deterministic
-local Quality Guardian reporting from sanitized output/process-quality signals.
+local Quality Guardian reporting from sanitized output/process-quality signals. The
+report-only Control Plane Safety chapter now has a deterministic local Operator
+Safety Report foundation that aggregates supplied guardian reports into one
+operator-facing safety summary without adding autonomy, scheduling, alerts, network,
+model calls, tool execution, dashboards, or persistence.
 
 ## What exists only as a foundation
 
@@ -539,6 +566,11 @@ local Quality Guardian reporting from sanitized output/process-quality signals.
   produce validated operator-facing reports, but it does not judge content with AI,
   call models, publish content, mutate outputs, send alerts, schedule checks, run in
   the background, execute tools, or act as a durable quality ledger.
+- Operator Safety Report can aggregate supplied Cost, Security, Backup, Incident, and
+  Quality Guardian reports into one validated operator-facing summary, but it does
+  not collect signals, scan files, read secrets, call models, send alerts, schedule
+  checks, mutate state, execute tools, render dashboards, persist ledgers, or act
+  autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -615,6 +647,10 @@ local Quality Guardian reporting from sanitized output/process-quality signals.
 - A caller can instantiate the deterministic Quality Guardian, supply sanitized
   quality signals, and receive a validated redaction-safe report with warnings and
   recommendations.
+- A caller can instantiate the deterministic Operator Safety reporter, supply
+  redaction-safe guardian reports, and receive a validated aggregate report with
+  overall status, coverage, per-domain summaries, deterministic recommended actions,
+  and a safety-to-autonomy decision.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -630,7 +666,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Aggregate Operator Safety Report foundation.
+- Main Assistant / Orchestrator Specification Foundation.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

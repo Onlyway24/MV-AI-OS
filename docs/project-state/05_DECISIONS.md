@@ -679,3 +679,38 @@ redaction-safe summary data only. Any future AI-assisted quality review, editori
 workflow, publishing gate, dashboard, durable quality ledger, or autonomous blocking
 behavior requires a separate milestone with explicit policy, approval, audit,
 idempotency, cost controls, and redaction boundaries.
+
+## ADR-029 — Operator Safety Report aggregates reports only
+
+**Context:** MV AI OS now has deterministic report-only Cost, Security, Backup,
+Incident, and Quality Guardian foundations. Fabio needs one control-plane summary
+that answers whether the system is healthy, which domain needs attention first, and
+whether it is safe to continue or move toward more autonomy, without manually
+inspecting every guardian report one by one.
+
+**Decision:** Implement Operator Safety Report as a provider-neutral, deterministic,
+non-autonomous aggregation component. It consumes only explicit redaction-safe
+guardian reports supplied by a caller, validates every input and output, normalizes
+severity at the aggregation boundary, reports missing guardian coverage, produces
+deterministic operator actions, and emits a safety-to-autonomy decision. It does not
+collect signals, scan files, read secrets, call models, call providers, execute
+tools, execute workflows, schedule checks, send alerts, render dashboards, persist
+ledgers, mutate state, or expose raw prompts, completions, provider payloads,
+diagnostics, secret references, paths, database records, transcripts, knowledge,
+memory, generated content, or transport internals.
+
+**Reason:** A unified operator report reduces Fabio's babysitting load while
+preserving human control. Aggregating already-safe guardian outputs creates useful
+control-plane visibility without adding the risks of monitoring, scheduling,
+alerting, dashboards, or autonomous remediation.
+
+**Tradeoffs:** The report is only as complete as the supplied guardian reports. It
+does not discover missing controls by itself, collect telemetry, prove live safety,
+page Fabio, enforce blocking decisions, or maintain historical incident/state
+windows.
+
+**Future impact:** Main Assistant / Orchestrator work should consume Operator Safety
+Report as an operator-facing safety input, not as an autonomous permission to act.
+Any future dashboard, alerting, durable safety ledger, scheduler, monitor, or
+automatic pause/remediation behavior requires separate policy, approval, audit,
+idempotency, persistence, and redaction milestones.
