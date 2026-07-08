@@ -259,6 +259,27 @@ export {
   IncidentGuardianValidationError,
 } from "./guardians/incident-guardian-service.js";
 export {
+  QUALITY_GUARDIAN_CONTRACT_VERSION,
+  type QualityGuardian,
+  type QualityGuardianEvaluationInput,
+  type QualityGuardianFinding,
+  type QualityGuardianFindingCategory,
+  type QualityGuardianFindingEvidence,
+  type QualityGuardianQualityState,
+  type QualityGuardianReport,
+  type QualityGuardianReportSummary,
+  type QualityGuardianSeverity,
+  type QualityGuardianSignalName,
+} from "./guardians/quality-guardian.js";
+export {
+  QualityGuardianEvaluationInputValidator,
+  QualityGuardianReportValidator,
+} from "./guardians/quality-guardian-validator.js";
+export {
+  DeterministicQualityGuardian,
+  QualityGuardianValidationError,
+} from "./guardians/quality-guardian-service.js";
+export {
   COST_GUARDIAN_CONTRACT_VERSION,
   type CostGuardian,
   type CostGuardianEvaluationInput,

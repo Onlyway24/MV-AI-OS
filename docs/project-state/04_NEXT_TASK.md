@@ -2,70 +2,63 @@
 
 ## Milestone name
 
-Quality Guardian Foundation
+Operator Safety Report
 
 ## Goal
 
-Add a provider-neutral, deterministic Quality Guardian foundation that evaluates
-supplied sanitized output and process-quality signals and produces local
-operator-facing quality findings without calling models, judging content with AI,
-publishing anything, mutating outputs, or running autonomously.
+Create a deterministic local operator-safety report that aggregates existing
+redaction-safe guardian reports into one safe, operator-facing view without adding
+autonomy, scheduling, alerts, dashboards, network calls, model calls, tool execution,
+or persistence.
 
 ## Why it matters
 
-MV AI OS now has cost, security, backup, and incident guardian foundations. Before
-publishing, dashboarding, workflows, n8n, or deeper autonomy are introduced, Fabio
-needs deterministic visibility into malformed outputs, missing review, missing
-evidence, and repeated validation failures without turning quality review into
-another model call or background agent.
+MV AI OS now has report-only Cost, Security, Backup, Incident, and Quality Guardian
+foundations. Fabio needs one consolidated local safety picture before adding any
+dashboard, scheduler, external alerting, workflow execution, n8n, cloud/VPS
+operation, or autonomous guardian behavior.
 
 ## Required scope
 
-- Define Quality Guardian report contracts.
-- Define sanitized quality signal contracts.
-- Validate Quality Guardian inputs and reports at runtime.
-- Produce deterministic report-only recommendations from supplied sanitized signals.
-- Support missing final response, malformed result, missing evidence references where
-  expected, model-backed output rejected by validator, review-required state, low
-  readiness score, incomplete task results, and repeated rejected outputs where
-  represented.
-- Keep Quality Guardian provider-neutral and independent of provider SDKs, model
-  calls, publishing systems, schedulers, and external services.
-- Keep Quality Guardian outside Core Brain execution behavior unless strictly
-  required.
-- Ensure reports never include raw prompts, completions, provider payloads, provider
-  diagnostics, secret references, resolved secret values, sensitive paths, raw
-  database records, raw transcripts, raw knowledge, raw memory, generated content, or
-  transport internals.
+- Define an Operator Safety Report contract.
+- Define sanitized guardian-summary input contracts.
+- Validate Operator Safety Report inputs and outputs at runtime.
+- Aggregate supplied Cost, Security, Backup, Incident, and Quality Guardian summaries
+  without importing raw prompts, completions, provider payloads, diagnostics, secret
+  references, resolved secret values, sensitive paths, database records, transcripts,
+  knowledge, memory, generated content, or transport internals.
+- Produce deterministic report-only recommendations and a deterministic overall
+  readiness/safety posture.
+- Preserve provider neutrality, storage neutrality, and dependency injection.
+- Keep the report outside Core Brain execution behavior unless strictly required.
 
 ## Forbidden scope
 
-- Judging content using AI.
 - Calling models.
 - Calling providers.
-- Publishing content.
-- Mutating outputs.
-- Sending alerts.
-- Scheduling quality checks.
+- Reading secrets.
+- Scanning source code, filesystems, databases, backups, transcripts, memory, or
+  knowledge.
 - Running in the background.
-- Network calls.
-- Provider SDK integration.
-- Telegram, email, dashboards, HTTP, n8n, MCP, workflow execution, real tool
-  execution, billing, payments, subscriptions, embeddings, vector search, browser
-  automation, or filesystem scanning.
-- Durable quality ledgers unless project-state is first updated with a separate
-  persistence milestone.
-- Autonomous blocking or remediation behavior.
+- Scheduling checks.
+- Sending Telegram, email, Slack, webhook, HTTP, dashboard, or other alerts.
+- Mutating files, backups, runtime state, repository state, workflows, tasks,
+  content, or external systems.
+- Executing tools.
+- Adding HTTP, REST APIs, n8n, MCP, dashboards, browser automation, embeddings,
+  vector search, cloud integrations, external monitoring, durable ledgers, or new
+  persistence.
+- Autonomous blocking, remediation, escalation, or approval behavior.
 - Changes to Core Brain, agents, memory, knowledge, repositories, SQLite,
   backup/restore operations, workflow, tool, CLI, or model request behavior unless
   strictly required by the report boundary.
 
 ## Likely files to create
 
-- `src/guardians/quality-guardian.ts`
-- `src/guardians/quality-guardian-validator.ts`
-- `src/guardians/quality-guardian-service.ts`
-- `tests/guardians/quality-guardian.test.ts`
+- `src/guardians/operator-safety-report.ts`
+- `src/guardians/operator-safety-report-validator.ts`
+- `src/guardians/operator-safety-report-service.ts`
+- `tests/guardians/operator-safety-report.test.ts`
 
 ## Likely files to modify
 
@@ -77,34 +70,34 @@ another model call or background agent.
 
 ## Tests required
 
-- Valid sanitized quality signals are accepted.
-- Invalid quality signals and reports are rejected.
-- Reports are deterministic.
-- Healthy quality state produces no findings.
-- Missing or malformed output produces findings.
-- Review-required state produces findings.
-- Validation failure state produces findings when represented.
-- Reports redact or exclude prompts, completions, generated content, provider
-  payloads, raw diagnostics, secret identifiers, secret values, paths, raw database
-  records, transcripts, knowledge, memory, and transport internals.
-- Existing cost, security, backup, incident, model, runtime, CLI, persistence,
-  backup/restore, and governed content tests continue passing.
+- Valid sanitized guardian-summary input is accepted.
+- Invalid input and reports are rejected.
+- Healthy guardian summaries produce a healthy operator report.
+- Warning and critical guardian summaries produce deterministic aggregate findings.
+- Missing guardian summaries are reported safely.
+- Overall posture is deterministic.
+- Report output is redaction-safe and excludes prompts, completions, generated
+  content, provider payloads, raw diagnostics, secret identifiers, secret values,
+  sensitive paths, raw database records, transcripts, knowledge, memory, and
+  transport internals.
+- Existing cost, security, backup, incident, quality, model, runtime, CLI,
+  persistence, backup/restore, and governed content tests continue passing.
 
 ## Acceptance criteria
 
-- Quality Guardian is report-only, provider-neutral, deterministic, runtime
-  validated, and does not call models, judge content with AI, publish, mutate outputs,
-  alert, call network, schedule work, execute tools, or run autonomously.
-- Quality Guardian consumes only supplied sanitized quality signals.
-- No external integrations, background behavior, source scanning, or new persistence
+- Operator Safety Report is local, report-only, provider-neutral, deterministic,
+  runtime validated, and consumes only supplied sanitized guardian summaries.
+- No external integrations, background behavior, source scanning, filesystem scanning,
+  model calls, tool execution, persistence, dashboard, alerting, or autonomous action
   are added.
-- Existing policy, runtime validation, model-gateway, backup/restore, and repository
-  boundaries remain unchanged.
+- Existing policy, runtime validation, model-gateway, guardian, backup/restore, and
+  repository boundaries remain unchanged.
 
 ## Definition of done
 
-- Quality Guardian contracts, validators, deterministic reporting implementation, and
-  tests are complete.
-- Project-state documents accurately describe the Quality Guardian foundation.
+- Operator Safety Report contracts, validators, deterministic reporting
+  implementation, and tests are complete.
+- Project-state documents accurately describe the Operator Safety Report milestone.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- The milestone is committed before moving to Operator Safety Report.
+- The milestone is committed before moving to Main Assistant / Orchestrator
+  Specification Foundation.

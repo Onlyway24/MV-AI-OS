@@ -187,10 +187,14 @@ supplied sanitized backup-readiness state without creating, restoring, uploading
 deleting, mutating, or scheduling backups. Incident Guardian Foundation now adds
 deterministic, report-only, redaction-safe operator warnings from supplied sanitized
 operational incident counters and guardian summaries without sending alerts, calling
-external systems, scheduling work, or mutating state. Durable usage ledgers,
-aggregated budget windows, broader operational telemetry, live smoke-test gating,
-autonomous guardians, Quality Guardian, and aggregate operator safety reporting
-remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
+external systems, scheduling work, or mutating state. Quality Guardian Foundation now
+adds deterministic, report-only, redaction-safe operator warnings from supplied
+sanitized output/process-quality signals without judging content with AI, calling
+models, publishing, mutating outputs, sending alerts, scheduling work, or mutating
+state. Durable usage ledgers, aggregated budget windows, broader operational
+telemetry, live smoke-test gating, autonomous guardians, and aggregate operator
+safety reporting remain future work, with the next milestone specified in
+`04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

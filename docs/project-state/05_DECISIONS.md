@@ -646,3 +646,36 @@ Fabio, deduplicate over durable time windows, or enforce remediation.
 report-only discipline. Any future alerting, durable incident ledger, dashboard, or
 automatic remediation feature requires a separate milestone with explicit policy,
 approval, audit, and idempotency boundaries.
+
+## ADR-028 — Quality Guardian does not judge content with AI
+
+**Context:** MV AI OS now has deterministic cost, security, backup, and incident
+guardian foundations. Before publishing, dashboards, workflows, n8n, cloud/VPS,
+24/7 operation, or external review systems are added, Fabio needs local visibility
+into malformed outputs, missing evidence, missing review, low readiness, and repeated
+validation failures without turning quality review into another model call or
+autonomous publishing gate.
+
+**Decision:** Implement Quality Guardian as a provider-neutral, deterministic,
+non-autonomous analysis component. It evaluates only explicit sanitized
+output/process-quality signals supplied by a caller, validates every input and
+report, and emits redaction-safe findings. It does not judge content with AI, call
+models, call providers, publish content, mutate outputs, scan files, read transcripts,
+read knowledge or memory, execute tools, send alerts, schedule checks, run in the
+background, persist ledgers, or expose raw prompts, completions, generated content,
+provider payloads, diagnostics, secret references, paths, database records,
+transcripts, knowledge, memory, or transport internals.
+
+**Reason:** Quality visibility is needed before content can safely move toward
+publication or workflow execution, but the quality component must not become a hidden
+model spender, content moderator, publisher, or autonomous blocker.
+
+**Tradeoffs:** The guardian can identify quality risk only from supplied sanitized
+signals. It does not inspect raw generated text, verify factual correctness, collect
+telemetry, perform editorial review, or enforce blocking action by itself.
+
+**Future impact:** Operator Safety Report must aggregate Quality Guardian output as
+redaction-safe summary data only. Any future AI-assisted quality review, editorial
+workflow, publishing gate, dashboard, durable quality ledger, or autonomous blocking
+behavior requires a separate milestone with explicit policy, approval, audit,
+idempotency, cost controls, and redaction boundaries.
