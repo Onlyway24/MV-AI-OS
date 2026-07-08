@@ -10,7 +10,7 @@ and tests, not intended future behavior.
 
 - Current branch at the time of this snapshot: `main`.
 - Latest committed baseline before the current milestone:
-  `4de8423 docs: add agent lab materials`.
+  `da8199a feat: add controlled local secret resolution`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -19,8 +19,8 @@ and tests, not intended future behavior.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
-- The Controlled Local Secret Resolution milestone is implemented in the current
-  milestone.
+- The Controlled Production Model Provider Adapter milestone is implemented in the
+  current milestone.
 
 ## Current architecture
 
@@ -96,6 +96,7 @@ provider, n8n, or external SDK types.
 20. Controlled Local SQLite Backup and Restore.
 21. Controlled Local Configuration and Secret References.
 22. Controlled Local Secret Resolution.
+23. Controlled Production Model Provider Adapter.
 
 ## Implemented modules
 
@@ -158,6 +159,10 @@ provider, n8n, or external SDK types.
 - Validated LLM Gateway with provider/profile selection, limit checks, failure
   normalization, response ownership validation, and injected dependencies.
 - Deterministic model provider and provider registry only in tests.
+- Production OpenAI Responses API model provider adapter behind `ModelProvider`,
+  with validated configuration, resolved ephemeral credential input, provider-neutral
+  request/response translation, injectable transport, and deterministic offline
+  tests.
 - Model-backed content execution is integrated through the gateway using deterministic
   providers in tests.
 - The local runtime can exercise the model-backed path through a deterministic,
@@ -227,6 +232,7 @@ provider, n8n, or external SDK types.
 - memory record/query/scope/service contracts.
 - knowledge record/source/query/scope/search-result/repository/service contracts.
 - model request/response/profile/usage/error/provider/gateway contracts.
+- OpenAI provider configuration, transport, and adapter contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -247,6 +253,7 @@ provider, n8n, or external SDK types.
 - Memory record, scope, and query validators.
 - Knowledge source, scope, record, query, and result validators.
 - Model request, response, and profile validators.
+- OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
 - Workflow input/output, step, transition, condition, failure policy, and complete
@@ -255,7 +262,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 42 test files and 243 passing tests covering:
+The latest verified suite contains 43 test files and 250 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -290,6 +297,10 @@ The latest verified suite contains 42 test files and 243 passing tests covering:
   and knowledge records across runtime recreation.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
+- OpenAI provider configuration validation, credential handling, Responses API request
+  translation, text and JSON response translation, HTTP failure redaction, transport
+  failure normalization through `ValidatedLlmGateway`, and retained gateway usage
+  limit enforcement.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -310,7 +321,8 @@ process boundary, a controlled local backup/restore recovery path, and explicit 
 configuration loading with controlled local secret resolution. It is not
 production-ready, but the implemented modules now compose into one validated local
 runtime with recoverable SQLite state, controlled configuration input, and an
-ephemeral credential boundary for future provider adapters.
+ephemeral credential boundary plus a production OpenAI provider adapter that is not
+yet wired into local runtime composition.
 
 ## What exists only as a foundation
 
@@ -318,12 +330,13 @@ ephemeral credential boundary for future provider adapters.
   context path, but are not yet universally enforced by every Agent Runtime executor.
 - Workflow Specifications are validated and registrable but are not executed.
 - The Tool Gateway authorizes access and validates results but cannot execute tools.
-- The LLM Gateway is used by the model-backed Content Agent, but no production provider
-  exists.
+- The LLM Gateway is used by the model-backed Content Agent, and a production OpenAI
+  provider adapter exists, but local runtime composition still uses the deterministic
+  local provider.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
-- Secret references can be resolved locally into ephemeral values, but no production
-  provider consumes them yet.
+- Secret references can be resolved locally into ephemeral values; the OpenAI provider
+  adapter can consume them, but runtime configuration does not wire that path yet.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
 
 ## What is actually executable
@@ -336,6 +349,10 @@ ephemeral credential boundary for future provider adapters.
 - A caller can explicitly resolve a validated environment-variable or local-file
   secret reference into an ephemeral `SecretValue`; missing references and invalid
   values fail closed without exposing secret values or locations in public errors.
+- A caller can construct the OpenAI provider adapter with an ephemeral resolved API
+  key and injected transport; provider-neutral model requests are translated to
+  OpenAI Responses API requests, and text or structured JSON responses are translated
+  back to validated `ModelResponse` records.
 - A caller can construct `CoreBrain` with injected test/local adapters and execute a
   `business.content` request end to end.
 - A caller can use `createLocalRuntime` to validate configuration and construct the
@@ -374,7 +391,7 @@ There is no HTTP service, dashboard, background server, or external-provider pro
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
 - Durable approval and workflow persistence.
-- Production model providers or external API calls.
+- Wiring production model providers into local runtime configuration.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

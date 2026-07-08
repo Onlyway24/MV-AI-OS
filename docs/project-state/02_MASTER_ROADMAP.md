@@ -162,7 +162,11 @@ types into agents or Core Brain.
 - Cost, timeout, output, and permission limits are enforced.
 - No API key enters source, logs, prompts, or public errors.
 
-**Status:** Not started.
+**Status:** In progress. The first production OpenAI Responses API provider adapter
+is implemented behind `ModelProvider` with validated configuration, ephemeral
+credential input, injectable transport, deterministic offline tests, and gateway
+normalization coverage. The next milestone is controlled local provider wiring,
+specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

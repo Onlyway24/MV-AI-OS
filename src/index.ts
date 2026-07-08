@@ -308,6 +308,29 @@ export {
   ModelRequestValidationError,
 } from "./models/model-gateway-error.js";
 export type { ModelProvider } from "./models/model-provider.js";
+export {
+  DEFAULT_OPENAI_BASE_URL,
+  MAX_OPENAI_BASE_URL_LENGTH,
+  MAX_OPENAI_HEADER_VALUE_LENGTH,
+  OPENAI_MODEL_PROVIDER_CONFIG_CONTRACT_VERSION,
+  OPENAI_MODEL_PROVIDER_ID,
+  OPENAI_RESPONSES_PATH,
+  OpenAIModelProviderConfigurationError,
+  OpenAIModelProviderError,
+  type OpenAIModelProviderConfig,
+} from "./models/providers/openai-model-provider-config.js";
+export {
+  createDefaultOpenAIModelProviderConfig,
+  OpenAIModelProviderConfigValidator,
+} from "./models/providers/openai-model-provider-validator.js";
+export {
+  FetchOpenAIResponsesTransport,
+  OpenAIModelProvider,
+  type OpenAIModelProviderDependencies,
+  type OpenAIResponsesTransport,
+  type OpenAIResponsesTransportRequest,
+  type OpenAIResponsesTransportResponse,
+} from "./models/providers/openai-model-provider.js";
 export type {
   ModelOutputFormat,
   ModelProfile,

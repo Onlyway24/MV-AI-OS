@@ -2,60 +2,58 @@
 
 ## Milestone name
 
-Controlled Production Model Provider Adapter
+Controlled Local OpenAI Provider Wiring
 
 ## Goal
 
-Add the first production model-provider adapter behind the existing
-`ModelProvider` interface, using explicit local secret resolution for credentials
-without changing Core Brain, agents, runtime orchestration, repositories, memory,
-knowledge, tools, workflows, or CLI execution behavior.
+Wire the production OpenAI model provider into the existing local configuration and
+runtime composition path using explicit secret resolution, without changing Core
+Brain, agents, policy, memory, knowledge, repositories, workflows, tools, or CLI
+request semantics.
 
 ## Why it matters
 
-MV AI OS has a provider-neutral LLM Gateway, a governed model-backed Content Agent,
-validated local configuration, and a redaction-safe local secret-resolution boundary.
-The next gap is a real provider adapter that proves external model capability can be
-introduced as infrastructure while preserving the existing domain and orchestration
-contracts.
+MV AI OS now has a provider-neutral LLM Gateway, a governed model-backed Content
+Agent, controlled local secret resolution, and a production OpenAI provider adapter.
+The remaining gap is controlled composition: local operators need a validated way to
+select the production provider while keeping credentials ephemeral and preserving the
+deterministic local mode for offline development and tests.
 
 ## Required scope
 
-- Add one production `ModelProvider` adapter behind the existing provider-neutral
-  model contracts.
-- Accept credentials only through already-resolved ephemeral `SecretValue` input.
-- Keep provider-specific request/response translation inside the adapter.
-- Preserve existing `ValidatedLlmGateway` validation, limits, ownership checks, and
-  error normalization.
-- Add deterministic offline tests using a local fake transport; live provider calls
-  must be separately gated and disabled by default.
-- Redact credential values, credential references, provider diagnostics, and transport
-  details from public errors.
-- Document provider configuration boundaries and the separation between offline and
-  live integration tests.
+- Extend local application configuration with an explicit model-provider selection.
+- Resolve only referenced secrets that are explicitly required by the selected
+  provider.
+- Construct the OpenAI provider adapter through the existing local composition root.
+- Preserve deterministic local provider mode as the default offline/test path.
+- Keep resolved secret values out of `LocalRuntimeConfig`, CLI JSON output, durable
+  records, audit-like data, logs, and public errors.
+- Add deterministic offline composition tests with fake transport only.
+- Keep live OpenAI calls disabled by default and outside the standard test suite.
 
 ## Forbidden scope
 
-- Core Brain, agent, policy, memory, knowledge, workflow, tool, repository, SQLite,
-  CLI, or dashboard behavior changes.
-- Storing API keys or resolved secret values in configuration, source files,
-  persistence, audit records, snapshots, logs, or test fixtures.
-- Adding hidden environment discovery or implicit credential loading.
-- Replacing `LlmGateway` or allowing agents to call provider SDKs directly.
-- Workflow execution, tool execution, n8n, HTTP server mode, dashboard work,
-  embeddings, vector search, or multi-provider routing.
-- Live network tests in the default test suite.
+- Core Brain, agent, policy, memory, knowledge, workflow, tool, repository, SQLite
+  schema, backup/restore, or request contract changes.
+- Hidden environment discovery, implicit API-key loading, or fallback credential
+  lookup.
+- Persisting, logging, snapshotting, or echoing resolved secret values.
+- Dashboard, HTTP server, n8n, scheduling, embeddings, vector search, tool execution,
+  or multi-provider routing.
+- Live network calls in default tests.
 
 ## Likely files to create
 
-- `src/models/providers/openai-model-provider.ts`
-- `src/models/providers/openai-model-provider-config.ts`
-- `src/models/providers/openai-model-provider-validator.ts`
-- `tests/models/openai-model-provider.test.ts`
+- `tests/runtime/local-runtime-openai-provider.test.ts`
 
 ## Likely files to modify
 
-- `src/index.ts` for intentionally public provider-adapter contracts
+- `src/config/local-application-config.ts`
+- `src/config/local-application-config-validator.ts`
+- `src/runtime/create-local-runtime.ts`
+- `src/runtime/local-runtime-config.ts`
+- `src/runtime/local-runtime-config-validator.ts`
+- `src/index.ts`
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
 - `docs/project-state/04_NEXT_TASK.md`
@@ -63,28 +61,30 @@ contracts.
 
 ## Tests required
 
-- Valid provider-neutral model requests translate into provider transport requests.
-- Provider responses translate back into validated `ModelResponse` records.
-- Missing credentials fail before transport access.
-- Provider failures are normalized without leaking secrets or raw diagnostics.
-- Token, timeout, profile, and output ownership constraints remain enforced by the
-  existing gateway.
-- Default automated tests use no live network access.
-- Existing configuration, secret-resolution, runtime, CLI, persistence, backup,
-  restore, and governed model-content tests continue passing.
+- Deterministic local provider mode remains the default and continues passing.
+- OpenAI provider mode requires an explicit valid secret reference and resolved
+  ephemeral `SecretValue`.
+- Missing, duplicate, invalid, or unused secret references fail closed.
+- Fake OpenAI transport proves end-to-end runtime execution through
+  `ValidatedLlmGateway` without live network access.
+- Public errors redact secret values, secret IDs, secret locations, and provider
+  diagnostics.
+- Existing configuration, secret-resolution, provider-adapter, runtime, CLI,
+  persistence, backup, restore, and governed model-content tests continue passing.
 
 ## Acceptance criteria
 
-- A production provider adapter exists behind `ModelProvider`.
+- Local runtime can be composed with the OpenAI provider adapter through explicit
+  configuration.
 - Core Brain and agents remain provider-neutral.
-- Resolved credentials remain ephemeral and adapter-local.
-- Default validation is deterministic and offline.
+- Credentials remain ephemeral and adapter-local.
+- Offline deterministic tests remain the default.
 - No secret value appears in source, public errors, logs, or durable records.
 
 ## Definition of done
 
-- Provider adapter contracts and deterministic tests are implemented.
-- Project-state documents accurately describe the new provider capability.
+- Local provider wiring is implemented and integration-tested with fake transport.
+- Project-state documents accurately describe the new composition capability.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
 - Final reporting waits for approval or follows the user’s explicit commit
   instruction.

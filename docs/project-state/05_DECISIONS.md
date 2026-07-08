@@ -390,3 +390,31 @@ this milestone.
 **Future impact:** Provider adapters may accept resolved `SecretValue` input at their
 own infrastructure boundary. They must not persist, log, echo, or expose the value,
 and they must preserve existing gateway normalization and redaction behavior.
+
+## ADR-019 — Production model providers remain adapter-local infrastructure
+
+**Context:** The LLM Gateway and model-backed Content Agent already use
+provider-neutral contracts. Adding a real OpenAI provider could accidentally leak
+provider request shapes, SDK behavior, credentials, transport diagnostics, or response
+quirks into agents, Core Brain, runtime persistence, or public errors.
+
+**Decision:** Implement the OpenAI Responses API integration as a `ModelProvider`
+adapter with validated provider configuration, explicit ephemeral `SecretValue`
+credential input, provider-specific request/response translation, and an injectable
+transport. The adapter returns provider-neutral `ModelResponse` records and relies on
+`ValidatedLlmGateway` for request validation, profile compatibility, response
+validation, ownership checks, and normalized provider-failure behavior.
+
+**Reason:** Provider integration is infrastructure. Keeping OpenAI-specific details
+behind `ModelProvider` preserves Core Brain and agent neutrality while allowing the
+system to gain production model capability incrementally and safely.
+
+**Tradeoffs:** The adapter can perform live network calls through its fetch transport,
+but default automated tests use fake transport only. Local runtime composition is not
+yet wired to select this provider, so production use still requires explicit
+construction by a caller.
+
+**Future impact:** Any additional provider must follow the same boundary: resolved
+credentials remain ephemeral and adapter-local, provider diagnostics are redacted, and
+default tests stay deterministic and offline. Runtime wiring must compose providers
+without allowing agents or Core Brain to import provider-specific types.
