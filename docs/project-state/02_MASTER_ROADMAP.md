@@ -173,9 +173,12 @@ provider-neutral gateway controls for request size, output tokens, timeout, prov
 call count, retry exhaustion, and reported usage/cost where available. Controlled
 Model Usage Accounting now adds explicit provider-neutral pricing configuration and
 deterministic estimated-cost calculation from validated model usage without storing
-prompts, secrets, provider payloads, or raw diagnostics. Durable usage ledgers, budget
-enforcement, Cost Guardian reporting, telemetry, and live smoke-test gating remain
-future work, with the next milestone specified in `04_NEXT_TASK.md`.
+prompts, secrets, provider payloads, or raw diagnostics. Controlled Model Budget
+Enforcement now adds explicit per-provider/model/profile requested-cost and
+estimated-cost gates at the model gateway boundary without adding billing, telemetry,
+dashboards, or durable ledgers. Durable usage ledgers, aggregated budget windows, Cost
+Guardian reporting, telemetry, and live smoke-test gating remain future work, with
+the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

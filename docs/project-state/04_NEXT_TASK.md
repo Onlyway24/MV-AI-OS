@@ -2,57 +2,57 @@
 
 ## Milestone name
 
-Controlled Model Budget Enforcement
+Cost Guardian Foundation
 
 ## Goal
 
-Add provider-neutral budget enforcement for model usage so MV AI OS can deny model
-requests that would exceed explicit local model budgets before deeper autonomy or
-broader provider use is enabled.
+Add a provider-neutral, deterministic Cost Guardian foundation that reports model cost
+risk from sanitized operation-limit, usage-accounting, and budget-enforcement signals
+without executing models, tools, network calls, workflows, alerts, or dashboards.
 
 ## Why it matters
 
-Controlled Model Usage Accounting makes per-response estimated cost visible from
-validated usage and explicit pricing. The next risk is uncontrolled spend across
-requests: Fabio needs deterministic budget gates before model autonomy, live provider
-expansion, scheduled work, or guardian agents can safely grow.
+MV AI OS now has operation limits, usage accounting, and budget enforcement at the
+model gateway boundary. The next operator need is visibility: Fabio should receive
+concise cost-risk assessments and recommendations without becoming a babysitter and
+without allowing the guardian itself to burn tokens or bypass architecture.
 
 ## Required scope
 
-- Define provider-neutral model budget contracts.
-- Validate budget configuration at the local runtime boundary.
-- Enforce budgets outside Core Brain and agents.
-- Use explicit budgets only; do not infer spend from provider billing systems.
-- Preserve existing model operation limits and usage accounting.
-- Keep automated tests deterministic and offline.
-- Ensure budget failures contain no prompts, provider payloads, API keys, resolved
-  secret values, or raw provider diagnostics.
+- Define Cost Guardian report contracts.
+- Define sanitized cost signal contracts.
+- Validate Cost Guardian inputs and reports at runtime.
+- Produce deterministic report-only recommendations from supplied sanitized data.
+- Keep Cost Guardian provider-neutral and independent of provider SDKs.
+- Keep Cost Guardian outside Core Brain execution behavior unless strictly required.
+- Ensure reports never include prompts, completions, provider payloads, raw provider
+  diagnostics, API keys, secret references, resolved secret values, raw knowledge, or
+  raw transcript text.
 
 ## Forbidden scope
 
-- Billing, payments, subscriptions, dashboards, external telemetry, HTTP, n8n, MCP,
-  workflow execution, real tool execution, embeddings, vector search, browser
-  automation, or live provider calls in the default test suite.
-- Durable usage ledgers unless strictly required by the budget contract and kept
-  behind existing persistence boundaries.
-- Hardcoded pricing or budgets.
-- Changing Core Brain, agent, memory, knowledge, repository, SQLite, backup/restore,
-  workflow, tool, or CLI request behavior unless strictly required by the budget
-  boundary.
+- Live model calls.
+- Provider SDK integration.
+- Background agents, schedulers, alerts, Telegram, email, dashboards, HTTP, n8n, MCP,
+  workflow execution, real tool execution, billing, payments, subscriptions,
+  embeddings, vector search, or browser automation.
+- Durable usage ledgers unless project-state is first updated with a separate
+  persistence milestone.
+- Autonomous blocking behavior outside the existing gateway budget enforcement.
+- Hardcoded provider pricing.
+- Changes to Core Brain, agents, memory, knowledge, repositories, SQLite,
+  backup/restore, workflow, tool, or CLI request behavior unless strictly required by
+  the report boundary.
 
 ## Likely files to create
 
-- `src/models/model-budget.ts`
-- `src/models/model-budget-validator.ts`
-- `src/models/model-budget-enforcer.ts`
-- `tests/models/model-budget-enforcement.test.ts`
+- `src/guardians/cost-guardian.ts`
+- `src/guardians/cost-guardian-validator.ts`
+- `src/guardians/cost-guardian-service.ts`
+- `tests/guardians/cost-guardian.test.ts`
 
 ## Likely files to modify
 
-- `src/models/validated-llm-gateway.ts`
-- `src/runtime/local-runtime-config.ts`
-- `src/runtime/local-runtime-config-validator.ts`
-- `src/runtime/create-local-runtime.ts`
 - `src/index.ts`
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
@@ -61,28 +61,29 @@ expansion, scheduled work, or guardian agents can safely grow.
 
 ## Tests required
 
-- Valid budget configuration is accepted.
-- Invalid budget configuration fails closed.
-- Requests with configured maximum per-call cost pass when within budget.
-- Requests are denied when requested or estimated usage cost exceeds budget.
-- Missing accounting data does not invent spend.
-- Budget failures are redaction-safe.
-- Existing model operation-limit, usage-accounting, OpenAI fake-transport, runtime,
-  CLI, persistence, backup, restore, and governed content tests continue passing.
+- Valid cost signals are accepted.
+- Invalid cost signals and reports are rejected.
+- Reports are deterministic.
+- Over-budget signals produce high-severity recommendations.
+- Missing usage/cost data is reported as uncertainty, not invented spend.
+- Reports redact or exclude prompts, completions, provider payloads, raw diagnostics,
+  secret identifiers, secret values, and raw source content.
+- Existing operation-limit, usage-accounting, budget-enforcement, OpenAI
+  fake-transport, runtime, CLI, persistence, backup, restore, and governed content
+  tests continue passing.
 
 ## Acceptance criteria
 
-- Model budget enforcement is provider-neutral, deterministic, runtime validated, and
-  outside Core Brain and agents.
-- Budgets are explicit and fail closed when required budget data is missing.
-- Operation limits and usage accounting continue to work unchanged.
-- No live network access is introduced into default tests.
-- No sensitive data is stored or surfaced for budgeting.
+- Cost Guardian is report-only, provider-neutral, deterministic, runtime validated,
+  and does not call models or providers.
+- Cost Guardian consumes only sanitized supplied signals.
+- No external integrations, background behavior, or new persistence are added.
+- Existing model gateway enforcement remains the only automatic budget blocking path.
 
 ## Definition of done
 
-- Budget contracts, validators, enforcement implementation, and deterministic tests
-  are complete.
-- Project-state documents accurately describe the budget boundary.
+- Cost Guardian contracts, validators, deterministic reporting implementation, and
+  tests are complete.
+- Project-state documents accurately describe the Cost Guardian foundation.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- The milestone is committed before continuing to Cost Guardian Foundation.
+- The milestone is committed before moving beyond the cost-governance chapter.

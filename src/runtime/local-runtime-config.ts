@@ -1,5 +1,6 @@
 import type { SqliteConnectionConfig } from "../persistence/sqlite/sqlite-connection-config.js";
 import type { EffectivePermission } from "../policy/effective-permissions.js";
+import type { ModelBudgetConfig } from "../models/model-budget.js";
 import type { ModelOperationLimits } from "../models/model-operation-limits.js";
 import type { ModelUsageAccountingConfig } from "../models/model-pricing.js";
 
@@ -33,6 +34,7 @@ export interface LocalRuntimeConfig {
   readonly actorId: string;
   readonly contractVersion: typeof LOCAL_RUNTIME_CONTRACT_VERSION;
   readonly contentAgentMode: LocalContentAgentMode;
+  readonly modelBudget?: ModelBudgetConfig;
   readonly modelOperationLimits?: ModelOperationLimits;
   readonly modelProvider?: LocalModelProviderConfig;
   readonly modelUsageAccounting?: ModelUsageAccountingConfig;

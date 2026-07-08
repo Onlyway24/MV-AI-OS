@@ -205,6 +205,9 @@ async function createContentAgent(
       : LOCAL_DETERMINISTIC_MODEL_PROFILE;
   const gateway = new ValidatedLlmGateway({
     clock,
+    ...(config.modelBudget === undefined
+      ? {}
+      : { budgetConfig: config.modelBudget }),
     operationLimits:
       config.modelOperationLimits ?? DEFAULT_MODEL_OPERATION_LIMITS,
     profileValidator: new ModelProfileValidator(),
@@ -426,6 +429,18 @@ function freezeConfig(config: LocalRuntimeConfig): LocalRuntimeConfig {
     ...(config.modelProvider === undefined
       ? {}
       : { modelProvider: Object.freeze({ ...config.modelProvider }) }),
+    ...(config.modelBudget === undefined
+      ? {}
+      : {
+          modelBudget: Object.freeze({
+            ...config.modelBudget,
+            rules: Object.freeze(
+              config.modelBudget.rules.map((rule) =>
+                Object.freeze({ ...rule }),
+              ),
+            ),
+          }),
+        }),
     ...(config.modelUsageAccounting === undefined
       ? {}
       : {

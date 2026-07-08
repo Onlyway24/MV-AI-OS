@@ -505,3 +505,28 @@ by the operator.
 **Future impact:** Budget enforcement and Cost Guardian reporting must use this
 accounting boundary instead of recalculating model cost inside agents, Core Brain, or
 provider adapters.
+
+## ADR-023 — Model budgets are enforced at the gateway boundary
+
+**Context:** Usage accounting makes per-response estimated cost visible, but it does
+not by itself prevent an over-budget request or response. Fabio needs deterministic
+budget gates before broader live provider use, deeper autonomy, scheduled work, or
+guardian agents are allowed to grow.
+
+**Decision:** Add provider-neutral `ModelBudgetConfig` rules keyed by provider, model,
+and profile. `ValidatedLlmGateway` validates budget configuration before provider
+access, enforces requested-cost budgets before invocation, and enforces estimated-cost
+budgets after validated usage accounting. Missing required rules or required cost
+data fail closed with redaction-safe `ModelError` responses.
+
+**Reason:** Budget enforcement belongs at the same model boundary as operation limits
+and usage accounting. Agents and Core Brain remain unaware of provider pricing,
+budget tables, provider SDK behavior, or billing concepts.
+
+**Tradeoffs:** This milestone enforces per-call requested and estimated cost only. It
+does not persist a usage ledger, aggregate spend over time windows, integrate with
+provider billing, export telemetry, display dashboards, or create a Cost Guardian.
+
+**Future impact:** Cost Guardian and future durable usage ledgers must consume this
+provider-neutral budget/accounting boundary rather than duplicating pricing or spend
+logic in agents, Core Brain, or provider adapters.

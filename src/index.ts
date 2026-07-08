@@ -299,6 +299,18 @@ export type {
 } from "./memory/memory-scope.js";
 export { MemoryScopeValidator } from "./memory/memory-scope-validator.js";
 export type { LlmGateway } from "./models/llm-gateway.js";
+export {
+  MODEL_BUDGET_CONTRACT_VERSION,
+  type ModelBudgetConfig,
+  type ModelBudgetRule,
+  type ModelBudgetViolation,
+  type ModelBudgetViolationCode,
+} from "./models/model-budget.js";
+export {
+  enforceModelBudgetAfterResponse,
+  enforceModelBudgetBeforeRequest,
+} from "./models/model-budget-enforcer.js";
+export { ModelBudgetConfigValidator } from "./models/model-budget-validator.js";
 export type {
   ModelError,
   ModelErrorCategory,

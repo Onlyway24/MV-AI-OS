@@ -5,6 +5,7 @@ import {
   type LocalRuntimeConfig,
   type LocalRuntimePermissionConfig,
 } from "./local-runtime-config.js";
+import { ModelBudgetConfigValidator } from "../models/model-budget-validator.js";
 import { ModelUsageAccountingConfigValidator } from "../models/model-pricing-validator.js";
 import {
   DEFAULT_OPENAI_BASE_URL,
@@ -51,6 +52,7 @@ const HEADER_VALUE_PATTERN = /^[A-Za-z0-9_.:-]{1,256}$/u;
 export class LocalRuntimeConfigValidator
   implements Validator<LocalRuntimeConfig>
 {
+  readonly #modelBudgetValidator = new ModelBudgetConfigValidator();
   readonly #modelOperationLimitsValidator =
     new ModelOperationLimitsValidator();
   readonly #modelUsageAccountingValidator =
@@ -87,6 +89,10 @@ export class LocalRuntimeConfigValidator
       contentAgentMode,
       issues,
     );
+    const modelBudgetValidation =
+      record.modelBudget === undefined
+        ? undefined
+        : this.#modelBudgetValidator.validate(record.modelBudget);
     const modelOperationLimitsValidation =
       record.modelOperationLimits === undefined
         ? undefined
@@ -107,6 +113,15 @@ export class LocalRuntimeConfigValidator
           code,
           message,
           path: path === "$" ? "sqlite" : `sqlite.${path}`,
+        })),
+      );
+    }
+    if (modelBudgetValidation !== undefined && !modelBudgetValidation.ok) {
+      issues.push(
+        ...modelBudgetValidation.issues.map(({ code, message, path }) => ({
+          code,
+          message,
+          path: path === "$" ? "modelBudget" : `modelBudget.${path}`,
         })),
       );
     }
@@ -176,6 +191,8 @@ export class LocalRuntimeConfigValidator
       ) ||
       permissions === undefined ||
       modelProvider === false ||
+      (modelBudgetValidation !== undefined &&
+        !modelBudgetValidation.ok) ||
       (modelOperationLimitsValidation !== undefined &&
         !modelOperationLimitsValidation.ok) ||
       (modelUsageAccountingValidation !== undefined &&
@@ -190,6 +207,11 @@ export class LocalRuntimeConfigValidator
       actorId,
       contentAgentMode: contentAgentMode as LocalContentAgentMode,
       contractVersion,
+      ...(modelBudgetValidation === undefined
+        ? {}
+        : {
+            modelBudget: modelBudgetValidation.value,
+          }),
       ...(modelOperationLimitsValidation === undefined
         ? {}
         : {

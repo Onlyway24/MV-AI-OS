@@ -7,6 +7,12 @@ import {
   ModelGatewayInvariantError,
   ModelRequestValidationError,
 } from "./model-gateway-error.js";
+import type { ModelBudgetConfig } from "./model-budget.js";
+import {
+  enforceModelBudgetAfterResponse,
+  enforceModelBudgetBeforeRequest,
+} from "./model-budget-enforcer.js";
+import { ModelBudgetConfigValidator } from "./model-budget-validator.js";
 import type { ModelOperationLimits } from "./model-operation-limits.js";
 import {
   DEFAULT_MODEL_OPERATION_LIMITS,
@@ -27,6 +33,8 @@ import type { ProviderRegistry } from "./provider-registry.js";
 
 export interface ValidatedLlmGatewayDependencies {
   readonly clock: Clock;
+  readonly budgetConfig?: ModelBudgetConfig;
+  readonly budgetConfigValidator?: Validator<ModelBudgetConfig>;
   readonly operationLimits?: ModelOperationLimits;
   readonly operationLimitsValidator?: Validator<ModelOperationLimits>;
   readonly profileValidator: Validator<ModelProfile>;
@@ -77,6 +85,32 @@ export class ValidatedLlmGateway implements LlmGateway {
       });
     }
     const operationLimits = operationLimitsValidation.value;
+    const budgetValidation =
+      this.#dependencies.budgetConfig === undefined
+        ? undefined
+        : (
+            this.#dependencies.budgetConfigValidator ??
+            new ModelBudgetConfigValidator()
+          ).validate(this.#dependencies.budgetConfig);
+    if (budgetValidation !== undefined && !budgetValidation.ok) {
+      return this.#failure(validRequest, {
+        category: "validation",
+        code: "model_budget_invalid",
+        details: {
+          issues: budgetValidation.issues.map(
+            ({ code, message, path }) => ({
+              code,
+              message,
+              path,
+            }),
+          ),
+        },
+        message: "The model budget configuration is invalid",
+        retryable: false,
+        stage: "budget_enforcement",
+      });
+    }
+    const budgetConfig = budgetValidation?.value;
     const usageAccountingValidation =
       this.#dependencies.usageAccountingConfig === undefined
         ? undefined
@@ -185,12 +219,33 @@ export class ValidatedLlmGateway implements LlmGateway {
       );
     }
 
+    const requestBudgetViolation = enforceModelBudgetBeforeRequest(
+      validRequest,
+      profile,
+      budgetConfig,
+    );
+    if (requestBudgetViolation !== undefined) {
+      return this.#failure(
+        validRequest,
+        {
+          category: "validation",
+          code: requestBudgetViolation.code,
+          details: requestBudgetViolation.details,
+          message: requestBudgetViolation.message,
+          retryable: false,
+          stage: "budget_enforcement",
+        },
+        profile,
+      );
+    }
+
     return this.#invokeProviderWithLimits(
       validRequest,
       profile,
       provider,
       operationLimits,
       usageAccountingConfig,
+      budgetConfig,
     );
   }
 
@@ -200,6 +255,7 @@ export class ValidatedLlmGateway implements LlmGateway {
     provider: ModelProvider,
     operationLimits: ModelOperationLimits,
     usageAccountingConfig: ModelUsageAccountingConfig | undefined,
+    budgetConfig: ModelBudgetConfig | undefined,
   ): Promise<ModelResponse> {
     let lastRetryableFailure:
       | "provider"
@@ -357,6 +413,25 @@ export class ValidatedLlmGateway implements LlmGateway {
         );
       }
       const normalizedResponse = accountedResponseValidation.value;
+      const responseBudgetViolation = enforceModelBudgetAfterResponse(
+        normalizedResponse,
+        profile,
+        budgetConfig,
+      );
+      if (responseBudgetViolation !== undefined) {
+        return this.#failure(
+          validRequest,
+          {
+            category: "validation",
+            code: responseBudgetViolation.code,
+            details: responseBudgetViolation.details,
+            message: responseBudgetViolation.message,
+            retryable: false,
+            stage: "budget_enforcement",
+          },
+          profile,
+        );
+      }
       const usageViolation = modelOperationUsageViolation(
         normalizedResponse,
         operationLimits,
