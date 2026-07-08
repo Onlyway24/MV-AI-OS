@@ -10,7 +10,7 @@ and tests, not intended future behavior.
 
 - Current branch at the time of this snapshot: `main`.
 - Latest committed baseline before the current milestone:
-  `5cbf209 feat: add controlled production model provider adapter`.
+  `649c3a7 feat: wire controlled local OpenAI provider`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -19,8 +19,9 @@ and tests, not intended future behavior.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
-- The Controlled Local OpenAI Provider Wiring milestone is implemented in the current
-  milestone.
+- The Controlled Local OpenAI Provider Wiring milestone is completed and committed in
+  `649c3a7 feat: wire controlled local OpenAI provider`.
+- The current milestone is Controlled Model Operation Limits.
 
 ## Current architecture
 
