@@ -235,6 +235,27 @@ export {
   CostGuardianValidationError,
   DeterministicCostGuardian,
 } from "./guardians/cost-guardian-service.js";
+export {
+  SECURITY_GUARDIAN_CONTRACT_VERSION,
+  type SecurityGuardian,
+  type SecurityGuardianControlName,
+  type SecurityGuardianEvaluationInput,
+  type SecurityGuardianFinding,
+  type SecurityGuardianFindingCategory,
+  type SecurityGuardianFindingEvidence,
+  type SecurityGuardianReport,
+  type SecurityGuardianReportSummary,
+  type SecurityGuardianSafetyState,
+  type SecurityGuardianSeverity,
+} from "./guardians/security-guardian.js";
+export {
+  SecurityGuardianEvaluationInputValidator,
+  SecurityGuardianReportValidator,
+} from "./guardians/security-guardian-validator.js";
+export {
+  DeterministicSecurityGuardian,
+  SecurityGuardianValidationError,
+} from "./guardians/security-guardian-service.js";
 export type { LogEntry, Logger, LogLevel } from "./logging/logger.js";
 export {
   KnowledgeInvariantError,

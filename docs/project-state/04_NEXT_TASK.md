@@ -2,59 +2,65 @@
 
 ## Milestone name
 
-Security Guardian Foundation
+Backup Guardian Foundation
 
 ## Goal
 
-Add a provider-neutral, deterministic Security Guardian foundation that evaluates
-supplied sanitized security signals and produces local operator-facing warnings
-without scanning live systems, calling models, sending alerts, mutating state, or
-executing tools.
+Add a provider-neutral, deterministic Backup Guardian foundation that evaluates
+supplied sanitized backup and restore readiness state and produces local
+operator-facing warnings without scheduling, creating, restoring, uploading,
+deleting, or mutating backups.
 
 ## Why it matters
 
-MV AI OS now has cost visibility after operation limits, usage accounting, and budget
-enforcement. The next founder/operator risk is unsafe expansion: secrets, provider
-diagnostics, prompt content, raw tool payloads, or unreviewed external actions must
-not leak or execute as the system grows. Security Guardian should make those risks
-visible without becoming an autonomous actor.
+MV AI OS now has local SQLite backup/restore operations and deterministic cost and
+security guardian foundations. Before moving toward VPS/cloud, 24/7 execution,
+external integrations, or deeper orchestration, Fabio needs a local control-plane
+view of whether recovery posture is safe enough to proceed.
 
 ## Required scope
 
-- Define Security Guardian report contracts.
-- Define sanitized security signal contracts.
-- Validate Security Guardian inputs and reports at runtime.
-- Produce deterministic report-only recommendations from supplied sanitized data.
-- Keep Security Guardian provider-neutral and independent of provider SDKs.
-- Keep Security Guardian outside Core Brain execution behavior unless strictly
+- Define Backup Guardian report contracts.
+- Define sanitized backup/restore state contracts.
+- Validate Backup Guardian inputs and reports at runtime.
+- Produce deterministic report-only recommendations from supplied sanitized state.
+- Keep Backup Guardian provider-neutral and independent of filesystem scanning,
+  storage-provider SDKs, cloud APIs, schedulers, and external services.
+- Keep Backup Guardian outside Core Brain execution behavior unless strictly
   required.
-- Ensure reports never include prompts, completions, provider payloads, raw provider
-  diagnostics, API keys, secret references, resolved secret values, raw knowledge, raw
-  memory, raw transcript text, local file contents, or transport internals.
+- Ensure reports never include raw file contents, sensitive local paths, secret
+  references, resolved secret values, raw database records, raw prompts, raw
+  completions, raw provider payloads, raw transcripts, or transport internals.
 
 ## Forbidden scope
 
+- Creating backups automatically.
+- Restoring backups automatically.
+- Scheduling backups.
+- Uploading backups.
+- Deleting backups.
+- Mutating backup files.
+- Scanning the filesystem.
+- Network calls.
 - Live model calls.
-- Repository-wide scanners or filesystem crawling.
 - Provider SDK integration.
 - Background agents, schedulers, alerts, Telegram, email, dashboards, HTTP, n8n, MCP,
   workflow execution, real tool execution, billing, payments, subscriptions,
-  embeddings, vector search, browser automation, or network access.
-- Durable security ledgers unless project-state is first updated with a separate
+  embeddings, vector search, or browser automation.
+- Durable backup ledgers unless project-state is first updated with a separate
   persistence milestone.
 - Autonomous blocking behavior outside existing policy, runtime validation, and
-  gateway enforcement paths.
-- Provider-specific Security Guardian logic.
+  backup/restore validation paths.
 - Changes to Core Brain, agents, memory, knowledge, repositories, SQLite,
-  backup/restore, workflow, tool, CLI, or model request behavior unless strictly
-  required by the report boundary.
+  backup/restore operations, workflow, tool, CLI, or model request behavior unless
+  strictly required by the report boundary.
 
 ## Likely files to create
 
-- `src/guardians/security-guardian.ts`
-- `src/guardians/security-guardian-validator.ts`
-- `src/guardians/security-guardian-service.ts`
-- `tests/guardians/security-guardian.test.ts`
+- `src/guardians/backup-guardian.ts`
+- `src/guardians/backup-guardian-validator.ts`
+- `src/guardians/backup-guardian-service.ts`
+- `tests/guardians/backup-guardian.test.ts`
 
 ## Likely files to modify
 
@@ -66,32 +72,34 @@ visible without becoming an autonomous actor.
 
 ## Tests required
 
-- Valid sanitized security signals are accepted.
-- Invalid security signals and reports are rejected.
+- Valid sanitized backup state is accepted.
+- Invalid backup state and reports are rejected.
 - Reports are deterministic.
-- Missing policy or approval markers produce warnings.
-- Secret exposure markers produce high-severity recommendations without exposing the
-  secret or secret reference.
-- Raw prompt, completion, provider payload, diagnostics, file content, and transport
-  internals are rejected or excluded from reports.
-- Existing cost, model, runtime, CLI, persistence, backup, restore, and governed
-  content tests continue passing.
+- Healthy backup state produces no warning.
+- Missing source database, missing backup, stale backup, missing restore
+  verification, invalid backup path signal, failed restore verification, and
+  schema/version mismatch signals produce findings when represented.
+- Reports redact or exclude raw paths, raw database records, secret identifiers,
+  secret values, prompts, completions, provider payloads, transcripts, and transport
+  internals.
+- Existing cost, security, model, runtime, CLI, persistence, backup, restore, and
+  governed content tests continue passing.
 
 ## Acceptance criteria
 
-- Security Guardian is report-only, provider-neutral, deterministic, runtime
-  validated, and does not call models, providers, filesystems, network, tools, or
-  external systems.
-- Security Guardian consumes only supplied sanitized signals.
+- Backup Guardian is report-only, provider-neutral, deterministic, runtime validated,
+  and does not create, restore, upload, delete, mutate, scan, call models, call
+  network, or run autonomously.
+- Backup Guardian consumes only supplied sanitized backup/restore state.
 - No external integrations, background behavior, source scanning, or new persistence
   are added.
-- Existing policy, runtime validation, model-gateway, and repository boundaries remain
-  unchanged.
+- Existing backup/restore operations, policy, runtime validation, model-gateway, and
+  repository boundaries remain unchanged.
 
 ## Definition of done
 
-- Security Guardian contracts, validators, deterministic reporting implementation, and
+- Backup Guardian contracts, validators, deterministic reporting implementation, and
   tests are complete.
-- Project-state documents accurately describe the Security Guardian foundation.
+- Project-state documents accurately describe the Backup Guardian foundation.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
-- The milestone is committed before moving beyond the guardian-foundation chapter.
+- The milestone is committed before moving to Incident Guardian Foundation.

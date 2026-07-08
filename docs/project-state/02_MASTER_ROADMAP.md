@@ -178,10 +178,14 @@ Enforcement now adds explicit per-provider/model/profile requested-cost and
 estimated-cost gates at the model gateway boundary without adding billing, telemetry,
 dashboards, or durable ledgers. Cost Guardian Foundation now adds deterministic,
 report-only, redaction-safe operator warnings from supplied sanitized cost signals
-without autonomous action, alerts, scheduling, provider calls, or persistence. Durable
-usage ledgers, aggregated budget windows, broader operational telemetry, live
-smoke-test gating, and autonomous guardians remain future work, with the next
-milestone specified in `04_NEXT_TASK.md`.
+without autonomous action, alerts, scheduling, provider calls, or persistence.
+Security Guardian Foundation now adds deterministic, report-only, redaction-safe
+operator warnings from supplied sanitized safety-posture state without scanning the
+disk, reading secrets, calling providers, or mutating runtime state. Durable usage
+ledgers, aggregated budget windows, broader operational telemetry, live smoke-test
+gating, autonomous guardians, backup/incident/quality guardians, and aggregate
+operator safety reporting remain future work, with the next milestone specified in
+`04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

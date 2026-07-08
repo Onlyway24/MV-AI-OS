@@ -556,3 +556,32 @@ notify Fabio, or automatically stop systems. Callers must provide sanitized sign
 or budget-window enforcement must build on this redaction-safe report boundary and
 must add separate authorization, persistence, scheduling, and operator-approval
 contracts before taking action.
+
+## ADR-025 — Security Guardian is supplied-state analysis only
+
+**Context:** MV AI OS is moving from model capability toward safe operating control.
+Before tools, workflows, cloud/VPS, 24/7 operation, dashboards, or n8n are added,
+Fabio needs visibility into unsafe safety posture without creating a scanner,
+background agent, or new source of secret exposure.
+
+**Decision:** Implement Security Guardian as a provider-neutral, deterministic,
+non-autonomous analysis component. It evaluates only explicit sanitized safety-state
+input supplied by a caller, validates every input and report, and emits redaction-safe
+findings for missing controls or unsafe posture. It does not scan the filesystem, read
+secret values, call models, call providers, use network, execute tools, run in the
+background, schedule itself, mutate runtime state, or expose raw prompts,
+completions, provider payloads, secret references, transcripts, knowledge, memory, or
+transport internals.
+
+**Reason:** Security visibility should exist before broader operational expansion,
+but the guardian itself must not become an uncontrolled security product, filesystem
+tool, monitoring service, or autonomous actor.
+
+**Tradeoffs:** The guardian can identify risk only from supplied sanitized state. It
+does not discover secrets, inspect repositories, monitor live systems, verify cloud
+readiness, prove provider configuration safety, or enforce blocking action by itself.
+
+**Future impact:** Backup, incident, quality, and operator-safety reporting must
+follow the same pattern: explicit safe input, deterministic report output,
+redaction-safe findings, no hidden side effects, and no autonomous action without a
+separate approved architecture milestone.
