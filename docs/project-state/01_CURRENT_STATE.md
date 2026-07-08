@@ -10,7 +10,7 @@ and tests, not intended future behavior.
 
 - Current branch at the time of this snapshot: `main`.
 - Latest committed baseline before the current milestone:
-  `a9a8260 docs: reconcile project state`.
+  `ca1a72d feat: add controlled local CLI entrypoint`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -19,8 +19,8 @@ and tests, not intended future behavior.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
-- The Controlled Local CLI Entrypoint is implemented in the current working tree and
-  is awaiting approval.
+- The Controlled Local SQLite Backup and Restore milestone is implemented in the
+  current milestone.
 
 ## Current architecture
 
@@ -40,6 +40,15 @@ Bounded CLI JSON input
   -> provider-neutral LLM Gateway
   -> validated AgentResult
   -> validated TaskResponse
+
+Local operator recovery is outside Core Brain:
+
+```text
+Validated SQLite backup/restore request
+  -> local SQLite recovery operation
+  -> exact schema and application identity verification
+  -> atomic backup or restore file installation
+```
 ```
 
 Supporting modules are isolated behind interfaces:
@@ -76,6 +85,7 @@ provider, n8n, or external SDK types.
 17. Durable SQLite Knowledge persistence.
 18. Validated Local Runtime composition.
 19. Controlled Local CLI Entrypoint.
+20. Controlled Local SQLite Backup and Restore.
 
 ## Implemented modules
 
@@ -120,12 +130,16 @@ provider, n8n, or external SDK types.
 - SQLite-backed task, request, and audit repository adapters.
 - Serialized atomic SQLite transactions with deterministic close behavior.
 - Versioned schema initialization and database identity verification.
+- Strict current-schema verification for local recovery operations.
 - Forward migration from lifecycle schema version 1 to memory schema version 2.
 - Forward migration from memory schema version 2 to knowledge schema version 3.
 - Validated JSON serialization and deserialization for every persisted lifecycle
   memory, and knowledge record.
 - Optimistic task transition conflicts, request replay, and append-only audit ordering
   preserved across process restarts.
+- Controlled local SQLite backup and restore operations that validate configuration,
+  source identity, schema version, destination safety, overwrite intent, and restored
+  database usability without changing repository contracts.
 
 ### Models
 
@@ -185,6 +199,7 @@ provider, n8n, or external SDK types.
 - repository transaction, task, request, and audit interfaces.
 - memory repository search and optimistic-update interfaces.
 - SQLite connection configuration and schema-version contracts.
+- SQLite backup and restore configuration/result contracts.
 - local runtime configuration, runtime handle, and test-override contracts.
 - local CLI configuration, structured error response, exit-code, and process-host
   contracts.
@@ -203,6 +218,7 @@ provider, n8n, or external SDK types.
 - Request envelope, task response, audit event, agent manifest, agent invocation, and
   agent result validators.
 - Stored request, task record, and SQLite connection configuration validators.
+- SQLite backup and restore configuration validators.
 - Local runtime configuration validation.
 - Local CLI configuration validation and bounded local RequestEnvelope parsing.
 - Policy decision and effective-permission validation.
@@ -217,7 +233,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 39 test files and 223 passing tests covering:
+The latest verified suite contains 40 test files and 231 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -240,6 +256,10 @@ The latest verified suite contains 39 test files and 223 passing tests covering:
 - local CLI configuration and request validation, deterministic process execution,
   missing and oversized input, runtime creation failure normalization,
   actor/workspace denial, durable replay, structured output, and graceful termination.
+- SQLite backup and restore validation, successful backup, successful restore,
+  schema mismatch rejection, invalid source and restore-file rejection, overwrite
+  refusal, no partial restore, and preservation of lifecycle, request, audit, memory,
+  and knowledge records across runtime recreation.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - default-deny policy intersections and Core Brain enforcement.
@@ -257,9 +277,10 @@ The latest verified suite contains 39 test files and 223 passing tests covering:
 
 The repository is an early implementation with a stable orchestration kernel and
 strongly tested architectural foundations, durable local lifecycle, memory, and
-knowledge adapters, and an executable local composition root. It is not
-production-ready, but the implemented modules now compose into one validated local
-runtime with a controlled command-line process boundary.
+knowledge adapters, an executable local composition root, and a controlled local
+backup/restore recovery path. It is not production-ready, but the implemented modules
+now compose into one validated local runtime with a controlled command-line process
+boundary and recoverable SQLite source of truth.
 
 ## What exists only as a foundation
 
@@ -298,6 +319,9 @@ runtime with a controlled command-line process boundary.
   knowledge survives restart and can enrich later governed execution contexts.
 - Runtime recreation preserves task replay and retrieves durable permitted memory and
   knowledge for new requests.
+- A caller can create a validated local SQLite backup of the runtime source of truth
+  and restore it into an explicit inactive destination; restored databases are proven
+  usable through adapter reads and Local Runtime request replay.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
@@ -318,4 +342,4 @@ There is no HTTP service, dashboard, background server, or external-provider pro
 - Configuration loading and secrets management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
 - Cancellation propagation, production retry budgets, operational health checks,
-  metrics exporters, deployment, backup, restore, and multi-user authentication.
+  metrics exporters, deployment packaging, and multi-user authentication.

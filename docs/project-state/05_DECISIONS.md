@@ -311,3 +311,27 @@ or environment-based configuration is available.
 **Future impact:** Other transports must remain equally thin and call application
 entrypoints rather than reconstructing internal modules. CLI expansion must not turn
 the process adapter into an orchestration or filesystem-tool layer.
+
+## ADR-016 — SQLite backup and restore are local operations, not orchestration
+
+**Context:** The local runtime now stores task lifecycle, request replay, audit,
+memory, and knowledge records in one SQLite source of truth. Durable storage without a
+verified recovery path leaves local operators exposed to file loss or corruption.
+
+**Decision:** Add controlled SQLite backup and restore as narrow local operations
+outside Core Brain. Backup and restore use versioned contracts, strict path
+validation, current schema/application identity verification, explicit overwrite
+intent, and atomic temporary-file installation. Restored databases must be accepted by
+the existing SQLite adapters and proven through Local Runtime replay.
+
+**Reason:** Recovery is operational infrastructure, not agent behavior. Keeping it
+outside Core Brain preserves repository boundaries while making local durability
+meaningful.
+
+**Tradeoffs:** The operation is intentionally local-only and does not provide cloud
+sync, encryption, scheduling, retention automation, online restore into a running
+runtime, or arbitrary filesystem tooling.
+
+**Future impact:** Future storage adapters need their own recovery contracts and
+conformance tests. Any cloud backup, encryption, or scheduled retention feature must
+be added as a separate governed operation without changing Core Brain semantics.

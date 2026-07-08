@@ -131,11 +131,12 @@ preserving repository and provider boundaries.
 - Local configuration starts deterministically and rejects invalid settings.
 
 **Status:** In progress. SQLite-backed task, request, audit, memory, and knowledge
-persistence, forward migrations, conformance, restart recovery, and the validated
-local runtime composition root are complete. The controlled local CLI now provides
-bounded configuration and request intake, structured output, deterministic replay,
-and graceful process shutdown. The next milestone is controlled local SQLite backup
-and restore, specified in `04_NEXT_TASK.md`.
+persistence, forward migrations, conformance, restart recovery, the validated local
+runtime composition root, the controlled local CLI, and controlled local SQLite
+backup/restore are complete. The local runtime now has bounded request intake,
+structured output, deterministic replay, graceful process shutdown, and a verified
+recovery path. The next milestone is controlled local configuration and secret
+references, specified in `04_NEXT_TASK.md`.
 
 ## Phase 5 — Production model capability
 

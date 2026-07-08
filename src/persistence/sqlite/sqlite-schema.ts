@@ -6,7 +6,7 @@ import {
 
 export const SQLITE_SCHEMA_VERSION = 3;
 
-const SQLITE_APPLICATION_ID = 0x4d564149;
+export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
   "audit_events",
   "requests",
@@ -61,21 +61,22 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     applyKnowledgeMigration(database);
   }
 
-  const finalVersion = readPragmaInteger(database, "user_version");
-  const finalApplicationId = readPragmaInteger(
-    database,
-    "application_id",
-  );
+  verifyCurrentSqliteSchema(database);
+}
+
+export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
+  const version = readPragmaInteger(database, "user_version");
+  const applicationId = readPragmaInteger(database, "application_id");
   if (
-    finalVersion !== SQLITE_SCHEMA_VERSION ||
-    finalApplicationId !== SQLITE_APPLICATION_ID
+    version !== SQLITE_SCHEMA_VERSION ||
+    applicationId !== SQLITE_APPLICATION_ID
   ) {
     throw new SqliteSchemaError(
       "sqlite_schema_unsupported",
       "SQLite database identity or schema version is unsupported",
       {
-        actualApplicationId: finalApplicationId,
-        actualVersion: finalVersion,
+        actualApplicationId: applicationId,
+        actualVersion: version,
         expectedApplicationId: SQLITE_APPLICATION_ID,
         expectedVersion: SQLITE_SCHEMA_VERSION,
       },

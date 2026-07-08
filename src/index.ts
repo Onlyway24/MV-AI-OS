@@ -325,7 +325,29 @@ export {
 } from "./persistence/sqlite/sqlite-connection-config.js";
 export {
   SQLITE_SCHEMA_VERSION,
+  SQLITE_APPLICATION_ID,
+  verifyCurrentSqliteSchema,
 } from "./persistence/sqlite/sqlite-schema.js";
+export {
+  createSqliteBackup,
+  restoreSqliteBackup,
+} from "./persistence/sqlite/sqlite-backup.js";
+export {
+  MAX_SQLITE_BACKUP_PATH_LENGTH,
+  MAX_SQLITE_BACKUP_TIMEOUT_MS,
+  SQLITE_BACKUP_CONTRACT_VERSION,
+  SqliteBackupConfigurationError,
+  SqliteBackupRestoreError,
+  type SqliteBackupConfig,
+  type SqliteBackupResult,
+  type SqliteBackupRestoreErrorCode,
+  type SqliteRestoreConfig,
+  type SqliteRestoreResult,
+} from "./persistence/sqlite/sqlite-backup-contract.js";
+export {
+  SqliteBackupConfigValidator,
+  SqliteRestoreConfigValidator,
+} from "./persistence/sqlite/sqlite-backup-validator.js";
 export {
   SqliteRepositoryTransactionRunner,
 } from "./persistence/sqlite/sqlite-repository-transaction-runner.js";
