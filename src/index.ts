@@ -214,6 +214,27 @@ export {
   normalizeCoreError,
 } from "./errors/core-error.js";
 export {
+  BACKUP_GUARDIAN_CONTRACT_VERSION,
+  type BackupGuardian,
+  type BackupGuardianControlName,
+  type BackupGuardianEvaluationInput,
+  type BackupGuardianFinding,
+  type BackupGuardianFindingCategory,
+  type BackupGuardianFindingEvidence,
+  type BackupGuardianReadinessState,
+  type BackupGuardianReport,
+  type BackupGuardianReportSummary,
+  type BackupGuardianSeverity,
+} from "./guardians/backup-guardian.js";
+export {
+  BackupGuardianEvaluationInputValidator,
+  BackupGuardianReportValidator,
+} from "./guardians/backup-guardian-validator.js";
+export {
+  BackupGuardianValidationError,
+  DeterministicBackupGuardian,
+} from "./guardians/backup-guardian-service.js";
+export {
   COST_GUARDIAN_CONTRACT_VERSION,
   type CostGuardian,
   type CostGuardianEvaluationInput,

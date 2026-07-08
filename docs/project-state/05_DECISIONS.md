@@ -585,3 +585,34 @@ readiness, prove provider configuration safety, or enforce blocking action by it
 follow the same pattern: explicit safe input, deterministic report output,
 redaction-safe findings, no hidden side effects, and no autonomous action without a
 separate approved architecture milestone.
+
+## ADR-026 — Backup Guardian does not operate backups
+
+**Context:** MV AI OS has controlled local SQLite backup and restore operations, but
+moving toward VPS/cloud, 24/7 execution, workflows, or external integrations requires
+operator-facing recovery posture visibility. Adding an automatic backup actor too
+early would introduce file mutation, scheduling, retention, deletion, upload, and
+restore risks before the control plane is ready.
+
+**Decision:** Implement Backup Guardian as a provider-neutral, deterministic,
+non-autonomous analysis component. It evaluates only explicit sanitized
+backup-readiness input supplied by a caller, validates every input and report, and
+emits redaction-safe findings for missing or unsafe recovery controls. It does not
+read backup files, scan the filesystem, create backups, restore backups, schedule
+backups, upload backups, delete backups, mutate files, call models, use network,
+execute tools, run in the background, or expose raw paths, database records, secret
+references, prompts, provider payloads, transcripts, or transport internals.
+
+**Reason:** Recovery posture visibility should exist before 24/7 or cloud operation,
+but the guardian itself must not become a backup scheduler, restore tool, filesystem
+crawler, or external storage integration.
+
+**Tradeoffs:** The guardian can identify risk only from supplied sanitized state. It
+does not prove that a real backup file exists, perform restore verification, maintain
+a durable backup ledger, or enforce retention policy by itself.
+
+**Future impact:** Incident, quality, and aggregate operator-safety reporting must
+consume guardian reports or sanitized signals without turning report-only guardians
+into autonomous actors. Any future scheduled backup or cloud backup feature requires a
+separate architecture milestone with explicit authorization, audit, idempotency, and
+operator controls.
