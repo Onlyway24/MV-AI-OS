@@ -93,6 +93,28 @@ export {
   type CliErrorResponse,
 } from "./cli/cli-error-response.js";
 export {
+  LOCAL_APPLICATION_CONFIG_CONTRACT_VERSION,
+  MAX_LOCAL_APPLICATION_CONFIG_BYTES,
+  type LocalApplicationCliConfig,
+  type LocalApplicationConfig,
+} from "./config/local-application-config.js";
+export { LocalApplicationConfigValidator } from "./config/local-application-config-validator.js";
+export {
+  LocalConfigurationError,
+  LocalConfigurationLoader,
+  redactValidationIssues,
+} from "./config/local-configuration-loader.js";
+export {
+  MAX_SECRET_REFERENCES,
+  MAX_SECRET_REFERENCE_LENGTH,
+  SECRET_REFERENCE_CONTRACT_VERSION,
+  type EnvironmentSecretReference,
+  type LocalFileSecretReference,
+  type SecretReference,
+  type SecretReferenceSource,
+} from "./config/secret-reference.js";
+export { SecretReferenceValidator } from "./config/secret-reference-validator.js";
+export {
   REQUEST_CONTRACT_VERSION,
   type RequestContractVersion,
   type RequestEnvelope,

@@ -2,59 +2,58 @@
 
 ## Milestone name
 
-Controlled Local Configuration and Secret References
+Controlled Local Secret Resolution
 
 ## Goal
 
-Add a validated local configuration-loading boundary that can assemble runtime and CLI
-configuration from explicit local inputs while representing secrets only as references,
-not raw values.
+Add a controlled local secret-resolution boundary that can resolve already-validated
+secret references into ephemeral secret values for future provider adapters without
+exposing those values to Core Brain, agents, logs, errors, tests, or configuration
+records.
 
 ## Why it matters
 
-The system can now execute locally, persist state durably, and recover SQLite state
-through backup and restore. The next operational gap is configuration discipline:
-before adding a real model provider, credentials and provider settings need a
-controlled, redacted, testable boundary that does not leak secrets into Core Brain,
-agents, logs, errors, or project files.
+MV AI OS now has explicit local application configuration and inert secret-reference
+contracts. The next operational gap is controlled resolution: a real model provider
+must eventually receive credentials, but those credentials must remain outside domain
+contracts, project files, public errors, and audit-like records.
 
 ## Required scope
 
-- Define versioned local application configuration contracts.
-- Define secret-reference contracts that identify where a secret may be resolved
-  without storing the secret value in configuration.
-- Add runtime validators for configuration and secret references.
-- Add a local configuration loader for explicit local JSON input.
-- Add redaction-safe error behavior for invalid configuration.
-- Preserve the existing `LocalRuntimeConfig` and CLI behavior unless a small adapter
-  is required.
-- Keep secret values out of public result, error, and audit-like structures.
-- Add deterministic tests for valid config, invalid config, secret-reference
-  validation, redaction, and runtime creation from loaded configuration.
+- Define a `SecretResolver` interface.
+- Define ephemeral secret-value and resolution-result contracts.
+- Implement local environment-variable and local-file secret resolvers for validated
+  secret references only.
+- Add runtime validators for secret resolution inputs and outputs.
+- Redact secret values and secret locations from public errors.
+- Keep resolved secret values out of `LocalApplicationConfig`, `LocalRuntimeConfig`,
+  Core Brain, agents, memory, knowledge, persistence, and audit records.
+- Add deterministic tests using process-local test environment values and temporary
+  files.
 
 ## Forbidden scope
 
-- Real provider SDKs, OpenAI, Anthropic, Gemini, or external API calls.
-- Reading secrets from cloud services or remote secret managers.
-- Adding HTTP, dashboard, n8n, MCP, browser automation, tools, embeddings, or vector
-  search.
-- Changing Core Brain, agents, memory, knowledge, workflow, tool, or repository
-  contracts.
-- Storing raw secret values in committed files, logs, errors, or tests.
-- Environment-wide implicit configuration discovery.
+- Real model providers, OpenAI, Anthropic, Gemini, provider SDKs, or external API
+  calls.
+- Cloud secret managers, network calls, HTTP, dashboard, n8n, MCP, tools, embeddings,
+  or vector search.
+- Changing Core Brain, agents, policy, memory, knowledge, workflow, tool, repository,
+  runtime, or CLI execution behavior.
+- Persisting resolved secret values.
+- Logging resolved secret values.
+- Adding environment-wide implicit configuration discovery.
 
 ## Likely files to create
 
-- `src/config/local-application-config.ts`
-- `src/config/local-application-config-validator.ts`
-- `src/config/secret-reference.ts`
-- `src/config/secret-reference-validator.ts`
-- `src/config/local-configuration-loader.ts`
-- `tests/config/local-application-config.test.ts`
+- `src/config/secret-resolver.ts`
+- `src/config/local-secret-resolver.ts`
+- `src/config/secret-value.ts`
+- `src/config/secret-resolution-validator.ts`
+- `tests/config/local-secret-resolver.test.ts`
 
 ## Likely files to modify
 
-- `src/index.ts` for intentionally public configuration contracts
+- `src/index.ts` for intentionally public secret-resolution contracts
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
 - `docs/project-state/04_NEXT_TASK.md`
@@ -62,25 +61,24 @@ agents, logs, errors, or project files.
 
 ## Tests required
 
-- Valid local application configuration is accepted.
-- Invalid configuration fails closed before runtime creation.
-- Unknown fields and unsupported versions are rejected.
-- Secret references are validated without resolving raw secret values.
-- Secret reference identifiers are redacted from public error output where needed.
-- A loaded configuration can create the existing Local Runtime.
-- Existing runtime, CLI, persistence, backup, and restore tests continue passing.
+- Environment secret references resolve only when explicitly supplied to the resolver.
+- Local-file secret references resolve from explicit local files only.
+- Missing environment variables and missing files fail closed.
+- Invalid secret references are rejected before resolution.
+- Resolved secret values are never serialized in public error details.
+- Existing configuration, runtime, CLI, persistence, backup, and restore tests continue
+  passing.
 
 ## Acceptance criteria
 
-- Configuration loading is explicit, deterministic, and runtime validated.
-- Secret references exist as contracts only; no real provider or secret manager is
-  integrated.
-- Core Brain and agents remain unaware of configuration loading.
-- No raw secret values are introduced into repository fixtures or project-state docs.
+- Secret resolution is explicit, deterministic, and redaction-safe.
+- Resolved values are ephemeral and never enter durable or public contracts.
+- Core Brain and agents remain unaware of secret resolution.
+- No provider integration or external network capability is introduced.
 
 ## Definition of done
 
-- Configuration and secret-reference boundaries are implemented and tested.
-- Project-state documents accurately describe the new configuration capability.
+- Secret-resolution contracts and local resolvers are implemented and tested.
+- Project-state documents accurately describe the new secret-resolution capability.
 - `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` pass.
 - Final reporting waits for approval or follows the user’s explicit commit instruction.

@@ -10,7 +10,7 @@ and tests, not intended future behavior.
 
 - Current branch at the time of this snapshot: `main`.
 - Latest committed baseline before the current milestone:
-  `ca1a72d feat: add controlled local CLI entrypoint`.
+  `421911c feat: add controlled SQLite backup and restore`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -19,8 +19,8 @@ and tests, not intended future behavior.
 - No upstream branch, remote CI state, release artifact, or deployment state is
   assumed unless separately verified.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
-- The Controlled Local SQLite Backup and Restore milestone is implemented in the
-  current milestone.
+- The Controlled Local Configuration and Secret References milestone is implemented
+  in the current milestone.
 
 ## Current architecture
 
@@ -40,15 +40,19 @@ Bounded CLI JSON input
   -> provider-neutral LLM Gateway
   -> validated AgentResult
   -> validated TaskResponse
+```
 
-Local operator recovery is outside Core Brain:
+Local configuration and recovery are outside Core Brain:
 
 ```text
+Validated local application configuration
+  -> LocalRuntimeConfig and LocalCliConfig
+  -> LocalRuntime or CLI adapter
+
 Validated SQLite backup/restore request
   -> local SQLite recovery operation
   -> exact schema and application identity verification
   -> atomic backup or restore file installation
-```
 ```
 
 Supporting modules are isolated behind interfaces:
@@ -86,6 +90,7 @@ provider, n8n, or external SDK types.
 18. Validated Local Runtime composition.
 19. Controlled Local CLI Entrypoint.
 20. Controlled Local SQLite Backup and Restore.
+21. Controlled Local Configuration and Secret References.
 
 ## Implemented modules
 
@@ -157,6 +162,11 @@ provider, n8n, or external SDK types.
 
 - Versioned local runtime configuration for SQLite, Content Agent mode, actor,
   workspace, and explicit actor/task/policy grants.
+- Versioned local application configuration boundary that validates explicit local
+  JSON input, assembles existing runtime and CLI configuration, and carries only
+  inert secret references.
+- Secret-reference contracts for environment and local-file locations without secret
+  value resolution.
 - Runtime validation occurs before any SQLite connection is opened.
 - Production immutable Agent Specification registry.
 - Explicit construction of lifecycle, Memory, Knowledge, policy, registry, routing,
@@ -200,6 +210,7 @@ provider, n8n, or external SDK types.
 - memory repository search and optimistic-update interfaces.
 - SQLite connection configuration and schema-version contracts.
 - SQLite backup and restore configuration/result contracts.
+- local application configuration and secret-reference contracts.
 - local runtime configuration, runtime handle, and test-override contracts.
 - local CLI configuration, structured error response, exit-code, and process-host
   contracts.
@@ -219,6 +230,7 @@ provider, n8n, or external SDK types.
   agent result validators.
 - Stored request, task record, and SQLite connection configuration validators.
 - SQLite backup and restore configuration validators.
+- Local application configuration and secret-reference validators.
 - Local runtime configuration validation.
 - Local CLI configuration validation and bounded local RequestEnvelope parsing.
 - Policy decision and effective-permission validation.
@@ -233,7 +245,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 40 test files and 231 passing tests covering:
+The latest verified suite contains 41 test files and 237 passing tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -256,6 +268,9 @@ The latest verified suite contains 40 test files and 231 passing tests covering:
 - local CLI configuration and request validation, deterministic process execution,
   missing and oversized input, runtime creation failure normalization,
   actor/workspace denial, durable replay, structured output, and graceful termination.
+- local application configuration loading, CLI/runtime config assembly,
+  secret-reference validation, redacted validation errors, and runtime creation from
+  loaded configuration.
 - SQLite backup and restore validation, successful backup, successful restore,
   schema mismatch rejection, invalid source and restore-file rejection, overwrite
   refusal, no partial restore, and preservation of lifecycle, request, audit, memory,
@@ -277,10 +292,11 @@ The latest verified suite contains 40 test files and 231 passing tests covering:
 
 The repository is an early implementation with a stable orchestration kernel and
 strongly tested architectural foundations, durable local lifecycle, memory, and
-knowledge adapters, an executable local composition root, and a controlled local
-backup/restore recovery path. It is not production-ready, but the implemented modules
-now compose into one validated local runtime with a controlled command-line process
-boundary and recoverable SQLite source of truth.
+knowledge adapters, an executable local composition root, a controlled command-line
+process boundary, a controlled local backup/restore recovery path, and explicit local
+configuration loading with inert secret references. It is not production-ready, but
+the implemented modules now compose into one validated local runtime with recoverable
+SQLite state and controlled configuration input.
 
 ## What exists only as a foundation
 
@@ -291,13 +307,18 @@ boundary and recoverable SQLite source of truth.
 - The LLM Gateway is used by the model-backed Content Agent, but no production provider
   exists.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
-  state; approvals, workflows, and configuration remain non-durable.
+  state; approvals and workflows remain non-durable.
+- Secret references are validated and redacted but are not yet resolved to secret
+  values.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
 
 ## What is actually executable
 
 - A local operator can execute one bounded `RequestEnvelope` through the official CLI
   using an explicit validated JSON configuration file and standard input.
+- A caller can parse explicit local application configuration JSON into validated
+  runtime and CLI configuration while carrying only secret references, never raw
+  secret values.
 - A caller can construct `CoreBrain` with injected test/local adapters and execute a
   `business.content` request end to end.
 - A caller can use `createLocalRuntime` to validate configuration and construct the
@@ -332,14 +353,14 @@ There is no HTTP service, dashboard, background server, or external-provider pro
 
 ## Not implemented yet
 
-- Environment-based configuration and secrets loading.
+- Secret resolution from environment variables or local secret files.
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Workflow execution, scheduling, retries, or n8n.
 - Real tool implementations or direct tool execution.
 - Durable approval and workflow persistence.
 - Production model providers or external API calls.
 - Durable approvals and human-in-the-loop operations.
-- Configuration loading and secrets management.
+- Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
 - Cancellation propagation, production retry budgets, operational health checks,
   metrics exporters, deployment packaging, and multi-user authentication.

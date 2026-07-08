@@ -135,8 +135,9 @@ persistence, forward migrations, conformance, restart recovery, the validated lo
 runtime composition root, the controlled local CLI, and controlled local SQLite
 backup/restore are complete. The local runtime now has bounded request intake,
 structured output, deterministic replay, graceful process shutdown, and a verified
-recovery path. The next milestone is controlled local configuration and secret
-references, specified in `04_NEXT_TASK.md`.
+recovery path. Controlled local application configuration and inert secret references
+are complete. The next milestone is controlled local secret resolution, specified in
+`04_NEXT_TASK.md`.
 
 ## Phase 5 — Production model capability
 

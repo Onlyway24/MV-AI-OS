@@ -335,3 +335,30 @@ runtime, or arbitrary filesystem tooling.
 **Future impact:** Future storage adapters need their own recovery contracts and
 conformance tests. Any cloud backup, encryption, or scheduled retention feature must
 be added as a separate governed operation without changing Core Brain semantics.
+
+## ADR-017 — Local application configuration uses inert secret references
+
+**Context:** The local runtime and CLI were configurable only through their direct
+contracts. Future provider adapters will require credentials, but raw secret values
+must not enter project files, Core Brain, agents, logs, public errors, or durable
+records.
+
+**Decision:** Add a versioned Local Application Configuration boundary that validates
+explicit local JSON input, assembles the existing `LocalRuntimeConfig` and
+`LocalCliConfig`, and carries only inert `SecretReference` values. Secret references
+identify environment-variable or local-file locations but are not resolved by this
+boundary. Configuration validation and loader errors redact secret-reference
+identifier paths.
+
+**Reason:** Configuration determines what exists, while runtime, policy, and agents
+determine what happens. Keeping secret references inert allows future provider
+integration to be prepared without introducing credentials, network calls, or hidden
+side effects.
+
+**Tradeoffs:** The system can validate and carry secret references, but it still
+cannot obtain secret values or call a production model provider. Operators must use
+explicit JSON input; no environment-wide implicit discovery exists.
+
+**Future impact:** A later secret-resolution boundary may resolve these references
+into ephemeral values for provider adapters. Resolved values must remain outside
+domain contracts and durable state.
