@@ -184,10 +184,13 @@ operator warnings from supplied sanitized safety-posture state without scanning 
 disk, reading secrets, calling providers, or mutating runtime state. Backup Guardian
 Foundation now adds deterministic, report-only, redaction-safe operator warnings from
 supplied sanitized backup-readiness state without creating, restoring, uploading,
-deleting, mutating, or scheduling backups. Durable usage ledgers, aggregated budget
-windows, broader operational telemetry, live smoke-test gating, autonomous guardians,
-incident/quality guardians, and aggregate operator safety reporting remain future
-work, with the next milestone specified in `04_NEXT_TASK.md`.
+deleting, mutating, or scheduling backups. Incident Guardian Foundation now adds
+deterministic, report-only, redaction-safe operator warnings from supplied sanitized
+operational incident counters and guardian summaries without sending alerts, calling
+external systems, scheduling work, or mutating state. Durable usage ledgers,
+aggregated budget windows, broader operational telemetry, live smoke-test gating,
+autonomous guardians, Quality Guardian, and aggregate operator safety reporting
+remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

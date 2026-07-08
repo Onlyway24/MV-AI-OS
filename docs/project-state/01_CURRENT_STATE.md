@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Backup Guardian Foundation milestone:
-  `530bf2c feat: add security guardian foundation`.
+- Latest committed baseline before the Incident Guardian Foundation milestone:
+  `4c53e5c feat: add backup guardian foundation`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -32,8 +32,10 @@ and tests, not intended future behavior.
 - The Security Guardian Foundation milestone is completed in this repository state
   and was committed in `530bf2c feat: add security guardian foundation`.
 - The Backup Guardian Foundation milestone is completed in this repository state and
-  is the current commit candidate.
-- The next milestone is Incident Guardian Foundation.
+  was committed in `4c53e5c feat: add backup guardian foundation`.
+- The Incident Guardian Foundation milestone is completed in this repository state
+  and is the current commit candidate.
+- The next milestone is Quality Guardian Foundation.
 
 ## Current architecture
 
@@ -117,6 +119,7 @@ provider, n8n, or external SDK types.
 28. Cost Guardian Foundation.
 29. Security Guardian Foundation.
 30. Backup Guardian Foundation.
+31. Incident Guardian Foundation.
 
 ## Implemented modules
 
@@ -237,6 +240,18 @@ provider, n8n, or external SDK types.
   backups, invalid backup-path signals, invalid backup-metadata signals, missing or
   failed restore verification, schema-version mismatch, and unsafe cloud/VPS backup
   readiness posture.
+- Deterministic Incident Guardian foundation that consumes only supplied sanitized
+  operational incident counters and cost/security/backup guardian finding summaries.
+- Incident Guardian report, finding, severity, evidence, operational-signal,
+  source-summary, threshold, and evaluator contracts.
+- Runtime-validated Incident Guardian input and report boundaries that reject prompts,
+  completions, provider payloads, raw diagnostics, API keys, secret references,
+  resolved secret values, sensitive paths, raw database records, raw transcripts, raw
+  knowledge, raw memory, and other unsupported raw fields.
+- Report-only incident generation for repeated model failures, repeated budget
+  blocks, repeated operation-limit blocks, repeated invalid configuration attempts,
+  backup/restore verification failures, provider-unavailable patterns, and
+  high-severity cost, security, or backup guardian summaries.
 - No autonomous execution, scheduling, alerts, model calls, network calls, background
   work, tool execution, durable guardian ledger, pricing invention, or
   provider-specific Guardian logic exists.
@@ -320,6 +335,8 @@ provider, n8n, or external SDK types.
   contracts.
 - Backup Guardian evaluation, readiness-state, report, finding, severity, and
   evidence contracts.
+- Incident Guardian evaluation, operational-signal, source-summary, threshold, report,
+  finding, severity, and evidence contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -346,6 +363,7 @@ provider, n8n, or external SDK types.
 - Cost Guardian evaluation-input and report validators.
 - Security Guardian evaluation-input and report validators.
 - Backup Guardian evaluation-input and report validators.
+- Incident Guardian evaluation-input and report validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -355,7 +373,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 50 test files and 313 tests covering:
+The latest verified suite contains 51 test files and 323 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -423,6 +441,10 @@ The latest verified suite contains 50 test files and 313 tests covering:
   restore verification analysis, schema mismatch reporting, unsafe cloud backup
   readiness, invalid report rejection, affected-control validation, and
   redaction-safe report boundaries.
+- Incident Guardian validation, deterministic report generation, normal incident
+  state, repeated operational failures, high-severity guardian summary escalation,
+  custom threshold handling, duplicate guardian summary rejection, invalid report
+  rejection, evidence validation, and redaction-safe report boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -450,7 +472,8 @@ provider-neutral estimated model cost calculation when explicit pricing is confi
 provider-neutral model budget enforcement, deterministic local Cost Guardian
 reporting from sanitized cost signals, deterministic local Security Guardian
 reporting from sanitized safety-posture state, and deterministic local Backup
-Guardian reporting from sanitized backup-readiness state.
+Guardian reporting from sanitized backup-readiness state, plus deterministic local
+Incident Guardian reporting from sanitized operational incident signals.
 
 ## What exists only as a foundation
 
@@ -481,6 +504,10 @@ Guardian reporting from sanitized backup-readiness state.
   validated operator-facing reports, but it does not create backups, restore backups,
   schedule backups, upload backups, delete backups, scan the filesystem, mutate files,
   run autonomously, or act as a durable backup ledger.
+- Incident Guardian can evaluate supplied sanitized operational signal counters and
+  guardian summaries, but it does not send alerts, call external systems, schedule
+  checks, run in the background, mutate state, execute tools, call models, or act as
+  a durable incident ledger.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -551,6 +578,9 @@ Guardian reporting from sanitized backup-readiness state.
 - A caller can instantiate the deterministic Backup Guardian, supply sanitized
   backup-readiness state, and receive a validated redaction-safe report with warnings
   and recommendations.
+- A caller can instantiate the deterministic Incident Guardian, supply sanitized
+  incident counters and guardian summaries, and receive a validated redaction-safe
+  report with warnings and recommendations.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -566,8 +596,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Incident Guardian, Quality Guardian, and aggregate Operator Safety Report
-  foundations.
+- Quality Guardian and aggregate Operator Safety Report foundations.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

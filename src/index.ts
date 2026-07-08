@@ -235,6 +235,30 @@ export {
   DeterministicBackupGuardian,
 } from "./guardians/backup-guardian-service.js";
 export {
+  INCIDENT_GUARDIAN_CONTRACT_VERSION,
+  type IncidentGuardian,
+  type IncidentGuardianEvaluationInput,
+  type IncidentGuardianFinding,
+  type IncidentGuardianFindingCategory,
+  type IncidentGuardianFindingEvidence,
+  type IncidentGuardianOperationalSignals,
+  type IncidentGuardianReport,
+  type IncidentGuardianReportSummary,
+  type IncidentGuardianSeverity,
+  type IncidentGuardianSignalName,
+  type IncidentGuardianSourceGuardian,
+  type IncidentGuardianSourceSummary,
+  type IncidentGuardianThresholds,
+} from "./guardians/incident-guardian.js";
+export {
+  IncidentGuardianEvaluationInputValidator,
+  IncidentGuardianReportValidator,
+} from "./guardians/incident-guardian-validator.js";
+export {
+  DeterministicIncidentGuardian,
+  IncidentGuardianValidationError,
+} from "./guardians/incident-guardian-service.js";
+export {
   COST_GUARDIAN_CONTRACT_VERSION,
   type CostGuardian,
   type CostGuardianEvaluationInput,

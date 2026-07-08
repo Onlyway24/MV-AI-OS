@@ -616,3 +616,33 @@ consume guardian reports or sanitized signals without turning report-only guardi
 into autonomous actors. Any future scheduled backup or cloud backup feature requires a
 separate architecture milestone with explicit authorization, audit, idempotency, and
 operator controls.
+
+## ADR-027 — Incident Guardian does not alert or remediate
+
+**Context:** MV AI OS now has deterministic cost, security, and backup guardian
+foundations. Before adding workflows, dashboards, n8n, cloud/VPS, 24/7 operation, or
+external alerts, Fabio needs local visibility into repeated failures and
+high-severity safety signals without introducing a background monitor or autonomous
+remediation path.
+
+**Decision:** Implement Incident Guardian as a provider-neutral, deterministic,
+non-autonomous analysis component. It evaluates only explicit sanitized operational
+incident counters and guardian finding summaries supplied by a caller, validates
+every input and report, and emits redaction-safe incident findings. It does not send
+alerts, call external systems, use network, call models, schedule checks, run in the
+background, mutate state, execute tools, persist incident ledgers, or expose raw
+prompts, completions, provider payloads, diagnostics, secret references, paths,
+database records, transcripts, knowledge, memory, or transport internals.
+
+**Reason:** Incident visibility is needed before external integrations and 24/7
+operation, but alerting and remediation are action layers that require separate
+authorization, audit, escalation, and operator-control design.
+
+**Tradeoffs:** The guardian can identify incidents only from supplied sanitized
+counts and summaries. It does not collect live telemetry, monitor processes, page
+Fabio, deduplicate over durable time windows, or enforce remediation.
+
+**Future impact:** Quality Guardian and Operator Safety Report must preserve the same
+report-only discipline. Any future alerting, durable incident ledger, dashboard, or
+automatic remediation feature requires a separate milestone with explicit policy,
+approval, audit, and idempotency boundaries.
