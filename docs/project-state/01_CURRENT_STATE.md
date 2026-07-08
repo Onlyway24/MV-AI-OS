@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Controlled Model Operation Limits milestone:
-  `dc8ec37 docs: reconcile OpenAI provider wiring state`.
+- Latest committed baseline before the Controlled Model Usage Accounting milestone:
+  `394cb16 feat: add controlled model operation limits`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -21,8 +21,9 @@ and tests, not intended future behavior.
 - `AI_ENGINEERING_RULES.md` is tracked and was committed in `87b2f05`.
 - The Controlled Local OpenAI Provider Wiring milestone is completed and committed in
   `649c3a7 feat: wire controlled local OpenAI provider`.
-- Controlled Model Operation Limits is implemented in the current working tree and
-  awaiting its milestone commit.
+- The Controlled Model Operation Limits milestone is completed and committed in
+  `394cb16 feat: add controlled model operation limits`.
+- The current milestone is Controlled Model Usage Accounting.
 
 ## Current architecture
 
