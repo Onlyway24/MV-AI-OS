@@ -854,3 +854,40 @@ constraints into this decision layer without adding sub-agent runtime. Mission
 Planning Dry-Run must consume `OperatorDecision` and remain non-executing until a
 separate Workflow Runtime milestone adds durable approvals, audit, idempotency,
 policy enforcement, and explicit execution boundaries.
+
+## ADR-034 — Delegation Policy is declarative and non-executing
+
+**Context:** Only Way Assistant now has a validated specification, deterministic
+runtime boundary, Guardian Consultation Boundary, and Operator Decision Engine. The
+system needs to know which future specialist categories may be proposed before an
+agent-company map or mission planner can be safe, but adding real sub-agent runtime
+now would create uncontrolled agent-to-agent behavior and make Fabio a babysitter.
+
+**Decision:** Implement Main Assistant Delegation Policy as a deterministic,
+redaction-safe, non-executing evaluation boundary. It consumes a validated policy
+profile, explicit target category, requested operations, delegation path/depth,
+approval markers, and optional supplied Guardian Consultation decision. It returns a
+validated decision: allowed, blocked, requires approval, or requires operator
+confirmation. It enforces allowed targets, forbidden categories, Guardian
+Consultation presence, Operator Safety coverage, approval markers,
+budget/security/backup/quality prerequisites, max delegation depth, and
+no-circular-delegation rules. It does not invoke agents, execute workflows, execute
+tools, call models, call providers, collect guardian signals, persist state, schedule
+work, use network behavior, send alerts, or act autonomously.
+
+**Reason:** Fabio needs one controlled main assistant that can safely propose future
+internal specialists without spawning agent chaos. A declarative policy makes
+delegation auditable, deterministic, and reviewable before any real multi-agent
+runtime exists.
+
+**Tradeoffs:** The policy cannot complete specialist work, discover live safety state,
+or enforce external approvals by itself. It only evaluates supplied signals and
+approval markers. Future execution layers must still add durable approval,
+idempotency, audit, policy, and runtime enforcement before any handoff can perform
+work.
+
+**Future impact:** Main Assistant Operator Protocol should present delegation-policy
+decisions in Fabio-facing language without exposing raw guardian payloads. Agent
+Company Specification Foundation and Mission Planning Dry-Run must consume this
+policy for candidate handoffs and must remain non-executing until separate workflow,
+tool, and agent runtime milestones are approved.

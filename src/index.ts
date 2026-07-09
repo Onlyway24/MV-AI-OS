@@ -116,6 +116,33 @@ export {
   OperatorDecisionContextValidator,
   OperatorDecisionValidator,
 } from "./assistants/operator-decision-engine-validator.js";
+export {
+  DEFAULT_MAIN_ASSISTANT_DELEGATION_POLICY,
+  DEFAULT_MAIN_ASSISTANT_DELEGATION_POLICY_ID,
+  MAIN_ASSISTANT_DELEGATION_POLICY_CONTRACT_VERSION,
+  MainAssistantDelegationPolicyValidationError,
+  type MainAssistantDelegationBusinessValue,
+  type MainAssistantDelegationCategory,
+  type MainAssistantDelegationConstraint,
+  type MainAssistantDelegationConstraintEnforcement,
+  type MainAssistantDelegationConstraintKind,
+  type MainAssistantDelegationDecision,
+  type MainAssistantDelegationDecisionKind,
+  type MainAssistantDelegationDecisionReason,
+  type MainAssistantDelegationEvaluationRequest,
+  type MainAssistantDelegationPolicyEvaluator,
+  type MainAssistantDelegationPolicyProfile,
+  type MainAssistantDelegationPolicyTarget,
+  type MainAssistantDelegationReasonCode,
+  type MainAssistantDelegationReasonSeverity,
+  type MainAssistantDelegationRiskLevel,
+} from "./assistants/main-assistant-delegation-policy.js";
+export { DeterministicMainAssistantDelegationPolicyEvaluator } from "./assistants/deterministic-main-assistant-delegation-policy.js";
+export {
+  MainAssistantDelegationDecisionValidator,
+  MainAssistantDelegationEvaluationRequestValidator,
+  MainAssistantDelegationPolicyProfileValidator,
+} from "./assistants/main-assistant-delegation-policy-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

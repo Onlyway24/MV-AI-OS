@@ -2,68 +2,66 @@
 
 ## Milestone name
 
-Main Assistant Delegation Policy Foundation
+Main Assistant Operator Protocol
 
 ## Goal
 
-Define safe declarative delegation policies for future sub-agents without executing
-delegation.
+Define the structured operator-facing protocol Fabio uses with Only Way Assistant.
 
-This policy answers which type of internal specialist Only Way Assistant may involve
-later, under which conditions, and which delegation categories must remain forbidden
-until approvals, guardians, budgets, security, backup readiness, quality review, and
-future execution layers exist.
+This protocol is the contract future CLI, local web console, or API layers can use
+to present operator decisions without exposing raw internal payloads or making Fabio
+babysit individual agents.
 
-This is not sub-agent runtime, workflow execution, tool execution, or autonomous
-delegation.
+This is not a UI, HTTP API, dashboard, chat runtime, model call, agent execution,
+workflow execution, tool execution, or autonomous operator.
 
 ## Why it matters
 
 Only Way Assistant now has a specification, runtime boundary, Guardian Consultation,
-and Operator Decision Engine. Before any agent-company map or mission planning can
-be useful, the system needs a deterministic delegation policy foundation that keeps
-Fabio as the operator and prevents uncontrolled agent-to-agent chaos.
+Operator Decision Engine, and Delegation Policy. The next step is a stable
+operator-facing language for commands, decisions, approvals, clarifications,
+refusals, and next actions so Fabio can give business goals and receive clear,
+safe, decision-ready output.
 
 ## Required scope
 
-- Define `DelegationPolicy` contract.
-- Define `DelegationTarget` contract.
-- Define `DelegationConstraint` contract.
-- Define `DelegationDecision` contract if useful.
-- Define delegation category and risk-level contracts if useful.
-- Add runtime validators for public delegation contracts.
-- Express rules for:
-  - allowed future agent categories;
-  - forbidden delegation categories;
-  - required Guardian Consultation;
-  - required Operator Safety Report;
-  - required human approval;
-  - cost/budget requirements;
-  - security requirements;
-  - backup readiness requirements;
-  - quality review requirements;
-  - max delegation depth;
-  - no circular delegation;
-  - no autonomous escalation;
-  - no publisher delegation without approval;
-  - no sales outreach without approval;
-  - no tool-agent delegation without explicit future approval;
-  - no external communication without approval.
-- Keep output deterministic and redaction-safe.
+- Define `OperatorCommand` contract.
+- Define `OperatorIntent` contract.
+- Define `OperatorDecisionRequest` contract.
+- Define `OperatorDecisionResponse` contract.
+- Define `OperatorApprovalPrompt` contract if useful.
+- Define `OperatorClarificationRequest` contract if useful.
+- Define `OperatorRefusal` contract if useful.
+- Define `OperatorNextAction` contract if useful.
+- Add runtime validators for all public operator protocol contracts.
+- Add deterministic protocol formatting/normalization behavior if useful.
+- Express operator-facing output rules for:
+  - concise summary;
+  - understood objective;
+  - safety checks consulted;
+  - decision made;
+  - what is blocked;
+  - what needs approval;
+  - what information is missing;
+  - what will happen next;
+  - what was refused and why;
+  - cost/budget status if safely available;
+  - risk level if safely available;
+  - candidate non-executing delegation if safely available;
+  - candidate non-executing mission plan if safely available;
+  - no raw internal payloads.
+- Keep ordering deterministic and output redaction-safe.
 
 ## Forbidden scope
 
-- Executing delegation.
-- Calling or invoking sub-agents.
-- Multi-agent runtime.
-- Workflow execution.
-- Tool execution.
-- Model calls, provider calls, live provider tests, or prompt generation.
-- Running guardians or collecting guardian signals automatically.
-- Scheduling, polling, background checks, monitoring, alerts, Telegram, email, Slack,
-  dashboard, HTTP, n8n, MCP, browser automation, filesystem tools, cloud/VPS runtime,
-  external APIs, network behavior, embeddings, vector search, durable persistence, or
-  runtime ledgers.
+- Building a UI, HTTP API, dashboard, CLI rewrite, chat runtime, or transport adapter.
+- Calling models, providers, tools, workflows, guardians, agents, browsers,
+  filesystems, n8n, MCP, network services, external APIs, Telegram, email, Slack, or
+  notification systems.
+- Executing delegation, sub-agents, workflows, tools, publishing, outreach, or
+  external communication.
+- Scheduling, polling, monitoring, background work, durable ledgers, or autonomous
+  action.
 - Mutating Core Brain behavior.
 - Mutating Content Agent behavior.
 - Mutating memory, knowledge, tasks, audits, files, backups, runtime state, or
@@ -71,10 +69,10 @@ Fabio as the operator and prevents uncontrolled agent-to-agent chaos.
 
 ## Likely files to create
 
-- `src/assistants/main-assistant-delegation-policy.ts`
-- `src/assistants/main-assistant-delegation-policy-validator.ts`
-- `src/assistants/deterministic-main-assistant-delegation-policy.ts`
-- `tests/assistants/main-assistant-delegation-policy.test.ts`
+- `src/assistants/main-assistant-operator-protocol.ts`
+- `src/assistants/main-assistant-operator-protocol-validator.ts`
+- `src/assistants/deterministic-main-assistant-operator-protocol.ts`
+- `tests/assistants/main-assistant-operator-protocol.test.ts`
 
 ## Likely files to modify
 
@@ -86,38 +84,40 @@ Fabio as the operator and prevents uncontrolled agent-to-agent chaos.
 
 ## Tests required
 
-- Valid delegation policy is accepted.
-- Invalid delegation policy is rejected.
-- Forbidden delegation categories are rejected.
-- Missing approval requirements are rejected.
-- Missing Guardian Consultation requirements are rejected.
-- Budget/security/backup/quality requirements are enforced by validation.
-- Unsafe or circular delegation constraints are rejected where represented.
-- Delegation ordering is deterministic.
-- Delegation output is redaction-safe and excludes prompts, completions, provider
-  payloads, secret references, secret values, transcripts, raw knowledge, raw memory,
-  sensitive paths, and transport internals.
+- Valid operator command is accepted.
+- Invalid operator command is rejected.
+- Approval-required state produces a safe approval prompt.
+- Clarification-required state produces deterministic clarification output.
+- Refusal or blocked state produces safe refusal/blocker output.
+- Next-action output is deterministic.
+- Safety checks consulted are represented without raw guardian payloads.
+- Cost/budget posture is represented only as sanitized summary.
+- Candidate delegation and mission-plan data are represented only as non-executing
+  summaries.
+- Redaction safety excludes prompts, completions, provider payloads, secret
+  references, secret values, transcripts, raw knowledge, raw memory, sensitive paths,
+  raw guardian payloads, and transport internals.
 - Existing Main Assistant runtime, Guardian Consultation, Operator Decision Engine,
-  guardian, model, runtime, CLI, persistence, backup/restore, and governed content
-  tests continue passing.
+  Delegation Policy, guardian, model, runtime, CLI, persistence, backup/restore, and
+  governed content tests continue passing.
 
 ## Acceptance criteria
 
-- Only Way Assistant has a validated declarative delegation policy foundation.
-- The policy can state allowed future internal specialists and forbidden delegation
-  modes without executing agents.
-- The policy requires Guardian Consultation and approval for risky categories.
-- No sub-agent execution, workflow execution, tool execution, model calls, provider
-  calls, persistence, network behavior, dashboard, alerts, or autonomous behavior is
+- Only Way Assistant has a validated operator-facing protocol contract.
+- The protocol can represent decisions, approvals, clarifications, refusals,
+  blockers, and next actions without executing anything.
+- Fabio receives business-operator output, not raw internal diagnostics.
+- No UI, HTTP, dashboard, model calls, provider calls, tool calls, workflow calls,
+  agent execution, persistence, network behavior, alerts, or autonomous behavior is
   added.
 - Existing Core Brain, policy, guardian, model, memory, knowledge, tool, workflow,
   runtime, CLI, and repository boundaries remain unchanged.
 
 ## Definition of done
 
-- Delegation policy contracts, validators, deterministic policy/evaluator behavior,
-  and tests are complete.
-- Project-state documents accurately describe the delegation policy foundation.
+- Operator protocol contracts, validators, deterministic formatting/normalization
+  behavior, and tests are complete.
+- Project-state documents accurately describe the operator protocol foundation.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.
-- The milestone is committed before Main Assistant Operator Protocol begins.
+- The milestone is committed before Agent Company Specification Foundation begins.

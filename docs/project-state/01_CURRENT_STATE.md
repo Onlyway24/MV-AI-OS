@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Operator Decision Engine Foundation
-  milestone: `3fb202e feat: add guardian consultation boundary`.
+- Latest committed baseline before the Main Assistant Delegation Policy Foundation
+  milestone: `fbeda65 feat: add operator decision engine foundation`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -48,8 +48,10 @@ and tests, not intended future behavior.
 - The Guardian Consultation Boundary milestone is completed in this repository state
   and was committed in `3fb202e feat: add guardian consultation boundary`.
 - The Operator Decision Engine Foundation milestone is completed in this repository
-  state and is the current commit candidate.
-- The next milestone is Main Assistant Delegation Policy Foundation.
+  state and was committed in `fbeda65 feat: add operator decision engine foundation`.
+- The Main Assistant Delegation Policy Foundation milestone is completed in this
+  repository state and is the current commit candidate.
+- The next milestone is Main Assistant Operator Protocol.
 
 ## Current architecture
 
@@ -140,6 +142,7 @@ provider, n8n, or external SDK types.
 35. Main Assistant / Orchestrator Runtime Boundary.
 36. Guardian Consultation Boundary.
 37. Operator Decision Engine Foundation.
+38. Main Assistant Delegation Policy Foundation.
 
 ## Implemented modules
 
@@ -357,6 +360,11 @@ provider, n8n, or external SDK types.
   Consultation decision, requested operations, optional sanitized cost posture, and
   optional delegation signal into redaction-safe proceed, clarification, approval,
   confirmation, refusal, blocked, or non-executing mission-plan-candidate decisions.
+- Versioned Main Assistant Delegation Policy contracts and deterministic evaluator
+  for validating allowed future specialist categories, forbidden delegation
+  categories, Guardian Consultation coverage, Operator Safety requirements,
+  approval markers, budget/security/backup/quality prerequisites, max depth,
+  circular delegation, and redaction-safe non-executing delegation decisions.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -417,6 +425,9 @@ provider, n8n, or external SDK types.
 - Operator decision context, decision, decision-kind, decision-reason, certainty,
   cost-posture, delegation-signal, non-executing mission-plan-candidate, candidate
   step, engine, and validation-error contracts.
+- Main Assistant delegation policy profile, policy target, constraint, evaluation
+  request, delegation decision, decision reason, category, risk-level,
+  business-value, evaluator, and validation-error contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -450,6 +461,8 @@ provider, n8n, or external SDK types.
 - Main Assistant / Orchestrator invocation and result validators.
 - Guardian consultation request, policy, and decision validators.
 - Operator decision context and decision validators.
+- Main Assistant delegation policy profile, evaluation request, and decision
+  validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -459,7 +472,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 57 test files and 391 tests covering:
+The latest verified suite contains 58 test files and 403 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -560,6 +573,11 @@ The latest verified suite contains 57 test files and 391 tests covering:
   approval-required, confirmation-required, safety-blocked, budget-blocked,
   near-budget confirmation, delegation refusal, deterministic non-executing
   mission-plan candidates, and redaction-safe decision boundaries.
+- Main Assistant Delegation Policy validation, deterministic allowed and blocked
+  delegation decisions, forbidden categories, missing Guardian Consultation,
+  approval-required publisher delegation, explicit approval markers, missing
+  budget/security/backup/quality prerequisites, circular delegation, max-depth
+  enforcement, guardian-warning confirmation, and redaction-safe output boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -608,7 +626,12 @@ Operator Decision Engine Foundation now combines the Only Way Assistant
 specification, Guardian Consultation decision, requested operations, optional
 sanitized cost posture, and optional delegation signal into a deterministic
 operator-facing decision without executing agents, workflows, tools, models, or
-external systems.
+external systems. Main Assistant Delegation Policy Foundation now defines the
+validated, deterministic, non-executing policy layer for future specialist handoff
+proposals, including allowed categories, forbidden categories, Guardian
+Consultation requirements, Operator Safety requirements, approval markers,
+budget/security/backup/quality prerequisites, max depth, circular-delegation
+blocking, and redaction-safe decision output.
 
 ## What exists only as a foundation
 
@@ -667,6 +690,11 @@ external systems.
   but it does not execute decisions, enforce approvals, call models, call providers,
   call agents, delegate work, plan full missions, execute workflows, execute tools,
   persist state, schedule work, use the network, or act autonomously.
+- Main Assistant Delegation Policy can validate a non-executing future specialist
+  handoff proposal and return allowed, blocked, approval-required, or
+  confirmation-required decisions, but it does not invoke agents, execute workflows,
+  execute tools, call models, persist state, collect guardian signals, schedule work,
+  use the network, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -767,6 +795,10 @@ external systems.
   confirmation-required, blocked, over-budget, near-budget, delegation-disallowed, or
   safe planning contexts into proceed, clarification, approval, confirmation,
   blocked, refused, or non-executing mission-plan-candidate outcomes.
+- A caller can instantiate
+  `DeterministicMainAssistantDelegationPolicyEvaluator`, supply a validated
+  `MainAssistantDelegationEvaluationRequest`, and receive a validated redaction-safe
+  non-executing delegation decision for a future specialist category.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -782,7 +814,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Main Assistant Delegation Policy Foundation.
+- Main Assistant Operator Protocol.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

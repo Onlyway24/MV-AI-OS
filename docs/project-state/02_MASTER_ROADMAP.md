@@ -214,11 +214,16 @@ Assistant specification identity, Guardian Consultation decisions, requested
 operations, optional sanitized cost posture, and optional delegation signals into
 proceed, clarification, approval, confirmation, refusal, blocked, or non-executing
 mission-plan-candidate outcomes without executing agents, workflows, tools, models,
-providers, persistence, network behavior, dashboards, or autonomous loops. Durable
-usage ledgers, aggregated budget windows, broader operational telemetry, live
-smoke-test gating, autonomous guardians, dashboards, delegation policy, delegation
-execution, and full Main Assistant orchestration remain future work, with the next
-milestone specified in `04_NEXT_TASK.md`.
+providers, persistence, network behavior, dashboards, or autonomous loops. Main
+Assistant Delegation Policy Foundation now adds deterministic, redaction-safe,
+non-executing delegation-policy evaluation for future specialist handoff proposals,
+including allowed and forbidden categories, Guardian Consultation coverage, Operator
+Safety requirements, approval markers, budget/security/backup/quality prerequisites,
+max depth, and circular-delegation blocking without invoking agents or execution
+layers. Durable usage ledgers, aggregated budget windows, broader operational
+telemetry, live smoke-test gating, autonomous guardians, dashboards, delegation
+execution, Main Assistant Operator Protocol, and full Main Assistant orchestration
+remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 
