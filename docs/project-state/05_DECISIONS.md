@@ -992,3 +992,30 @@ workflow dry-runs can reference these roles.
 and preserve its forbidden capabilities, approval requirements, and control-plane
 dependencies. Future workflow or tool runtime milestones must not treat role presence
 as permission to execute.
+
+## ADR-038 — Initial core agents are specifications, not workers
+
+**Context:** The Agent Company map defines Fabio's internal organization, but mission
+planning and future workflow dry-runs need exact AgentSpecification identities rather
+than loose role names. Adding executable agents now would skip mission planning,
+workflow boundaries, approvals, and runtime safety.
+
+**Decision:** Define the first experimental core AgentSpecification records for
+Research Agent, Business Agent, Content Director, Developer Agent, and Knowledge
+Curator. Each specification maps to the Agent Company role map and declares exact
+task types, strict input/output schemas, capabilities, limits, policy requirements,
+handoff targets, and instruction references. The specifications do not execute
+agents, call models, call providers, run workflows, execute tools, persist state, use
+network behavior, or act autonomously.
+
+**Reason:** Exact specifications give the Only Way Assistant and future mission
+planner stable internal company structure without introducing runtime autonomy.
+Reusing the existing AgentSpecification contract and validator prevents a parallel
+agent-description system.
+
+**Tradeoffs:** These agents cannot yet perform work. They are operationally useful as
+validated identities and planning targets only.
+
+**Future impact:** Extended Business Agent Specifications should complete the
+remaining business-facing roles using the same pattern. Mission Planning Dry-Run must
+reference exact specification IDs and versions without invoking them.

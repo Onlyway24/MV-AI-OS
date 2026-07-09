@@ -191,6 +191,15 @@ export {
   AgentCompanyMapValidator,
   AgentCompanyRoleValidator,
 } from "./assistants/agent-company-specification-validator.js";
+export {
+  BUSINESS_AGENT_SPECIFICATION,
+  CONTENT_DIRECTOR_SPECIFICATION,
+  CORE_AGENT_SPECIFICATION_VERSION,
+  DEVELOPER_AGENT_SPECIFICATION,
+  INITIAL_CORE_AGENT_SPECIFICATIONS,
+  KNOWLEDGE_CURATOR_SPECIFICATION,
+  RESEARCH_AGENT_SPECIFICATION,
+} from "./assistants/core-agent-specifications.js";
 export type {
   AgentExecutor,
   AgentRuntime,

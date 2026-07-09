@@ -240,10 +240,13 @@ validated, non-executing internal company map for Fabio's future specialist role
 including business value, role boundaries, control-plane dependencies, approval
 requirements, forbidden capabilities, memory/knowledge requirements, and future
 AgentSpecification mappings. Durable usage ledgers, aggregated budget windows, broader
-operational telemetry, live smoke-test gating, autonomous guardians, dashboards,
-delegation execution, executable agent-company runtime, and full Main Assistant
-orchestration remain future work, with the next milestone specified in
-`04_NEXT_TASK.md`.
+Initial Core Agent Specifications now add exact experimental AgentSpecification
+records for Research Agent, Business Agent, Content Director, Developer Agent, and
+Knowledge Curator without adding runtime execution. Durable usage ledgers,
+aggregated budget windows, broader operational telemetry, live smoke-test gating,
+autonomous guardians, dashboards, delegation execution, executable agent-company
+runtime, and full Main Assistant orchestration remain future work, with the next
+milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

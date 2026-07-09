@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Agent Company Specification Foundation
-  milestone: `8f59f26 docs: add MV AI OS constitution`.
+- Latest committed baseline before the Initial Core Agent Specifications milestone:
+  `34444d7 feat: add agent company specification foundation`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -56,9 +56,11 @@ and tests, not intended future behavior.
   state and was committed in `d5d03ed feat: add main assistant operator protocol`.
 - The MV AI OS Constitution documentation milestone is completed by the documentation
   change set that adds `docs/MV_AI_OS_CONSTITUTION.md`.
-- The Agent Company Specification Foundation milestone is completed by the current
-  change set.
-- The next milestone is Initial Core Agent Specifications.
+- The Agent Company Specification Foundation milestone is completed and was committed
+  in `34444d7 feat: add agent company specification foundation`.
+- The Initial Core Agent Specifications milestone is completed by the current change
+  set.
+- The next milestone is Extended Business Agent Specifications.
 
 ## Current architecture
 
@@ -153,6 +155,7 @@ provider, n8n, or external SDK types.
 39. Main Assistant Operator Protocol.
 40. MV AI OS Constitution.
 41. Agent Company Specification Foundation.
+42. Initial Core Agent Specifications.
 
 ## Implemented modules
 
@@ -398,6 +401,13 @@ provider, n8n, or external SDK types.
   and knowledge requirements, and future AgentSpecification mappings without agent
   runtime, model calls, workflow execution, tool execution, persistence, network
   behavior, external communication, dashboards, or autonomy.
+- Initial experimental core AgentSpecification records for Research Agent, Business
+  Agent, Content Director, Developer Agent, and Knowledge Curator. These
+  specifications map back to the Agent Company role map and define exact identities,
+  task types, strict input/output schemas, capabilities, limits, policy requirements,
+  handoff targets, and versioned instruction references without executing agents,
+  workflows, tools, models, providers, persistence, network behavior, dashboards, or
+  autonomy.
   actions, and non-executing mission/delegation summaries without exposing raw
   internal payloads.
 - Versioned Workflow Specification graph contracts, validators, and registry
@@ -471,6 +481,8 @@ provider, n8n, or external SDK types.
   role boundary, approval requirement, forbidden capability, memory requirement,
   knowledge requirement, future AgentSpecification mapping, and validation-error
   contracts.
+- Initial core Research, Business, Content Director, Developer, and Knowledge Curator
+  AgentSpecification constants.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -633,6 +645,10 @@ The latest verified suite contains 59 test files and 411 tests covering:
   boundary violations, missing forbidden capabilities, missing approval requirements,
   missing control-plane dependencies, deterministic role/dependency/approval/mapping
   ordering, and redaction-safe non-executing output boundaries.
+- Initial Core Agent Specification validation, Agent Company role mapping, stable
+  identity/version checks, strict schema checks, capability and policy alignment,
+  deterministic handoff targets, immutable registry lookup and duplicate rejection,
+  and redaction-safe non-executing specification boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -882,6 +898,10 @@ It is documentation-only and does not modify runtime behavior.
   value, role boundaries, control-plane dependencies, approval requirements,
   forbidden capabilities, memory/knowledge requirements, and future
   AgentSpecification mappings.
+- A caller can validate and register the initial experimental core AgentSpecification
+  records for Research Agent, Business Agent, Content Director, Developer Agent, and
+  Knowledge Curator through the existing AgentSpecification validator and immutable
+  registry.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -900,7 +920,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Initial Core Agent Specifications.
+- Extended Business Agent Specifications.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
