@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Agent Permission Matrix milestone:
-  `e8164f1 feat: add agent capability registry`.
+- Latest committed baseline before the Agent Communication / Handoff Contracts
+  milestone: `26b489b feat: add agent permission matrix`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -66,8 +66,11 @@ and tests, not intended future behavior.
   `4faf0be feat: add inter-agent responsibility matrix`.
 - The Agent Capability Registry milestone is completed and was committed in
   `e8164f1 feat: add agent capability registry`.
-- The Agent Permission Matrix milestone is completed by the current change set.
-- The next milestone is Agent Communication / Handoff Contracts.
+- The Agent Permission Matrix milestone is completed and was committed in
+  `26b489b feat: add agent permission matrix`.
+- The Agent Communication / Handoff Contracts milestone is completed by the current
+  change set.
+- The next milestone is Agent Company Readiness Review.
 
 ## Current architecture
 
@@ -167,6 +170,7 @@ provider, n8n, or external SDK types.
 44. Inter-Agent Responsibility Matrix.
 45. Agent Capability Registry.
 46. Agent Permission Matrix.
+47. Agent Communication / Handoff Contracts.
 
 ## Implemented modules
 
@@ -440,8 +444,12 @@ provider, n8n, or external SDK types.
   approval-sensitive permissions, guardian-sensitive permissions, future
   workflow/tool compatibility, default-deny behavior, and explicit no-runtime-grant
   boundaries.
-  actions, and non-executing mission/delegation summaries without exposing raw
-  internal payloads.
+- Deterministic Agent Communication / Handoff Contracts for future support, review,
+  approval-preparation, and escalation requests between Agent Company roles. The
+  handoff set references exact role IDs, AgentSpecification IDs/versions,
+  responsibility areas, capability IDs, and permission rule IDs while preserving
+  redaction safety, Fabio approval markers, guardian markers, and explicit
+  non-execution.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -527,6 +535,11 @@ provider, n8n, or external SDK types.
   forbidden action, permission scope, permission boundary, forbidden permission
   category, role permission boundary, future workflow/tool compatibility, and
   non-executing no-runtime-grant contracts.
+- Agent Handoff contract set, handoff request, handoff result, role reference,
+  payload summary, market insight summary, opportunity summary, business context,
+  evidence summary, expected output, future workflow relevance, future tool
+  relevance, handoff type, handoff status, reason, risk, evidence-quality, and
+  uncertainty contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -564,6 +577,7 @@ provider, n8n, or external SDK types.
   validators.
 - Main Assistant operator command, decision request, and decision response
   validators.
+- Agent Handoff contract-set, request, and result validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -573,7 +587,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 63 test files and 459 tests covering:
+The latest verified suite contains 66 test files and 545 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -730,6 +744,16 @@ The latest verified suite contains 63 test files and 459 tests covering:
   rejection, guardian-sensitive marker enforcement, approval-sensitive marker
   enforcement, non-executing future tool mapping, deterministic ordering,
   immutability, and redaction-safe boundaries.
+- Agent Communication / Handoff Contract validation for valid contract sets,
+  individual handoff requests, non-executing handoff results, known source and target
+  roles, exact AgentSpecification ID/version references, source/target separation,
+  unknown type rejection, duplicate ID rejection, responsibility/capability/permission
+  alignment, missing approval and guardian marker rejection, publishing/sales/customer
+  approval gating, finance/payment/budget mutation rejection, legal/final-compliance
+  rejection, direct tool/model/provider/workflow/filesystem/network execution wording
+  rejection, raw prompt/completion/provider/secret/path leakage rejection, sanitized
+  restaurant-offer business-chain coverage, deterministic ordering, immutability, and
+  redaction safety.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -808,7 +832,10 @@ future mission planning can reference without granting execution. Agent Permissi
 Matrix now maps those roles and capabilities into deterministic, validated,
 non-executing permission declarations, forbidden action categories, approval
 requirements, guardian requirements, default-deny posture, and explicit
-no-runtime-grant boundaries before mission planning exists.
+no-runtime-grant boundaries before mission planning exists. Agent Communication /
+Handoff Contracts now define deterministic, validated, non-executing support,
+review, approval-preparation, and escalation metadata between Agent Company roles
+before mission planning exists.
 
 ## What exists only as a foundation
 
@@ -901,6 +928,12 @@ no-runtime-grant boundaries before mission planning exists.
   plans, execute workflows, execute tools, call models/providers, mutate files or
   networks, persist state, communicate externally, publish, sell, spend money,
   provide final legal approval, or act autonomously.
+- Agent Communication / Handoff Contracts define how future Agent Company roles may
+  request support, review, approval preparation, or escalation from each other during
+  future Mission Planning Dry-Run, but they do not invoke agents, execute handoffs,
+  execute workflows, execute tools, call models/providers, mutate files or networks,
+  persist state, communicate externally, publish, sell, spend money, provide final
+  legal approval, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -1035,6 +1068,12 @@ no-runtime-grant boundaries before mission planning exists.
   categories, approval requirements, guardian requirements, and future workflow/tool
   compatibility for the Agent Company without granting runtime permissions or
   executing anything.
+- A caller can validate `DEFAULT_AGENT_HANDOFF_CONTRACT_SET` to inspect deterministic
+  non-executing handoff declarations between Agent Company roles, including
+  source/target roles, expected outputs, sanitized business context, capability and
+  permission references, Fabio approval markers, guardian markers, future
+  workflow/tool relevance, and redaction-safe result contracts without invoking any
+  agent or executing anything.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1053,7 +1092,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Agent Communication / Handoff Contracts.
+- Agent Company Readiness Review.
 - Mission Planning Dry-Run Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.

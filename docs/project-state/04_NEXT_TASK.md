@@ -2,7 +2,7 @@
 
 ## Milestone name
 
-Agent Communication / Handoff Contracts
+Agent Company Readiness Review
 
 ## Required context before implementation
 
@@ -17,56 +17,60 @@ Agent Communication / Handoff Contracts
   - `src/assistants/inter-agent-responsibility-matrix.ts`
   - `src/assistants/agent-capability-registry.ts`
   - `src/assistants/agent-permission-matrix.ts`
-  - `tests/assistants/agent-permission-matrix.test.ts`
+  - `src/assistants/agent-handoff-contracts.ts`
+  - related validators and tests
 
 ## Goal
 
-Define deterministic, validated, non-executing contracts for future handoffs between
-Agent Company roles.
+Create a deterministic, validated, non-executing readiness review that evaluates
+whether the current Agent Company declarations are internally coherent enough to
+support the future Mission Planning Dry-Run Boundary.
 
-The contracts must describe how one future role may request support, review,
-approval preparation, or escalation from another role during Mission Planning
-Dry-Run without invoking agents or executing workflows.
+The review must inspect existing declarative artifacts only. It must not execute
+agents, create mission plans, run workflows, call models, call providers, execute
+tools, or mutate runtime state.
 
 ## Required scope
 
-- Define Agent Handoff / Communication contracts.
-- Reuse existing Agent Company role IDs.
-- Reuse exact AgentSpecification IDs/versions.
-- Reuse Inter-Agent Responsibility Matrix areas where appropriate.
-- Reuse Agent Capability Registry capability IDs.
-- Reuse Agent Permission Matrix permission rule IDs.
-- Declare handoff purpose, source role, target role, requested capability,
-  requested permission declaration, required context summary, expected response
-  shape, approval sensitivity, guardian sensitivity, and escalation markers.
-- Preserve default-deny doctrine.
+- Define an Agent Company readiness report contract.
+- Define readiness finding, severity, category, and status contracts.
+- Validate inputs and reports at public boundaries.
+- Evaluate coherence across:
+  - Agent Company role map
+  - exact AgentSpecifications
+  - Inter-Agent Responsibility Matrix
+  - Agent Capability Registry
+  - Agent Permission Matrix
+  - Agent Communication / Handoff Contracts
+- Detect missing role coverage, missing specification coverage, missing capability
+  coverage, missing permission coverage, missing responsibility coverage, missing
+  handoff coverage, approval-marker gaps, guardian-marker gaps, duplicate or
+  inconsistent IDs, and unsafe execution implications.
+- Produce redaction-safe operator-facing findings.
 - Preserve deterministic ordering.
-- Preserve redaction-safe public records.
 
 ## Forbidden scope
 
-- Executing handoffs.
-- Invoking agents.
-- Adding mission planning runtime.
-- Adding workflow runtime.
-- Adding workflow execution.
-- Adding tool runtime or tool execution.
-- Calling models or providers.
-- Sending outreach, publishing, delivery, or customer communication.
-- Spending money, changing budgets, or executing payments.
-- Giving binding legal advice or final compliance approval.
-- Running guardians automatically.
-- Adding HTTP, dashboard, n8n, MCP, network behavior, browser automation,
-  filesystem tools, cloud/VPS runtime, embeddings, vector search, durable
-  persistence, runtime ledgers, or autonomous behavior.
+- Mission plan generation.
+- Agent invocation.
+- Handoff execution.
+- Workflow runtime or workflow execution.
+- Tool runtime or tool execution.
+- Model or provider calls.
+- Runtime permission grants.
+- Durable persistence.
+- HTTP, dashboard, n8n, MCP, network behavior, browser automation, filesystem tools,
+  cloud/VPS runtime, embeddings, vector search, scheduler, alerts, or autonomous
+  behavior.
 - Mutating Core Brain behavior.
 - Mutating Content Agent behavior.
 
 ## Likely files to create
 
-- `src/assistants/agent-handoff-contracts.ts`
-- `src/assistants/agent-handoff-contracts-validator.ts`
-- `tests/assistants/agent-handoff-contracts.test.ts`
+- `src/assistants/agent-company-readiness-review.ts`
+- `src/assistants/agent-company-readiness-review-validator.ts`
+- `src/assistants/agent-company-readiness-review-service.ts`
+- `tests/assistants/agent-company-readiness-review.test.ts`
 
 ## Likely files to modify
 
@@ -78,35 +82,33 @@ Dry-Run without invoking agents or executing workflows.
 
 ## Tests required
 
-- Valid handoff contracts are accepted.
-- Every declared handoff references known source and target roles.
-- Every role reference maps to exact AgentSpecification ID/version.
-- Referenced capabilities exist in the Agent Capability Registry.
-- Referenced permission rules exist in the Agent Permission Matrix.
-- Handoffs do not imply execution.
-- Handoffs requiring approval contain approval markers.
-- Handoffs requiring guardian consultation contain guardian markers.
-- External, publishing, sales, customer delivery, budget, legal, tool, workflow, and
-  model-sensitive handoffs remain non-executing and approval/guardian gated where
-  relevant.
-- Duplicate handoff IDs are rejected.
-- Non-deterministic ordering is rejected.
-- Redaction-sensitive raw content is rejected.
+- Healthy current Agent Company declarations produce a ready report.
+- Missing Agent Company role coverage is reported.
+- Missing AgentSpecification coverage is reported.
+- Missing responsibility coverage is reported.
+- Missing capability coverage is reported.
+- Missing permission coverage is reported.
+- Missing handoff coverage is reported.
+- Approval-sensitive gaps are reported.
+- Guardian-sensitive gaps are reported.
+- Unsafe execution implication is reported.
+- Findings are redaction-safe.
+- Ordering is deterministic.
 - Existing tests continue passing.
 
 ## Acceptance criteria
 
-- The repository contains deterministic, validated, non-executing Agent
-  Communication / Handoff contracts aligned with the Agent Company map,
-  responsibility matrix, capability registry, and permission matrix.
-- Future Mission Planning Dry-Run can reference handoff metadata without invoking
-  agents, executing workflows, or granting runtime access.
-- Existing architecture boundaries remain unchanged.
+- A local caller can deterministically review whether the Agent Company declaration
+  set is ready for Mission Planning Dry-Run without executing anything.
+- The readiness report is validated, redaction-safe, and useful to Fabio as an
+  operator-facing checkpoint.
+- Existing declarative artifacts remain the source of truth and are not redesigned.
 
 ## Definition of done
 
-- Agent Communication / Handoff contracts, validator, and tests are complete.
-- Project-state documents accurately describe the completed milestone.
+- Agent Company Readiness Review contracts, validator, evaluator/service, and tests
+  are complete.
+- Project-state documents accurately describe the completed milestone and next task.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.
 - The milestone is committed before Mission Planning Dry-Run begins.

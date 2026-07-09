@@ -1159,3 +1159,42 @@ Planning Dry-Run a permission-specific artifact without weakening runtime policy
 permission rule IDs when describing future support, review, approval-preparation, and
 escalation handoffs. Mission Planning Dry-Run must treat the matrix as planning
 metadata only until separate runtime permission enforcement exists.
+
+## ADR-043 — Agent handoffs are validated planning contracts, not execution
+
+**Context:** The Agent Company now has role specifications, responsibility ownership,
+capability ownership, and permission declarations. Future Mission Planning Dry-Run
+needs a safe way to describe when one internal role should request support, review,
+approval preparation, or escalation from another role. Without explicit handoff
+contracts, mission planning could invent ad hoc delegation paths, skip guardian or
+approval markers, leak raw prompts or provider payloads, or imply unsafe external
+actions.
+
+**Decision:** Define Agent Communication / Handoff Contracts as deterministic,
+validated, non-executing planning contracts. Each handoff declares stable ID, source
+role, target role, handoff type, reason, sanitized payload summary, expected output,
+related responsibility areas, related capability IDs, related permission rule IDs,
+risk, approval requirements, guardian requirements, blocked-content rules,
+non-execution, uncertainty and evidence quality, future workflow relevance, and
+future tool relevance. Handoff results are also validated and redaction-safe. These
+contracts do not invoke agents, execute handoffs, generate mission plans, run
+workflows, execute tools, call models, call providers, persist state, use network
+behavior, publish, send outreach, deliver customer work, spend money, provide final
+legal approval, or act autonomously.
+
+**Reason:** Fabio should be able to inspect a coherent internal company operating
+model before any mission planner exists. Handoff contracts let future planning reuse
+the Agent Company map, exact AgentSpecifications, responsibility matrix, capability
+registry, and permission matrix without weakening default-deny policy or human
+approval boundaries.
+
+**Tradeoffs:** The handoff set adds another declarative artifact that must stay
+aligned with existing Agent Company artifacts. It improves determinism but does not
+itself prove the company is ready for planning; a separate readiness review should
+evaluate cross-artifact coherence.
+
+**Future impact:** Agent Company Readiness Review should consume the handoff
+contracts with the role map, AgentSpecifications, responsibility matrix, capability
+registry, and permission matrix before Mission Planning Dry-Run is implemented.
+Mission Planning Dry-Run must treat handoffs as planning metadata only until a
+separate governed workflow/runtime milestone introduces execution.
