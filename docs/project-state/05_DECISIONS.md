@@ -926,3 +926,39 @@ operator-facing language to explain internal roles without making them external
 personalities. Mission Planning Dry-Run should return protocol-compatible summaries
 while remaining non-executing until workflow and agent runtimes are separately
 approved.
+
+## ADR-036 — MV AI OS Constitution is the highest-level strategic doctrine
+
+**Context:** MV AI OS now has a large set of implemented foundations: Core Brain,
+durable SQLite persistence, memory, knowledge, model gateway, OpenAI adapter wiring,
+operation limits, usage accounting, budget enforcement, guardians, Operator Safety
+Report, Only Way Assistant specification/runtime/consultation/decision/delegation
+boundaries, and Operator Protocol. The project is also being continued across AI
+sessions and tools, which creates risk of context loss, architecture drift,
+over-agentification, or premature autonomy.
+
+**Decision:** Add `docs/MV_AI_OS_CONSTITUTION.md` as the permanent strategic,
+architectural, product, safety, and execution doctrine for MV AI OS. Future sessions
+must read it before implementation, then verify current repository state through
+project-state documents, architecture documents, source, and tests. The constitution
+defines Fabio's founder/operator role, the one-visible-assistant model, Control Plane
+ordering, Agent Company direction, workflow/tool/dashboard/cloud principles, safety,
+cost, secret, backup, approval, audit, memory, knowledge, provider-neutrality, coding,
+testing, commit, project-state, forbidden-shortcut, and production-readiness rules.
+
+**Reason:** A single high-level constitution lets future prompts be shorter while
+making project doctrine more durable than chat history. It also protects the project
+from exciting but unsafe shortcuts such as hidden model calls, hidden tools, cloud
+deployment before controls, dashboard bypasses, direct tool execution without
+approval, or many visible agents that turn Fabio into a babysitter.
+
+**Tradeoffs:** The constitution adds documentation maintenance responsibility and is
+not itself executable enforcement. It must stay consistent with source and
+project-state documents, and it must not be used to justify implementing features
+outside the current `04_NEXT_TASK.md` milestone.
+
+**Future impact:** Agent Company Specification Foundation and every later milestone
+must preserve the constitution's ordering: Fabio -> Only Way Assistant -> Control
+Plane -> Agent Company -> Workflow Runtime -> Tool Runtime -> Product Layer. If a
+future decision conflicts with the constitution, it must be recorded as an explicit
+ADR rather than silently drifting.

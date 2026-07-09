@@ -17,6 +17,8 @@ contract conventions, and deterministic quality gates.
 - Strict ESM TypeScript project.
 - Lint, typecheck, test, and build commands.
 - Permanent project-state memory documents.
+- Permanent MV AI OS Constitution as the highest-level strategic and engineering
+  doctrine for future sessions.
 
 **Dependencies:** None.
 
@@ -25,8 +27,14 @@ contract conventions, and deterministic quality gates.
 - Architecture boundaries and engineering rules are recorded.
 - Quality gates run locally.
 - Project state and next task can be recovered without chat history.
+- Future implementation prompts have a durable constitution that explains vision,
+  founder/operator model, one-assistant doctrine, control-plane ordering,
+  safety/cost/backup/secret principles, forbidden shortcuts, and production-readiness
+  criteria.
 
-**Status:** Complete.
+**Status:** Complete. The MV AI OS Constitution has been added as a documentation-only
+authority above project-state continuity documents. It changes no runtime behavior and
+does not alter the current roadmap direction.
 
 ## Phase 1 — Orchestration kernel
 
@@ -224,7 +232,10 @@ layers. Main Assistant Operator Protocol now adds deterministic, redaction-safe,
 operator-facing command responses for supplied decisions, approvals, clarifications,
 refusals, blockers, safety checks, cost posture, next actions, and non-executing
 mission/delegation summaries without adding UI, chat runtime, execution, network
-behavior, or autonomy. Durable usage ledgers, aggregated budget windows, broader
+behavior, or autonomy. The MV AI OS Constitution now records the permanent
+strategic, product, safety, and engineering doctrine that future implementation
+sessions must read before continuing. It is documentation-only and does not add
+runtime behavior. Durable usage ledgers, aggregated budget windows, broader
 operational telemetry, live smoke-test gating, autonomous guardians, dashboards,
 delegation execution, Agent Company map, and full Main Assistant orchestration remain
 future work, with the next milestone specified in `04_NEXT_TASK.md`.

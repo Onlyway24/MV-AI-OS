@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Main Assistant Operator Protocol milestone:
-  `731ee10 feat: add main assistant delegation policy foundation`.
+- Latest committed baseline before the MV AI OS Constitution milestone:
+  `d5d03ed feat: add main assistant operator protocol`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -53,7 +53,9 @@ and tests, not intended future behavior.
   repository state and was committed in
   `731ee10 feat: add main assistant delegation policy foundation`.
 - The Main Assistant Operator Protocol milestone is completed in this repository
-  state and is the current commit candidate.
+  state and was committed in `d5d03ed feat: add main assistant operator protocol`.
+- The MV AI OS Constitution documentation milestone is completed by the documentation
+  change set that adds `docs/MV_AI_OS_CONSTITUTION.md`.
 - The next milestone is Agent Company Specification Foundation.
 
 ## Current architecture
@@ -147,8 +149,21 @@ provider, n8n, or external SDK types.
 37. Operator Decision Engine Foundation.
 38. Main Assistant Delegation Policy Foundation.
 39. Main Assistant Operator Protocol.
+40. MV AI OS Constitution.
 
 ## Implemented modules
+
+### Strategic documentation
+
+- Permanent MV AI OS Constitution documenting final vision, founder/operator model,
+  one-assistant operating philosophy, Control Plane role, Agent Company role,
+  workflow/tool/dashboard/cloud principles, safety doctrine, cost governance, secret
+  safety, backup and recovery, human approval, auditability, memory and knowledge
+  doctrine, provider neutrality, forbidden shortcuts, production-readiness criteria,
+  and future Codex usage rules.
+- The constitution is documentation only. It adds no runtime behavior, feature
+  implementation, dependency, provider, dashboard, workflow runtime, tool runtime,
+  agent runtime, storage behavior, or external integration.
 
 ### Executable orchestration
 
@@ -658,7 +673,12 @@ supplied decisions into Fabio-facing summaries, approvals, clarifications, refus
 blockers, safety checks, cost posture, next actions, and non-executing
 mission/delegation summaries without adding UI, chat runtime, provider calls, agent
 execution, workflow execution, tool execution, persistence, network behavior, or
-autonomy.
+autonomy. The MV AI OS Constitution now provides the highest-level strategic and
+engineering doctrine for future sessions, including Fabio's founder/operator role,
+the one-assistant model, the Control Plane, Agent Company, workflow/tool/dashboard
+future chapters, safety and cost doctrine, forbidden shortcuts, production-readiness
+criteria, and the required way future Codex prompts should use repository memory.
+It is documentation-only and does not modify runtime behavior.
 
 ## What exists only as a foundation
 
@@ -726,6 +746,10 @@ autonomy.
   Fabio-facing command responses, but it does not provide a UI, execute commands,
   call models, invoke agents, execute delegation, execute workflows, execute tools,
   persist state, schedule work, use the network, send alerts, or act autonomously.
+- MV AI OS Constitution is a permanent strategic and engineering reference, but it is
+  not executable code and does not itself enforce policy, run agents, call models,
+  execute workflows, execute tools, create dashboards, deploy cloud infrastructure,
+  or change runtime behavior.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -836,6 +860,9 @@ autonomy.
   blockers, safety checks, cost posture, and next actions.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
+- A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
+  permanent strategic doctrine before reading project-state and implementing the
+  exact next milestone.
 
 There is no HTTP service, dashboard, background server, or default live-provider test
 path.

@@ -4,6 +4,19 @@
 
 Agent Company Specification Foundation
 
+## Required context before implementation
+
+- Read `docs/MV_AI_OS_CONSTITUTION.md`.
+- Read `AI_ENGINEERING_RULES.md`.
+- Read `docs/ARCHITECTURE.md`, `docs/AGENTS.md`, and `docs/ROADMAP.md`.
+- Read every file in `docs/project-state/`.
+- Read `docs/agent-lab/01_AGENT_TEAM.md`,
+  `docs/agent-lab/02_AGENT_ROLES.md`,
+  `docs/agent-lab/07_CONTROL_PLANE_AGENTS.md`, and
+  `docs/agent-lab/08_AI_AGENT_OPERATING_DOCTRINE.md`.
+- Verify repository implementation still matches the documented state before writing
+  source code.
+
 ## Goal
 
 Create the declarative map of Fabio's internal AI company.
