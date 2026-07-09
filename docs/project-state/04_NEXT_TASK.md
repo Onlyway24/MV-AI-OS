@@ -2,7 +2,7 @@
 
 ## Milestone name
 
-Agent Capability Registry
+Agent Permission Matrix
 
 ## Required context before implementation
 
@@ -15,32 +15,39 @@ Agent Capability Registry
   - `src/assistants/core-agent-specifications.ts`
   - `src/assistants/extended-business-agent-specifications.ts`
   - `src/assistants/inter-agent-responsibility-matrix.ts`
-  - `tests/assistants/inter-agent-responsibility-matrix.test.ts`
+  - `src/assistants/agent-capability-registry.ts`
+  - `tests/assistants/agent-capability-registry.test.ts`
 
 ## Goal
 
-Define a deterministic, validated, non-executing registry of which future business
-and operating capabilities belong to which Agent Company roles.
+Define a deterministic, validated, non-executing permission matrix for the Agent
+Company.
 
-This is not runtime capability execution. It is a planning and orchestration reference
-for future Mission Planning Dry-Run and workflow design.
+The matrix must describe which future permissions each role and capability may
+request during planning, which permissions are forbidden, and which permissions
+require Fabio approval or guardian consultation before any future runtime can use
+them.
+
+This milestone must not grant runtime permissions. It prepares MV AI OS for Mission
+Planning Dry-Run and later governed workflow/tool execution.
 
 ## Required scope
 
-- Define an Agent Capability Registry contract.
-- Reuse existing Agent Company role IDs and exact AgentSpecification IDs/versions.
-- Map capabilities to owners and supporting roles.
-- Categorize capabilities by business, research, content, publishing, sales, finance,
-  legal/risk, customer delivery, knowledge, technical, quality, control, future tool,
-  and future workflow concerns where appropriate.
-- Mark future tool and future workflow mappings as non-executing declarations only.
-- Declare guardian requirements per capability where relevant.
-- Declare approval requirements per capability where relevant.
+- Define an Agent Permission Matrix contract.
+- Reuse existing Agent Company role IDs.
+- Reuse exact AgentSpecification IDs/versions.
+- Reuse Agent Capability Registry capability IDs.
+- Map each capability to allowed future permission requirements.
+- Map each role to forbidden permission categories.
+- Mark approval-sensitive permissions explicitly.
+- Mark guardian-sensitive permissions explicitly.
+- Preserve default-deny doctrine: undeclared permissions remain denied.
 - Preserve deterministic ordering.
 - Preserve redaction-safe public records.
 
 ## Forbidden scope
 
+- Granting runtime permissions.
 - Executing capabilities.
 - Executing agents.
 - Calling models or providers.
@@ -60,9 +67,9 @@ for future Mission Planning Dry-Run and workflow design.
 
 ## Likely files to create
 
-- `src/assistants/agent-capability-registry.ts`
-- `src/assistants/agent-capability-registry-validator.ts`
-- `tests/assistants/agent-capability-registry.test.ts`
+- `src/assistants/agent-permission-matrix.ts`
+- `src/assistants/agent-permission-matrix-validator.ts`
+- `tests/assistants/agent-permission-matrix.test.ts`
 
 ## Likely files to modify
 
@@ -74,35 +81,38 @@ for future Mission Planning Dry-Run and workflow design.
 
 ## Tests required
 
-- Valid capability registry is accepted.
-- Every capability has an owner.
-- Every owner maps to an Agent Company role and exact AgentSpecification ID/version.
-- Unsafe capabilities require approval markers.
-- Direct tool capability declarations are rejected unless marked future and
-  non-executing.
-- Future workflow declarations are rejected unless marked future and non-executing.
-- Guardian requirements are validated.
-- Approval requirements are validated.
-- Duplicate capability IDs are rejected.
-- Unknown agent IDs are rejected.
+- Valid permission matrix is accepted.
+- Every Agent Company role has explicit permission boundaries.
+- Every Agent Capability Registry capability maps to declared future permission
+  requirements or an explicit no-permission-needed marker.
+- Permission owners map to Agent Company roles and exact AgentSpecification
+  ID/version.
+- Unknown roles are rejected.
+- Unknown capabilities are rejected.
+- Duplicate permission entries are rejected.
+- Runtime-granting language is rejected.
+- Publishing, outreach, delivery, budget, tool, workflow, model, memory-write, and
+  external-side-effect permissions require explicit approval markers where relevant.
+- Guardian-sensitive permissions require guardian requirements.
+- Forbidden permission categories are enforced.
 - Non-deterministic ordering is rejected.
-- Registry remains redaction-safe and excludes prompts, completions, provider
-  payloads, secret references, secret values, raw transcripts, raw knowledge, raw
-  memory, sensitive paths, raw guardian payloads, and transport internals.
+- Matrix remains redaction-safe and excludes prompts, completions, provider payloads,
+  secret references, secret values, raw transcripts, raw knowledge, raw memory,
+  sensitive paths, raw guardian payloads, and transport internals.
 - Existing tests continue passing.
 
 ## Acceptance criteria
 
-- The repository contains a deterministic, validated, non-executing Agent Capability
-  Registry for the current Agent Company.
-- The registry can be used by future Mission Planning Dry-Run and workflow design
-  without adding execution behavior.
+- The repository contains a deterministic, validated, non-executing Agent Permission
+  Matrix for the current Agent Company and Agent Capability Registry.
+- The matrix can be used by future Mission Planning Dry-Run without adding runtime
+  grants or execution behavior.
 - Existing architecture boundaries remain unchanged.
 
 ## Definition of done
 
-- Agent Capability Registry contracts, validator, and tests are complete.
+- Agent Permission Matrix contracts, validator, and tests are complete.
 - Project-state documents accurately describe the completed milestone.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.
-- The milestone is committed before Agent Permission Matrix begins.
+- The milestone is committed before Mission Planning Dry-Run begins.

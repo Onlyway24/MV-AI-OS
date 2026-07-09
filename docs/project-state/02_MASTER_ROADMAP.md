@@ -249,11 +249,15 @@ Risk Reviewer, and Customer Delivery Agent while preserving explicit approval
 requirements and non-executing boundaries. Inter-Agent Responsibility Matrix now
 defines deterministic ownership, support, consultation, approval-gate,
 forbidden-role, and conflict-resolution boundaries across the Agent Company without
-adding runtime execution. Durable usage ledgers, aggregated budget windows, broader
-operational telemetry, live smoke-test gating, autonomous guardians, dashboards,
-delegation execution, executable agent-company runtime, runtime responsibility
-enforcement, and full Main Assistant orchestration remain future work, with the next
-milestone specified in `04_NEXT_TASK.md`.
+adding runtime execution. Agent Capability Registry now defines deterministic,
+validated, non-executing capability ownership, support roles, approval requirements,
+guardian requirements, future workflow compatibility, and future tool compatibility
+for all ten Agent Company roles. Durable usage ledgers, aggregated budget windows,
+broader operational telemetry, live smoke-test gating, autonomous guardians,
+dashboards, delegation execution, executable agent-company runtime, runtime
+responsibility enforcement, runtime permission mapping, and full Main Assistant
+orchestration remain future work, with the next milestone specified in
+`04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

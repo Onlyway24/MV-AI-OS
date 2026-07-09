@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Inter-Agent Responsibility Matrix milestone:
-  `9643f78 feat: add extended business agent specifications`.
+- Latest committed baseline before the Agent Capability Registry milestone:
+  `4faf0be feat: add inter-agent responsibility matrix`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -62,9 +62,10 @@ and tests, not intended future behavior.
   `db1d963 feat: add initial core agent specifications`.
 - The Extended Business Agent Specifications milestone is completed and was committed
   in `9643f78 feat: add extended business agent specifications`.
-- The Inter-Agent Responsibility Matrix milestone is completed by the current change
-  set.
-- The next milestone is Agent Capability Registry.
+- The Inter-Agent Responsibility Matrix milestone is completed and was committed in
+  `4faf0be feat: add inter-agent responsibility matrix`.
+- The Agent Capability Registry milestone is completed by the current change set.
+- The next milestone is Agent Permission Matrix.
 
 ## Current architecture
 
@@ -162,6 +163,7 @@ provider, n8n, or external SDK types.
 42. Initial Core Agent Specifications.
 43. Extended Business Agent Specifications.
 44. Inter-Agent Responsibility Matrix.
+45. Agent Capability Registry.
 
 ## Implemented modules
 
@@ -424,6 +426,11 @@ provider, n8n, or external SDK types.
   The matrix defines who owns, supports, must be consulted for, approval-gates, or is
   forbidden from each major responsibility area, while preserving non-executing
   architecture and exact AgentSpecification ID/version references.
+- Deterministic Agent Capability Registry for all ten Agent Company roles. The
+  registry defines non-executing capability ownership, supporting roles,
+  approval-sensitive capabilities, guardian consultation requirements, future
+  workflow compatibility, future tool compatibility, and explicit direct-execution
+  prohibition for each capability.
   actions, and non-executing mission/delegation summaries without exposing raw
   internal payloads.
 - Versioned Workflow Specification graph contracts, validators, and registry
@@ -504,6 +511,9 @@ provider, n8n, or external SDK types.
 - Inter-Agent Responsibility Matrix, matrix role, responsibility area, primary owner,
   supporting role, consulted role, approval role, forbidden role, decision point, and
   responsibility conflict contracts.
+- Agent Capability Registry, capability ID, category, risk level, primary owner,
+  supporting role, approval requirement, guardian requirement, future workflow
+  mapping, future tool mapping, and non-executing execution-mode contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -687,6 +697,15 @@ The latest verified suite contains 63 test files and 459 tests covering:
   exactly one primary owner per area, approval-sensitive area coverage, unknown-role
   rejection, forbidden ownership rejection, unclear ownership rejection, invalid
   conflict rejection, and redaction-safe non-executing matrix boundaries.
+- Agent Capability Registry validation for valid registries and individual
+  capabilities, all ten Agent Company roles owning at least one capability, exact
+  AgentSpecification ID/version references, exactly one primary owner per
+  capability, duplicate capability rejection, duplicate owner rejection, missing
+  owner rejection, unknown-role rejection, invalid category rejection, deterministic
+  ordering, non-executing future workflow/tool mapping, approval-sensitive
+  capability markers, guardian-sensitive capability markers, finance/payment
+  mutation rejection, legal final-approval rejection, direct-execution rejection, and
+  redaction-safe boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -758,7 +777,10 @@ profiles add explicit safety doctrine for publishing, sales outreach, finance,
 legal/risk review, and customer delivery without adding agent execution. The
 Inter-Agent Responsibility Matrix now gives those roles deterministic ownership,
 support, consultation, approval-gate, forbidden-role, and conflict-resolution
-boundaries before mission planning exists.
+boundaries before mission planning exists. Agent Capability Registry now gives the
+same Agent Company deterministic, validated, non-executing capability ownership,
+support, approval, guardian, future workflow, and future tool declarations that
+future mission planning can reference without granting execution.
 
 ## What exists only as a foundation
 
@@ -838,6 +860,12 @@ boundaries before mission planning exists.
   consultation, approval gates, forbidden role assignments, and conflict-resolution
   notes, but it does not route work, invoke agents, execute mission plans, execute
   workflows, grant permissions, call models, execute tools, persist state, or act
+  autonomously.
+- Agent Capability Registry defines which capabilities exist, which Agent Company
+  role owns each capability, which roles may support it, and which approval or
+  guardian markers are required, but it does not grant permissions, invoke agents,
+  execute mission plans, execute workflows, execute tools, call models, persist
+  state, communicate externally, spend money, provide final legal approval, or act
   autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
@@ -964,6 +992,10 @@ boundaries before mission planning exists.
 - A caller can validate `DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX` to inspect
   deterministic owner/support/consultation/approval/forbidden-role assignments for
   the Agent Company without executing any agent or workflow.
+- A caller can validate `DEFAULT_AGENT_CAPABILITY_REGISTRY` to inspect deterministic
+  non-executing capability ownership, supporting roles, approval requirements,
+  guardian requirements, and future workflow/tool compatibility for the Agent
+  Company without granting runtime permissions or executing anything.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -982,7 +1014,8 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Agent Capability Registry.
+- Agent Permission Matrix.
+- Mission Planning Dry-Run Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

@@ -240,6 +240,31 @@ export {
   ResponsibilityConflictValidator,
   ResponsibilityMatrixValidator,
 } from "./assistants/inter-agent-responsibility-matrix-validator.js";
+export {
+  AGENT_CAPABILITY_REGISTRY_CONTRACT_VERSION,
+  AGENT_COMPANY_CAPABILITY_IDS,
+  DEFAULT_AGENT_CAPABILITY_REGISTRY,
+  DEFAULT_AGENT_CAPABILITY_REGISTRY_ID,
+  type AgentCompanyCapability,
+  type AgentCompanyCapabilityApprovalRequirement,
+  type AgentCompanyCapabilityCategory,
+  type AgentCompanyCapabilityExecutionMode,
+  type AgentCompanyCapabilityFutureToolMapping,
+  type AgentCompanyCapabilityFutureWorkflowMapping,
+  type AgentCompanyCapabilityGuardianRequirement,
+  type AgentCompanyCapabilityId,
+  type AgentCompanyCapabilityOwner,
+  type AgentCompanyCapabilityRegistry,
+  type AgentCompanyCapabilityRiskLevel,
+  type AgentCompanyCapabilitySupportRole,
+  type AgentCompanyCapabilitySupportType,
+  type AgentCompanyFutureToolCategory,
+  type AgentCompanyFutureWorkflowStepType,
+} from "./assistants/agent-capability-registry.js";
+export {
+  AgentCompanyCapabilityRegistryValidator,
+  AgentCompanyCapabilityValidator,
+} from "./assistants/agent-capability-registry-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

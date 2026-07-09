@@ -1089,3 +1089,40 @@ artifact that must stay aligned with Agent Company roles and AgentSpecifications
 the responsibility matrix as the organizational source for ownership and support
 boundaries. Mission Planning Dry-Run must reference this matrix without invoking
 agents or workflows.
+
+## ADR-041 — Capabilities are ownership declarations, not permissions
+
+**Context:** The Agent Company now has a validated map, exact AgentSpecifications for
+all ten roles, and an Inter-Agent Responsibility Matrix. Future mission planning
+needs a more granular answer than "which area does this role own": it needs to know
+which concrete business, research, content, engineering, knowledge, publishing,
+sales, finance, legal/risk, customer-delivery, quality, approval, and planning
+capabilities can be considered during dry-run planning. If capabilities were treated
+as permissions or execution rights, future planning could accidentally bypass
+policy, approvals, guardians, workflows, tools, and Fabio.
+
+**Decision:** Define the Agent Capability Registry as a deterministic, validated,
+non-executing planning contract. Each capability has exactly one primary Agent
+Company owner, optional supporting roles, a category, risk level, business value,
+approval requirements where relevant, guardian requirements where relevant, future
+workflow compatibility, future tool compatibility, and an explicit marker that it
+must never be treated as direct execution permission. Every owner and supporter maps
+to the Agent Company role map and an existing AgentSpecification ID/version. The
+registry does not execute agents, grant permissions, call models, call providers,
+run workflows, execute tools, persist state, use network behavior, publish, send
+outreach, deliver customer work, spend money, provide final legal approval, or act
+autonomously.
+
+**Reason:** Only Way Assistant needs precise internal capability ownership before it
+can produce safe mission-plan dry runs. Fabio should see coherent business planning,
+not random agent delegation. Capability ownership improves future orchestration
+quality while preserving the default-deny and approval-first architecture.
+
+**Tradeoffs:** The registry is another declarative artifact that must stay aligned
+with the Agent Company map, AgentSpecifications, and responsibility matrix. It
+provides no runtime capability by itself.
+
+**Future impact:** Agent Permission Matrix should map these capability IDs to future
+permission requirements without granting runtime access. Mission Planning Dry-Run
+must use this registry only as planning metadata until separate workflow, approval,
+and tool execution boundaries exist.
