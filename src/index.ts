@@ -94,6 +94,28 @@ export {
   GuardianConsultationPolicyValidator,
   GuardianConsultationRequestValidator,
 } from "./assistants/guardian-consultation-validator.js";
+export { DeterministicOperatorDecisionEngine } from "./assistants/deterministic-operator-decision-engine.js";
+export {
+  OPERATOR_DECISION_ENGINE_CONTRACT_VERSION,
+  OperatorDecisionValidationError,
+  type OperatorDecision,
+  type OperatorDecisionCertainty,
+  type OperatorDecisionContext,
+  type OperatorDecisionCostPosture,
+  type OperatorDecisionCostStatus,
+  type OperatorDecisionDelegationSignal,
+  type OperatorDecisionEngine,
+  type OperatorDecisionKind,
+  type OperatorDecisionReason,
+  type OperatorDecisionReasonCode,
+  type OperatorDecisionReasonSeverity,
+  type OperatorMissionPlanCandidate,
+  type OperatorMissionPlanCandidateStep,
+} from "./assistants/operator-decision-engine.js";
+export {
+  OperatorDecisionContextValidator,
+  OperatorDecisionValidator,
+} from "./assistants/operator-decision-engine-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

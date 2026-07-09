@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Guardian Consultation Boundary milestone:
-  `ba3a371 feat: add main assistant runtime boundary`.
+- Latest committed baseline before the Operator Decision Engine Foundation
+  milestone: `3fb202e feat: add guardian consultation boundary`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -46,8 +46,10 @@ and tests, not intended future behavior.
   repository state and was committed in
   `ba3a371 feat: add main assistant runtime boundary`.
 - The Guardian Consultation Boundary milestone is completed in this repository state
-  and is the current commit candidate.
-- The next milestone is Operator Decision Engine Foundation.
+  and was committed in `3fb202e feat: add guardian consultation boundary`.
+- The Operator Decision Engine Foundation milestone is completed in this repository
+  state and is the current commit candidate.
+- The next milestone is Main Assistant Delegation Policy Foundation.
 
 ## Current architecture
 
@@ -137,6 +139,7 @@ provider, n8n, or external SDK types.
 34. Main Assistant / Orchestrator Specification Foundation.
 35. Main Assistant / Orchestrator Runtime Boundary.
 36. Guardian Consultation Boundary.
+37. Operator Decision Engine Foundation.
 
 ## Implemented modules
 
@@ -349,6 +352,11 @@ provider, n8n, or external SDK types.
   mapping supplied Operator Safety state, safety-to-autonomy posture, requested
   escalation categories, approval requirements, and required guardian coverage into
   redaction-safe continue, warning, confirmation, approval, or blocking decisions.
+- Versioned Operator Decision Engine contracts and deterministic engine for combining
+  Only Way Assistant specification identity, validated operator objective, Guardian
+  Consultation decision, requested operations, optional sanitized cost posture, and
+  optional delegation signal into redaction-safe proceed, clarification, approval,
+  confirmation, refusal, blocked, or non-executing mission-plan-candidate decisions.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -406,6 +414,9 @@ provider, n8n, or external SDK types.
 - Guardian consultation request, decision, policy, reason, required approval,
   required safety-domain, decision-kind, reason-code, reason-severity, evaluator, and
   validation-error contracts.
+- Operator decision context, decision, decision-kind, decision-reason, certainty,
+  cost-posture, delegation-signal, non-executing mission-plan-candidate, candidate
+  step, engine, and validation-error contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -438,6 +449,7 @@ provider, n8n, or external SDK types.
 - Main Assistant / Orchestrator specification validator.
 - Main Assistant / Orchestrator invocation and result validators.
 - Guardian consultation request, policy, and decision validators.
+- Operator decision context and decision validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -447,7 +459,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 56 test files and 380 tests covering:
+The latest verified suite contains 57 test files and 391 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -544,6 +556,10 @@ The latest verified suite contains 56 test files and 380 tests covering:
   confirmation/blocking behavior, deterministic safety-to-autonomy mapping,
   deterministic approval mapping, invalid policy rejection, and redaction-safe
   decision boundaries.
+- Operator Decision Engine validation, proceed, clarification-required,
+  approval-required, confirmation-required, safety-blocked, budget-blocked,
+  near-budget confirmation, delegation refusal, deterministic non-executing
+  mission-plan candidates, and redaction-safe decision boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -588,6 +604,11 @@ full orchestration or side effects. Guardian Consultation Boundary now isolates 
 deterministic safety consultation decision for supplied Operator Safety reports,
 requested escalation categories, safety-to-autonomy posture, required guardian
 coverage, and approval requirements without executing guardians or adding autonomy.
+Operator Decision Engine Foundation now combines the Only Way Assistant
+specification, Guardian Consultation decision, requested operations, optional
+sanitized cost posture, and optional delegation signal into a deterministic
+operator-facing decision without executing agents, workflows, tools, models, or
+external systems.
 
 ## What exists only as a foundation
 
@@ -641,6 +662,11 @@ coverage, and approval requirements without executing guardians or adding autono
   execute guardians, enforce approvals, invoke models, execute tools, execute
   workflows, persist ledgers, schedule work, run in the background, send alerts, use
   the network, or act autonomously.
+- Operator Decision Engine can produce deterministic operator-facing decisions from
+  supplied context, Guardian Consultation output, cost posture, and delegation signal,
+  but it does not execute decisions, enforce approvals, call models, call providers,
+  call agents, delegate work, plan full missions, execute workflows, execute tools,
+  persist state, schedule work, use the network, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -735,6 +761,12 @@ coverage, and approval requirements without executing guardians or adding autono
   redaction-safe `GuardianConsultationDecision` that maps healthy, attention,
   critical, unknown, or missing Operator Safety state plus requested operations into
   may-continue, warning, confirmation, approval-required, or blocked outcomes.
+- A caller can instantiate `DeterministicOperatorDecisionEngine`, supply a validated
+  `OperatorDecisionContext`, and receive a validated redaction-safe
+  `OperatorDecision` that maps safe, under-specified, approval-required,
+  confirmation-required, blocked, over-budget, near-budget, delegation-disallowed, or
+  safe planning contexts into proceed, clarification, approval, confirmation,
+  blocked, refused, or non-executing mission-plan-candidate outcomes.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -750,7 +782,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Operator Decision Engine Foundation.
+- Main Assistant Delegation Policy Foundation.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

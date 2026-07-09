@@ -818,3 +818,39 @@ guardian reports. Later delegation, mission planning, workflow execution, tool
 execution, dashboard, cloud/VPS, scheduler, or alerting milestones must preserve this
 boundary and add explicit policy, approval, audit, persistence, and redaction behavior
 before taking action.
+
+## ADR-033 — Operator Decision Engine decides but does not execute
+
+**Context:** Only Way Assistant now has a validated specification, a deterministic
+runtime boundary, and a Guardian Consultation Boundary. The next product step is a
+single operator-facing command layer that turns Fabio's objective into an explicit
+decision without requiring him to choose which future internal agent to prompt. That
+layer must not become a hidden workflow runtime, sub-agent runtime, model caller, or
+tool executor.
+
+**Decision:** Implement Operator Decision Engine as a deterministic, redaction-safe
+decision boundary. It consumes a validated `OperatorDecisionContext` containing the
+Only Way Assistant specification, operator objective, requested outcome, requested
+operations, Guardian Consultation decision, optional sanitized cost posture, and
+optional delegation signal. It returns a validated `OperatorDecision`: proceed,
+clarification required, approval required, confirmation required, refused, blocked,
+or non-executing mission-plan candidate. It does not call models, call providers,
+execute tools, execute workflows, invoke agents, delegate work, persist state, collect
+guardian signals, schedule work, use network behavior, send alerts, or act
+autonomously.
+
+**Reason:** Fabio needs one clean decision surface before mission planning and future
+delegation. Keeping this layer deterministic and non-executing preserves cost,
+security, policy, approval, and audit boundaries while making Only Way Assistant more
+operator-useful.
+
+**Tradeoffs:** The engine cannot complete work by itself. It does not perform
+reasoning through a model, route to real agents, execute missions, or enforce
+approvals externally. Its quality depends on validated inputs supplied by upstream
+runtime, guardian consultation, cost/budget, and future delegation-policy layers.
+
+**Future impact:** Main Assistant Delegation Policy Foundation must feed delegation
+constraints into this decision layer without adding sub-agent runtime. Mission
+Planning Dry-Run must consume `OperatorDecision` and remain non-executing until a
+separate Workflow Runtime milestone adds durable approvals, audit, idempotency,
+policy enforcement, and explicit execution boundaries.

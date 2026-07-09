@@ -208,11 +208,17 @@ decision gate that consumes supplied Operator Safety state, requested escalation
 categories, safety-to-autonomy posture, guardian coverage, and approval requirements
 to produce redaction-safe may-continue, warning, confirmation, approval-required, or
 blocked outcomes without running guardians, models, tools, workflows, persistence,
-network behavior, scheduling, or autonomous action. Durable usage ledgers,
-aggregated budget windows, broader operational telemetry, live smoke-test gating,
-autonomous guardians, dashboards, delegation execution, operator decisioning, and
-full Main Assistant orchestration remain future work, with the next milestone
-specified in `04_NEXT_TASK.md`.
+network behavior, scheduling, or autonomous action. Operator Decision Engine
+Foundation now adds deterministic operator-facing decisioning from validated Only Way
+Assistant specification identity, Guardian Consultation decisions, requested
+operations, optional sanitized cost posture, and optional delegation signals into
+proceed, clarification, approval, confirmation, refusal, blocked, or non-executing
+mission-plan-candidate outcomes without executing agents, workflows, tools, models,
+providers, persistence, network behavior, dashboards, or autonomous loops. Durable
+usage ledgers, aggregated budget windows, broader operational telemetry, live
+smoke-test gating, autonomous guardians, dashboards, delegation policy, delegation
+execution, and full Main Assistant orchestration remain future work, with the next
+milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 
