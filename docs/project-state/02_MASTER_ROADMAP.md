@@ -252,11 +252,15 @@ forbidden-role, and conflict-resolution boundaries across the Agent Company with
 adding runtime execution. Agent Capability Registry now defines deterministic,
 validated, non-executing capability ownership, support roles, approval requirements,
 guardian requirements, future workflow compatibility, and future tool compatibility
-for all ten Agent Company roles. Durable usage ledgers, aggregated budget windows,
-broader operational telemetry, live smoke-test gating, autonomous guardians,
+for all ten Agent Company roles. Agent Permission Matrix now maps all current roles
+and capabilities to deterministic, validated, non-executing permission declarations,
+allowed planning scopes, forbidden action categories, approval requirements,
+guardian requirements, future workflow/tool compatibility, default-deny posture, and
+explicit no-runtime-grant boundaries. Durable usage ledgers, aggregated budget
+windows, broader operational telemetry, live smoke-test gating, autonomous guardians,
 dashboards, delegation execution, executable agent-company runtime, runtime
-responsibility enforcement, runtime permission mapping, and full Main Assistant
-orchestration remain future work, with the next milestone specified in
+responsibility enforcement, executable permission enforcement, and full Main
+Assistant orchestration remain future work, with the next milestone specified in
 `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution

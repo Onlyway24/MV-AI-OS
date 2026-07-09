@@ -265,6 +265,27 @@ export {
   AgentCompanyCapabilityRegistryValidator,
   AgentCompanyCapabilityValidator,
 } from "./assistants/agent-capability-registry-validator.js";
+export {
+  AGENT_COMPANY_PERMISSION_RULE_IDS,
+  AGENT_PERMISSION_MATRIX_CONTRACT_VERSION,
+  DEFAULT_AGENT_PERMISSION_MATRIX,
+  DEFAULT_AGENT_PERMISSION_MATRIX_ID,
+  type AgentCompanyForbiddenPermissionCategory,
+  type AgentCompanyPermissionActionKind,
+  type AgentCompanyPermissionAllowedAction,
+  type AgentCompanyPermissionBoundary,
+  type AgentCompanyPermissionForbiddenAction,
+  type AgentCompanyPermissionMatrix,
+  type AgentCompanyPermissionRule,
+  type AgentCompanyPermissionRuleId,
+  type AgentCompanyPermissionScope,
+  type AgentCompanyPermissionSubject,
+  type AgentCompanyRolePermissionBoundary,
+} from "./assistants/agent-permission-matrix.js";
+export {
+  AgentCompanyPermissionMatrixValidator,
+  AgentCompanyPermissionRuleValidator,
+} from "./assistants/agent-permission-matrix-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

@@ -2,7 +2,7 @@
 
 ## Milestone name
 
-Agent Permission Matrix
+Agent Communication / Handoff Contracts
 
 ## Required context before implementation
 
@@ -16,45 +16,42 @@ Agent Permission Matrix
   - `src/assistants/extended-business-agent-specifications.ts`
   - `src/assistants/inter-agent-responsibility-matrix.ts`
   - `src/assistants/agent-capability-registry.ts`
-  - `tests/assistants/agent-capability-registry.test.ts`
+  - `src/assistants/agent-permission-matrix.ts`
+  - `tests/assistants/agent-permission-matrix.test.ts`
 
 ## Goal
 
-Define a deterministic, validated, non-executing permission matrix for the Agent
-Company.
+Define deterministic, validated, non-executing contracts for future handoffs between
+Agent Company roles.
 
-The matrix must describe which future permissions each role and capability may
-request during planning, which permissions are forbidden, and which permissions
-require Fabio approval or guardian consultation before any future runtime can use
-them.
-
-This milestone must not grant runtime permissions. It prepares MV AI OS for Mission
-Planning Dry-Run and later governed workflow/tool execution.
+The contracts must describe how one future role may request support, review,
+approval preparation, or escalation from another role during Mission Planning
+Dry-Run without invoking agents or executing workflows.
 
 ## Required scope
 
-- Define an Agent Permission Matrix contract.
+- Define Agent Handoff / Communication contracts.
 - Reuse existing Agent Company role IDs.
 - Reuse exact AgentSpecification IDs/versions.
+- Reuse Inter-Agent Responsibility Matrix areas where appropriate.
 - Reuse Agent Capability Registry capability IDs.
-- Map each capability to allowed future permission requirements.
-- Map each role to forbidden permission categories.
-- Mark approval-sensitive permissions explicitly.
-- Mark guardian-sensitive permissions explicitly.
-- Preserve default-deny doctrine: undeclared permissions remain denied.
+- Reuse Agent Permission Matrix permission rule IDs.
+- Declare handoff purpose, source role, target role, requested capability,
+  requested permission declaration, required context summary, expected response
+  shape, approval sensitivity, guardian sensitivity, and escalation markers.
+- Preserve default-deny doctrine.
 - Preserve deterministic ordering.
 - Preserve redaction-safe public records.
 
 ## Forbidden scope
 
-- Granting runtime permissions.
-- Executing capabilities.
-- Executing agents.
-- Calling models or providers.
+- Executing handoffs.
+- Invoking agents.
 - Adding mission planning runtime.
 - Adding workflow runtime.
 - Adding workflow execution.
 - Adding tool runtime or tool execution.
+- Calling models or providers.
 - Sending outreach, publishing, delivery, or customer communication.
 - Spending money, changing budgets, or executing payments.
 - Giving binding legal advice or final compliance approval.
@@ -67,9 +64,9 @@ Planning Dry-Run and later governed workflow/tool execution.
 
 ## Likely files to create
 
-- `src/assistants/agent-permission-matrix.ts`
-- `src/assistants/agent-permission-matrix-validator.ts`
-- `tests/assistants/agent-permission-matrix.test.ts`
+- `src/assistants/agent-handoff-contracts.ts`
+- `src/assistants/agent-handoff-contracts-validator.ts`
+- `tests/assistants/agent-handoff-contracts.test.ts`
 
 ## Likely files to modify
 
@@ -81,37 +78,34 @@ Planning Dry-Run and later governed workflow/tool execution.
 
 ## Tests required
 
-- Valid permission matrix is accepted.
-- Every Agent Company role has explicit permission boundaries.
-- Every Agent Capability Registry capability maps to declared future permission
-  requirements or an explicit no-permission-needed marker.
-- Permission owners map to Agent Company roles and exact AgentSpecification
-  ID/version.
-- Unknown roles are rejected.
-- Unknown capabilities are rejected.
-- Duplicate permission entries are rejected.
-- Runtime-granting language is rejected.
-- Publishing, outreach, delivery, budget, tool, workflow, model, memory-write, and
-  external-side-effect permissions require explicit approval markers where relevant.
-- Guardian-sensitive permissions require guardian requirements.
-- Forbidden permission categories are enforced.
+- Valid handoff contracts are accepted.
+- Every declared handoff references known source and target roles.
+- Every role reference maps to exact AgentSpecification ID/version.
+- Referenced capabilities exist in the Agent Capability Registry.
+- Referenced permission rules exist in the Agent Permission Matrix.
+- Handoffs do not imply execution.
+- Handoffs requiring approval contain approval markers.
+- Handoffs requiring guardian consultation contain guardian markers.
+- External, publishing, sales, customer delivery, budget, legal, tool, workflow, and
+  model-sensitive handoffs remain non-executing and approval/guardian gated where
+  relevant.
+- Duplicate handoff IDs are rejected.
 - Non-deterministic ordering is rejected.
-- Matrix remains redaction-safe and excludes prompts, completions, provider payloads,
-  secret references, secret values, raw transcripts, raw knowledge, raw memory,
-  sensitive paths, raw guardian payloads, and transport internals.
+- Redaction-sensitive raw content is rejected.
 - Existing tests continue passing.
 
 ## Acceptance criteria
 
-- The repository contains a deterministic, validated, non-executing Agent Permission
-  Matrix for the current Agent Company and Agent Capability Registry.
-- The matrix can be used by future Mission Planning Dry-Run without adding runtime
-  grants or execution behavior.
+- The repository contains deterministic, validated, non-executing Agent
+  Communication / Handoff contracts aligned with the Agent Company map,
+  responsibility matrix, capability registry, and permission matrix.
+- Future Mission Planning Dry-Run can reference handoff metadata without invoking
+  agents, executing workflows, or granting runtime access.
 - Existing architecture boundaries remain unchanged.
 
 ## Definition of done
 
-- Agent Permission Matrix contracts, validator, and tests are complete.
+- Agent Communication / Handoff contracts, validator, and tests are complete.
 - Project-state documents accurately describe the completed milestone.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.

@@ -1126,3 +1126,36 @@ provides no runtime capability by itself.
 permission requirements without granting runtime access. Mission Planning Dry-Run
 must use this registry only as planning metadata until separate workflow, approval,
 and tool execution boundaries exist.
+
+## ADR-042 — Agent permissions are declarative planning boundaries
+
+**Context:** The Agent Company now has role specifications, responsibility ownership,
+and capability ownership. Future mission planning also needs to know what each role
+may prepare or analyze, what it must not do, and what requires Fabio approval or
+guardian consultation. If this information were implemented as runtime permission
+grants too early, it could bypass the existing default-deny policy, effective
+permission evaluation, approvals, guardians, workflow runtime, tool runtime, and
+audit model.
+
+**Decision:** Define the Agent Permission Matrix as a deterministic, validated,
+non-executing declaration. It maps every current Agent Company role and every Agent
+Capability Registry capability to a permission rule with allowed planning actions,
+forbidden action categories, approval requirements, guardian requirements, future
+workflow/tool compatibility, default-deny posture, and explicit no-runtime-grant
+markers. The matrix does not grant runtime permissions, invoke agents, call models,
+call providers, run workflows, execute tools, persist state, use network behavior,
+mutate files, publish, send outreach, deliver customer work, spend money, provide
+final legal approval, or act autonomously.
+
+**Reason:** Fabio needs a safe internal operating model before the system can plan or
+execute work. The matrix makes future mission plans deterministic and reviewable
+while preserving least privilege and human approval.
+
+**Tradeoffs:** The matrix duplicates some safety intent already present in role,
+capability, and responsibility records. This is intentional: it gives future Mission
+Planning Dry-Run a permission-specific artifact without weakening runtime policy.
+
+**Future impact:** Agent Communication / Handoff Contracts should reference these
+permission rule IDs when describing future support, review, approval-preparation, and
+escalation handoffs. Mission Planning Dry-Run must treat the matrix as planning
+metadata only until separate runtime permission enforcement exists.
