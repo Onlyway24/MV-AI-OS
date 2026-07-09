@@ -1019,3 +1019,42 @@ validated identities and planning targets only.
 **Future impact:** Extended Business Agent Specifications should complete the
 remaining business-facing roles using the same pattern. Mission Planning Dry-Run must
 reference exact specification IDs and versions without invoking them.
+
+## ADR-039 — Extended business agents remain declarative specifications
+
+**Context:** The Agent Company map and first five core AgentSpecifications give Fabio
+the beginning of an internal company model, but business-side roles add higher-risk
+domains: publishing, sales outreach, finance, legal/risk review, and customer
+delivery. Implementing these as executable workers too early would create external
+communication, spending, legal, customer, and reputation risks before responsibility
+mapping, mission planning, workflow runtime, durable approvals, and tool execution
+boundaries exist.
+
+**Decision:** Define Publisher Agent, Sales Agent, Finance / Cost Analyst, Legal /
+Risk Reviewer, and Customer Delivery Agent as exact experimental
+AgentSpecifications plus validated business profiles. The standard
+AgentSpecification contract remains the execution-facing identity boundary. The
+business profile records the role's business purpose, responsibilities,
+non-responsibilities, required permissions, forbidden capabilities, guardian
+consultation requirements, approval requirements, memory and knowledge requirements,
+future non-executing tool declarations, failure modes, quality checks, business value
+classification, escalation rules, and output quality bar. These records do not
+execute agents, call models, call providers, run workflows, execute tools, persist
+state, use network behavior, publish, send outreach, deliver customer work, spend
+money, provide binding legal advice, or act autonomously.
+
+**Reason:** The business roles are valuable as planning targets only if their safety
+boundaries are explicit before mission planning begins. Publishing, sales, and
+customer delivery require explicit Fabio approval before any future external path can
+continue. Finance must remain advisory and cannot spend or change budgets. Legal /
+Risk must remain non-binding and cannot provide final compliance approval.
+
+**Tradeoffs:** The companion business profile adds validation outside the generic
+AgentSpecification contract. This is intentional: it preserves the existing standard
+agent contract while validating business-side doctrine needed by future planning and
+responsibility-matrix work.
+
+**Future impact:** Inter-Agent Responsibility Matrix should use these exact
+specification IDs, versions, role boundaries, approvals, and forbidden capabilities.
+Mission Planning Dry-Run must treat these roles as planning targets only until a
+separate workflow/runtime milestone introduces governed execution.

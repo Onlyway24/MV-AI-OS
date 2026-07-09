@@ -200,6 +200,22 @@ export {
   KNOWLEDGE_CURATOR_SPECIFICATION,
   RESEARCH_AGENT_SPECIFICATION,
 } from "./assistants/core-agent-specifications.js";
+export {
+  CUSTOMER_DELIVERY_AGENT_SPECIFICATION_PROFILE,
+  EXTENDED_BUSINESS_AGENT_SPECIFICATIONS,
+  EXTENDED_BUSINESS_AGENT_SPECIFICATION_PROFILES,
+  EXTENDED_BUSINESS_AGENT_SPECIFICATION_VERSION,
+  FINANCE_COST_ANALYST_SPECIFICATION_PROFILE,
+  LEGAL_RISK_AGENT_SPECIFICATION_PROFILE,
+  PUBLISHER_AGENT_SPECIFICATION_PROFILE,
+  SALES_AGENT_SPECIFICATION_PROFILE,
+  type ExtendedBusinessAgentId,
+  type ExtendedBusinessAgentSpecificationProfile,
+  type ExtendedBusinessFutureToolDeclaration,
+  type ExtendedBusinessFutureToolMode,
+  type ExtendedBusinessFutureToolSideEffect,
+} from "./assistants/extended-business-agent-specifications.js";
+export { ExtendedBusinessAgentSpecificationProfileValidator } from "./assistants/extended-business-agent-specifications-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

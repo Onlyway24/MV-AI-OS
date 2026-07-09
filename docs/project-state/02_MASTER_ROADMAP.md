@@ -239,14 +239,18 @@ runtime behavior. Agent Company Specification Foundation now adds the determinis
 validated, non-executing internal company map for Fabio's future specialist roles,
 including business value, role boundaries, control-plane dependencies, approval
 requirements, forbidden capabilities, memory/knowledge requirements, and future
-AgentSpecification mappings. Durable usage ledgers, aggregated budget windows, broader
-Initial Core Agent Specifications now add exact experimental AgentSpecification
+AgentSpecification mappings. Initial Core Agent Specifications now add exact
+experimental AgentSpecification
 records for Research Agent, Business Agent, Content Director, Developer Agent, and
-Knowledge Curator without adding runtime execution. Durable usage ledgers,
-aggregated budget windows, broader operational telemetry, live smoke-test gating,
-autonomous guardians, dashboards, delegation execution, executable agent-company
-runtime, and full Main Assistant orchestration remain future work, with the next
-milestone specified in `04_NEXT_TASK.md`.
+Knowledge Curator without adding runtime execution. Extended Business Agent
+Specifications now add exact experimental AgentSpecification records and validated
+business profiles for Publisher Agent, Sales Agent, Finance / Cost Analyst, Legal /
+Risk Reviewer, and Customer Delivery Agent while preserving explicit approval
+requirements and non-executing boundaries. Durable usage ledgers, aggregated budget
+windows, broader operational telemetry, live smoke-test gating, autonomous guardians,
+dashboards, delegation execution, executable agent-company runtime, responsibility
+matrix enforcement, and full Main Assistant orchestration remain future work, with
+the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

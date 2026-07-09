@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Initial Core Agent Specifications milestone:
-  `34444d7 feat: add agent company specification foundation`.
+- Latest committed baseline before the Extended Business Agent Specifications
+  milestone: `db1d963 feat: add initial core agent specifications`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -58,9 +58,11 @@ and tests, not intended future behavior.
   change set that adds `docs/MV_AI_OS_CONSTITUTION.md`.
 - The Agent Company Specification Foundation milestone is completed and was committed
   in `34444d7 feat: add agent company specification foundation`.
-- The Initial Core Agent Specifications milestone is completed by the current change
-  set.
-- The next milestone is Extended Business Agent Specifications.
+- The Initial Core Agent Specifications milestone is completed and was committed in
+  `db1d963 feat: add initial core agent specifications`.
+- The Extended Business Agent Specifications milestone is completed by the current
+  change set.
+- The next milestone is Inter-Agent Responsibility Matrix.
 
 ## Current architecture
 
@@ -156,6 +158,7 @@ provider, n8n, or external SDK types.
 40. MV AI OS Constitution.
 41. Agent Company Specification Foundation.
 42. Initial Core Agent Specifications.
+43. Extended Business Agent Specifications.
 
 ## Implemented modules
 
@@ -408,6 +411,12 @@ provider, n8n, or external SDK types.
   handoff targets, and versioned instruction references without executing agents,
   workflows, tools, models, providers, persistence, network behavior, dashboards, or
   autonomy.
+- Extended experimental business AgentSpecification records and business profiles for
+  Publisher Agent, Sales Agent, Finance / Cost Analyst, Legal / Risk Reviewer, and
+  Customer Delivery Agent. These specifications map back to the Agent Company role
+  map, preserve explicit approval-sensitive boundaries for external publishing,
+  sales outreach, and customer delivery, define advisory/non-binding finance and
+  legal/risk constraints, and keep direct tool execution unavailable.
   actions, and non-executing mission/delegation summaries without exposing raw
   internal payloads.
 - Versioned Workflow Specification graph contracts, validators, and registry
@@ -483,6 +492,8 @@ provider, n8n, or external SDK types.
   contracts.
 - Initial core Research, Business, Content Director, Developer, and Knowledge Curator
   AgentSpecification constants.
+- Extended business Publisher, Sales, Finance / Cost Analyst, Legal / Risk Reviewer,
+  and Customer Delivery AgentSpecification/profile constants.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -529,7 +540,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 59 test files and 411 tests covering:
+The latest verified suite contains 62 test files and 445 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -649,6 +660,12 @@ The latest verified suite contains 59 test files and 411 tests covering:
   identity/version checks, strict schema checks, capability and policy alignment,
   deterministic handoff targets, immutable registry lookup and duplicate rejection,
   and redaction-safe non-executing specification boundaries.
+- Extended Business Agent Specification validation for all five business-side roles,
+  Agent Company role mapping, required business profile fields, forbidden capability
+  enforcement, guardian consultation requirements, external-communication approval
+  markers, advisory Finance and Legal / Risk boundaries, no direct tool capability,
+  immutable registry lookup and duplicate rejection, and redaction-safe
+  non-executing specification boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -713,7 +730,11 @@ engineering doctrine for future sessions, including Fabio's founder/operator rol
 the one-assistant model, the Control Plane, Agent Company, workflow/tool/dashboard
 future chapters, safety and cost doctrine, forbidden shortcuts, production-readiness
 criteria, and the required way future Codex prompts should use repository memory.
-It is documentation-only and does not modify runtime behavior.
+It is documentation-only and does not modify runtime behavior. The Agent Company
+chapter now has exact non-executing AgentSpecifications for all ten mapped specialist
+roles: five initial core roles plus five extended business-side roles. The business
+profiles add explicit safety doctrine for publishing, sales outreach, finance,
+legal/risk review, and customer delivery without adding agent execution.
 
 ## What exists only as a foundation
 
@@ -785,6 +806,10 @@ It is documentation-only and does not modify runtime behavior.
   not executable code and does not itself enforce policy, run agents, call models,
   execute workflows, execute tools, create dashboards, deploy cloud infrastructure,
   or change runtime behavior.
+- Agent Company specifications now cover all ten declared specialist roles, but they
+  remain declarative planning targets only; they do not invoke agents, run mission
+  plans, execute workflows, call models, execute tools, contact customers, publish,
+  spend money, provide final legal/compliance approval, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -902,6 +927,11 @@ It is documentation-only and does not modify runtime behavior.
   records for Research Agent, Business Agent, Content Director, Developer Agent, and
   Knowledge Curator through the existing AgentSpecification validator and immutable
   registry.
+- A caller can validate and register the extended experimental business
+  AgentSpecification records for Publisher Agent, Sales Agent, Finance / Cost
+  Analyst, Legal / Risk Reviewer, and Customer Delivery Agent through the existing
+  AgentSpecification validator, the extended business profile validator, and the
+  immutable registry.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -920,7 +950,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Extended Business Agent Specifications.
+- Inter-Agent Responsibility Matrix.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
