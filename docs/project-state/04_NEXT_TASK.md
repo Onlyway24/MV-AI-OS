@@ -2,66 +2,82 @@
 
 ## Milestone name
 
-Main Assistant Operator Protocol
+Agent Company Specification Foundation
 
 ## Goal
 
-Define the structured operator-facing protocol Fabio uses with Only Way Assistant.
+Create the declarative map of Fabio's internal AI company.
 
-This protocol is the contract future CLI, local web console, or API layers can use
-to present operator decisions without exposing raw internal payloads or making Fabio
-babysit individual agents.
+This map defines which future internal specialist roles exist, what business value
+each role creates, what each role may and may not do, which control-plane gates apply,
+and how those roles will later map to exact Agent Specifications.
 
-This is not a UI, HTTP API, dashboard, chat runtime, model call, agent execution,
-workflow execution, tool execution, or autonomous operator.
+This is not agent runtime, multi-agent execution, workflow execution, tool execution,
+model calling, external communication, or autonomous delegation.
 
 ## Why it matters
 
-Only Way Assistant now has a specification, runtime boundary, Guardian Consultation,
-Operator Decision Engine, and Delegation Policy. The next step is a stable
-operator-facing language for commands, decisions, approvals, clarifications,
-refusals, and next actions so Fabio can give business goals and receive clear,
-safe, decision-ready output.
+Only Way Assistant can now produce operator-facing decisions and non-executing
+delegation-policy output. The next step is a stable internal company map so Fabio
+does not babysit random agents. Only Way Assistant should eventually coordinate a
+declared set of specialist roles that each exists for clear business value and
+remains bounded by policy, guardians, approvals, memory, knowledge, budget, quality,
+security, and backup readiness.
 
 ## Required scope
 
-- Define `OperatorCommand` contract.
-- Define `OperatorIntent` contract.
-- Define `OperatorDecisionRequest` contract.
-- Define `OperatorDecisionResponse` contract.
-- Define `OperatorApprovalPrompt` contract if useful.
-- Define `OperatorClarificationRequest` contract if useful.
-- Define `OperatorRefusal` contract if useful.
-- Define `OperatorNextAction` contract if useful.
-- Add runtime validators for all public operator protocol contracts.
-- Add deterministic protocol formatting/normalization behavior if useful.
-- Express operator-facing output rules for:
-  - concise summary;
-  - understood objective;
-  - safety checks consulted;
-  - decision made;
-  - what is blocked;
-  - what needs approval;
-  - what information is missing;
-  - what will happen next;
-  - what was refused and why;
-  - cost/budget status if safely available;
-  - risk level if safely available;
-  - candidate non-executing delegation if safely available;
-  - candidate non-executing mission plan if safely available;
-  - no raw internal payloads.
-- Keep ordering deterministic and output redaction-safe.
+- Define `AgentCompanyRole` contract.
+- Define `AgentCompanyMap` contract.
+- Define `AgentCompanyDepartment` contract if useful.
+- Define agent category and role-priority contracts if useful.
+- Define business value classification.
+- Define role boundaries.
+- Define future AgentSpecification mapping.
+- Define control-plane dependencies for each role.
+- Define forbidden capabilities per role.
+- Define approval requirements per role.
+- Define memory and knowledge requirements if useful.
+- Define operator-facing purpose per role.
+- Add runtime validators for all public agent-company contracts.
+- Add deterministic ordering rules for departments, roles, dependencies, approvals,
+  forbidden capabilities, and specification mappings.
+- Keep output deterministic and redaction-safe.
+
+Initial roles:
+
+- Research Agent.
+- Business Agent.
+- Content Director.
+- Developer Agent.
+- Publisher Agent.
+- Knowledge Curator.
+- Sales Agent.
+- Finance / Cost Analyst.
+- Legal / Risk Reviewer.
+- Customer Delivery Agent.
+
+Each role must answer at least one:
+
+- saves Fabio time;
+- helps Fabio make money;
+- reduces risk;
+- improves quality;
+- reduces operational work.
 
 ## Forbidden scope
 
-- Building a UI, HTTP API, dashboard, CLI rewrite, chat runtime, or transport adapter.
-- Calling models, providers, tools, workflows, guardians, agents, browsers,
-  filesystems, n8n, MCP, network services, external APIs, Telegram, email, Slack, or
-  notification systems.
-- Executing delegation, sub-agents, workflows, tools, publishing, outreach, or
-  external communication.
-- Scheduling, polling, monitoring, background work, durable ledgers, or autonomous
-  action.
+- Executing agents.
+- Calling or invoking sub-agents.
+- Multi-agent runtime.
+- Workflow execution.
+- Tool execution.
+- Model calls, provider calls, live provider tests, or prompt generation.
+- External communication, publishing, outreach, sales sending, or customer delivery.
+- Running guardians or collecting guardian signals automatically.
+- Scheduling, polling, background checks, monitoring, alerts, Telegram, email, Slack,
+  dashboard, HTTP, n8n, MCP, browser automation, filesystem tools, cloud/VPS runtime,
+  external APIs, network behavior, embeddings, vector search, durable persistence, or
+  runtime ledgers.
 - Mutating Core Brain behavior.
 - Mutating Content Agent behavior.
 - Mutating memory, knowledge, tasks, audits, files, backups, runtime state, or
@@ -69,10 +85,9 @@ safe, decision-ready output.
 
 ## Likely files to create
 
-- `src/assistants/main-assistant-operator-protocol.ts`
-- `src/assistants/main-assistant-operator-protocol-validator.ts`
-- `src/assistants/deterministic-main-assistant-operator-protocol.ts`
-- `tests/assistants/main-assistant-operator-protocol.test.ts`
+- `src/assistants/agent-company-specification.ts`
+- `src/assistants/agent-company-specification-validator.ts`
+- `tests/assistants/agent-company-specification.test.ts`
 
 ## Likely files to modify
 
@@ -84,40 +99,41 @@ safe, decision-ready output.
 
 ## Tests required
 
-- Valid operator command is accepted.
-- Invalid operator command is rejected.
-- Approval-required state produces a safe approval prompt.
-- Clarification-required state produces deterministic clarification output.
-- Refusal or blocked state produces safe refusal/blocker output.
-- Next-action output is deterministic.
-- Safety checks consulted are represented without raw guardian payloads.
-- Cost/budget posture is represented only as sanitized summary.
-- Candidate delegation and mission-plan data are represented only as non-executing
-  summaries.
-- Redaction safety excludes prompts, completions, provider payloads, secret
-  references, secret values, transcripts, raw knowledge, raw memory, sensitive paths,
-  raw guardian payloads, and transport internals.
+- Valid role map is accepted.
+- Invalid role map is rejected.
+- Unsafe role definitions are rejected.
+- Missing business value classification is rejected.
+- Role boundary violations are rejected.
+- Forbidden capabilities are rejected.
+- Missing approval requirements are rejected where required.
+- Missing control-plane dependencies are rejected where required.
+- Future AgentSpecification mappings are deterministic and valid.
+- Role ordering is deterministic.
+- Output is redaction-safe and excludes prompts, completions, provider payloads,
+  secret references, secret values, transcripts, raw knowledge, raw memory, sensitive
+  paths, raw guardian payloads, and transport internals.
 - Existing Main Assistant runtime, Guardian Consultation, Operator Decision Engine,
-  Delegation Policy, guardian, model, runtime, CLI, persistence, backup/restore, and
-  governed content tests continue passing.
+  Delegation Policy, Operator Protocol, guardian, model, runtime, CLI, persistence,
+  backup/restore, and governed content tests continue passing.
 
 ## Acceptance criteria
 
-- Only Way Assistant has a validated operator-facing protocol contract.
-- The protocol can represent decisions, approvals, clarifications, refusals,
-  blockers, and next actions without executing anything.
-- Fabio receives business-operator output, not raw internal diagnostics.
-- No UI, HTTP, dashboard, model calls, provider calls, tool calls, workflow calls,
-  agent execution, persistence, network behavior, alerts, or autonomous behavior is
-  added.
+- The repository contains a validated declarative Agent Company map.
+- Every initial role has clear business value, role boundaries, control-plane
+  dependencies, forbidden capabilities, approval requirements, and future
+  AgentSpecification mapping.
+- The map does not execute agents, workflows, tools, models, providers, external
+  communication, persistence, network behavior, dashboards, alerts, or autonomous
+  behavior.
 - Existing Core Brain, policy, guardian, model, memory, knowledge, tool, workflow,
   runtime, CLI, and repository boundaries remain unchanged.
 
 ## Definition of done
 
-- Operator protocol contracts, validators, deterministic formatting/normalization
-  behavior, and tests are complete.
-- Project-state documents accurately describe the operator protocol foundation.
+- Agent Company contracts, validators, deterministic map data, and tests are
+  complete.
+- Project-state documents accurately describe the Agent Company Specification
+  foundation.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.
-- The milestone is committed before Agent Company Specification Foundation begins.
+- The milestone is committed before Initial Core Agent Specifications begins.

@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Main Assistant Delegation Policy Foundation
-  milestone: `fbeda65 feat: add operator decision engine foundation`.
+- Latest committed baseline before the Main Assistant Operator Protocol milestone:
+  `731ee10 feat: add main assistant delegation policy foundation`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -50,8 +50,11 @@ and tests, not intended future behavior.
 - The Operator Decision Engine Foundation milestone is completed in this repository
   state and was committed in `fbeda65 feat: add operator decision engine foundation`.
 - The Main Assistant Delegation Policy Foundation milestone is completed in this
-  repository state and is the current commit candidate.
-- The next milestone is Main Assistant Operator Protocol.
+  repository state and was committed in
+  `731ee10 feat: add main assistant delegation policy foundation`.
+- The Main Assistant Operator Protocol milestone is completed in this repository
+  state and is the current commit candidate.
+- The next milestone is Agent Company Specification Foundation.
 
 ## Current architecture
 
@@ -143,6 +146,7 @@ provider, n8n, or external SDK types.
 36. Guardian Consultation Boundary.
 37. Operator Decision Engine Foundation.
 38. Main Assistant Delegation Policy Foundation.
+39. Main Assistant Operator Protocol.
 
 ## Implemented modules
 
@@ -365,6 +369,12 @@ provider, n8n, or external SDK types.
   categories, Guardian Consultation coverage, Operator Safety requirements,
   approval markers, budget/security/backup/quality prerequisites, max depth,
   circular delegation, and redaction-safe non-executing delegation decisions.
+- Versioned Main Assistant Operator Protocol contracts and deterministic responder
+  for converting supplied Operator Decision, Guardian Consultation, and optional
+  Delegation Policy decisions into Fabio-facing summaries, approvals,
+  clarifications, refusals, blockers, safety-check summaries, cost posture, next
+  actions, and non-executing mission/delegation summaries without exposing raw
+  internal payloads.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -428,6 +438,10 @@ provider, n8n, or external SDK types.
 - Main Assistant delegation policy profile, policy target, constraint, evaluation
   request, delegation decision, decision reason, category, risk-level,
   business-value, evaluator, and validation-error contracts.
+- Main Assistant operator command, operator intent, decision request, decision
+  response, approval prompt, clarification request, refusal, next action,
+  safety-check summary, delegation summary, mission-plan summary, protocol
+  interface, and validation-error contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -463,6 +477,8 @@ provider, n8n, or external SDK types.
 - Operator decision context and decision validators.
 - Main Assistant delegation policy profile, evaluation request, and decision
   validators.
+- Main Assistant operator command, decision request, and decision response
+  validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -472,7 +488,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 58 test files and 403 tests covering:
+The latest verified suite contains 59 test files and 411 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -578,6 +594,11 @@ The latest verified suite contains 58 test files and 403 tests covering:
   approval-required publisher delegation, explicit approval markers, missing
   budget/security/backup/quality prerequisites, circular delegation, max-depth
   enforcement, guardian-warning confirmation, and redaction-safe output boundaries.
+- Main Assistant Operator Protocol validation, valid and invalid operator commands,
+  approval prompts, clarification requests, refusals, blocked decisions,
+  deterministic next-action ordering, safety-check summaries, sanitized cost posture,
+  non-executing delegation and mission-plan summaries, and redaction-safe
+  operator-facing output boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -631,7 +652,13 @@ validated, deterministic, non-executing policy layer for future specialist hando
 proposals, including allowed categories, forbidden categories, Guardian
 Consultation requirements, Operator Safety requirements, approval markers,
 budget/security/backup/quality prerequisites, max depth, circular-delegation
-blocking, and redaction-safe decision output.
+blocking, and redaction-safe decision output. Main Assistant Operator Protocol now
+defines the validated, deterministic, operator-facing response contract that turns
+supplied decisions into Fabio-facing summaries, approvals, clarifications, refusals,
+blockers, safety checks, cost posture, next actions, and non-executing
+mission/delegation summaries without adding UI, chat runtime, provider calls, agent
+execution, workflow execution, tool execution, persistence, network behavior, or
+autonomy.
 
 ## What exists only as a foundation
 
@@ -695,6 +722,10 @@ blocking, and redaction-safe decision output.
   confirmation-required decisions, but it does not invoke agents, execute workflows,
   execute tools, call models, persist state, collect guardian signals, schedule work,
   use the network, or act autonomously.
+- Main Assistant Operator Protocol can normalize supplied operator decisions into
+  Fabio-facing command responses, but it does not provide a UI, execute commands,
+  call models, invoke agents, execute delegation, execute workflows, execute tools,
+  persist state, schedule work, use the network, send alerts, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -799,6 +830,10 @@ blocking, and redaction-safe decision output.
   `DeterministicMainAssistantDelegationPolicyEvaluator`, supply a validated
   `MainAssistantDelegationEvaluationRequest`, and receive a validated redaction-safe
   non-executing delegation decision for a future specialist category.
+- A caller can instantiate `DeterministicMainAssistantOperatorProtocol`, supply a
+  validated `OperatorDecisionRequest`, and receive a validated redaction-safe
+  `OperatorDecisionResponse` with Fabio-facing approvals, clarifications, refusals,
+  blockers, safety checks, cost posture, and next actions.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 
@@ -814,7 +849,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Main Assistant Operator Protocol.
+- Agent Company Specification Foundation.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

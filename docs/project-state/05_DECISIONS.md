@@ -891,3 +891,38 @@ decisions in Fabio-facing language without exposing raw guardian payloads. Agent
 Company Specification Foundation and Mission Planning Dry-Run must consume this
 policy for candidate handoffs and must remain non-executing until separate workflow,
 tool, and agent runtime milestones are approved.
+
+## ADR-035 — Operator Protocol is a presentation contract, not a runtime
+
+**Context:** Only Way Assistant now has a validated specification, deterministic
+runtime boundary, Guardian Consultation Boundary, Operator Decision Engine, and
+Delegation Policy. Fabio needs one operator-facing protocol that can present decisions
+without exposing raw internal payloads or forcing him to manage separate specialist
+agents manually.
+
+**Decision:** Implement Main Assistant Operator Protocol as a deterministic,
+redaction-safe presentation and normalization boundary. It consumes a validated
+operator command, Guardian Consultation decision, Operator Decision, and optional
+Delegation Policy decision. It returns a validated operator-facing response with an
+understood objective, decision, safety-check summary, blockers, missing information,
+approval prompts, refusals, cost posture, next actions, and non-executing delegation
+or mission-plan summaries. It does not build a UI, run a chat loop, call models, call
+providers, invoke agents, execute delegation, execute workflows, execute tools,
+persist state, use network behavior, schedule work, send alerts, or act
+autonomously.
+
+**Reason:** Fabio should operate MV AI OS through one clear command layer, not by
+debugging internal contracts or babysitting many agents. Keeping the protocol as a
+presentation contract preserves architecture while making the system more usable for
+future CLI, web, or API surfaces.
+
+**Tradeoffs:** The protocol cannot decide safety, enforce approval externally, run
+specialists, or complete work. It only presents supplied decisions. Future transport
+layers must still validate input, construct runtime dependencies, and invoke existing
+boundaries explicitly.
+
+**Future impact:** Agent Company Specification Foundation should use this protocol's
+operator-facing language to explain internal roles without making them external
+personalities. Mission Planning Dry-Run should return protocol-compatible summaries
+while remaining non-executing until workflow and agent runtimes are separately
+approved.

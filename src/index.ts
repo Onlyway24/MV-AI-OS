@@ -143,6 +143,31 @@ export {
   MainAssistantDelegationEvaluationRequestValidator,
   MainAssistantDelegationPolicyProfileValidator,
 } from "./assistants/main-assistant-delegation-policy-validator.js";
+export {
+  MAIN_ASSISTANT_OPERATOR_PROTOCOL_CONTRACT_VERSION,
+  MainAssistantOperatorProtocolValidationError,
+  type MainAssistantOperatorProtocol,
+  type OperatorApprovalPrompt,
+  type OperatorClarificationRequest,
+  type OperatorCommand,
+  type OperatorDecisionRequest,
+  type OperatorDecisionResponse,
+  type OperatorDelegationSummary,
+  type OperatorIntent,
+  type OperatorMissionPlanSummary,
+  type OperatorNextAction,
+  type OperatorNextActionPriority,
+  type OperatorProtocolDecision,
+  type OperatorProtocolRiskLevel,
+  type OperatorRefusal,
+  type OperatorSafetyCheckSummary,
+} from "./assistants/main-assistant-operator-protocol.js";
+export { DeterministicMainAssistantOperatorProtocol } from "./assistants/deterministic-main-assistant-operator-protocol.js";
+export {
+  OperatorCommandValidator,
+  OperatorDecisionRequestValidator,
+  OperatorDecisionResponseValidator,
+} from "./assistants/main-assistant-operator-protocol-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

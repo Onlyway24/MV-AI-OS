@@ -220,10 +220,14 @@ non-executing delegation-policy evaluation for future specialist handoff proposa
 including allowed and forbidden categories, Guardian Consultation coverage, Operator
 Safety requirements, approval markers, budget/security/backup/quality prerequisites,
 max depth, and circular-delegation blocking without invoking agents or execution
-layers. Durable usage ledgers, aggregated budget windows, broader operational
-telemetry, live smoke-test gating, autonomous guardians, dashboards, delegation
-execution, Main Assistant Operator Protocol, and full Main Assistant orchestration
-remain future work, with the next milestone specified in `04_NEXT_TASK.md`.
+layers. Main Assistant Operator Protocol now adds deterministic, redaction-safe,
+operator-facing command responses for supplied decisions, approvals, clarifications,
+refusals, blockers, safety checks, cost posture, next actions, and non-executing
+mission/delegation summaries without adding UI, chat runtime, execution, network
+behavior, or autonomy. Durable usage ledgers, aggregated budget windows, broader
+operational telemetry, live smoke-test gating, autonomous guardians, dashboards,
+delegation execution, Agent Company map, and full Main Assistant orchestration remain
+future work, with the next milestone specified in `04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 
