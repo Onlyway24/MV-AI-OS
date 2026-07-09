@@ -2,7 +2,7 @@
 
 ## Milestone name
 
-Inter-Agent Responsibility Matrix
+Agent Capability Registry
 
 ## Required context before implementation
 
@@ -14,40 +14,34 @@ Inter-Agent Responsibility Matrix
   - `src/assistants/agent-company-specification.ts`
   - `src/assistants/core-agent-specifications.ts`
   - `src/assistants/extended-business-agent-specifications.ts`
-  - `tests/assistants/core-agent-specifications.test.ts`
-  - `tests/assistants/extended-business-agent-specifications.test.ts`
+  - `src/assistants/inter-agent-responsibility-matrix.ts`
+  - `tests/assistants/inter-agent-responsibility-matrix.test.ts`
 
 ## Goal
 
-Create a deterministic, validated responsibility matrix that describes which internal
-Agent Company roles may own, support, review, approve, or be excluded from each
-major responsibility area before mission planning or workflow execution exists.
+Define a deterministic, validated, non-executing registry of which future business
+and operating capabilities belong to which Agent Company roles.
+
+This is not runtime capability execution. It is a planning and orchestration reference
+for future Mission Planning Dry-Run and workflow design.
 
 ## Required scope
 
-- Define a non-executing Inter-Agent Responsibility Matrix contract.
-- Cover all ten declared Agent Company roles:
-  - Research Agent.
-  - Business Agent.
-  - Content Director.
-  - Developer Agent.
-  - Publisher Agent.
-  - Knowledge Curator.
-  - Sales Agent.
-  - Finance / Cost Analyst.
-  - Legal / Risk Reviewer.
-  - Customer Delivery Agent.
-- Map responsibilities across business, research, content, publishing, sales,
-  finance, legal/risk, customer delivery, knowledge, technical, quality, and future
-  handoff areas.
-- Distinguish owner, contributor, reviewer, approval-required, and forbidden roles.
-- Validate that every role and responsibility references existing Agent Company
-  roles and exact AgentSpecification IDs/versions.
-- Preserve the current non-executing architecture.
-- Export only appropriate public constants from `src/index.ts`.
+- Define an Agent Capability Registry contract.
+- Reuse existing Agent Company role IDs and exact AgentSpecification IDs/versions.
+- Map capabilities to owners and supporting roles.
+- Categorize capabilities by business, research, content, publishing, sales, finance,
+  legal/risk, customer delivery, knowledge, technical, quality, control, future tool,
+  and future workflow concerns where appropriate.
+- Mark future tool and future workflow mappings as non-executing declarations only.
+- Declare guardian requirements per capability where relevant.
+- Declare approval requirements per capability where relevant.
+- Preserve deterministic ordering.
+- Preserve redaction-safe public records.
 
 ## Forbidden scope
 
+- Executing capabilities.
 - Executing agents.
 - Calling models or providers.
 - Adding mission planning runtime.
@@ -66,9 +60,9 @@ major responsibility area before mission planning or workflow execution exists.
 
 ## Likely files to create
 
-- `src/assistants/inter-agent-responsibility-matrix.ts`
-- `src/assistants/inter-agent-responsibility-matrix-validator.ts`
-- `tests/assistants/inter-agent-responsibility-matrix.test.ts`
+- `src/assistants/agent-capability-registry.ts`
+- `src/assistants/agent-capability-registry-validator.ts`
+- `tests/assistants/agent-capability-registry.test.ts`
 
 ## Likely files to modify
 
@@ -80,34 +74,35 @@ major responsibility area before mission planning or workflow execution exists.
 
 ## Tests required
 
-- Valid responsibility matrix is accepted.
-- Every matrix role maps to the Agent Company role map.
-- Every matrix role maps to an existing AgentSpecification ID/version.
-- Every responsibility area has exactly one owner unless explicitly declared as
-  shared.
-- Approval-sensitive responsibilities require explicit approval markers.
-- Forbidden role assignments are rejected.
-- Missing owner assignments are rejected.
-- Duplicate responsibility IDs are rejected.
+- Valid capability registry is accepted.
+- Every capability has an owner.
+- Every owner maps to an Agent Company role and exact AgentSpecification ID/version.
+- Unsafe capabilities require approval markers.
+- Direct tool capability declarations are rejected unless marked future and
+  non-executing.
+- Future workflow declarations are rejected unless marked future and non-executing.
+- Guardian requirements are validated.
+- Approval requirements are validated.
+- Duplicate capability IDs are rejected.
 - Unknown agent IDs are rejected.
 - Non-deterministic ordering is rejected.
-- Matrix remains redaction-safe and excludes prompts, completions, provider payloads,
-  secret references, secret values, raw transcripts, raw knowledge, raw memory,
-  sensitive paths, raw guardian payloads, and transport internals.
+- Registry remains redaction-safe and excludes prompts, completions, provider
+  payloads, secret references, secret values, raw transcripts, raw knowledge, raw
+  memory, sensitive paths, raw guardian payloads, and transport internals.
 - Existing tests continue passing.
 
 ## Acceptance criteria
 
-- The repository contains a deterministic, validated, non-executing Inter-Agent
-  Responsibility Matrix for all current Agent Company roles.
-- The matrix can be used by the future Mission Planning Dry-Run Boundary without
-  adding execution behavior.
+- The repository contains a deterministic, validated, non-executing Agent Capability
+  Registry for the current Agent Company.
+- The registry can be used by future Mission Planning Dry-Run and workflow design
+  without adding execution behavior.
 - Existing architecture boundaries remain unchanged.
 
 ## Definition of done
 
-- Inter-Agent Responsibility Matrix contracts, validator, and tests are complete.
+- Agent Capability Registry contracts, validator, and tests are complete.
 - Project-state documents accurately describe the completed milestone.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.
-- The milestone is committed before Mission Planning Dry-Run Boundary begins.
+- The milestone is committed before Agent Permission Matrix begins.

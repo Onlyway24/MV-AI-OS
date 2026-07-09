@@ -216,6 +216,30 @@ export {
   type ExtendedBusinessFutureToolSideEffect,
 } from "./assistants/extended-business-agent-specifications.js";
 export { ExtendedBusinessAgentSpecificationProfileValidator } from "./assistants/extended-business-agent-specifications-validator.js";
+export {
+  DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX,
+  DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX_ID,
+  INTER_AGENT_RESPONSIBILITY_MATRIX_CONTRACT_VERSION,
+  type ApprovalRole,
+  type ConsultedRole,
+  type ForbiddenRole,
+  type PrimaryOwner,
+  type ResponsibilityApprovalKind,
+  type ResponsibilityArea,
+  type ResponsibilityAreaId,
+  type ResponsibilityConflict,
+  type ResponsibilityConflictSeverity,
+  type ResponsibilityDecisionPoint,
+  type ResponsibilityMatrix,
+  type ResponsibilityMatrixRole,
+  type ResponsibilityRoleReference,
+  type SupportingRole,
+} from "./assistants/inter-agent-responsibility-matrix.js";
+export {
+  ResponsibilityAreaValidator,
+  ResponsibilityConflictValidator,
+  ResponsibilityMatrixValidator,
+} from "./assistants/inter-agent-responsibility-matrix-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

@@ -1058,3 +1058,34 @@ responsibility-matrix work.
 specification IDs, versions, role boundaries, approvals, and forbidden capabilities.
 Mission Planning Dry-Run must treat these roles as planning targets only until a
 separate workflow/runtime milestone introduces governed execution.
+
+## ADR-040 — Agent Company responsibility ownership is explicit before planning
+
+**Context:** The Agent Company now has a validated map and exact specifications for
+all ten current specialist roles. Without an explicit responsibility matrix, future
+mission planning could still create unclear ownership, duplicate primary owners,
+unsafe handoffs, or accidental responsibility expansion across publishing, sales,
+finance, legal/risk, customer delivery, implementation, and knowledge work.
+
+**Decision:** Define the Inter-Agent Responsibility Matrix as a deterministic,
+validated, non-executing organizational contract. It maps each major responsibility
+area to exactly one primary owner, supporting roles, consulted roles, approval-gate
+roles, forbidden roles, and explicit conflict-resolution notes. Every role reference
+must map to the Agent Company role map and an existing AgentSpecification ID/version.
+The matrix does not execute agents, call models, call providers, run workflows,
+execute tools, grant permissions, persist state, use network behavior, publish, send
+outreach, deliver customer work, spend money, provide final legal approval, or act
+autonomously.
+
+**Reason:** Fabio should not babysit a swarm of agents, and Only Way Assistant needs
+a coherent internal organization before it can safely plan work. Ownership clarity is
+a prerequisite for mission planning, capability mapping, permission mapping, and
+handoff contracts.
+
+**Tradeoffs:** The matrix is not runtime enforcement. It adds another declarative
+artifact that must stay aligned with Agent Company roles and AgentSpecifications.
+
+**Future impact:** Agent Capability Registry and Agent Permission Matrix should use
+the responsibility matrix as the organizational source for ownership and support
+boundaries. Mission Planning Dry-Run must reference this matrix without invoking
+agents or workflows.

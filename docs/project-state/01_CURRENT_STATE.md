@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Extended Business Agent Specifications
-  milestone: `db1d963 feat: add initial core agent specifications`.
+- Latest committed baseline before the Inter-Agent Responsibility Matrix milestone:
+  `9643f78 feat: add extended business agent specifications`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -60,9 +60,11 @@ and tests, not intended future behavior.
   in `34444d7 feat: add agent company specification foundation`.
 - The Initial Core Agent Specifications milestone is completed and was committed in
   `db1d963 feat: add initial core agent specifications`.
-- The Extended Business Agent Specifications milestone is completed by the current
-  change set.
-- The next milestone is Inter-Agent Responsibility Matrix.
+- The Extended Business Agent Specifications milestone is completed and was committed
+  in `9643f78 feat: add extended business agent specifications`.
+- The Inter-Agent Responsibility Matrix milestone is completed by the current change
+  set.
+- The next milestone is Agent Capability Registry.
 
 ## Current architecture
 
@@ -159,6 +161,7 @@ provider, n8n, or external SDK types.
 41. Agent Company Specification Foundation.
 42. Initial Core Agent Specifications.
 43. Extended Business Agent Specifications.
+44. Inter-Agent Responsibility Matrix.
 
 ## Implemented modules
 
@@ -417,6 +420,10 @@ provider, n8n, or external SDK types.
   map, preserve explicit approval-sensitive boundaries for external publishing,
   sales outreach, and customer delivery, define advisory/non-binding finance and
   legal/risk constraints, and keep direct tool execution unavailable.
+- Deterministic Inter-Agent Responsibility Matrix for all ten Agent Company roles.
+  The matrix defines who owns, supports, must be consulted for, approval-gates, or is
+  forbidden from each major responsibility area, while preserving non-executing
+  architecture and exact AgentSpecification ID/version references.
   actions, and non-executing mission/delegation summaries without exposing raw
   internal payloads.
 - Versioned Workflow Specification graph contracts, validators, and registry
@@ -494,6 +501,9 @@ provider, n8n, or external SDK types.
   AgentSpecification constants.
 - Extended business Publisher, Sales, Finance / Cost Analyst, Legal / Risk Reviewer,
   and Customer Delivery AgentSpecification/profile constants.
+- Inter-Agent Responsibility Matrix, matrix role, responsibility area, primary owner,
+  supporting role, consulted role, approval role, forbidden role, decision point, and
+  responsibility conflict contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -540,7 +550,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 62 test files and 445 tests covering:
+The latest verified suite contains 63 test files and 459 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -666,6 +676,17 @@ The latest verified suite contains 62 test files and 445 tests covering:
   markers, advisory Finance and Legal / Risk boundaries, no direct tool capability,
   immutable registry lookup and duplicate rejection, and redaction-safe
   non-executing specification boundaries.
+- Inter-Agent Responsibility Matrix validation, individual area and conflict
+  validation, Agent Company and AgentSpecification mapping, complete responsibility
+  coverage, approval markers for publishing/sales/customer delivery preparation,
+  duplicate owner rejection, missing owner rejection, unclear ownership rejection,
+  forbidden ownership rejection, unknown agent rejection, deterministic ordering
+  enforcement, invalid conflict rejection, and redaction-safe boundaries.
+- Inter-Agent Responsibility Matrix validation for all ten roles, exact
+  AgentSpecification ID/version references, deterministic responsibility ordering,
+  exactly one primary owner per area, approval-sensitive area coverage, unknown-role
+  rejection, forbidden ownership rejection, unclear ownership rejection, invalid
+  conflict rejection, and redaction-safe non-executing matrix boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -734,7 +755,10 @@ It is documentation-only and does not modify runtime behavior. The Agent Company
 chapter now has exact non-executing AgentSpecifications for all ten mapped specialist
 roles: five initial core roles plus five extended business-side roles. The business
 profiles add explicit safety doctrine for publishing, sales outreach, finance,
-legal/risk review, and customer delivery without adding agent execution.
+legal/risk review, and customer delivery without adding agent execution. The
+Inter-Agent Responsibility Matrix now gives those roles deterministic ownership,
+support, consultation, approval-gate, forbidden-role, and conflict-resolution
+boundaries before mission planning exists.
 
 ## What exists only as a foundation
 
@@ -810,6 +834,11 @@ legal/risk review, and customer delivery without adding agent execution.
   remain declarative planning targets only; they do not invoke agents, run mission
   plans, execute workflows, call models, execute tools, contact customers, publish,
   spend money, provide final legal/compliance approval, or act autonomously.
+- Inter-Agent Responsibility Matrix defines organizational ownership, support,
+  consultation, approval gates, forbidden role assignments, and conflict-resolution
+  notes, but it does not route work, invoke agents, execute mission plans, execute
+  workflows, grant permissions, call models, execute tools, persist state, or act
+  autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -932,6 +961,9 @@ legal/risk review, and customer delivery without adding agent execution.
   Analyst, Legal / Risk Reviewer, and Customer Delivery Agent through the existing
   AgentSpecification validator, the extended business profile validator, and the
   immutable registry.
+- A caller can validate `DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX` to inspect
+  deterministic owner/support/consultation/approval/forbidden-role assignments for
+  the Agent Company without executing any agent or workflow.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -950,7 +982,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Inter-Agent Responsibility Matrix.
+- Agent Capability Registry.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
