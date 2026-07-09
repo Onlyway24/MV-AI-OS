@@ -2,7 +2,7 @@
 
 ## Milestone name
 
-Agent Company Specification Foundation
+Initial Core Agent Specifications
 
 ## Required context before implementation
 
@@ -12,95 +12,70 @@ Agent Company Specification Foundation
 - Read every file in `docs/project-state/`.
 - Read `docs/agent-lab/01_AGENT_TEAM.md`,
   `docs/agent-lab/02_AGENT_ROLES.md`,
-  `docs/agent-lab/07_CONTROL_PLANE_AGENTS.md`, and
+  `docs/agent-lab/04_KNOWLEDGE_PLAN.md`,
+  `docs/agent-lab/05_VOICE_PROFILE.md`, and
   `docs/agent-lab/08_AI_AGENT_OPERATING_DOCTRINE.md`.
-- Verify repository implementation still matches the documented state before writing
-  source code.
+- Inspect existing Agent Specification contracts, validators, immutable registry,
+  Content Agent specification, and Agent Company map before writing source code.
 
 ## Goal
 
-Create the declarative map of Fabio's internal AI company.
+Create exact, validated AgentSpecification records for the first internal Agent
+Company roles without executing them yet.
 
-This map defines which future internal specialist roles exist, what business value
-each role creates, what each role may and may not do, which control-plane gates apply,
-and how those roles will later map to exact Agent Specifications.
-
-This is not agent runtime, multi-agent execution, workflow execution, tool execution,
-model calling, external communication, or autonomous delegation.
+The specifications must convert the declarative Agent Company map into concrete
+agent identities, task types, input/output schemas, capabilities, limits, policy
+requirements, handoff targets, and versioned instruction references.
 
 ## Why it matters
 
-Only Way Assistant can now produce operator-facing decisions and non-executing
-delegation-policy output. The next step is a stable internal company map so Fabio
-does not babysit random agents. Only Way Assistant should eventually coordinate a
-declared set of specialist roles that each exists for clear business value and
-remains bounded by policy, guardians, approvals, memory, knowledge, budget, quality,
-security, and backup readiness.
+The Agent Company map now defines which internal roles should exist and why. The next
+step is making the first roles concrete enough for future mission planning and
+workflow dry-runs while preserving the existing non-executing safety boundary.
 
 ## Required scope
 
-- Define `AgentCompanyRole` contract.
-- Define `AgentCompanyMap` contract.
-- Define `AgentCompanyDepartment` contract if useful.
-- Define agent category and role-priority contracts if useful.
-- Define business value classification.
-- Define role boundaries.
-- Define future AgentSpecification mapping.
-- Define control-plane dependencies for each role.
-- Define forbidden capabilities per role.
-- Define approval requirements per role.
-- Define memory and knowledge requirements if useful.
-- Define operator-facing purpose per role.
-- Add runtime validators for all public agent-company contracts.
-- Add deterministic ordering rules for departments, roles, dependencies, approvals,
-  forbidden capabilities, and specification mappings.
-- Keep output deterministic and redaction-safe.
-
-Initial roles:
-
-- Research Agent.
-- Business Agent.
-- Content Director.
-- Developer Agent.
-- Publisher Agent.
-- Knowledge Curator.
-- Sales Agent.
-- Finance / Cost Analyst.
-- Legal / Risk Reviewer.
-- Customer Delivery Agent.
-
-Each role must answer at least one:
-
-- saves Fabio time;
-- helps Fabio make money;
-- reduces risk;
-- improves quality;
-- reduces operational work.
+- Define initial core AgentSpecification records for:
+  - Research Agent.
+  - Business Agent.
+  - Content Director.
+  - Developer Agent.
+  - Sales Agent.
+  - Finance / Cost Analyst.
+  - Legal / Risk Reviewer.
+- Reuse the existing AgentSpecification contract and validator.
+- Keep all specifications status `experimental`.
+- Declare exact task types, input schemas, output schemas, capabilities, limits,
+  policy requirements, handoff targets, and instruction references.
+- Ensure every specification maps back to the Agent Company map.
+- Ensure permissions align with role business value, memory requirements, knowledge
+  requirements, approval requirements, and control-plane dependencies.
+- Add deterministic registry tests for duplicate prevention and lookup if needed.
+- Export only appropriate public constants/types from `src/index.ts`.
 
 ## Forbidden scope
 
 - Executing agents.
-- Calling or invoking sub-agents.
-- Multi-agent runtime.
-- Workflow execution.
-- Tool execution.
-- Model calls, provider calls, live provider tests, or prompt generation.
-- External communication, publishing, outreach, sales sending, or customer delivery.
-- Running guardians or collecting guardian signals automatically.
-- Scheduling, polling, background checks, monitoring, alerts, Telegram, email, Slack,
-  dashboard, HTTP, n8n, MCP, browser automation, filesystem tools, cloud/VPS runtime,
-  external APIs, network behavior, embeddings, vector search, durable persistence, or
-  runtime ledgers.
+- Calling models or providers.
+- Creating prompts that call live models.
+- Adding multi-agent runtime.
+- Adding mission planning runtime.
+- Adding workflow execution.
+- Adding tool execution.
+- Adding external communication, publishing, sales sending, or customer delivery.
+- Running guardians automatically.
+- Adding HTTP, dashboard, n8n, MCP, network behavior, browser automation,
+  filesystem tools, cloud/VPS runtime, embeddings, vector search, durable
+  persistence, or runtime ledgers.
 - Mutating Core Brain behavior.
-- Mutating Content Agent behavior.
+- Mutating Content Agent behavior unless strictly required for shared constants.
 - Mutating memory, knowledge, tasks, audits, files, backups, runtime state, or
   external systems.
 
 ## Likely files to create
 
-- `src/assistants/agent-company-specification.ts`
-- `src/assistants/agent-company-specification-validator.ts`
-- `tests/assistants/agent-company-specification.test.ts`
+- `src/assistants/core-agent-specifications.ts`
+- `tests/assistants/core-agent-specifications.test.ts`
 
 ## Likely files to modify
 
@@ -112,41 +87,38 @@ Each role must answer at least one:
 
 ## Tests required
 
-- Valid role map is accepted.
-- Invalid role map is rejected.
-- Unsafe role definitions are rejected.
-- Missing business value classification is rejected.
-- Role boundary violations are rejected.
-- Forbidden capabilities are rejected.
-- Missing approval requirements are rejected where required.
-- Missing control-plane dependencies are rejected where required.
-- Future AgentSpecification mappings are deterministic and valid.
-- Role ordering is deterministic.
-- Output is redaction-safe and excludes prompts, completions, provider payloads,
-  secret references, secret values, transcripts, raw knowledge, raw memory, sensitive
-  paths, raw guardian payloads, and transport internals.
-- Existing Main Assistant runtime, Guardian Consultation, Operator Decision Engine,
-  Delegation Policy, Operator Protocol, guardian, model, runtime, CLI, persistence,
-  backup/restore, and governed content tests continue passing.
+- Every initial core AgentSpecification validates with the existing validator.
+- Every initial core AgentSpecification maps to an Agent Company role.
+- Agent IDs and versions are deterministic.
+- Task types are non-empty and role-specific.
+- Input and output schemas are strict.
+- Capabilities match declared memory, knowledge, model, workflow-proposal, and no
+  direct tool execution boundaries.
+- Policy requirements are present for knowledge, memory, model, workflow proposal,
+  and approval-sensitive paths where applicable.
+- Handoff targets are declared and deterministic.
+- Registry rejects duplicates and resolves exact versions if registry composition is
+  added.
+- Specifications remain redaction-safe and exclude prompts, completions, provider
+  payloads, secret references, secret values, raw transcripts, raw knowledge, raw
+  memory, sensitive paths, raw guardian payloads, and transport internals.
+- Existing assistant, guardian, model, runtime, CLI, persistence, backup/restore,
+  workflow-specification, tool-gateway, and governed content tests continue passing.
 
 ## Acceptance criteria
 
-- The repository contains a validated declarative Agent Company map.
-- Every initial role has clear business value, role boundaries, control-plane
-  dependencies, forbidden capabilities, approval requirements, and future
-  AgentSpecification mapping.
-- The map does not execute agents, workflows, tools, models, providers, external
-  communication, persistence, network behavior, dashboards, alerts, or autonomous
-  behavior.
+- The repository contains exact experimental AgentSpecification records for the
+  initial core Agent Company roles.
+- The specifications are validated by existing AgentSpecification validation.
+- The specifications do not execute agents, workflows, tools, models, providers,
+  persistence, network behavior, dashboards, alerts, or autonomous behavior.
 - Existing Core Brain, policy, guardian, model, memory, knowledge, tool, workflow,
   runtime, CLI, and repository boundaries remain unchanged.
 
 ## Definition of done
 
-- Agent Company contracts, validators, deterministic map data, and tests are
-  complete.
-- Project-state documents accurately describe the Agent Company Specification
-  foundation.
+- Initial core Agent Specifications and tests are complete.
+- Project-state documents accurately describe the completed milestone.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.
-- The milestone is committed before Initial Core Agent Specifications begins.
+- The milestone is committed before Mission Planning Dry-Run Boundary begins.

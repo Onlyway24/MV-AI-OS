@@ -962,3 +962,33 @@ must preserve the constitution's ordering: Fabio -> Only Way Assistant -> Contro
 Plane -> Agent Company -> Workflow Runtime -> Tool Runtime -> Product Layer. If a
 future decision conflicts with the constitution, it must be recorded as an explicit
 ADR rather than silently drifting.
+
+## ADR-037 — Agent Company starts as a validated non-executing map
+
+**Context:** Only Way Assistant can now present operator-facing decisions and
+non-executing delegation summaries. The next risk is over-agentification: adding
+specialists without a stable role map would make Fabio manage random agents and would
+blur safety, approval, memory, knowledge, and future specification boundaries.
+
+**Decision:** Implement Agent Company Specification Foundation as a deterministic,
+validated, non-executing `AgentCompanyMap`. It declares Fabio's first internal
+specialist roles, business value, departments, role categories, role boundaries,
+control-plane dependencies, approval requirements, forbidden capabilities,
+memory/knowledge requirements, and future AgentSpecification mappings. It does not
+execute agents, run mission plans, call models, call providers, execute workflows,
+execute tools, persist state, use network behavior, run guardians, send external
+communication, publish, or act autonomously.
+
+**Reason:** Fabio should keep one visible assistant while the internal company model
+becomes explicit, deterministic, testable, and redaction-safe. A validated map lets
+future milestones create exact AgentSpecifications and mission plans without
+inventing roles dynamically.
+
+**Tradeoffs:** The map does not complete work. It is intentionally declarative and
+must be followed by exact AgentSpecification records before mission planning or
+workflow dry-runs can reference these roles.
+
+**Future impact:** Initial Core Agent Specifications must map back to this role map
+and preserve its forbidden capabilities, approval requirements, and control-plane
+dependencies. Future workflow or tool runtime milestones must not treat role presence
+as permission to execute.

@@ -168,6 +168,29 @@ export {
   OperatorDecisionRequestValidator,
   OperatorDecisionResponseValidator,
 } from "./assistants/main-assistant-operator-protocol-validator.js";
+export {
+  AGENT_COMPANY_SPECIFICATION_CONTRACT_VERSION,
+  DEFAULT_AGENT_COMPANY_MAP,
+  DEFAULT_AGENT_COMPANY_MAP_ID,
+  AgentCompanySpecificationValidationError,
+  type AgentCompanyApprovalRequirement,
+  type AgentCompanyBusinessValue,
+  type AgentCompanyDepartment,
+  type AgentCompanyForbiddenCapability,
+  type AgentCompanyKnowledgeRequirement,
+  type AgentCompanyMap,
+  type AgentCompanyMemoryRequirement,
+  type AgentCompanyRole,
+  type AgentCompanyRoleBoundary,
+  type AgentCompanyRoleCategory,
+  type AgentCompanyRoleId,
+  type AgentCompanyRolePriority,
+  type AgentCompanySpecificationMapping,
+} from "./assistants/agent-company-specification.js";
+export {
+  AgentCompanyMapValidator,
+  AgentCompanyRoleValidator,
+} from "./assistants/agent-company-specification-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

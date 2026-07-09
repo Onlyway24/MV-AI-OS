@@ -235,10 +235,15 @@ mission/delegation summaries without adding UI, chat runtime, execution, network
 behavior, or autonomy. The MV AI OS Constitution now records the permanent
 strategic, product, safety, and engineering doctrine that future implementation
 sessions must read before continuing. It is documentation-only and does not add
-runtime behavior. Durable usage ledgers, aggregated budget windows, broader
+runtime behavior. Agent Company Specification Foundation now adds the deterministic,
+validated, non-executing internal company map for Fabio's future specialist roles,
+including business value, role boundaries, control-plane dependencies, approval
+requirements, forbidden capabilities, memory/knowledge requirements, and future
+AgentSpecification mappings. Durable usage ledgers, aggregated budget windows, broader
 operational telemetry, live smoke-test gating, autonomous guardians, dashboards,
-delegation execution, Agent Company map, and full Main Assistant orchestration remain
-future work, with the next milestone specified in `04_NEXT_TASK.md`.
+delegation execution, executable agent-company runtime, and full Main Assistant
+orchestration remain future work, with the next milestone specified in
+`04_NEXT_TASK.md`.
 
 ## Phase 6 — Governed workflow and approval execution
 

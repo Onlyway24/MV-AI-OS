@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the MV AI OS Constitution milestone:
-  `d5d03ed feat: add main assistant operator protocol`.
+- Latest committed baseline before the Agent Company Specification Foundation
+  milestone: `8f59f26 docs: add MV AI OS constitution`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -56,7 +56,9 @@ and tests, not intended future behavior.
   state and was committed in `d5d03ed feat: add main assistant operator protocol`.
 - The MV AI OS Constitution documentation milestone is completed by the documentation
   change set that adds `docs/MV_AI_OS_CONSTITUTION.md`.
-- The next milestone is Agent Company Specification Foundation.
+- The Agent Company Specification Foundation milestone is completed by the current
+  change set.
+- The next milestone is Initial Core Agent Specifications.
 
 ## Current architecture
 
@@ -150,6 +152,7 @@ provider, n8n, or external SDK types.
 38. Main Assistant Delegation Policy Foundation.
 39. Main Assistant Operator Protocol.
 40. MV AI OS Constitution.
+41. Agent Company Specification Foundation.
 
 ## Implemented modules
 
@@ -388,6 +391,13 @@ provider, n8n, or external SDK types.
   for converting supplied Operator Decision, Guardian Consultation, and optional
   Delegation Policy decisions into Fabio-facing summaries, approvals,
   clarifications, refusals, blockers, safety-check summaries, cost posture, next
+  actions, and non-executing mission/delegation summaries.
+- Versioned Agent Company Specification contracts and deterministic declarative map
+  for Fabio's internal specialist roles, including business value, role boundaries,
+  control-plane dependencies, forbidden capabilities, approval requirements, memory
+  and knowledge requirements, and future AgentSpecification mappings without agent
+  runtime, model calls, workflow execution, tool execution, persistence, network
+  behavior, external communication, dashboards, or autonomy.
   actions, and non-executing mission/delegation summaries without exposing raw
   internal payloads.
 - Versioned Workflow Specification graph contracts, validators, and registry
@@ -457,6 +467,10 @@ provider, n8n, or external SDK types.
   response, approval prompt, clarification request, refusal, next action,
   safety-check summary, delegation summary, mission-plan summary, protocol
   interface, and validation-error contracts.
+- Agent Company map, role, department, role category, role priority, business value,
+  role boundary, approval requirement, forbidden capability, memory requirement,
+  knowledge requirement, future AgentSpecification mapping, and validation-error
+  contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -614,6 +628,11 @@ The latest verified suite contains 59 test files and 411 tests covering:
   deterministic next-action ordering, safety-check summaries, sanitized cost posture,
   non-executing delegation and mission-plan summaries, and redaction-safe
   operator-facing output boundaries.
+- Agent Company Specification validation for valid maps and roles, invalid map
+  contracts, unsafe role definitions, missing business-value classifications, role
+  boundary violations, missing forbidden capabilities, missing approval requirements,
+  missing control-plane dependencies, deterministic role/dependency/approval/mapping
+  ordering, and redaction-safe non-executing output boundaries.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -858,6 +877,11 @@ It is documentation-only and does not modify runtime behavior.
   validated `OperatorDecisionRequest`, and receive a validated redaction-safe
   `OperatorDecisionResponse` with Fabio-facing approvals, clarifications, refusals,
   blockers, safety checks, cost posture, and next actions.
+- A caller can validate `DEFAULT_AGENT_COMPANY_MAP` as a deterministic,
+  non-executing declaration of Fabio's future internal specialist roles, business
+  value, role boundaries, control-plane dependencies, approval requirements,
+  forbidden capabilities, memory/knowledge requirements, and future
+  AgentSpecification mappings.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -876,7 +900,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Agent Company Specification Foundation.
+- Initial Core Agent Specifications.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
