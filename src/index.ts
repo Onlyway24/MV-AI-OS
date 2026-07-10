@@ -382,6 +382,27 @@ export {
   type MissionUnknownClassification,
 } from "./missions/founder-mission-brief.js";
 export { FounderMissionBriefValidator } from "./missions/founder-mission-brief-validator.js";
+export {
+  DEFAULT_MISSION_PLAN,
+  DEFAULT_MISSION_PLAN_ID,
+  MISSION_PLAN_CONTRACT_VERSION,
+  type MissionApprovalQueueItem,
+  type MissionConfidence,
+  type MissionCostClass,
+  type MissionEffortClass,
+  type MissionExternalActionBoundary,
+  type MissionGuardianQueueItem,
+  type MissionPlan,
+  type MissionPlanAgentReference,
+  type MissionPlanControl,
+  type MissionPlanStep,
+  type MissionPlanSummary,
+  type MissionStepExpectedOutput,
+  type MissionStepRiskLevel,
+  type MissionStrategyKind,
+  type MissionStrategyOption,
+} from "./missions/mission-plan.js";
+export { MissionPlanValidator } from "./missions/mission-plan-validator.js";
 export type {
   AgentExecutor,
   AgentRuntime,

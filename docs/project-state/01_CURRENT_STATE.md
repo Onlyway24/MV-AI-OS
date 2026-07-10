@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Founder Intent / Mission Brief Foundation
-  milestone: `8287209 docs: close agent company chapter`.
+- Latest committed baseline before the Mission Plan Contracts milestone:
+  `38144f1 feat: add founder mission brief foundation`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -75,9 +75,10 @@ and tests, not intended future behavior.
 - The Agent Company chapter was closed in
   `8287209 docs: close agent company chapter` after the default declarations
   evaluated as `READY`.
-- The Founder Intent / Mission Brief Foundation milestone is completed by the current
-  change set.
-- The next milestone is Mission Plan Contracts.
+- The Founder Intent / Mission Brief Foundation milestone was committed in
+  `38144f1 feat: add founder mission brief foundation`.
+- The Mission Plan Contracts milestone is completed by the current change set.
+- The next milestone is Deterministic Mission Planner.
 
 ## Current architecture
 
@@ -181,6 +182,7 @@ provider, n8n, or external SDK types.
 48. Agent Company Readiness Review.
 49. Agent Company Chapter Closeout.
 50. Founder Intent / Mission Brief Foundation.
+51. Mission Plan Contracts.
 
 ## Implemented modules
 
@@ -475,6 +477,11 @@ provider, n8n, or external SDK types.
   known facts, assumptions, classified unknowns, and material clarification questions.
 - Default Only Way founder preferences plus separate MV AI OS and Metodo Veloce brand
   profiles. Visual direction remains scoped to relevant deliverables and profiles.
+- Full non-executing Mission Plan contract with mission summary, optional strategy
+  options, exact agent/specification assignments, responsibility/capability/permission
+  mappings, dependencies, handoffs, expected outputs, success/failure/stop criteria,
+  guardian and Fabio approval requirements, relative effort/cost classes, evidence,
+  risks, quality, external-action denial, and first concrete action.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -571,6 +578,9 @@ provider, n8n, or external SDK types.
   deadline, priority, risk, quality, originality, style, brand, approval, forbidden
   action, external-action proposal, success metric, evidence, fact, assumption,
   unknown, clarification, and founder preference contracts.
+- Mission Plan, summary, strategy option, agent reference, step, structured expected
+  output, approval queue, guardian queue, external-action boundary, effort/cost/risk,
+  and mission-control contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -612,6 +622,9 @@ provider, n8n, or external SDK types.
 - Agent Company readiness input and report validators.
 - Founder Mission Brief validator with strict unknown-field, reference,
   contradiction, approval, uncertainty, ordering, and redaction checks.
+- Mission Plan validator bound to supplied `READY` Agent Company declarations with
+  exact ownership, dependency, capability, permission, handoff, approval, guardian,
+  rollup, redaction, and non-execution checks.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -621,7 +634,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 68 test files and 598 tests covering:
+The latest verified suite contains 69 test files and 622 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -799,6 +812,11 @@ The latest verified suite contains 68 test files and 598 tests covering:
   approval-sensitive and forbidden external actions, blocking and assumable unknowns,
   multiple brand profiles, custom brands, style scoping, deterministic ordering,
   unknown-field rejection, redaction safety, and deep immutability.
+- Mission Plan validation for exact agents, responsibility ownership, capability and
+  permission coverage, safe handoffs, duplicate and cyclic dependencies, stable
+  ordering, useful outputs and criteria, guardian and approval propagation, external
+  action denial, effort/cost rollups, redaction, deep immutability, and compatibility
+  with existing Core Brain/operator plan contracts.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -993,6 +1011,10 @@ chapter.
   agents, create Mission Plans, execute handoffs, invoke models/providers, grant
   permissions, run guardians, persist state, call tools/workflows, communicate
   externally, publish, spend, deliver, or act autonomously.
+- Mission Plan Contracts describe review-ready planning output only. They do not
+  generate strategies, select agents, invoke agents, execute handoffs, grant runtime
+  permissions, call models/providers, run tools/workflows, persist state, communicate,
+  publish, spend, deliver, deploy, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -1140,6 +1162,8 @@ chapter.
 - A caller can validate a `FounderMissionBrief`, including explicit assumptions and
   decision-blocking clarification questions, without planning or executing the
   mission.
+- A caller can validate a full `MissionPlan` against the supplied `READY` Agent
+  Company declarations and receive a deeply immutable copy without executing it.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1158,7 +1182,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Mission Plan Contracts.
+- Deterministic Mission Planner.
 - Mission Planning Dry-Run Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.

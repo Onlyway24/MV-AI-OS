@@ -1264,3 +1264,30 @@ requested external actions but cannot authorize or execute them.
 validated brief, preserve explicit facts/assumptions/unknowns, ask only material
 questions, apply brand preferences only to relevant deliverables, and remain fully
 non-executing.
+
+## ADR-046 — Full Mission Plans are review artifacts, not execution plans
+
+**Context:** Core Brain already owns a bounded executable `ExecutionPlan`, and the
+Operator Decision Engine exposes a shallow `OperatorMissionPlanCandidate`. Mission
+Planning needs a richer artifact with strategies, exact Agent Company ownership,
+dependencies, handoffs, controls, effort/cost classes, outputs, success criteria, and
+approval/guardian queues. Reusing either existing contract would change its meaning
+and risk coupling future planning to execution.
+
+**Decision:** Add a separate versioned `MissionPlan` contract and validator in the
+missions boundary. It validates against supplied `READY` Agent Company declarations,
+requires exact role/specification, responsibility, capability, permission, and
+handoff references, rejects dependency cycles and unsafe external behavior, preserves
+non-execution at every level, and returns a deeply immutable validated copy.
+
+**Reason:** A review-ready plan must be specific enough for Fabio to approve while
+remaining incapable of executing. Keeping it separate protects Core Brain behavior
+and the existing operator presentation contract.
+
+**Tradeoffs:** The contract is intentionally detailed and requires a deterministic
+planner to populate it coherently. Relative cost classes are not monetary estimates,
+and plan validation cannot prove real-world evidence or commercial success.
+
+**Future impact:** The deterministic planner must generate this exact contract and
+pass the validator. A later local dry-run may summarize it into the existing operator
+protocol, but no workflow or agent runtime may treat plan presence as authorization.

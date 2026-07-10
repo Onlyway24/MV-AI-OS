@@ -270,7 +270,10 @@ autonomous legal/compliance execution remain intentionally absent. Founder Inten
 Mission Brief Foundation now provides a validated, deterministic, non-executing
 objective boundary with explicit business value, deliverables, constraints, cost,
 deadline, quality, originality, evidence, brand, approvals, assumptions, and
-decision-blocking clarification policy. Durable usage ledgers,
+decision-blocking clarification policy. Mission Plan Contracts now define the full
+review-only planning artifact with exact Agent Company mappings, dependencies,
+handoffs, controls, outputs, effort/cost classes, success/failure/stop criteria, and
+external-action denial while preserving existing runtime plan contracts. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
