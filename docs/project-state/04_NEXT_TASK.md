@@ -2,61 +2,56 @@
 
 ## Milestone name
 
-Only Way Mission Quality Gate
+Mission Planning Scenario Lab
 
 ## Goal
 
-Create a deterministic, non-LLM quality evaluator that scores Mission Plans for
-clarity, specificity, actionability, value, differentiation, founder alignment,
-feasibility, manual-work efficiency, evidence/uncertainty, and safety/control.
+Prove the complete non-executing Mission Planning path across realistic,
+deterministic Founder Mission Brief scenarios: validation, Agent Company readiness,
+Mission Plan generation, and Only Way quality evaluation.
 
 ## Required scope
 
-- Integer scores from 0 to 10 for all ten quality dimensions.
-- Total score from 0 to 100, blocking defects, warnings, strengths, weaknesses,
-  remediation recommendations, status, and release recommendation.
-- `APPROVAL_READY` requires at least 82/100, no critical dimension below 7, no
-  blocking safety defect, useful expected outputs, complete approval/guardian
-  controls, and no generic filler step.
-- Deterministic anti-slop checks for vague directives without actor, target,
-  deliverable, evidence, metric, output, decision, or boundary.
-- Originality must never compensate for infeasibility, unsupported claims, excessive
-  cost, unsafe action, unclear value, or unnecessary complexity.
-- Fixed-template, redaction-safe, deeply immutable output.
+- A deterministic test-only scenario matrix spanning all ten mission types.
+- Representative approval-ready, clarification-required, rejected, remediation, and
+  blocked safety scenarios.
+- Exact assertions for selected roles, capabilities, permissions, handoffs,
+  guardians, approvals, non-execution, and quality release recommendations.
+- Scenario coverage for unknown budgets/deadlines, external-action proposals,
+  conservative assumptions, evidence limits, and cost/effort constraints.
+- Deterministic, deeply immutable, redaction-safe results for every scenario.
+- No production planning rules unless a concrete defect is discovered and
+  independently validated.
 
 ## Forbidden scope
 
-- LLM judges, model/provider calls, live research, agent invocation, workflow/tool
-  execution, persistence, network, dashboard, external actions, or autonomy.
+- LLM/model/provider calls, live research, agent invocation, workflow/tool execution,
+  persistence, network, dashboard, external actions, or autonomy. Do not add a
+  Mission Planning runtime, CLI surface, or execution engine in this milestone.
 
 ## Likely files to create
 
-- `src/missions/mission-quality-gate.ts`
-- `src/missions/mission-quality-gate-validator.ts`
-- `src/missions/deterministic-mission-quality-gate.ts`
-- `tests/missions/mission-quality-gate.test.ts`
+- `tests/missions/mission-planning-scenario-lab.test.ts`
 
 ## Likely files to modify
 
-- `src/index.ts`
-- all affected project-state documents.
+- all affected project-state documents only if scenario evidence exposes a factual
+  state correction.
 
 ## Tests required
 
-- Strong approval-ready plan and exact 82/100 threshold behavior.
-- Generic filler, original-but-infeasible, safe-but-valueless, unsafe commercial,
-  missing metrics, excessive manual work, unsupported certainty, unclear audience,
-  weak output, and blocking safety cases.
-- Critical dimension threshold, deterministic remediation, redaction, and immutability.
+- Mission types, scenarios, selection/control assertions, quality outcomes,
+  determinism, immutability, redaction, and no-execution assertions.
+- Existing Mission Brief, Mission Plan, Mission Planner, and Quality Gate tests must
+  continue passing.
 
 ## Acceptance criteria
 
-- Every plan receives actionable deterministic quality evidence.
-- Numerical quality never overrides a blocking safety defect.
-- Every low score provides concrete remediation.
+- The full planning chain is proven against representative founder/operator cases.
+- The scenario lab adds no production execution capability or external behavior.
 
 ## Definition of done
 
-- Quality contracts, validator, evaluator, tests, exports, and project-state updates are complete.
-- All quality gates and `git diff --check` pass.
-- The milestone is committed separately before Scenario Lab work.
+- The test-only scenario matrix is complete, deterministic, and passes all quality
+  gates and `git diff --check`.
+- The milestone is committed separately before Local Mission Planning Dry-Run work.

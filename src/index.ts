@@ -411,6 +411,27 @@ export {
 } from "./missions/mission-planner.js";
 export { MissionPlanningResultValidator } from "./missions/mission-planner-validator.js";
 export { DeterministicMissionPlanner } from "./missions/deterministic-mission-planner.js";
+export {
+  MISSION_QUALITY_DIMENSIONS,
+  MISSION_QUALITY_GATE_CONTRACT_VERSION,
+  type MissionQualityDimension,
+  type MissionQualityDimensionScore,
+  type MissionQualityFinding,
+  type MissionQualityFindingSeverity,
+  type MissionQualityGate,
+  type MissionQualityGateInput,
+  type MissionQualityGateReport,
+  type MissionQualityGateStatus,
+  type MissionQualityReleaseRecommendation,
+} from "./missions/mission-quality-gate.js";
+export {
+  MissionQualityGateInputValidator,
+  MissionQualityGateReportValidator,
+} from "./missions/mission-quality-gate-validator.js";
+export {
+  DeterministicMissionQualityGate,
+  MissionQualityGateValidationError,
+} from "./missions/deterministic-mission-quality-gate.js";
 export type {
   AgentExecutor,
   AgentRuntime,

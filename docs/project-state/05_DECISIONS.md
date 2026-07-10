@@ -1319,3 +1319,32 @@ restaurant use case.
 **Future impact:** The Only Way Quality Gate and Scenario Lab must evaluate these
 plans. Any future provider-neutral intelligent planner must preserve this deterministic
 planner as a safe fallback and pass the same Mission Plan validator and quality gate.
+
+## ADR-048 — Mission Plan quality is a deterministic release gate
+
+**Context:** A structurally valid, non-executing Mission Plan can still be vague,
+valueless, impractical, unsupported by evidence, or insufficiently controlled for a
+Fabio review. A model-based judge would introduce cost, provider coupling, and
+nondeterministic safety judgments before the planning baseline is proven.
+
+**Decision:** Add a provider-neutral, deterministic Mission Quality Gate with fixed
+0–10 scores for clarity, specificity, actionability, value, differentiation, founder
+alignment, feasibility, manual-work efficiency, evidence/uncertainty, and
+safety/control. `APPROVAL_READY` is only possible at 82/100 or higher, with every
+dimension at least 7, useful outputs, complete controls, no generic filler, and no
+blocking safety defect. Findings use fixed redaction-safe templates and every low
+dimension carries a concrete remediation.
+
+**Reason:** Fabio needs a consistent, inspectable standard for deciding whether a
+proposed mission is worth reviewing. Quality must never override the default-deny
+approval boundary or let originality compensate for infeasibility, unsupported
+certainty, unclear value, excessive work, or unsafe action.
+
+**Tradeoffs:** Fixed rules cannot assess the nuanced originality or commercial appeal
+of a human strategist. The gate intentionally evaluates the plan artifact only and
+does not validate real-world facts, run guardians, grant permission, or authorize
+execution.
+
+**Future impact:** The Scenario Lab and local dry-run must expose the report beside a
+Mission Plan. Any future intelligent quality aid must preserve the deterministic gate
+as a mandatory baseline and must not relax its blocking safety conditions.

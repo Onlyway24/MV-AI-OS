@@ -277,7 +277,13 @@ external-action denial while preserving existing runtime plan contracts. The
 Deterministic Mission Planner now converts validated briefs into validated plans for
 all ten mission types using the smallest sufficient declared team, explicit
 assumptions, material clarification, and derived approval/guardian controls without
-models or execution. Durable usage ledgers,
+models or execution. Only Way Mission Quality Gate now evaluates those plans through
+fixed 0–10 quality dimensions, an exact 82-point approval threshold, anti-slop and
+safety-control checks, deterministic remediation, and redaction-safe immutable
+reports without invoking models, agents, workflows, tools, persistence, or external
+actions. The next Phase 5 milestone is the Mission Planning Scenario Lab, which will
+exercise the validated brief-to-plan-to-quality path across representative safe and
+failure cases without creating a runtime or execution capability. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
