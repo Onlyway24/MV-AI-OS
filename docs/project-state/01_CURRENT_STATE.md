@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Agent Company Readiness Review milestone:
-  `3d4420c feat: add agent handoff contracts`.
+- Latest committed baseline before the Agent Company Chapter Closeout milestone:
+  `7530da2 feat: add agent company readiness review`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -70,9 +70,11 @@ and tests, not intended future behavior.
   `26b489b feat: add agent permission matrix`.
 - The Agent Communication / Handoff Contracts milestone was committed in
   `3d4420c feat: add agent handoff contracts`.
-- The Agent Company Readiness Review milestone is completed by the current change
-  set.
-- The next milestone is Agent Company Chapter Closeout.
+- The Agent Company Readiness Review milestone was committed in
+  `7530da2 feat: add agent company readiness review`.
+- The Agent Company chapter is closed by the current documentation change set after
+  the default declarations evaluated as `READY`.
+- The next milestone is Founder Intent / Mission Brief Foundation.
 
 ## Current architecture
 
@@ -174,6 +176,7 @@ provider, n8n, or external SDK types.
 46. Agent Permission Matrix.
 47. Agent Communication / Handoff Contracts.
 48. Agent Company Readiness Review.
+49. Agent Company Chapter Closeout.
 
 ## Implemented modules
 
@@ -855,7 +858,12 @@ requirements, guardian requirements, default-deny posture, and explicit
 no-runtime-grant boundaries before mission planning exists. Agent Communication /
 Handoff Contracts now define deterministic, validated, non-executing support,
 review, approval-preparation, and escalation metadata between Agent Company roles
-before mission planning exists.
+before mission planning exists. The Agent Company Readiness Review now proves the
+supplied declarations are internally coherent, and the Agent Company chapter is
+closed at declaration readiness. No agent runtime, workflow execution, tool
+execution, external communication, publishing, payment, live customer delivery,
+autonomous legal/compliance approval, or production dashboard was added by the
+chapter.
 
 ## What exists only as a foundation
 
@@ -1121,7 +1129,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Agent Company Chapter Closeout.
+- Founder Intent / Mission Brief Foundation.
 - Mission Planning Dry-Run Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.

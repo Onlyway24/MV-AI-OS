@@ -2,7 +2,7 @@
 
 ## Milestone name
 
-Agent Company Chapter Closeout
+Founder Intent / Mission Brief Foundation
 
 ## Required context before implementation
 
@@ -10,64 +10,84 @@ Agent Company Chapter Closeout
 - Read `AI_ENGINEERING_RULES.md`.
 - Read every file in `docs/project-state/`.
 - Read `docs/ARCHITECTURE.md`, `docs/AGENTS.md`, and `docs/ROADMAP.md`.
-- Inspect the Agent Company readiness evaluator and its passing tests.
-- Confirm the default declaration set evaluates as `READY`.
+- Inspect the completed Agent Company declarations and readiness evaluator.
+- Inspect existing validation, immutability, and redaction patterns.
 
 ## Goal
 
-Close the Agent Company chapter after the executable readiness evaluator confirms the
-current declaration set is ready for non-executing mission planning. Record exactly
-what the chapter contains and what remains intentionally absent, then make Founder
-Intent / Mission Brief Foundation the active implementation milestone.
+Create the validated, deterministic, non-executing contract through which Fabio gives
+MV AI OS a structured objective. The brief must preserve business value, constraints,
+quality, originality, uncertainty, evidence, cost, risk, brand, approval, and forbidden
+action intent without planning or executing the mission.
 
 ## Required scope
 
-- Mark the Agent Company chapter complete in project-state.
-- Record the Agent Company map, ten exact experimental AgentSpecifications,
-  responsibility matrix, capability registry, permission matrix, handoff contracts,
-  and readiness evaluator as the completed chapter.
-- State explicitly that no agent execution, workflow execution, tool execution,
-  external communication, publishing, payment, live customer delivery, autonomous
-  legal approval, or production dashboard exists.
-- Set the next task to Founder Intent / Mission Brief Foundation.
+- Define a versioned Founder Mission Brief contract and public validator.
+- Support business opportunity, product or offer design, market research, content
+  strategy, software development, internal operations, customer delivery preparation,
+  monetization experiment, quality improvement, and risk review missions.
+- Represent objective, purpose, audience, desired deliverables, success metrics,
+  deadline, budget/cost limit, priority, constraints, non-negotiables, forbidden
+  actions, risk tolerance, quality, originality, style, brand, approvals, known facts,
+  assumptions, unknowns, and evidence expectations.
+- Classify unknowns as `DECISION_BLOCKING`, `MATERIAL_BUT_ASSUMABLE`, or `LOW_IMPACT`.
+- Produce clarification questions only for decision-blocking unknowns.
+- Support conservative explicit assumptions for lower-impact unknowns.
+- Provide configurable, non-sensitive founder and brand preference profiles, including
+  default MV AI OS and Metodo Veloce profiles without leaking visual requirements into
+  unrelated missions.
+- Preserve deterministic ordering, deep immutability, and redaction safety.
 
 ## Forbidden scope
 
-- Source-code or test changes.
-- New runtime behavior, contracts, validators, agents, or execution paths.
-- Mission brief or mission plan implementation.
-- Agent, handoff, workflow, tool, model, or provider execution.
-- Runtime permission grants or durable persistence.
-- HTTP, dashboard, n8n, MCP, network behavior, browser automation, filesystem tools,
-  cloud/VPS runtime, embeddings, vector search, scheduler, alerts, or autonomous
-  behavior.
+- Mission Plan contracts or mission-plan generation.
+- Agent selection, agent invocation, delegation, or handoff execution.
+- Workflow runtime, tool runtime, model/provider calls, or Core Brain changes.
+- Persistence, HTTP, dashboard, n8n, MCP, network behavior, browser automation,
+  filesystem tools, cloud/VPS runtime, embeddings, vector search, scheduler, alerts,
+  external communication, publishing, spending, delivery, or autonomy.
+- Private biographical data in default preferences.
+- Hardcoding the mission system exclusively for restaurants or one brand.
 
 ## Likely files to create
 
-- None.
+- `src/missions/founder-mission-brief.ts`
+- `src/missions/founder-mission-brief-validator.ts`
+- `tests/missions/founder-mission-brief.test.ts`
 
 ## Likely files to modify
 
+- `src/index.ts`
 - `docs/project-state/01_CURRENT_STATE.md`
 - `docs/project-state/02_MASTER_ROADMAP.md`
 - `docs/project-state/04_NEXT_TASK.md`
-- `docs/project-state/05_DECISIONS.md` only if factual decision wording requires it.
+- `docs/project-state/05_DECISIONS.md`
 
 ## Tests required
 
-- No new tests are required for this documentation-only closeout.
-- The complete existing suite must continue passing.
+- Valid mission briefs and every supported mission type.
+- Missing required objective or deliverable intent.
+- Invalid deadline or budget.
+- Contradictory constraints and forbidden actions.
+- Approval-sensitive and forbidden external actions.
+- Decision-blocking, assumable, and low-impact unknown behavior.
+- Multiple brand profiles and mission-relevant preference application.
+- Unknown-field, redaction-safety, deterministic-ordering, and deep-immutability tests.
+- Existing tests continue passing.
 
 ## Acceptance criteria
 
-- Project-state truthfully marks the Agent Company chapter complete.
-- Project-state preserves every intentionally absent execution capability.
-- Founder Intent / Mission Brief Foundation is the single exact next task.
+- Fabio's structured intent can be validated without creating or executing a plan.
+- Only decision-blocking unknowns require clarification; lower-impact gaps remain
+  explicit assumptions.
+- Mission briefs are useful across business, content, technical, research, operations,
+  delivery-preparation, monetization, quality, and risk scenarios.
+- No execution capability or external side effect is added.
 
 ## Definition of done
 
-- Only project-state documents are changed.
-- Project-state documents accurately close the chapter and define the next task.
+- Founder Mission Brief contracts, validator, defaults, and tests are complete.
+- Project-state accurately describes the milestone and next task.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, and
   `git diff --check` pass.
-- The closeout is committed separately before Mission Brief implementation begins.
+- The milestone is committed separately before Mission Plan contracts begin.

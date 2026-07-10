@@ -263,7 +263,10 @@ AgentSpecification, responsibility, capability, and permission references while
 remaining redaction-safe and approval/guardian aware. Agent Company Readiness Review
 now evaluates those supplied declarations together, fails closed on critical
 cross-artifact gaps, and confirms that the current declaration set is `READY` for
-non-executing mission planning without granting runtime access. Durable usage ledgers,
+non-executing mission planning without granting runtime access. The Agent Company
+chapter is now closed: its declarative organization is complete, while agent,
+workflow, tool, external-communication, publishing, payment, customer-delivery, and
+autonomous legal/compliance execution remain intentionally absent. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
