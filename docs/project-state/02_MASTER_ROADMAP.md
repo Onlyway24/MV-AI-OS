@@ -301,8 +301,13 @@ deterministic transition rules, expected-version checks, and non-durable command
 receipt replay. Workflow Persistence and Atomic Audit now adds additive SQLite schema
 version 4 repositories, validated records, durable instances and step state,
 restart-safe receipt replay, optimistic versions, ordered redaction-safe events, and
-whole-transaction rollback without adding work execution. The next milestone is
-Dependency Scheduler and Step Readiness Engine. Durable usage ledgers,
+whole-transaction rollback without adding work execution. Dependency Scheduler and
+Step Readiness Engine now adds a transaction-bound, read-only evaluator that resolves
+the exact durable definition and instance, checks exact snapshot version, evaluates
+dependencies and explicit supplied approval/Guardian markers, and returns bounded,
+immutable, redaction-safe findings in stable definition order. It creates no state
+transition, receipt, event, authorization, or execution capability. The next
+milestone is Workflow Step Execution Boundary. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
@@ -334,9 +339,9 @@ with durable approvals and no hidden side effects.
 - Every transition and external boundary is audited.
 
 **Status:** In progress. The non-executing Workflow Runtime now has validated domain
-state and durable atomic persistence. Dependency readiness, approval and Guardian
-checkpoints, lifecycle coordination, step execution, retries, callbacks, n8n, and all
-external effects remain unimplemented.
+state, durable atomic persistence, and read-only dependency/step-readiness evaluation.
+Durable approval and Guardian checkpoints, lifecycle coordination, step execution,
+retries, callbacks, n8n, and all external effects remain unimplemented.
 
 ## Phase 7 — Governed direct tools
 

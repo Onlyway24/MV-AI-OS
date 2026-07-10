@@ -1449,3 +1449,31 @@ authorize, invoke, or execute work.
 history through these repositories. Any approval, Guardian, executor, callback, or
 tool milestone must use the same transaction boundary and must not bypass receipt,
 version, or event invariants.
+
+## ADR-054 — Workflow readiness is observational and non-authorizing
+
+**Context:** Durable workflow state makes it possible to inspect dependencies and
+controls, but using a derived `READY` value as an execution grant would bypass exact
+policy, approval, Guardian, specification, idempotency, and audit checks.
+
+**Decision:** Add Workflow Readiness as a deterministic, transaction-bound read
+service over the exact durable workflow definition, instance, and receipt snapshot.
+It accepts only explicit transient approval and Guardian step markers, evaluates
+dependencies in definition order, and returns bounded, immutable, redaction-safe
+blocked, pending, ready, and terminal findings. It does not change workflow state,
+write a command receipt or event, invoke an agent, call a model or provider, execute
+a tool, use the network, or authorize execution.
+
+**Reason:** Read-only evaluation gives later boundaries a trustworthy, restart-safe
+view of work that could become eligible while keeping authorization and execution
+separate. Missing evidence remains a blocker by default.
+
+**Tradeoffs:** Approval and Guardian markers are transient input rather than durable
+control records. The evaluator neither schedules work nor resolves a real approval or
+Guardian decision, and a readiness finding can become stale immediately after the
+snapshot is read.
+
+**Future impact:** The Workflow Step Execution Boundary must re-evaluate readiness
+inside its own exact-version transaction and independently require policy, declared
+Agent Specification, approval, Guardian, idempotency, and audit invariants. `READY`
+alone never grants permission to execute.

@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Workflow Persistence and Atomic Audit milestone:
-  `4e96d68 docs: align workflow persistence milestone`.
+- Latest committed baseline before the Dependency Scheduler and Step Readiness Engine
+  milestone: `1df1eb0 feat: add persistent workflow repositories`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -89,8 +89,11 @@ and tests, not intended future behavior.
   `f85066f feat: expose local mission planning dry run`.
 - Workflow Runtime Foundation is completed and was committed in
   `e1ab588 feat: add workflow domain and state machine`.
-- Workflow Persistence and Atomic Audit is completed by the current change set.
-- The next milestone is Dependency Scheduler and Step Readiness Engine.
+- Workflow Persistence and Atomic Audit was committed in
+  `1df1eb0 feat: add persistent workflow repositories`.
+- Dependency Scheduler and Step Readiness Engine is completed by the current change
+  set.
+- The next milestone is Workflow Step Execution Boundary.
 
 ## Current architecture
 
@@ -135,6 +138,8 @@ Supporting modules are isolated behind interfaces:
 - registries for agents, agent specifications, workflow specifications, and tools;
 - durable workflow repositories for definitions, instances, processed command
   receipts, and redaction-safe workflow events;
+- a transaction-bound, read-only workflow readiness service for dependency and
+  supplied-control evaluation;
 - services for memory and knowledge;
 - provider-neutral gateways for models and tools;
 - validators at public and cross-module contract boundaries;
@@ -202,6 +207,9 @@ provider, n8n, or external SDK types.
 54. Mission Planning Scenario Lab.
 55. Local Mission Planning Dry-Run Vertical Slice.
 56. Mission Planning Sprint Review and Project-State Alignment.
+57. Workflow Runtime Foundation.
+58. Workflow Persistence and Atomic Audit.
+59. Dependency Scheduler and Step Readiness Engine.
 
 ## Implemented modules
 
@@ -268,6 +276,11 @@ provider, n8n, or external SDK types.
 - Controlled local SQLite backup and restore operations that validate configuration,
   source identity, schema version, destination safety, overwrite intent, and restored
   database usability without changing repository contracts.
+- Durable workflow definitions, instances, step states, processed command receipts,
+  and ordered redaction-safe events with restart-safe idempotency, exact-version
+  conflict rejection, and whole-transaction rollback.
+- A read-only workflow readiness evaluator that derives bounded, stable, immutable
+  blocked, pending, ready, and terminal findings from durable workflow snapshots.
 
 ### Models
 
@@ -613,6 +626,8 @@ provider, n8n, or external SDK types.
   contracts.
 - workflow runtime definition, instance, command, receipt, persistence transaction,
   event, event-draft, command-application, and repository contracts.
+- workflow readiness request, finding, reason, summary, result, engine, and service
+  contracts.
 - tool definition/invocation/result/permission/risk/registry/gateway contracts.
 
 ## Implemented validators
@@ -668,11 +683,14 @@ provider, n8n, or external SDK types.
 - Workflow runtime definition, command, receipt, instance, command-application,
   event-draft, and event validators, including durable-state semantic, dependency,
   ordering, immutability, and redaction checks.
+- Workflow readiness request, reason, finding, and result validators, including
+  bounded output, exact snapshot version, control-evidence, ordering, immutability,
+  and redaction checks.
 - Tool definition, permission, risk, invocation, and result validators.
 
 ## Implemented tests
 
-The latest verified suite contains 75 test files and 708 tests covering:
+The latest verified suite contains 76 test files and 719 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -711,6 +729,10 @@ The latest verified suite contains 75 test files and 708 tests covering:
   or event failure, deterministic bounded event ordering, corrupt-record rejection,
   redaction-safe direct event rejection, schema v3-to-v4 preservation of lifecycle,
   memory, and knowledge data, and backup/restore recovery.
+- Workflow readiness dependency, approval, Guardian, persisted-blocker, awaiting,
+  paused, terminal, cycle, ordering, bounded-result, stale-snapshot, restart,
+  immutability, redaction, bounded graph/reason/control input, injected-engine
+  conformance, and no-persistence-mutation behavior.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - OpenAI provider configuration validation, credential handling, Responses API request
@@ -1089,6 +1111,9 @@ chapter.
 - Durable persistence now covers task, request, audit, memory, knowledge, immutable
   workflow definitions, workflow instances and step states, processed command
   receipts, and ordered redaction-safe workflow events. Approvals remain non-durable.
+- Workflow readiness is observational only: it reads one exact durable workflow
+  snapshot through the existing transaction boundary, writes no state, receipts, or
+  events, and never authorizes execution.
 - Secret references can be resolved locally into ephemeral values and consumed by the
   OpenAI provider adapter through controlled runtime wiring.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
@@ -1142,6 +1167,11 @@ chapter.
 - Workflow command replay remains idempotent across restart. Conflicting command IDs,
   stale versions, malformed records, missing definitions, and invalid direct
   repository transitions fail closed without partial workflow persistence.
+- A caller can use `RepositoryBackedWorkflowReadinessService` to inspect a durable
+  workflow snapshot at an exact version and receive deterministic, bounded,
+  redaction-safe ready, blocked, pending, and terminal findings. A `READY` finding is
+  not execution authorization and evaluation creates no receipt, event, or state
+  transition.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
@@ -1266,8 +1296,7 @@ path.
 ## Not implemented yet
 
 - Universal runtime enforcement of Agent Specifications for all executors.
-- Workflow dependency scheduling, step-readiness evaluation, retries, execution, or
-  n8n.
+- Workflow dependency scheduling loops, retries, execution, or n8n.
 - Real tool implementations or direct tool execution.
 - Durable approval persistence and approval checkpoints.
 - Live-provider integration test gating, provider telemetry, durable model usage

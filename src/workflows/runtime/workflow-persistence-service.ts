@@ -102,7 +102,7 @@ export class RepositoryBackedWorkflowPersistenceService
           },
         );
       }
-      assertDefinitionMatchesInstance(definition, validInstance);
+      assertWorkflowDefinitionMatchesInstance(definition, validInstance);
       await workflows.instances.insert(validInstance);
     });
   }
@@ -136,12 +136,12 @@ export class RepositoryBackedWorkflowPersistenceService
           },
         );
       }
-      assertDefinitionMatchesInstance(definition, instance);
+      assertWorkflowDefinitionMatchesInstance(definition, instance);
 
       const persistedReceipts = await workflows.receipts.listByInstanceId(
         instance.instanceId,
       );
-      assertReceiptConsistency(instance, persistedReceipts);
+      assertWorkflowReceiptConsistency(instance, persistedReceipts);
       const fingerprint = createWorkflowCommandFingerprint(
         validApplication.command,
       );
@@ -275,7 +275,7 @@ function applyStateMachine(
   }
 }
 
-function assertDefinitionMatchesInstance(
+export function assertWorkflowDefinitionMatchesInstance(
   definition: WorkflowDefinition,
   instance: WorkflowInstance,
 ): void {
@@ -295,7 +295,7 @@ function assertDefinitionMatchesInstance(
   }
 }
 
-function assertReceiptConsistency(
+export function assertWorkflowReceiptConsistency(
   instance: WorkflowInstance,
   receipts: readonly WorkflowCommandReceipt[],
 ): void {

@@ -1134,6 +1134,37 @@ export {
   WorkflowEventValidator,
 } from "./workflows/runtime/workflow-persistence-validator.js";
 export {
+  WORKFLOW_READINESS_CONTRACT_VERSION,
+  type WorkflowReadinessEngine,
+  type WorkflowReadinessFinding,
+  type WorkflowReadinessReason,
+  type WorkflowReadinessReasonCode,
+  type WorkflowReadinessRequest,
+  type WorkflowReadinessResult,
+  type WorkflowReadinessService,
+  type WorkflowReadinessStatus,
+  type WorkflowReadinessSummary,
+} from "./workflows/runtime/workflow-readiness.js";
+export {
+  MAX_WORKFLOW_READINESS_BLOCKERS_PER_STEP,
+  MAX_WORKFLOW_READINESS_IDENTIFIER_LENGTH,
+  MAX_WORKFLOW_READINESS_RESULTS,
+  MAX_WORKFLOW_READINESS_REASONS,
+  MAX_WORKFLOW_READINESS_STEPS,
+  MAX_WORKFLOW_READINESS_TIMESTAMP_LENGTH,
+  MAX_WORKFLOW_READINESS_VERSION,
+  WorkflowReadinessFindingValidator,
+  WorkflowReadinessReasonValidator,
+  WorkflowReadinessRequestValidator,
+  WorkflowReadinessResultValidator,
+} from "./workflows/runtime/workflow-readiness-validator.js";
+export { DeterministicWorkflowReadinessEngine } from "./workflows/runtime/deterministic-workflow-readiness-engine.js";
+export {
+  createWorkflowReadinessService,
+  RepositoryBackedWorkflowReadinessService,
+  type RepositoryBackedWorkflowReadinessDependencies,
+} from "./workflows/runtime/workflow-readiness-service.js";
+export {
   PolicyGovernedToolGateway,
   type PolicyGovernedToolGatewayDependencies,
 } from "./tools/policy-governed-tool-gateway.js";
