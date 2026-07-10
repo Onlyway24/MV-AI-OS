@@ -2,106 +2,100 @@
 
 ## Milestone name
 
-Durable Workflow Approval and Guardian Checkpoints
+Controlled Workflow Step AgentRuntime Invocation
 
 ## Goal
 
-Persist validated operator approvals and Guardian checkpoint decisions for exact
-workflow step snapshots so candidate preparation no longer relies only on transient
-caller-supplied control evidence.
+Invoke exactly one durable, policy-qualified workflow step candidate through the
+existing AgentRuntime boundary and persist the resulting workflow step transition
+atomically, without tools, network side effects, autonomous scheduling, or external
+delivery.
 
 ## Why it matters
 
-The Workflow Step Execution Boundary can prove that one durable step is ready,
-properly assigned, policy-permitted, and supported by supplied control evidence. That
-evidence is not yet durable or independently reloadable after restart. The next safe
-increment is to record exact, revocable, redaction-safe approval and Guardian
-decisions atomically behind the existing workflow repository boundary before any
-AgentRuntime invocation is considered.
+MV AI OS can now persist workflow state and controls and prepare one exact candidate,
+but it still cannot perform the candidate's internal agent work. This milestone is
+the first transition from orchestration preparation to controlled execution and must
+prove that AgentRuntime invocation cannot bypass candidate validation, limits,
+policy, durable approvals, Guardians, idempotency, or audit.
 
 ## Required scope
 
-- Define immutable workflow approval and Guardian checkpoint record contracts bound
-  to definition ID, workflow version, instance ID, instance version, and step ID.
-- Define closed approval and Guardian decision/status values, including explicit
-  grant/clear, deny/block, expiry, and revocation behavior.
-- Add runtime validators with strict unknown-field, identity, ordering, bounds,
-  immutability, semantic, and redaction checks.
-- Extend the existing SQLite workflow schema additively and reuse the current
-  migration, codec, repository, and transaction patterns.
-- Add repository interfaces and SQLite adapters for writing and reading exact
-  approval and Guardian checkpoint records in deterministic order.
-- Enforce Fabio/operator authority for approval grants and exact Guardian domain
-  identity for checkpoint decisions.
-- Reject conflicting duplicate decision IDs and preserve idempotent replay of exact
-  duplicates.
-- Make revoked, expired, denied, blocked, stale, or mismatched records fail closed.
-- Update Workflow Step Execution Boundary to resolve checkpoint evidence from the
-  same repository transaction while preserving a narrow compatibility path only if
-  required by the existing public contract.
-- Add restart, migration, conflict, corruption, rollback, deterministic ordering,
-  redaction, and boundary-integration tests.
+- Define a narrow workflow-step invocation command and validated result contract.
+- Accept only a candidate produced from `DURABLE_ONLY` control evidence at the exact
+  current workflow version.
+- Resolve the exact AgentSpecification and invoke only the existing injected
+  AgentRuntime interface.
+- Start with deterministic/local AgentRuntime implementations; no live provider is
+  required or enabled by default.
+- Validate bounded JSON-safe step input and AgentResult output against the exact
+  specification schemas.
+- Enforce existing model/tool/cost limits and default-deny effective permissions
+  before invocation.
+- Atomically persist the step transition, command receipt, redaction-safe workflow
+  event, and resulting version through existing workflow persistence.
+- Make duplicate command replay restart-safe and prevent duplicate AgentRuntime
+  invocation.
+- Fail closed on stale candidate, missing controls, invalid result, timeout, agent
+  failure, or persistence failure.
+- Add deterministic invocation, replay, rollback, restart, validation, redaction, and
+  no-external-side-effect tests.
 - Update project-state documents.
 
 ## Forbidden scope
 
-- AgentRuntime, model, provider, tool, browser, filesystem, network, n8n, HTTP,
-  dashboard, CLI workflow command, external action, publishing, outreach, payment,
-  or customer-delivery execution.
-- Background workers, schedulers, autonomous loops, notifications, retries,
-  callbacks, or result-completion orchestration.
-- Approval UI, remote approval transport, Guardian execution, autonomous Guardian
-  evaluation, or invented Guardian conclusions.
-- A second database, a second transaction framework, destructive migration, event
-  sourcing, raw prompts/completions/provider payloads, secrets, raw knowledge/memory,
-  transcript text, or sensitive paths.
+- Browser, filesystem mutation, HTTP, n8n, dashboard, webhook, scheduler, background
+  worker, autonomous loop, real tool execution, publishing, outreach, payment,
+  customer delivery, or other external side effects.
+- Direct provider SDK calls or bypass of LlmGateway, model limits, usage accounting,
+  budget enforcement, policy, AgentSpecifications, checkpoints, or audit.
+- Parallel scheduling, retries, callback processing, compensation, workflow result
+  aggregation, or a new execution framework.
+- A second database, destructive migration, secrets/prompts/completions/provider
+  payloads in durable workflow records, or weakening existing public contracts.
 
 ## Likely files to create
 
-- `src/workflows/runtime/workflow-control-checkpoint.ts`
-- `src/workflows/runtime/workflow-control-checkpoint-validator.ts`
-- `src/workflows/runtime/workflow-control-checkpoint-service.ts`
-- `tests/workflows/workflow-control-checkpoint.test.ts`
+- `src/workflows/runtime/workflow-step-invocation.ts`
+- `src/workflows/runtime/workflow-step-invocation-validator.ts`
+- `src/workflows/runtime/repository-backed-workflow-step-invoker.ts`
+- `tests/workflows/workflow-step-invocation.test.ts`
 
 ## Likely files to modify
 
-- `src/workflows/runtime/workflow-persistence.ts`
-- `src/workflows/runtime/repository-backed-workflow-step-execution-boundary.ts`
-- existing SQLite schema, codec, and transaction-runner files only as required for
-  the additive workflow checkpoint tables and repositories
+- existing workflow persistence/state-machine services only where required for the
+  atomic awaiting-result and completion/failure transitions
 - `src/index.ts`
 - affected project-state documents
 
 ## Tests required
 
-- exact Fabio approval grants and Guardian clear decisions persist and reload;
-- exact duplicate decisions replay idempotently while conflicting duplicates fail;
-- denied, blocked, expired, revoked, stale, wrong-step, wrong-version, wrong-authority,
-  and wrong-domain records fail closed;
-- the candidate boundary reads control evidence from the same durable transaction;
-- restart preserves decisions and deterministic ordering;
-- corrupted records are rejected on read;
-- migration preserves existing lifecycle, memory, knowledge, and workflow data;
-- transaction failure leaves no partial checkpoint state;
-- outputs and events are bounded, immutable, JSON-safe, and redaction-safe;
-- no agent, model, provider, tool, network, CLI, or external execution occurs;
+- one exact durable candidate invokes one deterministic AgentRuntime once;
+- missing/stale policy, specification, approval, Guardian, version, or permission
+  blocks before AgentRuntime;
+- duplicate command after restart replays without a second invocation;
+- invalid input/output, agent failure, timeout, and persistence failure fail closed;
+- state, receipt, event, and version updates are atomic;
+- terminal or already-awaiting-result steps cannot be reinvoked;
+- outputs and errors are bounded, immutable, JSON-safe, and redaction-safe;
+- no tool, browser, filesystem, network, n8n, HTTP, provider SDK, or external action
+  occurs;
 - all existing tests remain green.
 
 ## Acceptance criteria
 
-- Approval and Guardian control evidence is durable, exact-snapshot-bound, validated
-  on write and read, and restart-safe.
-- Only Fabio/operator authority can grant a workflow approval.
-- Missing, stale, denied, blocked, expired, revoked, corrupted, or mismatched evidence
-  cannot produce a step candidate.
-- Checkpoint writes and their audit evidence are atomic under the existing repository
-  transaction architecture.
-- The Workflow Step Execution Boundary remains non-executing and returns at most one
-  candidate.
+- Exactly one validated durable candidate can enter AgentRuntime through dependency
+  injection.
+- No candidate or command can invoke the agent twice.
+- Every missing or stale control fails before invocation.
+- Successful and failed invocation outcomes preserve workflow transaction and audit
+  invariants.
+- No external side effect is introduced.
 - Full lint, typecheck, test, build, and diff checks pass in a separate clean commit.
 
 ## Definition of done
 
-The repository can durably record, reload, revoke, and evaluate exact workflow
-approval and Guardian checkpoints without executing a step. A subsequent milestone
-must separately define AgentRuntime step invocation and result completion.
+One deterministic/local workflow step can be invoked once through AgentRuntime with
+durable controls, restart-safe idempotency, and atomic workflow evidence. Scheduling,
+parallelism, external tools, providers, callbacks, and delivery remain later
+milestones.

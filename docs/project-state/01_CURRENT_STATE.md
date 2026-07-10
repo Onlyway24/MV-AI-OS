@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Workflow Step Execution Boundary milestone:
-  `5e248e0 feat: add workflow step readiness engine`.
+- Latest committed baseline before the Durable Workflow Approval and Guardian
+  Checkpoints milestone: `906a7f0 feat: add workflow step execution boundary`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -93,8 +93,11 @@ and tests, not intended future behavior.
   `1df1eb0 feat: add persistent workflow repositories`.
 - Dependency Scheduler and Step Readiness Engine was committed in
   `5e248e0 feat: add workflow step readiness engine`.
-- Workflow Step Execution Boundary is completed by the current change set.
-- The next milestone is Durable Workflow Approval and Guardian Checkpoints.
+- Workflow Step Execution Boundary was committed in
+  `906a7f0 feat: add workflow step execution boundary`.
+- Durable Workflow Approval and Guardian Checkpoints is completed by the current
+  change set.
+- The next milestone is Controlled Workflow Step AgentRuntime Invocation.
 
 ## Current architecture
 
@@ -212,6 +215,7 @@ provider, n8n, or external SDK types.
 58. Workflow Persistence and Atomic Audit.
 59. Dependency Scheduler and Step Readiness Engine.
 60. Workflow Step Execution Boundary.
+61. Durable Workflow Approval and Guardian Checkpoints.
 
 ## Implemented modules
 
@@ -288,6 +292,9 @@ provider, n8n, or external SDK types.
   permission declarations, requires an exact Agent Specification and default-deny
   policy decision, binds supplied approval and Guardian evidence to the same durable
   snapshot, and returns at most one immutable non-executing candidate.
+- SQLite schema version 5 approval and Guardian checkpoint repositories with exact
+  snapshot binding, linear supersession, restart-safe replay, deterministic ordering,
+  atomic redaction-safe checkpoint events, and a `DURABLE_ONLY` candidate mode.
 
 ### Models
 
@@ -637,6 +644,8 @@ provider, n8n, or external SDK types.
   contracts.
 - workflow step candidate-preparation request, assignment, approval evidence,
   Guardian evidence, blocker, candidate, result, and boundary contracts.
+- workflow approval checkpoint, Guardian checkpoint, checkpoint event, event draft,
+  write-result, repository, event identifier, and service contracts.
 - tool definition/invocation/result/permission/risk/registry/gateway contracts.
 
 ## Implemented validators
@@ -698,11 +707,14 @@ provider, n8n, or external SDK types.
 - Workflow Step Execution Boundary request and result validators, including strict
   nested policy/evidence validation, bounded identifiers and blockers, immutable
   output, and redaction safety.
+- Workflow approval, Guardian, checkpoint event-draft, and checkpoint event
+  validators with closed statuses, exact identities, strict fields, bounds,
+  immutability, timestamp/version validation, and redaction safety.
 - Tool definition, permission, risk, invocation, and result validators.
 
 ## Implemented tests
 
-The latest verified suite contains 77 test files and 727 tests covering:
+The latest verified suite contains 78 test files and 735 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -750,6 +762,11 @@ The latest verified suite contains 77 test files and 727 tests covering:
   responsibility, capability, permission and policy enforcement, Fabio approval and
   Guardian evidence binding, validation, immutability, redaction, read-only
   repetition, and SQLite restart determinism.
+- Durable workflow approval and Guardian checkpoint persistence, exact replay and
+  conflict detection, operator authority, stale/mismatched rejection, linear
+  supersession, withdrawal/block precedence, durable-only candidate integration,
+  atomic rollback, ordered audit events, corruption rejection, restart durability,
+  and schema v4-to-v5 migration without workflow-state loss.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - OpenAI provider configuration validation, credential handling, Responses API request
@@ -1127,7 +1144,8 @@ chapter.
   action.
 - Durable persistence now covers task, request, audit, memory, knowledge, immutable
   workflow definitions, workflow instances and step states, processed command
-  receipts, and ordered redaction-safe workflow events. Approvals remain non-durable.
+  receipts, ordered redaction-safe workflow events, and exact workflow approval and
+  Guardian checkpoints with atomic checkpoint audit events.
 - Workflow readiness is observational only: it reads one exact durable workflow
   snapshot through the existing transaction boundary, writes no state, receipts, or
   events, and never authorizes execution.
@@ -1137,7 +1155,9 @@ chapter.
   external system.
 - Secret references can be resolved locally into ephemeral values and consumed by the
   OpenAI provider adapter through controlled runtime wiring.
-- Approval markers exist at boundaries, but there is no durable approval workflow.
+- Durable approval and Guardian checkpoint records can be written explicitly through
+  the checkpoint service; there is still no approval UI, transport, autonomous
+  Guardian execution, or workflow step executor.
 
 ## What is actually executable
 
@@ -1309,6 +1329,9 @@ chapter.
   one exact durable workflow snapshot and receive either one fully qualified,
   non-executing step candidate or bounded structured blockers. This is candidate
   preparation only and cannot invoke or complete the step.
+- A caller can explicitly record, replay, revoke, and reload exact workflow approval
+  and Guardian checkpoints. In `DURABLE_ONLY` mode the candidate boundary ignores
+  transient control claims and uses the latest durable decision per control stream.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1327,9 +1350,8 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Durable approval and Guardian checkpoint persistence and human-in-the-loop
-  operations.
-- AgentRuntime invocation, step result completion, lifecycle command coordination,
+- Approval UI/transport and autonomous Guardian evaluation.
+- Controlled AgentRuntime invocation, step result completion, lifecycle command coordination,
   or any model/provider/tool/network/external execution from a workflow candidate.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

@@ -37,7 +37,7 @@ const ID_PATTERN = /^[a-z0-9][a-z0-9@._-]*$/u;
 const SENSITIVE_TEXT_PATTERN =
   /\b(?:secret|prompt|completion|provider[-_ ]?payload|raw[-_ ]?(?:knowledge|memory|transcript)|transcript|api[_-]?key)\b|(?:\/Users\/|\/home\/)|\bsk-[A-Za-z0-9_-]{8,}/iu;
 const APPROVAL_STATUSES = new Set(["APPROVED", "EXPIRED", "REJECTED", "WITHDRAWN"]);
-const GUARDIAN_STATUSES = new Set(["BLOCKED", "CLEAR", "EXPIRED"]);
+const GUARDIAN_STATUSES = new Set(["BLOCKED", "CLEAR", "EXPIRED", "WITHDRAWN"]);
 const GUARDIAN_DOMAINS = new Set<MainAssistantSafetyDomain>([
   "backup",
   "cost",

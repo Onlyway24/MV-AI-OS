@@ -28,6 +28,18 @@ import type {
   WorkflowDefinition,
   WorkflowInstance,
 } from "../../src/workflows/runtime/workflow-runtime.js";
+import type {
+  WorkflowApprovalCheckpoint,
+  WorkflowControlCheckpointEvent,
+  WorkflowControlCheckpointEventDraft,
+  WorkflowGuardianCheckpoint,
+} from "../../src/workflows/runtime/workflow-control-checkpoint.js";
+import {
+  WorkflowApprovalCheckpointValidator,
+  WorkflowControlCheckpointEventDraftValidator,
+  WorkflowControlCheckpointEventValidator,
+  WorkflowGuardianCheckpointValidator,
+} from "../../src/workflows/runtime/workflow-control-checkpoint-validator.js";
 import {
   WorkflowCommandReceiptValidator,
   WorkflowDefinitionValidator,
@@ -53,9 +65,13 @@ interface RepositoryState {
   readonly requests: Map<string, StoredRequest>;
   readonly tasks: Map<string, TaskRecord>;
   readonly workflowCommandReceipts: Map<string, WorkflowCommandReceipt>;
+  readonly workflowApprovalCheckpoints: Map<string, WorkflowApprovalCheckpoint>;
+  readonly workflowControlCheckpointEvents: Map<string, WorkflowControlCheckpointEvent>;
   readonly workflowDefinitions: Map<string, WorkflowDefinition>;
   readonly workflowEvents: Map<string, WorkflowEvent>;
   readonly workflowInstances: Map<string, WorkflowInstance>;
+  readonly workflowGuardianCheckpoints: Map<string, WorkflowGuardianCheckpoint>;
+  workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
 
@@ -91,9 +107,12 @@ function createRepositories(
     requests: new InMemoryRequestRepository(state),
     tasks: new InMemoryTaskRepository(state),
     workflows: Object.freeze({
+      approvals: new InMemoryWorkflowApprovalCheckpointRepository(state),
+      controlEvents: new InMemoryWorkflowControlCheckpointEventRepository(state),
       definitions: new InMemoryWorkflowDefinitionRepository(state),
       events: new InMemoryWorkflowEventRepository(state),
       instances: new InMemoryWorkflowInstanceRepository(state),
+      guardians: new InMemoryWorkflowGuardianCheckpointRepository(state),
       receipts: new InMemoryWorkflowCommandReceiptRepository(state),
     }),
   });
@@ -688,16 +707,174 @@ class InMemoryWorkflowEventRepository {
   }
 }
 
+class InMemoryWorkflowApprovalCheckpointRepository {
+  readonly #state: RepositoryState;
+  readonly #validator = new WorkflowApprovalCheckpointValidator();
+
+  public constructor(state: RepositoryState) {
+    this.#state = state;
+  }
+
+  public getById(evidenceId: string): Promise<WorkflowApprovalCheckpoint | undefined> {
+    return Promise.resolve(cloneOptional(this.#state.workflowApprovalCheckpoints.get(evidenceId)));
+  }
+
+  public insert(checkpoint: WorkflowApprovalCheckpoint): Promise<void> {
+    const validation = this.#validator.validate(checkpoint);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow approval checkpoint failed validation");
+    }
+    if (this.#state.workflowApprovalCheckpoints.has(validation.value.evidenceId)) {
+      throw new RepositoryConflictError("Workflow approval checkpoint ID already exists");
+    }
+    if (!this.#state.workflowInstances.has(validation.value.instanceId)) {
+      throw new RepositoryConflictError("Workflow instance does not exist");
+    }
+    this.#state.workflowApprovalCheckpoints.set(
+      validation.value.evidenceId,
+      cloneFrozen(validation.value),
+    );
+    return Promise.resolve();
+  }
+
+  public listBySnapshot(
+    instanceId: string,
+    instanceVersion: number,
+    stepId: string,
+  ): Promise<readonly WorkflowApprovalCheckpoint[]> {
+    return Promise.resolve(Object.freeze(
+      [...this.#state.workflowApprovalCheckpoints.values()]
+        .filter((entry) => entry.instanceId === instanceId && entry.instanceVersion === instanceVersion && entry.stepId === stepId)
+        .map((entry) => cloneFrozen(entry)),
+    ));
+  }
+}
+
+class InMemoryWorkflowGuardianCheckpointRepository {
+  readonly #state: RepositoryState;
+  readonly #validator = new WorkflowGuardianCheckpointValidator();
+
+  public constructor(state: RepositoryState) {
+    this.#state = state;
+  }
+
+  public getById(evidenceId: string): Promise<WorkflowGuardianCheckpoint | undefined> {
+    return Promise.resolve(cloneOptional(this.#state.workflowGuardianCheckpoints.get(evidenceId)));
+  }
+
+  public insert(checkpoint: WorkflowGuardianCheckpoint): Promise<void> {
+    const validation = this.#validator.validate(checkpoint);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow Guardian checkpoint failed validation");
+    }
+    if (this.#state.workflowGuardianCheckpoints.has(validation.value.evidenceId)) {
+      throw new RepositoryConflictError("Workflow Guardian checkpoint ID already exists");
+    }
+    if (!this.#state.workflowInstances.has(validation.value.instanceId)) {
+      throw new RepositoryConflictError("Workflow instance does not exist");
+    }
+    this.#state.workflowGuardianCheckpoints.set(
+      validation.value.evidenceId,
+      cloneFrozen(validation.value),
+    );
+    return Promise.resolve();
+  }
+
+  public listBySnapshot(
+    instanceId: string,
+    instanceVersion: number,
+    stepId: string,
+  ): Promise<readonly WorkflowGuardianCheckpoint[]> {
+    return Promise.resolve(Object.freeze(
+      [...this.#state.workflowGuardianCheckpoints.values()]
+        .filter((entry) => entry.instanceId === instanceId && entry.instanceVersion === instanceVersion && entry.stepId === stepId)
+        .map((entry) => cloneFrozen(entry)),
+    ));
+  }
+}
+
+class InMemoryWorkflowControlCheckpointEventRepository {
+  readonly #draftValidator = new WorkflowControlCheckpointEventDraftValidator();
+  readonly #eventValidator = new WorkflowControlCheckpointEventValidator();
+  readonly #state: RepositoryState;
+
+  public constructor(state: RepositoryState) {
+    this.#state = state;
+  }
+
+  public append(draft: WorkflowControlCheckpointEventDraft): Promise<WorkflowControlCheckpointEvent> {
+    const validation = this.#draftValidator.validate(draft);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow control checkpoint event failed validation");
+    }
+    if (
+      this.#state.workflowControlCheckpointEvents.has(validation.value.eventId) ||
+      [...this.#state.workflowControlCheckpointEvents.values()].some(
+        (event) => event.checkpointKind === validation.value.checkpointKind && event.checkpointId === validation.value.checkpointId,
+      )
+    ) {
+      throw new RepositoryConflictError("Workflow control checkpoint event already exists");
+    }
+    const exists = validation.value.checkpointKind === "APPROVAL"
+      ? this.#state.workflowApprovalCheckpoints.has(validation.value.checkpointId)
+      : this.#state.workflowGuardianCheckpoints.has(validation.value.checkpointId);
+    if (!exists) {
+      throw new RepositoryConflictError("Workflow control checkpoint does not exist");
+    }
+    this.#state.workflowControlCheckpointEventSequence += 1;
+    const event = this.#eventValidator.validate({
+      ...validation.value,
+      sequence: this.#state.workflowControlCheckpointEventSequence,
+    });
+    if (!event.ok) {
+      throw new RepositoryValidationError("Workflow control checkpoint event failed validation");
+    }
+    this.#state.workflowControlCheckpointEvents.set(event.value.eventId, cloneFrozen(event.value));
+    return Promise.resolve(cloneFrozen(event.value));
+  }
+
+  public getByCheckpoint(
+    checkpointKind: WorkflowControlCheckpointEvent["checkpointKind"],
+    checkpointId: string,
+  ): Promise<WorkflowControlCheckpointEvent | undefined> {
+    return Promise.resolve(cloneOptional(
+      [...this.#state.workflowControlCheckpointEvents.values()].find(
+        (event) => event.checkpointKind === checkpointKind && event.checkpointId === checkpointId,
+      ),
+    ));
+  }
+
+  public listByInstanceId(
+    instanceId: string,
+    limit: number,
+  ): Promise<readonly WorkflowControlCheckpointEvent[]> {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+      throw new RepositoryValidationError("Workflow control checkpoint event limit is invalid");
+    }
+    return Promise.resolve(Object.freeze(
+      [...this.#state.workflowControlCheckpointEvents.values()]
+        .filter((event) => event.instanceId === instanceId)
+        .sort((left, right) => left.sequence - right.sequence)
+        .slice(0, limit)
+        .map((event) => cloneFrozen(event)),
+    ));
+  }
+}
+
 function createState(): RepositoryState {
   return {
     audits: new Map(),
     requests: new Map(),
     tasks: new Map(),
     workflowCommandReceipts: new Map(),
+    workflowApprovalCheckpoints: new Map(),
+    workflowControlCheckpointEvents: new Map(),
+    workflowControlCheckpointEventSequence: 0,
     workflowDefinitions: new Map(),
     workflowEventSequence: 0,
     workflowEvents: new Map(),
     workflowInstances: new Map(),
+    workflowGuardianCheckpoints: new Map(),
   };
 }
 
@@ -721,6 +898,13 @@ function cloneState(state: RepositoryState): RepositoryState {
         cloneFrozen(value),
       ]),
     ),
+    workflowApprovalCheckpoints: new Map(
+      [...state.workflowApprovalCheckpoints].map(([key, value]) => [key, cloneFrozen(value)]),
+    ),
+    workflowControlCheckpointEvents: new Map(
+      [...state.workflowControlCheckpointEvents].map(([key, value]) => [key, cloneFrozen(value)]),
+    ),
+    workflowControlCheckpointEventSequence: state.workflowControlCheckpointEventSequence,
     workflowDefinitions: new Map(
       [...state.workflowDefinitions].map(([key, value]) => [
         key,
@@ -739,6 +923,9 @@ function cloneState(state: RepositoryState): RepositoryState {
         key,
         cloneFrozen(value),
       ]),
+    ),
+    workflowGuardianCheckpoints: new Map(
+      [...state.workflowGuardianCheckpoints].map(([key, value]) => [key, cloneFrozen(value)]),
     ),
   };
 }

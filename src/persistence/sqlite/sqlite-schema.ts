@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 4;
+export const SQLITE_SCHEMA_VERSION = 5;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -27,6 +27,12 @@ const VERSION_FOUR_TABLES = Object.freeze([
   "workflow_definitions",
   "workflow_events",
   "workflow_instances",
+]);
+const VERSION_FIVE_TABLES = Object.freeze([
+  ...VERSION_FOUR_TABLES,
+  "workflow_approval_checkpoints",
+  "workflow_control_checkpoint_events",
+  "workflow_guardian_checkpoints",
 ]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
@@ -76,6 +82,16 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 3, "durable_knowledge");
     applyWorkflowMigration(database);
   }
+  const checkpointVersion = readPragmaInteger(database, "user_version");
+  if (checkpointVersion === 4) {
+    verifyDatabaseIdentity(database, 4);
+    verifyExpectedTables(database, VERSION_FOUR_TABLES);
+    verifyMigration(database, 1, "initial_task_lifecycle");
+    verifyMigration(database, 2, "durable_memory");
+    verifyMigration(database, 3, "durable_knowledge");
+    verifyMigration(database, 4, "durable_workflows");
+    applyWorkflowControlCheckpointMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -98,11 +114,12 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_FOUR_TABLES);
+  verifyExpectedTables(database, VERSION_FIVE_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
   verifyMigration(database, 4, "durable_workflows");
+  verifyMigration(database, 5, "durable_workflow_control_checkpoints");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -297,6 +314,78 @@ function applyWorkflowMigration(database: DatabaseSync): void {
     throw new SqliteSchemaError(
       "sqlite_schema_invalid",
       "SQLite workflow schema migration failed",
+    );
+  }
+}
+
+function applyWorkflowControlCheckpointMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE workflow_approval_checkpoints (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        evidence_id TEXT NOT NULL UNIQUE,
+        definition_id TEXT NOT NULL REFERENCES workflow_definitions (definition_id),
+        workflow_version TEXT NOT NULL,
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        instance_version INTEGER NOT NULL CHECK (instance_version >= 0),
+        step_id TEXT NOT NULL,
+        authority_actor_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        supersedes_evidence_id TEXT,
+        recorded_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+
+      CREATE INDEX workflow_approval_checkpoint_snapshot
+        ON workflow_approval_checkpoints
+          (instance_id, instance_version, step_id, sequence);
+
+      CREATE TABLE workflow_guardian_checkpoints (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        evidence_id TEXT NOT NULL UNIQUE,
+        definition_id TEXT NOT NULL REFERENCES workflow_definitions (definition_id),
+        workflow_version TEXT NOT NULL,
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        instance_version INTEGER NOT NULL CHECK (instance_version >= 0),
+        step_id TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        guardian_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        supersedes_evidence_id TEXT,
+        recorded_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+
+      CREATE INDEX workflow_guardian_checkpoint_snapshot
+        ON workflow_guardian_checkpoints
+          (instance_id, instance_version, step_id, domain, sequence);
+
+      CREATE TABLE workflow_control_checkpoint_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT NOT NULL UNIQUE,
+        checkpoint_id TEXT NOT NULL,
+        checkpoint_kind TEXT NOT NULL CHECK (checkpoint_kind IN ('APPROVAL', 'GUARDIAN')),
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        occurred_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (checkpoint_kind, checkpoint_id)
+      ) STRICT;
+
+      CREATE INDEX workflow_control_checkpoint_events_instance
+        ON workflow_control_checkpoint_events (instance_id, sequence);
+
+      INSERT INTO schema_migrations (version, name)
+      VALUES (5, 'durable_workflow_control_checkpoints');
+
+      PRAGMA user_version = 5;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError(
+      "sqlite_schema_invalid",
+      "SQLite workflow control checkpoint migration failed",
     );
   }
 }

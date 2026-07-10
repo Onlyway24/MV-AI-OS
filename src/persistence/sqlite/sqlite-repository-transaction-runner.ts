@@ -16,8 +16,11 @@ import { SqliteRequestRepository } from "./sqlite-request-repository.js";
 import { SqliteTaskRepository } from "./sqlite-task-repository.js";
 import type { SqliteTransactionScope } from "./sqlite-transaction-scope.js";
 import { SqliteWorkflowCommandReceiptRepository } from "./sqlite-workflow-command-receipt-repository.js";
+import { SqliteWorkflowApprovalCheckpointRepository } from "./sqlite-workflow-approval-checkpoint-repository.js";
+import { SqliteWorkflowControlCheckpointEventRepository } from "./sqlite-workflow-control-checkpoint-event-repository.js";
 import { SqliteWorkflowDefinitionRepository } from "./sqlite-workflow-definition-repository.js";
 import { SqliteWorkflowEventRepository } from "./sqlite-workflow-event-repository.js";
+import { SqliteWorkflowGuardianCheckpointRepository } from "./sqlite-workflow-guardian-checkpoint-repository.js";
 import { SqliteWorkflowInstanceRepository } from "./sqlite-workflow-instance-repository.js";
 
 export class SqliteRepositoryTransactionRunner
@@ -72,12 +75,27 @@ export class SqliteRepositoryTransactionRunner
           this.#codec,
         ),
         workflows: Object.freeze({
+          approvals: new SqliteWorkflowApprovalCheckpointRepository(
+            this.#database,
+            scope,
+            this.#codec,
+          ),
+          controlEvents: new SqliteWorkflowControlCheckpointEventRepository(
+            this.#database,
+            scope,
+            this.#codec,
+          ),
           definitions: new SqliteWorkflowDefinitionRepository(
             this.#database,
             scope,
             this.#codec,
           ),
           events: new SqliteWorkflowEventRepository(
+            this.#database,
+            scope,
+            this.#codec,
+          ),
+          guardians: new SqliteWorkflowGuardianCheckpointRepository(
             this.#database,
             scope,
             this.#codec,

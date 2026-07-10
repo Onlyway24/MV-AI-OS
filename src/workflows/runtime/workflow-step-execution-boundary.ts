@@ -35,7 +35,8 @@ export interface WorkflowApprovalEvidence {
 export type WorkflowGuardianEvidenceStatus =
   | "BLOCKED"
   | "CLEAR"
-  | "EXPIRED";
+  | "EXPIRED"
+  | "WITHDRAWN";
 
 export interface WorkflowGuardianEvidence {
   readonly definitionId: string;

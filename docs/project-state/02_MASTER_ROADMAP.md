@@ -298,7 +298,7 @@ The Mission Planning foundation is now closed: its contracts, planner, quality g
 scenario evidence, and local non-executing dry-run are aligned with Git history and
 project-state. Workflow Runtime Foundation now provides pure domain contracts,
 deterministic transition rules, expected-version checks, and non-durable command
-receipt replay. Workflow Persistence and Atomic Audit now adds additive SQLite schema
+receipt replay. Workflow Persistence and Atomic Audit adds additive SQLite schema
 version 4 repositories, validated records, durable instances and step state,
 restart-safe receipt replay, optimistic versions, ordered redaction-safe events, and
 whole-transaction rollback without adding work execution. Dependency Scheduler and
@@ -311,8 +311,11 @@ Execution Boundary now adds a second transaction-bound, read-only gate that
 recomputes readiness, validates exact Agent Specification and Agent Company
 declarations, enforces an exact default-deny policy decision, binds supplied Fabio
 approval and Guardian evidence to the same workflow snapshot, and returns at most one
-non-executing candidate. It still performs no work and writes no workflow state. The
-next milestone is Durable Workflow Approval and Guardian Checkpoints. Durable usage
+non-executing candidate. Durable Workflow Approval and Guardian Checkpoints now adds
+SQLite schema version 5 exact-snapshot approval and Guardian records, linear
+supersession, restart-safe replay, atomic checkpoint audit events, and a durable-only
+candidate mode. It still performs no work and writes no workflow execution state. The
+next milestone is Controlled Workflow Step AgentRuntime Invocation. Durable usage
 ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
@@ -346,10 +349,11 @@ with durable approvals and no hidden side effects.
 
 **Status:** In progress. The non-executing Workflow Runtime now has validated domain
 state, durable atomic persistence, read-only dependency/step-readiness evaluation,
-and one exact policy/specification/evidence-gated candidate-preparation boundary.
-Durable approval and Guardian checkpoints, lifecycle coordination, AgentRuntime step
-invocation, result completion, retries, callbacks, n8n, and all external effects
-remain unimplemented.
+one exact policy/specification/evidence-gated candidate-preparation boundary, and
+durable exact-snapshot approval/Guardian checkpoints with atomic audit evidence.
+Lifecycle coordination, AgentRuntime step invocation, result completion, approval UI
+or transport, autonomous Guardian evaluation, retries, callbacks, n8n, and all
+external effects remain unimplemented.
 
 ## Phase 7 — Governed direct tools
 

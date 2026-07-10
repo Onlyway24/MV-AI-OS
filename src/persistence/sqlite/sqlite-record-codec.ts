@@ -25,6 +25,18 @@ import type {
   WorkflowEvent,
   WorkflowEventDraft,
 } from "../../workflows/runtime/workflow-persistence.js";
+import type {
+  WorkflowApprovalCheckpoint,
+  WorkflowControlCheckpointEvent,
+  WorkflowControlCheckpointEventDraft,
+  WorkflowGuardianCheckpoint,
+} from "../../workflows/runtime/workflow-control-checkpoint.js";
+import {
+  WorkflowApprovalCheckpointValidator,
+  WorkflowControlCheckpointEventDraftValidator,
+  WorkflowControlCheckpointEventValidator,
+  WorkflowGuardianCheckpointValidator,
+} from "../../workflows/runtime/workflow-control-checkpoint-validator.js";
 import {
   WorkflowEventDraftValidator,
   WorkflowEventValidator,
@@ -43,10 +55,18 @@ export class SqliteRecordCodec {
   readonly #taskValidator = new TaskRecordValidator();
   readonly #workflowCommandReceiptValidator =
     new WorkflowCommandReceiptValidator();
+  readonly #workflowApprovalCheckpointValidator =
+    new WorkflowApprovalCheckpointValidator();
+  readonly #workflowControlCheckpointEventDraftValidator =
+    new WorkflowControlCheckpointEventDraftValidator();
+  readonly #workflowControlCheckpointEventValidator =
+    new WorkflowControlCheckpointEventValidator();
   readonly #workflowDefinitionValidator = new WorkflowDefinitionValidator();
   readonly #workflowEventDraftValidator = new WorkflowEventDraftValidator();
   readonly #workflowEventValidator = new WorkflowEventValidator();
   readonly #workflowInstanceValidator = new WorkflowInstanceValidator();
+  readonly #workflowGuardianCheckpointValidator =
+    new WorkflowGuardianCheckpointValidator();
 
   public encodeTask(value: unknown): {
     readonly json: string;
@@ -222,6 +242,79 @@ export class SqliteRecordCodec {
       value,
       this.#workflowEventValidator,
       "Workflow event",
+    );
+  }
+
+  public encodeWorkflowApprovalCheckpoint(value: unknown): {
+    readonly json: string;
+    readonly value: WorkflowApprovalCheckpoint;
+  } {
+    return encodeValidated(
+      value,
+      this.#workflowApprovalCheckpointValidator,
+      "Workflow approval checkpoint",
+    );
+  }
+
+  public decodeWorkflowApprovalCheckpoint(
+    json: string,
+  ): WorkflowApprovalCheckpoint {
+    return freezeValidated(
+      parseJson(json, "Workflow approval checkpoint"),
+      this.#workflowApprovalCheckpointValidator,
+      "Workflow approval checkpoint",
+    );
+  }
+
+  public encodeWorkflowGuardianCheckpoint(value: unknown): {
+    readonly json: string;
+    readonly value: WorkflowGuardianCheckpoint;
+  } {
+    return encodeValidated(
+      value,
+      this.#workflowGuardianCheckpointValidator,
+      "Workflow Guardian checkpoint",
+    );
+  }
+
+  public decodeWorkflowGuardianCheckpoint(
+    json: string,
+  ): WorkflowGuardianCheckpoint {
+    return freezeValidated(
+      parseJson(json, "Workflow Guardian checkpoint"),
+      this.#workflowGuardianCheckpointValidator,
+      "Workflow Guardian checkpoint",
+    );
+  }
+
+  public encodeWorkflowControlCheckpointEventDraft(value: unknown): {
+    readonly json: string;
+    readonly value: WorkflowControlCheckpointEventDraft;
+  } {
+    return encodeValidated(
+      value,
+      this.#workflowControlCheckpointEventDraftValidator,
+      "Workflow control checkpoint event",
+    );
+  }
+
+  public decodeWorkflowControlCheckpointEventDraft(
+    json: string,
+  ): WorkflowControlCheckpointEventDraft {
+    return freezeValidated(
+      parseJson(json, "Workflow control checkpoint event"),
+      this.#workflowControlCheckpointEventDraftValidator,
+      "Workflow control checkpoint event",
+    );
+  }
+
+  public validateWorkflowControlCheckpointEvent(
+    value: unknown,
+  ): WorkflowControlCheckpointEvent {
+    return validated(
+      value,
+      this.#workflowControlCheckpointEventValidator,
+      "Workflow control checkpoint event",
     );
   }
 }

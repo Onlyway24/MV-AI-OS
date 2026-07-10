@@ -132,13 +132,16 @@ describe("SQLite memory persistence", () => {
 
       const legacyDatabase = new DatabaseSync(databasePath);
       legacyDatabase.exec(`
+        DROP TABLE workflow_control_checkpoint_events;
+        DROP TABLE workflow_guardian_checkpoints;
+        DROP TABLE workflow_approval_checkpoints;
         DROP TABLE workflow_events;
         DROP TABLE workflow_command_receipts;
         DROP TABLE workflow_instances;
         DROP TABLE workflow_definitions;
         DROP TABLE knowledge_records;
         DROP TABLE memory_records;
-        DELETE FROM schema_migrations WHERE version IN (2, 3, 4);
+        DELETE FROM schema_migrations WHERE version IN (2, 3, 4, 5);
         PRAGMA user_version = 1;
       `);
       legacyDatabase.close();

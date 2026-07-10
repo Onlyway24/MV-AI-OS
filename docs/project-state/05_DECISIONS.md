@@ -1510,3 +1510,37 @@ provider data, or executable closures.
 transient control claims with validated restart-safe records in the same repository
 transaction. AgentRuntime invocation, result completion, tools, models, providers,
 networks, and external side effects remain separate later milestones.
+
+## ADR-056 — Workflow control checkpoints are immutable, linearly superseded, and atomically audited
+
+**Context:** Transient approval and Guardian markers can be bound to one candidate
+request, but they cannot be independently reloaded, revoked, or proven after restart.
+Allowing multiple unrelated decisions for the same control stream would also let a
+new grant silently bypass an earlier denial or revocation.
+
+**Decision:** Add SQLite schema version 5 approval checkpoints, Guardian checkpoints,
+and checkpoint audit events behind the existing workflow transaction. Every record
+is immutable and bound to one definition, workflow version, instance, instance
+version, and step. The first record starts a control stream; every later record for
+the same approval stream or Guardian domain must supersede the latest record with a
+strictly later timestamp. Exact duplicate IDs replay only when their full validated
+record and atomic event already exist; conflicting reuse fails closed. Approval
+records require the configured Fabio/operator authority. `DURABLE_ONLY` candidate
+mode ignores transient control claims, while the prior transient path remains an
+explicit compatibility mode.
+
+**Reason:** Immutable append-only decisions preserve history, make revocation and
+blocking authoritative, prevent forked approval chains, and allow the candidate gate
+to consume the latest durable evidence within the same snapshot transaction. Atomic
+checkpoint/event writes prevent unaudited control changes.
+
+**Tradeoffs:** There is no approval UI, remote transport, autonomous Guardian
+evaluation, scheduled expiry processor, or deletion path. Expiry and withdrawal are
+explicit decisions, and callers must provide trusted Guardian conclusions through
+the validated service. The compatibility mode remains available for existing local
+callers but is not suitable for future execution.
+
+**Future impact:** Controlled Workflow Step AgentRuntime Invocation must require
+`DURABLE_ONLY` evidence and must not invoke an agent before rechecking the latest
+checkpoint chain. A later product layer may add operator UI and transport without
+changing checkpoint authority or repository semantics.

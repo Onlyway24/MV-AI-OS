@@ -61,6 +61,7 @@ export interface RepositoryBackedWorkflowStepExecutionBoundaryDependencies {
   readonly agentCompany: AgentCompanyMap;
   readonly agentSpecifications: AgentSpecificationRegistry;
   readonly capabilities: AgentCompanyCapabilityRegistry;
+  readonly controlEvidenceMode?: "DURABLE_ONLY" | "TRANSIENT_COMPATIBLE";
   readonly operatorActorId: string;
   readonly permissionMatrix: AgentCompanyPermissionMatrix;
   readonly repositories: RepositoryTransactionRunner;
@@ -137,10 +138,17 @@ export class RepositoryBackedWorkflowStepExecutionBoundary
         return this.#result(blocked(validRequest, [selected.blocker], instance.version));
       }
 
-      const declarations = resolveDeclarations(this.#dependencies, validRequest.agentAssignment);
+      const controlledRequest = await withDurableControlEvidence(
+        workflows,
+        validRequest,
+        selected.definition.stepId,
+        this.#dependencies.controlEvidenceMode ?? "TRANSIENT_COMPATIBLE",
+      );
+
+      const declarations = resolveDeclarations(this.#dependencies, controlledRequest.agentAssignment);
       const blockers = [...declarations.blockers];
       const approval = evaluateApprovalEvidence(
-        validRequest,
+        controlledRequest,
         definition,
         instance,
         selected.definition,
@@ -149,20 +157,20 @@ export class RepositoryBackedWorkflowStepExecutionBoundary
       );
       blockers.push(...approval.blockers);
       const guardian = evaluateGuardianEvidence(
-        validRequest,
+        controlledRequest,
         definition,
         instance,
         selected.definition,
         declarations.guardianDomains,
       );
       blockers.push(...guardian.blockers);
-      blockers.push(...evaluatePolicy(validRequest, declarations));
+      blockers.push(...evaluatePolicy(controlledRequest, declarations));
 
       const readiness = this.#readinessEngine.evaluate(
         definition,
         instance,
         readinessRequest(
-          validRequest,
+          controlledRequest,
           approval.satisfied ? selected.definition.stepId : undefined,
           guardian.satisfied ? selected.definition.stepId : undefined,
           definition.steps.length,
@@ -241,6 +249,64 @@ export class RepositoryBackedWorkflowStepExecutionBoundary
       "Workflow step execution boundary result",
     );
   }
+}
+
+async function withDurableControlEvidence(
+  workflows: import("./workflow-persistence.js").WorkflowPersistenceTransaction,
+  request: WorkflowStepExecutionBoundaryRequest,
+  stepId: string,
+  mode: "DURABLE_ONLY" | "TRANSIENT_COMPATIBLE",
+): Promise<WorkflowStepExecutionBoundaryRequest> {
+  const approvals = await workflows.approvals.listBySnapshot(
+    request.instanceId,
+    request.expectedVersion,
+    stepId,
+  );
+  const guardians = await workflows.guardians.listBySnapshot(
+    request.instanceId,
+    request.expectedVersion,
+    stepId,
+  );
+  const latestApproval = approvals.at(-1);
+  const latestGuardians = new Map<MainAssistantSafetyDomain, WorkflowGuardianEvidence>();
+  for (const checkpoint of guardians) {
+    latestGuardians.set(checkpoint.domain, {
+      definitionId: checkpoint.definitionId,
+      domain: checkpoint.domain,
+      evidenceId: checkpoint.evidenceId,
+      instanceId: checkpoint.instanceId,
+      instanceVersion: checkpoint.instanceVersion,
+      status: checkpoint.status,
+      stepId: checkpoint.stepId,
+      workflowVersion: checkpoint.workflowVersion,
+    });
+  }
+  if (mode === "TRANSIENT_COMPATIBLE") {
+    for (const evidence of request.guardianEvidence) {
+      if (!latestGuardians.has(evidence.domain)) {
+        latestGuardians.set(evidence.domain, evidence);
+      }
+    }
+  }
+  return freezeWorkflowStepExecutionBoundaryValue({
+    ...request,
+    approvalEvidence: latestApproval === undefined
+      ? mode === "TRANSIENT_COMPATIBLE" ? request.approvalEvidence : []
+      : [{
+          authorityActorId: latestApproval.authorityActorId,
+          definitionId: latestApproval.definitionId,
+          evidenceId: latestApproval.evidenceId,
+          instanceId: latestApproval.instanceId,
+          instanceVersion: latestApproval.instanceVersion,
+          scope: latestApproval.scope,
+          status: latestApproval.status,
+          stepId: latestApproval.stepId,
+          workflowVersion: latestApproval.workflowVersion,
+        }],
+    guardianEvidence: [...latestGuardians.values()].sort(
+      (left, right) => compareText(left.domain, right.domain),
+    ),
+  });
 }
 
 export function createWorkflowStepExecutionBoundary(

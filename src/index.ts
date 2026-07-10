@@ -1003,12 +1003,15 @@ export {
 export {
   SqliteWorkflowCommandReceiptRepository,
 } from "./persistence/sqlite/sqlite-workflow-command-receipt-repository.js";
+export { SqliteWorkflowApprovalCheckpointRepository } from "./persistence/sqlite/sqlite-workflow-approval-checkpoint-repository.js";
+export { SqliteWorkflowControlCheckpointEventRepository } from "./persistence/sqlite/sqlite-workflow-control-checkpoint-event-repository.js";
 export {
   SqliteWorkflowDefinitionRepository,
 } from "./persistence/sqlite/sqlite-workflow-definition-repository.js";
 export {
   SqliteWorkflowEventRepository,
 } from "./persistence/sqlite/sqlite-workflow-event-repository.js";
+export { SqliteWorkflowGuardianCheckpointRepository } from "./persistence/sqlite/sqlite-workflow-guardian-checkpoint-repository.js";
 export {
   SqliteWorkflowInstanceRepository,
 } from "./persistence/sqlite/sqlite-workflow-instance-repository.js";
@@ -1113,16 +1116,45 @@ export {
   type WorkflowActorCategory,
   type WorkflowCommandApplication,
   type WorkflowCommandReceiptRepository,
+  type WorkflowApprovalCheckpointRepository,
+  type WorkflowControlCheckpointEventRepository,
   type WorkflowDefinitionRepository,
   type WorkflowEvent,
   type WorkflowEventDraft,
   type WorkflowEventIdentifierGenerator,
   type WorkflowEventRepository,
+  type WorkflowGuardianCheckpointRepository,
   type WorkflowInstanceRepository,
   type WorkflowInstanceUpdateExpectation,
   type WorkflowPersistenceService,
   type WorkflowPersistenceTransaction,
 } from "./workflows/runtime/workflow-persistence.js";
+export {
+  WORKFLOW_CONTROL_CHECKPOINT_CONTRACT_VERSION,
+  freezeWorkflowControlCheckpointValue,
+  type WorkflowApprovalCheckpoint,
+  type WorkflowControlCheckpointEvent,
+  type WorkflowControlCheckpointEventDraft,
+  type WorkflowControlCheckpointEventIdentifierGenerator,
+  type WorkflowControlCheckpointKind,
+  type WorkflowControlCheckpointService,
+  type WorkflowControlCheckpointWriteResult,
+  type WorkflowGuardianCheckpoint,
+} from "./workflows/runtime/workflow-control-checkpoint.js";
+export {
+  MAX_WORKFLOW_CONTROL_CHECKPOINT_EVENTS,
+  MAX_WORKFLOW_CONTROL_CHECKPOINT_IDENTIFIER_LENGTH,
+  MAX_WORKFLOW_CONTROL_CHECKPOINT_VERSION,
+  WorkflowApprovalCheckpointValidator,
+  WorkflowControlCheckpointEventDraftValidator,
+  WorkflowControlCheckpointEventValidator,
+  WorkflowGuardianCheckpointValidator,
+} from "./workflows/runtime/workflow-control-checkpoint-validator.js";
+export {
+  createWorkflowControlCheckpointService,
+  RepositoryBackedWorkflowControlCheckpointService,
+  type RepositoryBackedWorkflowControlCheckpointDependencies,
+} from "./workflows/runtime/workflow-control-checkpoint-service.js";
 export {
   createWorkflowPersistenceService,
   RepositoryBackedWorkflowPersistenceService,

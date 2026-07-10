@@ -8,6 +8,12 @@ import type {
   WorkflowStepInstanceStatus,
   WorkflowTransitionResult,
 } from "./workflow-runtime.js";
+import type {
+  WorkflowApprovalCheckpoint,
+  WorkflowControlCheckpointEvent,
+  WorkflowControlCheckpointEventDraft,
+  WorkflowGuardianCheckpoint,
+} from "./workflow-control-checkpoint.js";
 
 export const WORKFLOW_PERSISTENCE_CONTRACT_VERSION = "1" as const;
 
@@ -85,9 +91,46 @@ export interface WorkflowEventRepository {
   ): Promise<readonly WorkflowEvent[]>;
 }
 
+export interface WorkflowApprovalCheckpointRepository {
+  getById(evidenceId: string): Promise<WorkflowApprovalCheckpoint | undefined>;
+  insert(checkpoint: WorkflowApprovalCheckpoint): Promise<void>;
+  listBySnapshot(
+    instanceId: string,
+    instanceVersion: number,
+    stepId: string,
+  ): Promise<readonly WorkflowApprovalCheckpoint[]>;
+}
+
+export interface WorkflowGuardianCheckpointRepository {
+  getById(evidenceId: string): Promise<WorkflowGuardianCheckpoint | undefined>;
+  insert(checkpoint: WorkflowGuardianCheckpoint): Promise<void>;
+  listBySnapshot(
+    instanceId: string,
+    instanceVersion: number,
+    stepId: string,
+  ): Promise<readonly WorkflowGuardianCheckpoint[]>;
+}
+
+export interface WorkflowControlCheckpointEventRepository {
+  append(
+    draft: WorkflowControlCheckpointEventDraft,
+  ): Promise<WorkflowControlCheckpointEvent>;
+  getByCheckpoint(
+    checkpointKind: WorkflowControlCheckpointEvent["checkpointKind"],
+    checkpointId: string,
+  ): Promise<WorkflowControlCheckpointEvent | undefined>;
+  listByInstanceId(
+    instanceId: string,
+    limit: number,
+  ): Promise<readonly WorkflowControlCheckpointEvent[]>;
+}
+
 export interface WorkflowPersistenceTransaction {
+  readonly approvals: WorkflowApprovalCheckpointRepository;
+  readonly controlEvents: WorkflowControlCheckpointEventRepository;
   readonly definitions: WorkflowDefinitionRepository;
   readonly instances: WorkflowInstanceRepository;
+  readonly guardians: WorkflowGuardianCheckpointRepository;
   readonly receipts: WorkflowCommandReceiptRepository;
   readonly events: WorkflowEventRepository;
 }
