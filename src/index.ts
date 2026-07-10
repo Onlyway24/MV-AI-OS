@@ -1000,6 +1000,18 @@ export {
 export {
   SqliteKnowledgeRepository,
 } from "./persistence/sqlite/sqlite-knowledge-repository.js";
+export {
+  SqliteWorkflowCommandReceiptRepository,
+} from "./persistence/sqlite/sqlite-workflow-command-receipt-repository.js";
+export {
+  SqliteWorkflowDefinitionRepository,
+} from "./persistence/sqlite/sqlite-workflow-definition-repository.js";
+export {
+  SqliteWorkflowEventRepository,
+} from "./persistence/sqlite/sqlite-workflow-event-repository.js";
+export {
+  SqliteWorkflowInstanceRepository,
+} from "./persistence/sqlite/sqlite-workflow-instance-repository.js";
 export type {
   TaskRepository,
   TaskUpdateExpectation,
@@ -1085,8 +1097,42 @@ export {
   type WorkflowStopReason,
   type WorkflowTransitionResult,
 } from "./workflows/runtime/workflow-runtime.js";
-export { WorkflowCommandValidator, WorkflowDefinitionValidator, WorkflowInstanceValidator } from "./workflows/runtime/workflow-runtime-validator.js";
+export {
+  createWorkflowCommandFingerprint,
+  isWorkflowCommandFingerprint,
+} from "./workflows/runtime/workflow-command-fingerprint.js";
+export {
+  WorkflowCommandReceiptValidator,
+  WorkflowCommandValidator,
+  WorkflowDefinitionValidator,
+  WorkflowInstanceValidator,
+} from "./workflows/runtime/workflow-runtime-validator.js";
 export { DeterministicWorkflowStateMachine, WorkflowStateError, isWorkflowStepTransitionAllowed, isWorkflowTransitionAllowed } from "./workflows/runtime/deterministic-workflow-state-machine.js";
+export {
+  WORKFLOW_PERSISTENCE_CONTRACT_VERSION,
+  type WorkflowActorCategory,
+  type WorkflowCommandApplication,
+  type WorkflowCommandReceiptRepository,
+  type WorkflowDefinitionRepository,
+  type WorkflowEvent,
+  type WorkflowEventDraft,
+  type WorkflowEventIdentifierGenerator,
+  type WorkflowEventRepository,
+  type WorkflowInstanceRepository,
+  type WorkflowInstanceUpdateExpectation,
+  type WorkflowPersistenceService,
+  type WorkflowPersistenceTransaction,
+} from "./workflows/runtime/workflow-persistence.js";
+export {
+  createWorkflowPersistenceService,
+  RepositoryBackedWorkflowPersistenceService,
+  type RepositoryBackedWorkflowPersistenceDependencies,
+} from "./workflows/runtime/workflow-persistence-service.js";
+export {
+  WorkflowCommandApplicationValidator,
+  WorkflowEventDraftValidator,
+  WorkflowEventValidator,
+} from "./workflows/runtime/workflow-persistence-validator.js";
 export {
   PolicyGovernedToolGateway,
   type PolicyGovernedToolGatewayDependencies,

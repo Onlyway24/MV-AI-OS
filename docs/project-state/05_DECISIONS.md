@@ -1422,3 +1422,30 @@ work execution.
 
 **Future impact:** Persistence must atomically store these exact domain values behind
 existing repository and transaction boundaries.
+
+## ADR-053 — Workflow persistence is snapshot-authoritative and transaction-bound
+
+**Context:** The Workflow Runtime now has closed, non-executing state transitions but
+future readiness and execution work needs restart-safe state, idempotency, and audit
+evidence without introducing event sourcing or a second persistence system.
+
+**Decision:** Extend the existing SQLite schema, record-codec, transaction-runner, and
+repository patterns with additive workflow definition, instance, command-receipt, and
+event tables. The Workflow Instance remains the authoritative current snapshot.
+Every state-changing command atomically updates that snapshot and version, persists
+its matching receipt, and appends one ordered, redaction-safe workflow event.
+
+**Reason:** A single `BEGIN IMMEDIATE` transaction prevents a durable state change
+without its idempotency evidence or audit trail, while exact optimistic versions and
+receipts make restart replay safe. Keeping events as audit evidence rather than an
+event-sourced authority avoids a premature architectural change.
+
+**Tradeoffs:** SQLite adapters now validate both indexed columns and JSON records, and
+the workflow repositories must reject direct transitions that do not satisfy the
+closed domain tables. Workflow state is durable, but it still cannot schedule,
+authorize, invoke, or execute work.
+
+**Future impact:** Dependency readiness must consume the durable snapshot and event
+history through these repositories. Any approval, Guardian, executor, callback, or
+tool milestone must use the same transaction boundary and must not bypass receipt,
+version, or event invariants.

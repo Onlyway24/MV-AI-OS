@@ -12,6 +12,24 @@ import { StoredRequestValidator } from "../../validation/stored-request-validato
 import { TaskRecordValidator } from "../../validation/task-record-validator.js";
 import { TaskResponseValidator } from "../../validation/task-response-validator.js";
 import type {
+  WorkflowCommandReceipt,
+  WorkflowDefinition,
+  WorkflowInstance,
+} from "../../workflows/runtime/workflow-runtime.js";
+import {
+  WorkflowCommandReceiptValidator,
+  WorkflowDefinitionValidator,
+  WorkflowInstanceValidator,
+} from "../../workflows/runtime/workflow-runtime-validator.js";
+import type {
+  WorkflowEvent,
+  WorkflowEventDraft,
+} from "../../workflows/runtime/workflow-persistence.js";
+import {
+  WorkflowEventDraftValidator,
+  WorkflowEventValidator,
+} from "../../workflows/runtime/workflow-persistence-validator.js";
+import type {
   ValidationIssue,
   Validator,
 } from "../../validation/validation.js";
@@ -23,6 +41,12 @@ export class SqliteRecordCodec {
   readonly #requestValidator = new StoredRequestValidator();
   readonly #responseValidator = new TaskResponseValidator();
   readonly #taskValidator = new TaskRecordValidator();
+  readonly #workflowCommandReceiptValidator =
+    new WorkflowCommandReceiptValidator();
+  readonly #workflowDefinitionValidator = new WorkflowDefinitionValidator();
+  readonly #workflowEventDraftValidator = new WorkflowEventDraftValidator();
+  readonly #workflowEventValidator = new WorkflowEventValidator();
+  readonly #workflowInstanceValidator = new WorkflowInstanceValidator();
 
   public encodeTask(value: unknown): {
     readonly json: string;
@@ -112,6 +136,92 @@ export class SqliteRecordCodec {
       parseJson(json, "Audit event"),
       this.#auditValidator,
       "Audit event",
+    );
+  }
+
+  public encodeWorkflowDefinition(value: unknown): {
+    readonly json: string;
+    readonly value: WorkflowDefinition;
+  } {
+    return encodeValidated(
+      value,
+      this.#workflowDefinitionValidator,
+      "Workflow definition",
+    );
+  }
+
+  public decodeWorkflowDefinition(json: string): WorkflowDefinition {
+    return freezeValidated(
+      parseJson(json, "Workflow definition"),
+      this.#workflowDefinitionValidator,
+      "Workflow definition",
+    );
+  }
+
+  public encodeWorkflowInstance(value: unknown): {
+    readonly json: string;
+    readonly value: WorkflowInstance;
+  } {
+    return encodeValidated(
+      value,
+      this.#workflowInstanceValidator,
+      "Workflow instance",
+    );
+  }
+
+  public decodeWorkflowInstance(json: string): WorkflowInstance {
+    return freezeValidated(
+      parseJson(json, "Workflow instance"),
+      this.#workflowInstanceValidator,
+      "Workflow instance",
+    );
+  }
+
+  public encodeWorkflowCommandReceipt(value: unknown): {
+    readonly json: string;
+    readonly value: WorkflowCommandReceipt;
+  } {
+    return encodeValidated(
+      value,
+      this.#workflowCommandReceiptValidator,
+      "Workflow command receipt",
+    );
+  }
+
+  public decodeWorkflowCommandReceipt(
+    json: string,
+  ): WorkflowCommandReceipt {
+    return freezeValidated(
+      parseJson(json, "Workflow command receipt"),
+      this.#workflowCommandReceiptValidator,
+      "Workflow command receipt",
+    );
+  }
+
+  public encodeWorkflowEventDraft(value: unknown): {
+    readonly json: string;
+    readonly value: WorkflowEventDraft;
+  } {
+    return encodeValidated(
+      value,
+      this.#workflowEventDraftValidator,
+      "Workflow event draft",
+    );
+  }
+
+  public decodeWorkflowEventDraft(json: string): WorkflowEventDraft {
+    return freezeValidated(
+      parseJson(json, "Workflow event draft"),
+      this.#workflowEventDraftValidator,
+      "Workflow event draft",
+    );
+  }
+
+  public validateWorkflowEvent(value: unknown): WorkflowEvent {
+    return validated(
+      value,
+      this.#workflowEventValidator,
+      "Workflow event",
     );
   }
 }
@@ -209,6 +319,22 @@ export function readNullableTextColumn(
   if (typeof value !== "string") {
     throw new RepositoryValidationError(
       `SQLite row column ${column} must be text or null`,
+    );
+  }
+  return value;
+}
+
+export function readIntegerColumn(
+  row: Readonly<Record<string, unknown>>,
+  column: string,
+): number {
+  const value = row[column];
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value)
+  ) {
+    throw new RepositoryValidationError(
+      `SQLite row column ${column} must be an integer`,
     );
   }
   return value;

@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 3;
+export const SQLITE_SCHEMA_VERSION = 4;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -20,6 +20,13 @@ const VERSION_TWO_TABLES = Object.freeze([
 const VERSION_THREE_TABLES = Object.freeze([
   ...VERSION_TWO_TABLES,
   "knowledge_records",
+]);
+const VERSION_FOUR_TABLES = Object.freeze([
+  ...VERSION_THREE_TABLES,
+  "workflow_command_receipts",
+  "workflow_definitions",
+  "workflow_events",
+  "workflow_instances",
 ]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
@@ -60,6 +67,15 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 2, "durable_memory");
     applyKnowledgeMigration(database);
   }
+  const workflowVersion = readPragmaInteger(database, "user_version");
+  if (workflowVersion === 3) {
+    verifyDatabaseIdentity(database, 3);
+    verifyExpectedTables(database, VERSION_THREE_TABLES);
+    verifyMigration(database, 1, "initial_task_lifecycle");
+    verifyMigration(database, 2, "durable_memory");
+    verifyMigration(database, 3, "durable_knowledge");
+    applyWorkflowMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -82,10 +98,11 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_THREE_TABLES);
+  verifyExpectedTables(database, VERSION_FOUR_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
+  verifyMigration(database, 4, "durable_workflows");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -218,6 +235,68 @@ function applyKnowledgeMigration(database: DatabaseSync): void {
     throw new SqliteSchemaError(
       "sqlite_schema_invalid",
       "SQLite knowledge schema migration failed",
+    );
+  }
+}
+
+function applyWorkflowMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE workflow_definitions (
+        definition_id TEXT PRIMARY KEY,
+        workflow_id TEXT NOT NULL,
+        workflow_version TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workflow_id, workflow_version)
+      ) STRICT;
+
+      CREATE TABLE workflow_instances (
+        instance_id TEXT PRIMARY KEY,
+        definition_id TEXT NOT NULL REFERENCES workflow_definitions (definition_id),
+        status TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+
+      CREATE INDEX workflow_instances_definition
+        ON workflow_instances (definition_id);
+
+      CREATE TABLE workflow_command_receipts (
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        command_id TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        resulting_version INTEGER NOT NULL CHECK (resulting_version >= 1),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        PRIMARY KEY (instance_id, command_id),
+        UNIQUE (instance_id, resulting_version)
+      ) STRICT;
+
+      CREATE TABLE workflow_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT NOT NULL UNIQUE,
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        command_id TEXT NOT NULL,
+        occurred_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (instance_id, command_id)
+      ) STRICT;
+
+      CREATE INDEX workflow_events_instance_sequence
+        ON workflow_events (instance_id, sequence);
+
+      INSERT INTO schema_migrations (version, name)
+      VALUES (4, 'durable_workflows');
+
+      PRAGMA user_version = 4;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError(
+      "sqlite_schema_invalid",
+      "SQLite workflow schema migration failed",
     );
   }
 }

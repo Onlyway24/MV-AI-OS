@@ -9,7 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline: `e1ab588 feat: add workflow domain and state machine`.
+- Latest committed baseline before the Workflow Persistence and Atomic Audit milestone:
+  `4e96d68 docs: align workflow persistence milestone`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -88,7 +89,8 @@ and tests, not intended future behavior.
   `f85066f feat: expose local mission planning dry run`.
 - Workflow Runtime Foundation is completed and was committed in
   `e1ab588 feat: add workflow domain and state machine`.
-- The next milestone is Workflow Persistence and Atomic Audit.
+- Workflow Persistence and Atomic Audit is completed by the current change set.
+- The next milestone is Dependency Scheduler and Step Readiness Engine.
 
 ## Current architecture
 
@@ -131,6 +133,8 @@ Supporting modules are isolated behind interfaces:
 
 - repositories for task, request, audit, memory, and knowledge state;
 - registries for agents, agent specifications, workflow specifications, and tools;
+- durable workflow repositories for definitions, instances, processed command
+  receipts, and redaction-safe workflow events;
 - services for memory and knowledge;
 - provider-neutral gateways for models and tools;
 - validators at public and cross-module contract boundaries;
@@ -607,6 +611,8 @@ provider, n8n, or external SDK types.
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
   contracts.
+- workflow runtime definition, instance, command, receipt, persistence transaction,
+  event, event-draft, command-application, and repository contracts.
 - tool definition/invocation/result/permission/risk/registry/gateway contracts.
 
 ## Implemented validators
@@ -659,11 +665,14 @@ provider, n8n, or external SDK types.
   specification validators.
 - Workflow input/output, step, transition, condition, failure policy, and complete
   graph validators.
+- Workflow runtime definition, command, receipt, instance, command-application,
+  event-draft, and event validators, including durable-state semantic, dependency,
+  ordering, immutability, and redaction checks.
 - Tool definition, permission, risk, invocation, and result validators.
 
 ## Implemented tests
 
-The latest verified suite contains 74 test files and 693 tests covering:
+The latest verified suite contains 75 test files and 708 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -696,6 +705,12 @@ The latest verified suite contains 74 test files and 693 tests covering:
   schema mismatch rejection, invalid source and restore-file rejection, overwrite
   refusal, no partial restore, and preservation of lifecycle, request, audit, memory,
   and knowledge records across runtime recreation.
+- Workflow persistence repository behavior, immutable definition conflicts, durable
+  instance and step state, exact-version conflicts, independent-writer contention,
+  restart-safe receipt replay, receipt/event consistency, atomic rollback on receipt
+  or event failure, deterministic bounded event ordering, corrupt-record rejection,
+  redaction-safe direct event rejection, schema v3-to-v4 preservation of lifecycle,
+  memory, and knowledge data, and backup/restore recovery.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - OpenAI provider configuration validation, credential handling, Responses API request
@@ -1071,8 +1086,9 @@ chapter.
   against fixed quality and safety criteria. It cannot execute a plan, call a model,
   invoke an agent or guardian, persist data, use a network, or authorize an external
   action.
-- Durable persistence currently covers task, request, audit, memory, and knowledge
-  state; approvals and workflows remain non-durable.
+- Durable persistence now covers task, request, audit, memory, knowledge, immutable
+  workflow definitions, workflow instances and step states, processed command
+  receipts, and ordered redaction-safe workflow events. Approvals remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
   OpenAI provider adapter through controlled runtime wiring.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
@@ -1119,6 +1135,13 @@ chapter.
 - A caller can create a validated local SQLite backup of the runtime source of truth
   and restore it into an explicit inactive destination; restored databases are proven
   usable through adapter reads and Local Runtime request replay.
+- A caller can create an immutable workflow definition and a validated non-executing
+  workflow instance through `RepositoryBackedWorkflowPersistenceService`, apply a
+  deterministic state-machine command, and durably recover its exact version, step
+  state, command receipt, and ordered redaction-safe event after reopening SQLite.
+- Workflow command replay remains idempotent across restart. Conflicting command IDs,
+  stale versions, malformed records, missing definitions, and invalid direct
+  repository transitions fail closed without partial workflow persistence.
 - The Knowledge Service can independently search an injected repository or participate
   in governed context assembly.
 - The Validated LLM Gateway can independently call an injected model provider.
@@ -1243,13 +1266,13 @@ path.
 ## Not implemented yet
 
 - Universal runtime enforcement of Agent Specifications for all executors.
-- Workflow execution, scheduling, retries, or n8n.
+- Workflow dependency scheduling, step-readiness evaluation, retries, execution, or
+  n8n.
 - Real tool implementations or direct tool execution.
-- Durable approval and workflow persistence.
+- Durable approval persistence and approval checkpoints.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Workflow Runtime Foundation.
 - Workflow Step Execution Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.

@@ -298,8 +298,11 @@ The Mission Planning foundation is now closed: its contracts, planner, quality g
 scenario evidence, and local non-executing dry-run are aligned with Git history and
 project-state. Workflow Runtime Foundation now provides pure domain contracts,
 deterministic transition rules, expected-version checks, and non-durable command
-receipt replay without persistence or work execution. The next milestone is Workflow
-Persistence and Atomic Audit. Durable usage ledgers,
+receipt replay. Workflow Persistence and Atomic Audit now adds additive SQLite schema
+version 4 repositories, validated records, durable instances and step state,
+restart-safe receipt replay, optimistic versions, ordered redaction-safe events, and
+whole-transaction rollback without adding work execution. The next milestone is
+Dependency Scheduler and Step Readiness Engine. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
@@ -330,7 +333,10 @@ with durable approvals and no hidden side effects.
 - Content generation remains separately successful when delivery fails.
 - Every transition and external boundary is audited.
 
-**Status:** Not started.
+**Status:** In progress. The non-executing Workflow Runtime now has validated domain
+state and durable atomic persistence. Dependency readiness, approval and Guardian
+checkpoints, lifecycle coordination, step execution, retries, callbacks, n8n, and all
+external effects remain unimplemented.
 
 ## Phase 7 — Governed direct tools
 

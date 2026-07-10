@@ -23,6 +23,28 @@ import type {
 } from "../../src/persistence/task-repository.js";
 import { isRfc3339Timestamp } from "../../src/validation/primitives.js";
 import { TaskResponseValidator } from "../../src/validation/task-response-validator.js";
+import type {
+  WorkflowCommandReceipt,
+  WorkflowDefinition,
+  WorkflowInstance,
+} from "../../src/workflows/runtime/workflow-runtime.js";
+import {
+  WorkflowCommandReceiptValidator,
+  WorkflowDefinitionValidator,
+  WorkflowInstanceValidator,
+} from "../../src/workflows/runtime/workflow-runtime-validator.js";
+import {
+  isWorkflowStepTransitionAllowed,
+  isWorkflowTransitionAllowed,
+} from "../../src/workflows/runtime/deterministic-workflow-state-machine.js";
+import type {
+  WorkflowEvent,
+  WorkflowEventDraft,
+} from "../../src/workflows/runtime/workflow-persistence.js";
+import {
+  WorkflowEventDraftValidator,
+  WorkflowEventValidator,
+} from "../../src/workflows/runtime/workflow-persistence-validator.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -30,6 +52,11 @@ interface RepositoryState {
   readonly audits: Map<string, AuditEvent>;
   readonly requests: Map<string, StoredRequest>;
   readonly tasks: Map<string, TaskRecord>;
+  readonly workflowCommandReceipts: Map<string, WorkflowCommandReceipt>;
+  readonly workflowDefinitions: Map<string, WorkflowDefinition>;
+  readonly workflowEvents: Map<string, WorkflowEvent>;
+  readonly workflowInstances: Map<string, WorkflowInstance>;
+  workflowEventSequence: number;
 }
 
 export class InMemoryRepositoryTransactionRunner
@@ -63,6 +90,12 @@ function createRepositories(
     audits: new InMemoryAuditRepository(state),
     requests: new InMemoryRequestRepository(state),
     tasks: new InMemoryTaskRepository(state),
+    workflows: Object.freeze({
+      definitions: new InMemoryWorkflowDefinitionRepository(state),
+      events: new InMemoryWorkflowEventRepository(state),
+      instances: new InMemoryWorkflowInstanceRepository(state),
+      receipts: new InMemoryWorkflowCommandReceiptRepository(state),
+    }),
   });
 }
 
@@ -318,11 +351,353 @@ class InMemoryAuditRepository implements AuditRepository {
   }
 }
 
+class InMemoryWorkflowDefinitionRepository {
+  readonly #state: RepositoryState;
+  readonly #validator = new WorkflowDefinitionValidator();
+
+  public constructor(state: RepositoryState) {
+    this.#state = state;
+  }
+
+  public getById(
+    definitionId: string,
+  ): Promise<WorkflowDefinition | undefined> {
+    return Promise.resolve(
+      cloneOptional(this.#state.workflowDefinitions.get(definitionId)),
+    );
+  }
+
+  public insert(definition: WorkflowDefinition): Promise<void> {
+    const validation = this.#validator.validate(definition);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow definition failed validation");
+    }
+    if (this.#state.workflowDefinitions.has(validation.value.definitionId)) {
+      throw new RepositoryConflictError("Workflow definition ID already exists", {
+        definitionId: validation.value.definitionId,
+      });
+    }
+    if (
+      [...this.#state.workflowDefinitions.values()].some(
+        (candidate) =>
+          candidate.workflowId === validation.value.workflowId &&
+          candidate.workflowVersion === validation.value.workflowVersion,
+      )
+    ) {
+      throw new RepositoryConflictError(
+        "Workflow identity and version already exist",
+        { definitionId: validation.value.definitionId },
+      );
+    }
+    this.#state.workflowDefinitions.set(
+      validation.value.definitionId,
+      cloneFrozen(validation.value),
+    );
+    return Promise.resolve();
+  }
+}
+
+class InMemoryWorkflowInstanceRepository {
+  readonly #state: RepositoryState;
+  readonly #validator = new WorkflowInstanceValidator();
+
+  public constructor(state: RepositoryState) {
+    this.#state = state;
+  }
+
+  public getById(
+    instanceId: string,
+  ): Promise<WorkflowInstance | undefined> {
+    return Promise.resolve(
+      cloneOptional(this.#state.workflowInstances.get(instanceId)),
+    );
+  }
+
+  public insert(instance: WorkflowInstance): Promise<void> {
+    const validation = this.#validator.validate(instance);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow instance failed validation");
+    }
+    if (this.#state.workflowInstances.has(validation.value.instanceId)) {
+      throw new RepositoryConflictError("Workflow instance ID already exists", {
+        instanceId: validation.value.instanceId,
+      });
+    }
+    if (
+      validation.value.version !== 0 ||
+      validation.value.receipts.length !== 0
+    ) {
+      throw new RepositoryValidationError(
+        "A new workflow instance cannot contain processed commands",
+      );
+    }
+    this.#state.workflowInstances.set(
+      validation.value.instanceId,
+      cloneFrozen(validation.value),
+    );
+    return Promise.resolve();
+  }
+
+  public update(
+    instance: WorkflowInstance,
+    expectation: { readonly version: number },
+  ): Promise<void> {
+    const validation = this.#validator.validate(instance);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow instance failed validation");
+    }
+    const existing = this.#state.workflowInstances.get(
+      validation.value.instanceId,
+    );
+    if (existing?.version !== expectation.version) {
+      throw new RepositoryConflictError("Workflow version changed after read", {
+        instanceId: validation.value.instanceId,
+      });
+    }
+    if (validation.value.version !== expectation.version + 1) {
+      throw new RepositoryConflictError(
+        "Workflow version must increment exactly once",
+        { instanceId: validation.value.instanceId },
+      );
+    }
+    if (
+      existing.definitionId !== validation.value.definitionId ||
+      existing.createdAt !== validation.value.createdAt
+    ) {
+      throw new RepositoryConflictError(
+        "Workflow instance identity fields cannot be changed",
+        { instanceId: validation.value.instanceId },
+      );
+    }
+    assertAllowedWorkflowInstanceTransition(existing, validation.value);
+    this.#state.workflowInstances.set(
+      validation.value.instanceId,
+      cloneFrozen(validation.value),
+    );
+    return Promise.resolve();
+  }
+}
+
+function assertAllowedWorkflowInstanceTransition(
+  previous: WorkflowInstance,
+  next: WorkflowInstance,
+): void {
+  if (
+    previous.status !== next.status &&
+    !isWorkflowTransitionAllowed(previous.status, next.status)
+  ) {
+    throw new RepositoryConflictError(
+      "Repository rejected an invalid workflow transition",
+      { instanceId: next.instanceId },
+    );
+  }
+  if (previous.steps.length !== next.steps.length) {
+    throw new RepositoryConflictError(
+      "Workflow instance step identities cannot change",
+      { instanceId: next.instanceId },
+    );
+  }
+  for (const [index, previousStep] of previous.steps.entries()) {
+    const nextStep = next.steps[index];
+    if (nextStep?.stepId !== previousStep.stepId) {
+      throw new RepositoryConflictError(
+        "Workflow instance step identities cannot change",
+        { instanceId: next.instanceId },
+      );
+    }
+    if (
+      previousStep.status !== nextStep.status &&
+      !isWorkflowStepTransitionAllowed(
+        previousStep.status,
+        nextStep.status,
+      )
+    ) {
+      throw new RepositoryConflictError(
+        "Repository rejected an invalid workflow step transition",
+        { instanceId: next.instanceId, stepId: nextStep.stepId },
+      );
+    }
+  }
+}
+
+class InMemoryWorkflowCommandReceiptRepository {
+  readonly #state: RepositoryState;
+  readonly #validator = new WorkflowCommandReceiptValidator();
+
+  public constructor(state: RepositoryState) {
+    this.#state = state;
+  }
+
+  public getByInstanceIdAndCommandId(
+    instanceId: string,
+    commandId: string,
+  ): Promise<WorkflowCommandReceipt | undefined> {
+    return Promise.resolve(
+      cloneOptional(this.#state.workflowCommandReceipts.get(receiptKey(instanceId, commandId))),
+    );
+  }
+
+  public insert(
+    instanceId: string,
+    receipt: WorkflowCommandReceipt,
+  ): Promise<void> {
+    const validation = this.#validator.validate(receipt);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow receipt failed validation");
+    }
+    const key = receiptKey(instanceId, validation.value.commandId);
+    if (this.#state.workflowCommandReceipts.has(key)) {
+      throw new RepositoryConflictError("Workflow command receipt already exists", {
+        commandId: validation.value.commandId,
+        instanceId,
+      });
+    }
+    const instance = this.#state.workflowInstances.get(instanceId);
+    if (
+      instance?.version !== validation.value.resultingVersion ||
+      !instance.receipts.some(
+        (candidate) =>
+          candidate.commandId === validation.value.commandId &&
+          candidate.fingerprint === validation.value.fingerprint &&
+          candidate.resultingVersion === validation.value.resultingVersion,
+      )
+    ) {
+      throw new RepositoryConflictError(
+        "Workflow receipt does not match the current workflow instance",
+        { instanceId },
+      );
+    }
+    const sameVersion = [...this.#state.workflowCommandReceipts.entries()].some(
+      ([existingKey, existing]) =>
+        existingKey.startsWith(`${instanceId}\u0000`) &&
+        existing.resultingVersion === validation.value.resultingVersion,
+    );
+    if (sameVersion) {
+      throw new RepositoryConflictError("Workflow receipt version already exists", {
+        instanceId,
+      });
+    }
+    this.#state.workflowCommandReceipts.set(key, cloneFrozen(validation.value));
+    return Promise.resolve();
+  }
+
+  public listByInstanceId(
+    instanceId: string,
+  ): Promise<readonly WorkflowCommandReceipt[]> {
+    return Promise.resolve(
+      Object.freeze(
+        [...this.#state.workflowCommandReceipts.entries()]
+          .filter(([key]) => key.startsWith(`${instanceId}\u0000`))
+          .map(([, receipt]) => cloneFrozen(receipt))
+          .sort(
+            (left, right) =>
+              left.resultingVersion - right.resultingVersion ||
+              left.commandId.localeCompare(right.commandId),
+          ),
+      ),
+    );
+  }
+}
+
+class InMemoryWorkflowEventRepository {
+  readonly #draftValidator = new WorkflowEventDraftValidator();
+  readonly #eventValidator = new WorkflowEventValidator();
+  readonly #state: RepositoryState;
+
+  public constructor(state: RepositoryState) {
+    this.#state = state;
+  }
+
+  public append(draft: WorkflowEventDraft): Promise<WorkflowEvent> {
+    const validation = this.#draftValidator.validate(draft);
+    if (!validation.ok) {
+      throw new RepositoryValidationError("Workflow event draft failed validation");
+    }
+    if (this.#state.workflowEvents.has(validation.value.eventId)) {
+      throw new RepositoryConflictError("Workflow event ID already exists", {
+        eventId: validation.value.eventId,
+      });
+    }
+    if (
+      [...this.#state.workflowEvents.values()].some(
+        (event) =>
+          event.instanceId === validation.value.instanceId &&
+          event.commandId === validation.value.commandId,
+      )
+    ) {
+      throw new RepositoryConflictError(
+        "Workflow command event already exists",
+        {
+          commandId: validation.value.commandId,
+          instanceId: validation.value.instanceId,
+        },
+      );
+    }
+    const instance = this.#state.workflowInstances.get(
+      validation.value.instanceId,
+    );
+    if (
+      instance?.definitionId !== validation.value.definitionId ||
+      instance.version !== validation.value.instanceVersion ||
+      !instance.receipts.some(
+        (receipt) =>
+          receipt.commandId === validation.value.commandId &&
+          receipt.resultingVersion === validation.value.instanceVersion,
+      ) ||
+      !this.#state.workflowCommandReceipts.has(
+        receiptKey(
+          validation.value.instanceId,
+          validation.value.commandId,
+        ),
+      )
+    ) {
+      throw new RepositoryConflictError(
+        "Workflow event does not match the current workflow instance",
+        { instanceId: validation.value.instanceId },
+      );
+    }
+    this.#state.workflowEventSequence += 1;
+    const eventValidation = this.#eventValidator.validate({
+      ...validation.value,
+      sequence: this.#state.workflowEventSequence,
+    });
+    if (!eventValidation.ok) {
+      throw new RepositoryValidationError("Workflow event failed validation");
+    }
+    const event = cloneFrozen(eventValidation.value);
+    this.#state.workflowEvents.set(event.eventId, event);
+    return Promise.resolve(cloneFrozen(event));
+  }
+
+  public listByInstanceId(
+    instanceId: string,
+    limit: number,
+  ): Promise<readonly WorkflowEvent[]> {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+      throw new RepositoryValidationError("Workflow event list limit is invalid");
+    }
+    return Promise.resolve(
+      Object.freeze(
+        [...this.#state.workflowEvents.values()]
+          .filter((event) => event.instanceId === instanceId)
+          .sort((left, right) => left.sequence - right.sequence)
+          .slice(0, limit)
+          .map((event) => cloneFrozen(event)),
+      ),
+    );
+  }
+}
+
 function createState(): RepositoryState {
   return {
     audits: new Map(),
     requests: new Map(),
     tasks: new Map(),
+    workflowCommandReceipts: new Map(),
+    workflowDefinitions: new Map(),
+    workflowEventSequence: 0,
+    workflowEvents: new Map(),
+    workflowInstances: new Map(),
   };
 }
 
@@ -340,7 +715,36 @@ function cloneState(state: RepositoryState): RepositoryState {
     tasks: new Map(
       [...state.tasks].map(([key, value]) => [key, cloneFrozen(value)]),
     ),
+    workflowCommandReceipts: new Map(
+      [...state.workflowCommandReceipts].map(([key, value]) => [
+        key,
+        cloneFrozen(value),
+      ]),
+    ),
+    workflowDefinitions: new Map(
+      [...state.workflowDefinitions].map(([key, value]) => [
+        key,
+        cloneFrozen(value),
+      ]),
+    ),
+    workflowEventSequence: state.workflowEventSequence,
+    workflowEvents: new Map(
+      [...state.workflowEvents].map(([key, value]) => [
+        key,
+        cloneFrozen(value),
+      ]),
+    ),
+    workflowInstances: new Map(
+      [...state.workflowInstances].map(([key, value]) => [
+        key,
+        cloneFrozen(value),
+      ]),
+    ),
   };
+}
+
+function receiptKey(instanceId: string, commandId: string): string {
+  return `${instanceId}\u0000${commandId}`;
 }
 
 function cloneOptional<T>(value: T | undefined): T | undefined {

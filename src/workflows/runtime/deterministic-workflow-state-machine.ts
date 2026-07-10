@@ -1,5 +1,6 @@
 import type { Clock } from "../../ports/clock.js";
 import type { WorkflowCommand, WorkflowInstance, WorkflowInstanceStatus, WorkflowStepInstanceStatus, WorkflowTransitionResult } from "./workflow-runtime.js";
+import { createWorkflowCommandFingerprint } from "./workflow-command-fingerprint.js";
 
 const WF: Readonly<Record<WorkflowInstanceStatus, readonly WorkflowInstanceStatus[]>> = { ACTIVE:["PAUSED","COMPLETED","FAILED","CANCELLED"], PAUSED:["ACTIVE","CANCELLED"], COMPLETED:[], FAILED:[], CANCELLED:[] };
 const STEP: Readonly<Record<WorkflowStepInstanceStatus, readonly WorkflowStepInstanceStatus[]>> = { PENDING:["READY","CANCELLED"], READY:["AWAITING_RESULT","CANCELLED"], AWAITING_RESULT:["SUCCEEDED","FAILED","CANCELLED"], SUCCEEDED:[], FAILED:[], CANCELLED:[] };
@@ -7,7 +8,7 @@ export class WorkflowStateError extends Error { public constructor(message:strin
 export class DeterministicWorkflowStateMachine {
   public constructor(private readonly clock: Clock) {}
   public apply(instance: WorkflowInstance, command: WorkflowCommand): WorkflowTransitionResult {
-    const fingerprint=JSON.stringify({ expectedVersion:command.expectedVersion,kind:command.kind,reasonCode:command.reasonCode,stepId:command.stepId });
+    const fingerprint=createWorkflowCommandFingerprint(command);
     const receipt=instance.receipts.find(({commandId})=>commandId===command.commandId);
     if(receipt!==undefined){ if(receipt.fingerprint!==fingerprint) throw new WorkflowStateError("command ID conflicts with prior command","command_conflict"); return freeze({instance,outcome:"REPLAYED",nonExecuting:true}); }
     if(command.expectedVersion!==instance.version) throw new WorkflowStateError("expected workflow version is stale","version_conflict");

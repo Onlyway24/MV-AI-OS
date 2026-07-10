@@ -15,6 +15,10 @@ import { SqliteRecordCodec } from "./sqlite-record-codec.js";
 import { SqliteRequestRepository } from "./sqlite-request-repository.js";
 import { SqliteTaskRepository } from "./sqlite-task-repository.js";
 import type { SqliteTransactionScope } from "./sqlite-transaction-scope.js";
+import { SqliteWorkflowCommandReceiptRepository } from "./sqlite-workflow-command-receipt-repository.js";
+import { SqliteWorkflowDefinitionRepository } from "./sqlite-workflow-definition-repository.js";
+import { SqliteWorkflowEventRepository } from "./sqlite-workflow-event-repository.js";
+import { SqliteWorkflowInstanceRepository } from "./sqlite-workflow-instance-repository.js";
 
 export class SqliteRepositoryTransactionRunner
   implements RepositoryTransactionRunner
@@ -67,6 +71,28 @@ export class SqliteRepositoryTransactionRunner
           scope,
           this.#codec,
         ),
+        workflows: Object.freeze({
+          definitions: new SqliteWorkflowDefinitionRepository(
+            this.#database,
+            scope,
+            this.#codec,
+          ),
+          events: new SqliteWorkflowEventRepository(
+            this.#database,
+            scope,
+            this.#codec,
+          ),
+          instances: new SqliteWorkflowInstanceRepository(
+            this.#database,
+            scope,
+            this.#codec,
+          ),
+          receipts: new SqliteWorkflowCommandReceiptRepository(
+            this.#database,
+            scope,
+            this.#codec,
+          ),
+        }),
       });
 
       try {
