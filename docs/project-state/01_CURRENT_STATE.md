@@ -9,8 +9,7 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Mission Planning Sprint Review milestone:
-  `f85066f feat: expose local mission planning dry run`.
+- Latest committed baseline: `e1ab588 feat: add workflow domain and state machine`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -87,7 +86,8 @@ and tests, not intended future behavior.
   `e1b1e48 test: add mission planning scenario lab`.
 - The Local Mission Planning Dry-Run Vertical Slice milestone was committed in
   `f85066f feat: expose local mission planning dry run`.
-- Workflow Runtime Foundation is completed by the current change set.
+- Workflow Runtime Foundation is completed and was committed in
+  `e1ab588 feat: add workflow domain and state machine`.
 - The next milestone is Workflow Persistence and Atomic Audit.
 
 ## Current architecture
