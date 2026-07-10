@@ -2,13 +2,12 @@
 
 ## Milestone name
 
-Workflow Runtime Foundation
+Workflow Persistence and Atomic Audit
 
 ## Goal
 
-Create the first deterministic, non-executing Workflow Runtime boundary that consumes
-existing validated Workflow Specifications and Mission Plans without executing agents,
-tools, models, or external actions.
+Persist workflow definitions, instances, receipts, and redaction-safe events atomically
+behind existing repository and SQLite transaction boundaries.
 
 ## Required scope
 

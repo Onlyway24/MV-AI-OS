@@ -1069,6 +1069,25 @@ export { WorkflowStepValidator } from "./workflows/specification/workflow-step-v
 export type { WorkflowTransition } from "./workflows/specification/workflow-transition.js";
 export { WorkflowTransitionValidator } from "./workflows/specification/workflow-transition-validator.js";
 export {
+  WORKFLOW_RUNTIME_CONTRACT_VERSION,
+  type WorkflowBlocker,
+  type WorkflowBlockerCode,
+  type WorkflowCommand,
+  type WorkflowCommandKind,
+  type WorkflowCommandReceipt,
+  type WorkflowDefinition,
+  type WorkflowFailure,
+  type WorkflowInstance,
+  type WorkflowInstanceStatus,
+  type WorkflowStepDefinition,
+  type WorkflowStepInstance,
+  type WorkflowStepInstanceStatus,
+  type WorkflowStopReason,
+  type WorkflowTransitionResult,
+} from "./workflows/runtime/workflow-runtime.js";
+export { WorkflowCommandValidator, WorkflowDefinitionValidator, WorkflowInstanceValidator } from "./workflows/runtime/workflow-runtime-validator.js";
+export { DeterministicWorkflowStateMachine, WorkflowStateError, isWorkflowStepTransitionAllowed, isWorkflowTransitionAllowed } from "./workflows/runtime/deterministic-workflow-state-machine.js";
+export {
   PolicyGovernedToolGateway,
   type PolicyGovernedToolGatewayDependencies,
 } from "./tools/policy-governed-tool-gateway.js";

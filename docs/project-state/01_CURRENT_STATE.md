@@ -87,8 +87,8 @@ and tests, not intended future behavior.
   `e1b1e48 test: add mission planning scenario lab`.
 - The Local Mission Planning Dry-Run Vertical Slice milestone was committed in
   `f85066f feat: expose local mission planning dry run`.
-- The Mission Planning foundation is completed by the current documentation review.
-- The next milestone is Workflow Runtime Foundation.
+- Workflow Runtime Foundation is completed by the current change set.
+- The next milestone is Workflow Persistence and Atomic Audit.
 
 ## Current architecture
 
@@ -663,7 +663,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 73 test files and 686 tests covering:
+The latest verified suite contains 74 test files and 693 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.

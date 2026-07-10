@@ -296,7 +296,10 @@ without calling models, agents, workflows, tools, persistence, or external syste
 The next milestone is Mission Planning Sprint Review and Project-State Alignment.
 The Mission Planning foundation is now closed: its contracts, planner, quality gate,
 scenario evidence, and local non-executing dry-run are aligned with Git history and
-project-state. The next operational chapter is Workflow Runtime Foundation. Durable usage ledgers,
+project-state. Workflow Runtime Foundation now provides pure domain contracts,
+deterministic transition rules, expected-version checks, and non-durable command
+receipt replay without persistence or work execution. The next milestone is Workflow
+Persistence and Atomic Audit. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,

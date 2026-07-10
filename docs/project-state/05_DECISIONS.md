@@ -1412,3 +1412,13 @@ planning into agent, tool, model, or external execution.
 
 **Future impact:** Workflow Runtime must remain deterministic and non-executing until
 its own step-execution and approval milestones are separately completed.
+
+## ADR-052 — Workflow state transitions precede durable workflow storage
+
+**Decision:** Establish pure immutable definitions, mutable-by-replacement instances,
+closed transition tables, expected-version checks, and supplied receipt replay before
+SQLite storage. This milestone has no persistence, audit write, restart guarantee, or
+work execution.
+
+**Future impact:** Persistence must atomically store these exact domain values behind
+existing repository and transaction boundaries.
