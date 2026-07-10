@@ -306,8 +306,14 @@ Step Readiness Engine now adds a transaction-bound, read-only evaluator that res
 the exact durable definition and instance, checks exact snapshot version, evaluates
 dependencies and explicit supplied approval/Guardian markers, and returns bounded,
 immutable, redaction-safe findings in stable definition order. It creates no state
-transition, receipt, event, authorization, or execution capability. The next
-milestone is Workflow Step Execution Boundary. Durable usage ledgers,
+transition, receipt, event, authorization, or execution capability. Workflow Step
+Execution Boundary now adds a second transaction-bound, read-only gate that
+recomputes readiness, validates exact Agent Specification and Agent Company
+declarations, enforces an exact default-deny policy decision, binds supplied Fabio
+approval and Guardian evidence to the same workflow snapshot, and returns at most one
+non-executing candidate. It still performs no work and writes no workflow state. The
+next milestone is Durable Workflow Approval and Guardian Checkpoints. Durable usage
+ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
@@ -339,9 +345,11 @@ with durable approvals and no hidden side effects.
 - Every transition and external boundary is audited.
 
 **Status:** In progress. The non-executing Workflow Runtime now has validated domain
-state, durable atomic persistence, and read-only dependency/step-readiness evaluation.
-Durable approval and Guardian checkpoints, lifecycle coordination, step execution,
-retries, callbacks, n8n, and all external effects remain unimplemented.
+state, durable atomic persistence, read-only dependency/step-readiness evaluation,
+and one exact policy/specification/evidence-gated candidate-preparation boundary.
+Durable approval and Guardian checkpoints, lifecycle coordination, AgentRuntime step
+invocation, result completion, retries, callbacks, n8n, and all external effects
+remain unimplemented.
 
 ## Phase 7 — Governed direct tools
 

@@ -1165,6 +1165,36 @@ export {
   type RepositoryBackedWorkflowReadinessDependencies,
 } from "./workflows/runtime/workflow-readiness-service.js";
 export {
+  WORKFLOW_STEP_EXECUTION_BOUNDARY_CONTRACT_VERSION,
+  freezeWorkflowStepExecutionBoundaryValue,
+  type WorkflowApprovalEvidence,
+  type WorkflowApprovalEvidenceStatus,
+  type WorkflowGuardianEvidence,
+  type WorkflowGuardianEvidenceStatus,
+  type WorkflowStepAgentAssignment,
+  type WorkflowStepExecutionBlocker,
+  type WorkflowStepExecutionBlockerCode,
+  type WorkflowStepExecutionBoundary,
+  type WorkflowStepExecutionBoundaryRequest,
+  type WorkflowStepExecutionBoundaryResult,
+  type WorkflowStepExecutionCandidate,
+  type WorkflowStepSelection,
+} from "./workflows/runtime/workflow-step-execution-boundary.js";
+export {
+  MAX_WORKFLOW_STEP_EXECUTION_BLOCKERS,
+  MAX_WORKFLOW_STEP_EXECUTION_EVIDENCE,
+  MAX_WORKFLOW_STEP_EXECUTION_IDENTIFIERS,
+  MAX_WORKFLOW_STEP_EXECUTION_IDENTIFIER_LENGTH,
+  MAX_WORKFLOW_STEP_EXECUTION_VERSION,
+  WorkflowStepExecutionBoundaryRequestValidator,
+  WorkflowStepExecutionBoundaryResultValidator,
+} from "./workflows/runtime/workflow-step-execution-boundary-validator.js";
+export {
+  createWorkflowStepExecutionBoundary,
+  RepositoryBackedWorkflowStepExecutionBoundary,
+  type RepositoryBackedWorkflowStepExecutionBoundaryDependencies,
+} from "./workflows/runtime/repository-backed-workflow-step-execution-boundary.js";
+export {
   PolicyGovernedToolGateway,
   type PolicyGovernedToolGatewayDependencies,
 } from "./tools/policy-governed-tool-gateway.js";

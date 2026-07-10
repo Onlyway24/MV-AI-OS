@@ -1477,3 +1477,36 @@ snapshot is read.
 inside its own exact-version transaction and independently require policy, declared
 Agent Specification, approval, Guardian, idempotency, and audit invariants. `READY`
 alone never grants permission to execute.
+
+## ADR-055 — Workflow candidate preparation is a read-only authorization gate
+
+**Context:** A readiness finding proves dependency and supplied-control eligibility
+for one snapshot, but it does not prove that the proposed specialist owns the work,
+that an exact Agent Specification exists, that policy grants the required
+permissions, or that approval and Guardian evidence belongs to the same step version.
+
+**Decision:** Add a repository-backed Workflow Step Execution Boundary that opens one
+read-only workflow transaction, loads and validates the exact definition, instance,
+and command receipts, selects at most one step, recomputes canonical readiness, and
+independently checks the exact Agent Specification, responsibility owner, capability
+owner, permission declaration, default-deny PolicyDecision, Fabio approval evidence,
+and required Guardian-domain evidence. Deterministic next-step selection considers
+the first non-terminal definition step and never silently skips it; exact-step
+selection never substitutes another step. The boundary returns either one deeply
+immutable redaction-safe candidate or bounded structured blockers.
+
+**Reason:** Keeping candidate preparation observational closes the gap between
+readiness and future execution without granting the boundary authority to change
+workflow state or invoke work. Exact snapshot and evidence binding prevents stale or
+unrelated control markers from being reused.
+
+**Tradeoffs:** Approval and Guardian evidence remains caller-supplied and transient,
+so the result can be reproduced after restart only when the same evidence is supplied.
+The conservative no-skip rule does not yet express explicit parallel scheduling. The
+candidate contains safe declaration references, not input payloads, prompts, results,
+provider data, or executable closures.
+
+**Future impact:** Durable Workflow Approval and Guardian Checkpoints must replace
+transient control claims with validated restart-safe records in the same repository
+transaction. AgentRuntime invocation, result completion, tools, models, providers,
+networks, and external side effects remain separate later milestones.

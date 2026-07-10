@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Dependency Scheduler and Step Readiness Engine
-  milestone: `1df1eb0 feat: add persistent workflow repositories`.
+- Latest committed baseline before the Workflow Step Execution Boundary milestone:
+  `5e248e0 feat: add workflow step readiness engine`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -91,9 +91,10 @@ and tests, not intended future behavior.
   `e1ab588 feat: add workflow domain and state machine`.
 - Workflow Persistence and Atomic Audit was committed in
   `1df1eb0 feat: add persistent workflow repositories`.
-- Dependency Scheduler and Step Readiness Engine is completed by the current change
-  set.
-- The next milestone is Workflow Step Execution Boundary.
+- Dependency Scheduler and Step Readiness Engine was committed in
+  `5e248e0 feat: add workflow step readiness engine`.
+- Workflow Step Execution Boundary is completed by the current change set.
+- The next milestone is Durable Workflow Approval and Guardian Checkpoints.
 
 ## Current architecture
 
@@ -210,6 +211,7 @@ provider, n8n, or external SDK types.
 57. Workflow Runtime Foundation.
 58. Workflow Persistence and Atomic Audit.
 59. Dependency Scheduler and Step Readiness Engine.
+60. Workflow Step Execution Boundary.
 
 ## Implemented modules
 
@@ -281,6 +283,11 @@ provider, n8n, or external SDK types.
   conflict rejection, and whole-transaction rollback.
 - A read-only workflow readiness evaluator that derives bounded, stable, immutable
   blocked, pending, ready, and terminal findings from durable workflow snapshots.
+- A repository-backed Workflow Step Execution Boundary that recomputes readiness in
+  one exact-version transaction, validates Agent Company responsibility/capability/
+  permission declarations, requires an exact Agent Specification and default-deny
+  policy decision, binds supplied approval and Guardian evidence to the same durable
+  snapshot, and returns at most one immutable non-executing candidate.
 
 ### Models
 
@@ -628,6 +635,8 @@ provider, n8n, or external SDK types.
   event, event-draft, command-application, and repository contracts.
 - workflow readiness request, finding, reason, summary, result, engine, and service
   contracts.
+- workflow step candidate-preparation request, assignment, approval evidence,
+  Guardian evidence, blocker, candidate, result, and boundary contracts.
 - tool definition/invocation/result/permission/risk/registry/gateway contracts.
 
 ## Implemented validators
@@ -686,11 +695,14 @@ provider, n8n, or external SDK types.
 - Workflow readiness request, reason, finding, and result validators, including
   bounded output, exact snapshot version, control-evidence, ordering, immutability,
   and redaction checks.
+- Workflow Step Execution Boundary request and result validators, including strict
+  nested policy/evidence validation, bounded identifiers and blockers, immutable
+  output, and redaction safety.
 - Tool definition, permission, risk, invocation, and result validators.
 
 ## Implemented tests
 
-The latest verified suite contains 76 test files and 719 tests covering:
+The latest verified suite contains 77 test files and 727 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -733,6 +745,11 @@ The latest verified suite contains 76 test files and 719 tests covering:
   paused, terminal, cycle, ordering, bounded-result, stale-snapshot, restart,
   immutability, redaction, bounded graph/reason/control input, injected-engine
   conformance, and no-persistence-mutation behavior.
+- Workflow Step Execution Boundary candidate selection, no-skip and exact-step
+  behavior, dependency/inactive/terminal/stale blocking, exact specification,
+  responsibility, capability, permission and policy enforcement, Fabio approval and
+  Guardian evidence binding, validation, immutability, redaction, read-only
+  repetition, and SQLite restart determinism.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - OpenAI provider configuration validation, credential handling, Responses API request
@@ -1114,6 +1131,10 @@ chapter.
 - Workflow readiness is observational only: it reads one exact durable workflow
   snapshot through the existing transaction boundary, writes no state, receipts, or
   events, and never authorizes execution.
+- Workflow Step Execution Boundary can prepare at most one policy- and declaration-
+  qualified candidate from the same durable snapshot. It writes no workflow state,
+  command receipt, or event and invokes no agent, model, provider, tool, network, or
+  external system.
 - Secret references can be resolved locally into ephemeral values and consumed by the
   OpenAI provider adapter through controlled runtime wiring.
 - Approval markers exist at boundaries, but there is no durable approval workflow.
@@ -1284,6 +1305,10 @@ chapter.
 - The test suite exercises the complete offline Founder Mission Brief → Agent Company
   readiness → Mission Planner → Mission Quality Gate chain for every declared mission
   type; this remains test evidence rather than a runtime entrypoint.
+- A caller can ask the repository-backed Workflow Step Execution Boundary to inspect
+  one exact durable workflow snapshot and receive either one fully qualified,
+  non-executing step candidate or bounded structured blockers. This is candidate
+  preparation only and cannot invoke or complete the step.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1302,8 +1327,10 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Workflow Step Execution Boundary.
-- Durable approvals and human-in-the-loop operations.
+- Durable approval and Guardian checkpoint persistence and human-in-the-loop
+  operations.
+- AgentRuntime invocation, step result completion, lifecycle command coordination,
+  or any model/provider/tool/network/external execution from a workflow candidate.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
 - Cancellation propagation, production retry budgets, operational health checks,
