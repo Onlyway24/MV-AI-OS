@@ -260,6 +260,7 @@ export const LEGAL_RISK_AGENT_SPECIFICATION_PROFILE =
     handoffTargets: [
       "business-agent",
       "content-director",
+      "customer-delivery-agent",
       "publisher-agent",
       "sales-agent",
     ],
@@ -318,6 +319,7 @@ export const CUSTOMER_DELIVERY_AGENT_SPECIFICATION_PROFILE =
       }),
     ],
     handoffTargets: [
+      "content-director",
       "developer-agent",
       "legal-risk-reviewer",
       "publisher-agent",

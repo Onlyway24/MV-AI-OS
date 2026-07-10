@@ -44,6 +44,7 @@ export const CONTENT_DIRECTOR_SPECIFICATION =
     handoffTargets: [
       "business-agent",
       "legal-risk-reviewer",
+      "publisher-agent",
       "research-agent",
       "sales-agent",
     ],

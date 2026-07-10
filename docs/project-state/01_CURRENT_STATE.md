@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Agent Communication / Handoff Contracts
-  milestone: `26b489b feat: add agent permission matrix`.
+- Latest committed baseline before the Agent Company Readiness Review milestone:
+  `3d4420c feat: add agent handoff contracts`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -68,9 +68,11 @@ and tests, not intended future behavior.
   `e8164f1 feat: add agent capability registry`.
 - The Agent Permission Matrix milestone is completed and was committed in
   `26b489b feat: add agent permission matrix`.
-- The Agent Communication / Handoff Contracts milestone is completed by the current
-  change set.
-- The next milestone is Agent Company Readiness Review.
+- The Agent Communication / Handoff Contracts milestone was committed in
+  `3d4420c feat: add agent handoff contracts`.
+- The Agent Company Readiness Review milestone is completed by the current change
+  set.
+- The next milestone is Agent Company Chapter Closeout.
 
 ## Current architecture
 
@@ -171,6 +173,7 @@ provider, n8n, or external SDK types.
 45. Agent Capability Registry.
 46. Agent Permission Matrix.
 47. Agent Communication / Handoff Contracts.
+48. Agent Company Readiness Review.
 
 ## Implemented modules
 
@@ -450,6 +453,14 @@ provider, n8n, or external SDK types.
   responsibility areas, capability IDs, and permission rule IDs while preserving
   redaction safety, Fabio approval markers, guardian markers, and explicit
   non-execution.
+- Deterministic Agent Company Readiness Review over the supplied role map, exact
+  AgentSpecifications, responsibility matrix, capability registry, permission
+  matrix, and handoff contracts. It returns validated, immutable, identifier-only
+  findings and `READY`, `READY_WITH_NON_BLOCKING_WARNINGS`, or `NOT_READY` without
+  executing agents or granting runtime permissions.
+- Cross-artifact handoff allowlist enforcement. Existing handoffs to Publisher Agent,
+  Customer Delivery Agent, and Content Director are now declared by their source
+  AgentSpecifications.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -540,6 +551,8 @@ provider, n8n, or external SDK types.
   evidence summary, expected output, future workflow relevance, future tool
   relevance, handoff type, handoff status, reason, risk, evidence-quality, and
   uncertainty contracts.
+- Agent Company readiness input, report, summary, finding, category, severity,
+  status, evaluator, and validation-error contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -578,6 +591,7 @@ provider, n8n, or external SDK types.
 - Main Assistant operator command, decision request, and decision response
   validators.
 - Agent Handoff contract-set, request, and result validators.
+- Agent Company readiness input and report validators.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -587,7 +601,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 66 test files and 545 tests covering:
+The latest verified suite contains 67 test files and 566 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -754,6 +768,12 @@ The latest verified suite contains 66 test files and 545 tests covering:
   rejection, raw prompt/completion/provider/secret/path leakage rejection, sanitized
   restaurant-offer business-chain coverage, deterministic ordering, immutability, and
   redaction safety.
+- Agent Company Readiness Review for healthy declarations, exact specification
+  coverage, duplicate identities, responsibility and capability ownership,
+  capability-to-permission coverage, approval and guardian gaps, impossible and
+  undeclared handoffs, unknown roles, unsafe runtime-permission implications,
+  deterministic ordering, redaction safety, score/status coherence, and deep
+  immutability.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -934,6 +954,11 @@ before mission planning exists.
   execute workflows, execute tools, call models/providers, mutate files or networks,
   persist state, communicate externally, publish, sell, spend money, provide final
   legal approval, or act autonomously.
+- Agent Company Readiness Review proves whether the supplied declarations are
+  coherent enough for non-executing mission planning, but it does not make agents
+  executable, grant runtime permissions, satisfy durable approvals, run guardians,
+  or execute handoffs, workflows, tools, models, providers, persistence, or network
+  behavior.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -1074,6 +1099,10 @@ before mission planning exists.
   permission references, Fabio approval markers, guardian markers, future
   workflow/tool relevance, and redaction-safe result contracts without invoking any
   agent or executing anything.
+- A caller can run `DeterministicAgentCompanyReadinessEvaluator` over the supplied
+  Agent Company artifacts and receive a validated, immutable, redaction-safe report.
+  The current default declaration set evaluates as `READY` with a score of 100 and no
+  findings; this means declaration-ready for a non-executing dry run only.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1092,7 +1121,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Agent Company Readiness Review.
+- Agent Company Chapter Closeout.
 - Mission Planning Dry-Run Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.

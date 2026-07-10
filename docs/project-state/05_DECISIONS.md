@@ -1198,3 +1198,39 @@ contracts with the role map, AgentSpecifications, responsibility matrix, capabil
 registry, and permission matrix before Mission Planning Dry-Run is implemented.
 Mission Planning Dry-Run must treat handoffs as planning metadata only until a
 separate governed workflow/runtime milestone introduces execution.
+
+## ADR-044 — Agent Company readiness is proven across supplied declarations
+
+**Context:** The Agent Company map, ten exact AgentSpecifications, responsibility
+matrix, capability registry, permission matrix, and handoff contracts were each
+validated independently. Independent validation did not prove that exact role,
+specification, ownership, permission, and handoff references remained coherent across
+all six artifacts. The first cross-artifact review found three valid handoff contracts
+whose targets were absent from their source AgentSpecification allowlists.
+
+**Decision:** Add a deterministic, validated, non-executing Agent Company Readiness
+Review. It evaluates supplied declarations rather than a hardcoded checklist, reuses
+existing artifact validators, applies cross-layer consistency checks, returns
+fixed-template identifier-only findings, preserves deterministic ordering, and makes
+any critical finding produce `NOT_READY` regardless of score. The three existing
+handoff targets are added to their source AgentSpecification allowlists so the current
+declaration set truthfully evaluates as `READY`. Readiness means declaration readiness
+for non-executing mission planning only; it does not grant runtime permissions or make
+experimental AgentSpecifications executable.
+
+**Reason:** Mission planning must not build on individually valid but mutually
+inconsistent company declarations. A pure readiness boundary gives Fabio an explicit
+checkpoint while preserving default-deny policy, exact identities, human authority,
+and the separation between planning metadata and execution rights.
+
+**Tradeoffs:** The readiness score is a deterministic summary, not a substitute for
+findings; critical findings always override it. The evaluator intentionally judges
+the supplied Agent Company artifact set only. It does not prove Main Assistant
+delegation runtime eligibility, durable approval satisfaction, live guardian state,
+or executable workflow/tool readiness.
+
+**Future impact:** Founder Mission Brief and Mission Plan milestones may consume the
+readiness artifact as planning input, but must continue to treat Agent Company
+permissions and handoffs as non-executing declarations. Any future execution path
+must independently reapply Core Brain routing, default-deny policy, effective
+permissions, budgets, approvals, guardians, validation, and audit.

@@ -260,7 +260,10 @@ explicit no-runtime-grant boundaries. Agent Communication / Handoff Contracts no
 define deterministic, validated, non-executing support, review, approval-preparation,
 and escalation handoffs between Agent Company roles using exact role,
 AgentSpecification, responsibility, capability, and permission references while
-remaining redaction-safe and approval/guardian aware. Durable usage ledgers,
+remaining redaction-safe and approval/guardian aware. Agent Company Readiness Review
+now evaluates those supplied declarations together, fails closed on critical
+cross-artifact gaps, and confirms that the current declaration set is `READY` for
+non-executing mission planning without granting runtime access. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
