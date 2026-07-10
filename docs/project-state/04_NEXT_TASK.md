@@ -2,45 +2,49 @@
 
 ## Milestone name
 
-Mission Planning Sprint Review and Project-State Alignment
+Workflow Runtime Foundation
 
 ## Goal
 
-Perform the final factual review of the completed Mission Planning foundation and
-align project-state so the next chapter can begin from one clean, verified record.
+Create the first deterministic, non-executing Workflow Runtime boundary that consumes
+existing validated Workflow Specifications and Mission Plans without executing agents,
+tools, models, or external actions.
 
 ## Required scope
 
-- Reconcile project-state with Git history, source, exports, and test evidence.
-- Confirm all Mission Planning artifacts remain non-executing and CoreBrain remains
-  unaware of the planning boundary.
-- Record the verified next chapter without adding new production behavior.
+- Define validated workflow-run request and result contracts, explicit dependency
+  injection, deterministic graph traversal, and non-execution state reporting.
+- Reuse existing Workflow Specifications, policy, approval, agent specification, and
+  mission-planning boundaries without redesigning them.
+- Add deterministic tests and project-state updates.
 
 ## Forbidden scope
 
-- Production code changes, dependency changes, model/provider calls, live research,
-  agent invocation, workflow/tool execution, persistence, network, dashboard,
-  external actions, autonomy, an HTTP surface, or a CLI change.
+- Agent/model/tool execution, persistence, network, dashboard, external actions,
+  autonomy, an HTTP surface, scheduling, retries, or a CLI change.
 
 ## Likely files to create
 
-- No new source files.
+- `src/workflows/runtime/workflow-run.ts`
+- `src/workflows/runtime/workflow-run-validator.ts`
+- `src/workflows/runtime/deterministic-workflow-runtime.ts`
+- `tests/workflows/workflow-runtime.test.ts`
 
 ## Likely files to modify
 
+- `src/index.ts`
 - all affected project-state documents.
 
 ## Tests required
 
-- All existing verification gates remain green and the documentation states exact
-  commit, test, and next-milestone facts.
+- Validated workflow run contracts, deterministic traversal, graph-policy checks,
+  non-execution, redaction, immutability, and existing-test compatibility.
 
 ## Acceptance criteria
 
-- Project-state accurately records a completed non-executing Mission Planning
-  foundation and the exact next chapter.
+- A caller can inspect deterministic workflow progression without executing a step.
 
 ## Definition of done
 
-- Project-state updates and verification pass in a documentation-only commit.
-- The milestone is committed separately before Workflow Runtime Foundation work.
+- Contracts, validator, runtime, tests, exports, project-state, and verification are
+  complete in a separate commit before Workflow Step Execution Boundary work.

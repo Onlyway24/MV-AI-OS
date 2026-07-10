@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Local Mission Planning Dry-Run Vertical Slice milestone:
-  `e1b1e48 test: add mission planning scenario lab`.
+- Latest committed baseline before the Mission Planning Sprint Review milestone:
+  `f85066f feat: expose local mission planning dry run`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -85,9 +85,10 @@ and tests, not intended future behavior.
   `6356cea feat: add only way mission quality gate`.
 - The Mission Planning Scenario Lab milestone was committed in
   `e1b1e48 test: add mission planning scenario lab`.
-- The Local Mission Planning Dry-Run Vertical Slice milestone is completed by the
-  current change set.
-- The next milestone is Mission Planning Sprint Review and Project-State Alignment.
+- The Local Mission Planning Dry-Run Vertical Slice milestone was committed in
+  `f85066f feat: expose local mission planning dry run`.
+- The Mission Planning foundation is completed by the current documentation review.
+- The next milestone is Workflow Runtime Foundation.
 
 ## Current architecture
 
@@ -196,6 +197,7 @@ provider, n8n, or external SDK types.
 53. Only Way Mission Quality Gate.
 54. Mission Planning Scenario Lab.
 55. Local Mission Planning Dry-Run Vertical Slice.
+56. Mission Planning Sprint Review and Project-State Alignment.
 
 ## Implemented modules
 
@@ -1247,8 +1249,8 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Mission Planning Sprint Review and Project-State Alignment.
 - Workflow Runtime Foundation.
+- Workflow Step Execution Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

@@ -1396,3 +1396,19 @@ or perform the plan.
 **Future impact:** Future presentation layers may call this boundary, but must not
 bypass its validators, readiness-first ordering, quality evidence, or non-execution
 guarantee.
+
+## ADR-051 — Mission Planning foundation is closed before workflow execution
+
+**Context:** Mission Planning now has validated founder intent, Agent Company
+readiness, deterministic plans, quality evidence, scenario coverage, and one local
+non-executing composition boundary.
+
+**Decision:** Close the Mission Planning foundation as a distinct chapter. The next
+work begins at Workflow Runtime Foundation and must consume these artifacts without
+changing their meaning or treating a plan as execution authorization.
+
+**Reason:** A clean chapter boundary prevents workflow work from silently expanding
+planning into agent, tool, model, or external execution.
+
+**Future impact:** Workflow Runtime must remain deterministic and non-executing until
+its own step-execution and approval milestones are separately completed.
