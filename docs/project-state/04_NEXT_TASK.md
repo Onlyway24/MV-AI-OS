@@ -2,56 +2,60 @@
 
 ## Milestone name
 
-Mission Planning Scenario Lab
+Local Mission Planning Dry-Run Vertical Slice
 
 ## Goal
 
-Prove the complete non-executing Mission Planning path across realistic,
-deterministic Founder Mission Brief scenarios: validation, Agent Company readiness,
-Mission Plan generation, and Only Way quality evaluation.
+Expose one explicit local, non-executing Mission Planning entrypoint that composes the
+existing Founder Mission Brief validator, Agent Company readiness evaluator,
+Deterministic Mission Planner, and Only Way Mission Quality Gate into a validated
+operator-facing dry-run result.
 
 ## Required scope
 
-- A deterministic test-only scenario matrix spanning all ten mission types.
-- Representative approval-ready, clarification-required, rejected, remediation, and
-  blocked safety scenarios.
-- Exact assertions for selected roles, capabilities, permissions, handoffs,
-  guardians, approvals, non-execution, and quality release recommendations.
-- Scenario coverage for unknown budgets/deadlines, external-action proposals,
-  conservative assumptions, evidence limits, and cost/effort constraints.
-- Deterministic, deeply immutable, redaction-safe results for every scenario.
-- No production planning rules unless a concrete defect is discovered and
-  independently validated.
+- A versioned local dry-run input and result contract with runtime validators.
+- An explicit dependency-injected composition service that evaluates readiness,
+  validates the brief, plans only when safe, and evaluates quality only when a valid
+  Mission Plan exists.
+- A redaction-safe, deeply immutable operator-facing result that distinguishes
+  `PLAN_READY`, `CLARIFICATION_REQUIRED`, `REJECTED`, approval-ready, remediation,
+  and blocked quality outcomes without ever executing a plan.
+- Deterministic local tests for normal planning, clarification, rejection, quality
+  remediation, approval-ready plan, and no-execution behavior.
 
 ## Forbidden scope
 
 - LLM/model/provider calls, live research, agent invocation, workflow/tool execution,
-  persistence, network, dashboard, external actions, or autonomy. Do not add a
-  Mission Planning runtime, CLI surface, or execution engine in this milestone.
+  persistence, network, dashboard, external actions, autonomy, an HTTP surface, or
+  a CLI change. Do not add a Mission Planning execution engine.
 
 ## Likely files to create
 
-- `tests/missions/mission-planning-scenario-lab.test.ts`
+- `src/missions/local-mission-planning-dry-run.ts`
+- `src/missions/local-mission-planning-dry-run-validator.ts`
+- `tests/missions/local-mission-planning-dry-run.test.ts`
 
 ## Likely files to modify
 
-- all affected project-state documents only if scenario evidence exposes a factual
-  state correction.
+- `src/index.ts`
+- all affected project-state documents.
 
 ## Tests required
 
-- Mission types, scenarios, selection/control assertions, quality outcomes,
-  determinism, immutability, redaction, and no-execution assertions.
-- Existing Mission Brief, Mission Plan, Mission Planner, and Quality Gate tests must
-  continue passing.
+- Input/result validation, readiness failure, clarification, rejection, approval-ready,
+  remediation, blocked quality, dependency injection, determinism, immutability,
+  redaction, and no-execution assertions.
+- Existing Mission Brief, Mission Plan, Mission Planner, Quality Gate, and Scenario
+  Lab tests must continue passing.
 
 ## Acceptance criteria
 
-- The full planning chain is proven against representative founder/operator cases.
-- The scenario lab adds no production execution capability or external behavior.
+- Fabio can invoke one local, validated dry-run boundary and inspect the complete
+  planning decision without invoking a model, agent, workflow, tool, or external
+  action.
 
 ## Definition of done
 
-- The test-only scenario matrix is complete, deterministic, and passes all quality
-  gates and `git diff --check`.
-- The milestone is committed separately before Local Mission Planning Dry-Run work.
+- The local dry-run contracts, validators, service, tests, exports, and project-state
+  updates are complete and pass all quality gates and `git diff --check`.
+- The milestone is committed separately before sprint closeout work.

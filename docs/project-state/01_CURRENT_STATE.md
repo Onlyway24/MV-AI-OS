@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Only Way Mission Quality Gate milestone:
-  `db552bc feat: add deterministic mission planner`.
+- Latest committed baseline before the Mission Planning Scenario Lab milestone:
+  `6356cea feat: add only way mission quality gate`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -81,8 +81,10 @@ and tests, not intended future behavior.
   `609b854 feat: add mission plan contracts`.
 - The Deterministic Mission Planner milestone was committed in
   `db552bc feat: add deterministic mission planner`.
-- The Only Way Mission Quality Gate milestone is completed by the current change set.
-- The next milestone is Mission Planning Scenario Lab.
+- The Only Way Mission Quality Gate milestone was committed in
+  `6356cea feat: add only way mission quality gate`.
+- The Mission Planning Scenario Lab milestone is completed by the current change set.
+- The next milestone is Local Mission Planning Dry-Run Vertical Slice.
 
 ## Current architecture
 
@@ -189,6 +191,7 @@ provider, n8n, or external SDK types.
 51. Mission Plan Contracts.
 52. Deterministic Mission Planner.
 53. Only Way Mission Quality Gate.
+54. Mission Planning Scenario Lab.
 
 ## Implemented modules
 
@@ -652,7 +655,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 71 test files and 660 tests covering:
+The latest verified suite contains 72 test files and 679 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -846,6 +849,11 @@ The latest verified suite contains 71 test files and 660 tests covering:
   gaps, excessive manual work, unsupported certainty, originality-versus-feasibility,
   external commercial approval blocking, deterministic remediation, deep
   immutability, and redaction-safe reports.
+- Mission Planning Scenario Lab coverage for every declared mission type, expected
+  Agent Company selections, quality outcomes, cost/effort remediation, material
+  clarification, conservative assumptions, contradiction rejection, non-executing
+  publication proposals, publication approval blocking, determinism, immutability,
+  and redaction safety.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -1206,6 +1214,9 @@ chapter.
 - A caller can run `DeterministicMissionQualityGate` and receive a deeply immutable,
   redaction-safe quality report with fixed 0–10 dimension scores, actionable
   remediation, and a non-executing Fabio-review recommendation entirely offline.
+- The test suite exercises the complete offline Founder Mission Brief → Agent Company
+  readiness → Mission Planner → Mission Quality Gate chain for every declared mission
+  type; this remains test evidence rather than a runtime entrypoint.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1224,8 +1235,8 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Mission Planning Scenario Lab.
 - Local Mission Planning Dry-Run Vertical Slice.
+- Mission Planning Sprint Review and Project-State Alignment.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

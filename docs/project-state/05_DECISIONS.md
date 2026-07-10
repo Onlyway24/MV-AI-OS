@@ -1348,3 +1348,28 @@ execution.
 **Future impact:** The Scenario Lab and local dry-run must expose the report beside a
 Mission Plan. Any future intelligent quality aid must preserve the deterministic gate
 as a mandatory baseline and must not relax its blocking safety conditions.
+
+## ADR-049 — Scenario coverage is the integration proof before a local dry-run
+
+**Context:** The Founder Mission Brief, Agent Company readiness review, Mission
+Planner, and Mission Quality Gate are individually validated. They need end-to-end
+evidence across every declared mission family before a local operator entrypoint can
+compose them.
+
+**Decision:** Add a deterministic test-only Mission Planning Scenario Lab. It covers
+all declared mission types plus clarification, conservative assumption, contradiction,
+proposal-only external-action, safety-blocking, determinism, immutability, and
+redaction cases. It adds no production runtime behavior or execution capability.
+
+**Reason:** Representative integration evidence identifies contract mismatches—such
+as invalid safety classification—while they are still local, deterministic, and safe
+to correct. It prevents a future local dry-run from becoming the first integration
+test.
+
+**Tradeoffs:** The lab deliberately asserts deterministic scenario outcomes and does
+not claim real-world commercial success, evidence quality, or operator approval. Its
+coverage must be extended when a new mission type or planning control is introduced.
+
+**Future impact:** The local dry-run may compose only the validated contracts and
+services demonstrated by the lab. It must remain non-executing, provider-neutral, and
+subject to the same redaction and approval boundaries.

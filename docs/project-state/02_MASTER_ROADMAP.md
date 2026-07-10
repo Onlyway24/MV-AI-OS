@@ -283,7 +283,13 @@ safety-control checks, deterministic remediation, and redaction-safe immutable
 reports without invoking models, agents, workflows, tools, persistence, or external
 actions. The next Phase 5 milestone is the Mission Planning Scenario Lab, which will
 exercise the validated brief-to-plan-to-quality path across representative safe and
-failure cases without creating a runtime or execution capability. Durable usage ledgers,
+failure cases without creating a runtime or execution capability. The Mission Planning
+Scenario Lab now proves that path for every declared mission type, including expected
+Agent Company selection, approval-ready and remediation outcomes, clarification,
+rejection, conservative assumptions, proposal-only publication controls, and
+redaction-safe blocked safety cases. The next milestone is a Local Mission Planning
+Dry-Run Vertical Slice that will expose this existing validated chain through one
+explicit local composition boundary without adding execution. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,
