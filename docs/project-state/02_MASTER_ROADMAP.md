@@ -266,7 +266,11 @@ cross-artifact gaps, and confirms that the current declaration set is `READY` fo
 non-executing mission planning without granting runtime access. The Agent Company
 chapter is now closed: its declarative organization is complete, while agent,
 workflow, tool, external-communication, publishing, payment, customer-delivery, and
-autonomous legal/compliance execution remain intentionally absent. Durable usage ledgers,
+autonomous legal/compliance execution remain intentionally absent. Founder Intent /
+Mission Brief Foundation now provides a validated, deterministic, non-executing
+objective boundary with explicit business value, deliverables, constraints, cost,
+deadline, quality, originality, evidence, brand, approvals, assumptions, and
+decision-blocking clarification policy. Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,

@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Agent Company Chapter Closeout milestone:
-  `7530da2 feat: add agent company readiness review`.
+- Latest committed baseline before the Founder Intent / Mission Brief Foundation
+  milestone: `8287209 docs: close agent company chapter`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -72,9 +72,12 @@ and tests, not intended future behavior.
   `3d4420c feat: add agent handoff contracts`.
 - The Agent Company Readiness Review milestone was committed in
   `7530da2 feat: add agent company readiness review`.
-- The Agent Company chapter is closed by the current documentation change set after
-  the default declarations evaluated as `READY`.
-- The next milestone is Founder Intent / Mission Brief Foundation.
+- The Agent Company chapter was closed in
+  `8287209 docs: close agent company chapter` after the default declarations
+  evaluated as `READY`.
+- The Founder Intent / Mission Brief Foundation milestone is completed by the current
+  change set.
+- The next milestone is Mission Plan Contracts.
 
 ## Current architecture
 
@@ -177,6 +180,7 @@ provider, n8n, or external SDK types.
 47. Agent Communication / Handoff Contracts.
 48. Agent Company Readiness Review.
 49. Agent Company Chapter Closeout.
+50. Founder Intent / Mission Brief Foundation.
 
 ## Implemented modules
 
@@ -464,6 +468,13 @@ provider, n8n, or external SDK types.
 - Cross-artifact handoff allowlist enforcement. Existing handoffs to Publisher Agent,
   Customer Delivery Agent, and Content Director are now declared by their source
   AgentSpecifications.
+- Founder Mission Brief foundation with ten mission types, structured objectives,
+  audiences, deliverables, success metrics, budget/deadline state, priorities,
+  constraints, forbidden and proposed external actions, risk tolerance, quality,
+  originality, founder preferences, versioned brand profiles, evidence expectations,
+  known facts, assumptions, classified unknowns, and material clarification questions.
+- Default Only Way founder preferences plus separate MV AI OS and Metodo Veloce brand
+  profiles. Visual direction remains scoped to relevant deliverables and profiles.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -556,6 +567,10 @@ provider, n8n, or external SDK types.
   uncertainty contracts.
 - Agent Company readiness input, report, summary, finding, category, severity,
   status, evaluator, and validation-error contracts.
+- Founder Mission Brief, objective, audience, deliverable, constraint, budget,
+  deadline, priority, risk, quality, originality, style, brand, approval, forbidden
+  action, external-action proposal, success metric, evidence, fact, assumption,
+  unknown, clarification, and founder preference contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -595,6 +610,8 @@ provider, n8n, or external SDK types.
   validators.
 - Agent Handoff contract-set, request, and result validators.
 - Agent Company readiness input and report validators.
+- Founder Mission Brief validator with strict unknown-field, reference,
+  contradiction, approval, uncertainty, ordering, and redaction checks.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -604,7 +621,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 67 test files and 566 tests covering:
+The latest verified suite contains 68 test files and 598 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -777,6 +794,11 @@ The latest verified suite contains 67 test files and 566 tests covering:
   undeclared handoffs, unknown roles, unsafe runtime-permission implications,
   deterministic ordering, redaction safety, score/status coherence, and deep
   immutability.
+- Founder Mission Brief validation for all ten mission types, required objectives and
+  deliverables, known/unknown budget and deadline state, contradictory constraints,
+  approval-sensitive and forbidden external actions, blocking and assumable unknowns,
+  multiple brand profiles, custom brands, style scoping, deterministic ordering,
+  unknown-field rejection, redaction safety, and deep immutability.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -967,6 +989,10 @@ chapter.
   executable, grant runtime permissions, satisfy durable approvals, run guardians,
   or execute handoffs, workflows, tools, models, providers, persistence, or network
   behavior.
+- Founder Mission Brief is a validated intent contract only. It does not select
+  agents, create Mission Plans, execute handoffs, invoke models/providers, grant
+  permissions, run guardians, persist state, call tools/workflows, communicate
+  externally, publish, spend, deliver, or act autonomously.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -1111,6 +1137,9 @@ chapter.
   Agent Company artifacts and receive a validated, immutable, redaction-safe report.
   The current default declaration set evaluates as `READY` with a score of 100 and no
   findings; this means declaration-ready for a non-executing dry run only.
+- A caller can validate a `FounderMissionBrief`, including explicit assumptions and
+  decision-blocking clarification questions, without planning or executing the
+  mission.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1129,7 +1158,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Founder Intent / Mission Brief Foundation.
+- Mission Plan Contracts.
 - Mission Planning Dry-Run Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.

@@ -1234,3 +1234,33 @@ readiness artifact as planning input, but must continue to treat Agent Company
 permissions and handoffs as non-executing declarations. Any future execution path
 must independently reapply Core Brain routing, default-deny policy, effective
 permissions, budgets, approvals, guardians, validation, and audit.
+
+## ADR-045 — Founder intent is explicit before mission planning
+
+**Context:** The Agent Company is declaration-ready, but Fabio's objectives still
+arrive through contracts optimized for task execution or shallow operator decisions.
+A deterministic mission planner needs a richer, non-executing statement of business
+value, desired output, constraints, cost, deadline, quality, evidence, brand,
+approval, and uncertainty without forcing Fabio to answer low-impact questions.
+
+**Decision:** Add a versioned Founder Mission Brief contract and strict runtime
+validator. Unknowns are classified as `DECISION_BLOCKING`,
+`MATERIAL_BUT_ASSUMABLE`, or `LOW_IMPACT`. Only decision-blocking unknowns create
+clarification questions; lower-impact unknowns require one explicit conservative
+assumption. External actions remain proposal-only and require Fabio approval markers.
+Founder preferences and brand profiles are versioned, configurable, and non-sensitive;
+MV AI OS and Metodo Veloce are separate defaults rather than global hardcoding.
+
+**Reason:** Fabio should be able to express intent once and receive useful planning
+without becoming a form-filling bottleneck. Explicit uncertainty and evidence rules
+let future planning continue conservatively while protecting strategy, cost, legal,
+audience, deadline, deliverable, and external-action decisions.
+
+**Tradeoffs:** The brief is more structured than a free-text command and cannot infer
+missing facts intelligently without a future provider-neutral planner. It represents
+requested external actions but cannot authorize or execute them.
+
+**Future impact:** Mission Plan Contracts and the deterministic planner must consume a
+validated brief, preserve explicit facts/assumptions/unknowns, ask only material
+questions, apply brand preferences only to relevant deliverables, and remain fully
+non-executing.
