@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Mission Planning Scenario Lab milestone:
-  `6356cea feat: add only way mission quality gate`.
+- Latest committed baseline before the Local Mission Planning Dry-Run Vertical Slice milestone:
+  `e1b1e48 test: add mission planning scenario lab`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -83,8 +83,11 @@ and tests, not intended future behavior.
   `db552bc feat: add deterministic mission planner`.
 - The Only Way Mission Quality Gate milestone was committed in
   `6356cea feat: add only way mission quality gate`.
-- The Mission Planning Scenario Lab milestone is completed by the current change set.
-- The next milestone is Local Mission Planning Dry-Run Vertical Slice.
+- The Mission Planning Scenario Lab milestone was committed in
+  `e1b1e48 test: add mission planning scenario lab`.
+- The Local Mission Planning Dry-Run Vertical Slice milestone is completed by the
+  current change set.
+- The next milestone is Mission Planning Sprint Review and Project-State Alignment.
 
 ## Current architecture
 
@@ -192,6 +195,7 @@ provider, n8n, or external SDK types.
 52. Deterministic Mission Planner.
 53. Only Way Mission Quality Gate.
 54. Mission Planning Scenario Lab.
+55. Local Mission Planning Dry-Run Vertical Slice.
 
 ## Implemented modules
 
@@ -646,6 +650,8 @@ provider, n8n, or external SDK types.
 - Mission Quality Gate input and report validators, including fixed dimension order,
   integer score totals, release-state consistency, remediation coverage, immutable
   non-executing output, and redaction safety.
+- Local Mission Planning Dry-Run input and result validators, including readiness,
+  planning, quality, status, non-execution, and cross-result consistency checks.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -655,7 +661,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 72 test files and 679 tests covering:
+The latest verified suite contains 73 test files and 686 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -854,6 +860,9 @@ The latest verified suite contains 72 test files and 679 tests covering:
   clarification, conservative assumptions, contradiction rejection, non-executing
   publication proposals, publication approval blocking, determinism, immutability,
   and redaction safety.
+- Local Mission Planning Dry-Run coverage for explicit dependency injection, safe
+  readiness blocking, plan-ready quality composition, clarification, rejection,
+  remediation, deterministic immutability, redaction, and no-execution behavior.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -1214,6 +1223,9 @@ chapter.
 - A caller can run `DeterministicMissionQualityGate` and receive a deeply immutable,
   redaction-safe quality report with fixed 0–10 dimension scores, actionable
   remediation, and a non-executing Fabio-review recommendation entirely offline.
+- A caller can run `DeterministicLocalMissionPlanningDryRun` through one validated,
+  dependency-injected local boundary and receive readiness, planning, and quality
+  evidence without invoking any agent, model, workflow, tool, or external action.
 - The test suite exercises the complete offline Founder Mission Brief → Agent Company
   readiness → Mission Planner → Mission Quality Gate chain for every declared mission
   type; this remains test evidence rather than a runtime entrypoint.
@@ -1235,8 +1247,8 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Local Mission Planning Dry-Run Vertical Slice.
 - Mission Planning Sprint Review and Project-State Alignment.
+- Workflow Runtime Foundation.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

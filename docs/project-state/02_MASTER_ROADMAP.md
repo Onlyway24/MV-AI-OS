@@ -289,7 +289,12 @@ Agent Company selection, approval-ready and remediation outcomes, clarification,
 rejection, conservative assumptions, proposal-only publication controls, and
 redaction-safe blocked safety cases. The next milestone is a Local Mission Planning
 Dry-Run Vertical Slice that will expose this existing validated chain through one
-explicit local composition boundary without adding execution. Durable usage ledgers,
+explicit local composition boundary without adding execution. The Local Mission
+Planning Dry-Run Vertical Slice now provides that dependency-injected, validated,
+redaction-safe boundary and distinguishes readiness, planning, and quality outcomes
+without calling models, agents, workflows, tools, persistence, or external systems.
+The next milestone is Mission Planning Sprint Review and Project-State Alignment.
+Durable usage ledgers,
 aggregated budget windows, broader operational telemetry, live smoke-test gating,
 autonomous guardians, dashboards, delegation execution, executable agent-company
 runtime, runtime responsibility enforcement, executable permission enforcement,

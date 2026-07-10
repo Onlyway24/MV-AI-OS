@@ -1373,3 +1373,26 @@ coverage must be extended when a new mission type or planning control is introdu
 **Future impact:** The local dry-run may compose only the validated contracts and
 services demonstrated by the lab. It must remain non-executing, provider-neutral, and
 subject to the same redaction and approval boundaries.
+
+## ADR-050 — The local Mission Planning dry-run composes, but never executes
+
+**Context:** The Mission Planning foundation is useful only if Fabio can invoke its
+validated pieces together without recreating composition logic or bypassing readiness,
+quality, and redaction controls.
+
+**Decision:** Add one dependency-injected local dry-run boundary that evaluates Agent
+Company readiness first, then invokes the deterministic planner only when ready, and
+then invokes the Quality Gate only for a plan-ready result. It returns immutable,
+validated status evidence and never invokes a model, agent, workflow, tool, database,
+or external system.
+
+**Reason:** This provides a usable local vertical slice while preserving CoreBrain
+independence and making execution impossible by contract.
+
+**Tradeoffs:** It is a programmatic local boundary, not an HTTP API, dashboard, CLI
+extension, or workflow runtime. It reports a plan for Fabio review; it cannot approve
+or perform the plan.
+
+**Future impact:** Future presentation layers may call this boundary, but must not
+bypass its validators, readiness-first ordering, quality evidence, or non-execution
+guarantee.

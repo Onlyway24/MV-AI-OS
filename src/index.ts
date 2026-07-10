@@ -432,6 +432,22 @@ export {
   DeterministicMissionQualityGate,
   MissionQualityGateValidationError,
 } from "./missions/deterministic-mission-quality-gate.js";
+export {
+  LOCAL_MISSION_PLANNING_DRY_RUN_CONTRACT_VERSION,
+  type LocalMissionPlanningDryRun,
+  type LocalMissionPlanningDryRunDependencies,
+  type LocalMissionPlanningDryRunInput,
+  type LocalMissionPlanningDryRunResult,
+  type LocalMissionPlanningDryRunStatus,
+} from "./missions/local-mission-planning-dry-run.js";
+export {
+  LocalMissionPlanningDryRunInputValidator,
+  LocalMissionPlanningDryRunResultValidator,
+} from "./missions/local-mission-planning-dry-run-validator.js";
+export {
+  DeterministicLocalMissionPlanningDryRun,
+  LocalMissionPlanningDryRunValidationError,
+} from "./missions/local-mission-planning-dry-run-service.js";
 export type {
   AgentExecutor,
   AgentRuntime,
