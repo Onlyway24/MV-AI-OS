@@ -403,6 +403,14 @@ export {
   type MissionStrategyOption,
 } from "./missions/mission-plan.js";
 export { MissionPlanValidator } from "./missions/mission-plan-validator.js";
+export {
+  MISSION_PLANNING_RESULT_CONTRACT_VERSION,
+  type MissionPlanner,
+  type MissionPlanningResult,
+  type MissionPlanningStatus,
+} from "./missions/mission-planner.js";
+export { MissionPlanningResultValidator } from "./missions/mission-planner-validator.js";
+export { DeterministicMissionPlanner } from "./missions/deterministic-mission-planner.js";
 export type {
   AgentExecutor,
   AgentRuntime,

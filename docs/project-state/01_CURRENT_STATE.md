@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Mission Plan Contracts milestone:
-  `38144f1 feat: add founder mission brief foundation`.
+- Latest committed baseline before the Deterministic Mission Planner milestone:
+  `609b854 feat: add mission plan contracts`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -77,8 +77,10 @@ and tests, not intended future behavior.
   evaluated as `READY`.
 - The Founder Intent / Mission Brief Foundation milestone was committed in
   `38144f1 feat: add founder mission brief foundation`.
-- The Mission Plan Contracts milestone is completed by the current change set.
-- The next milestone is Deterministic Mission Planner.
+- The Mission Plan Contracts milestone was committed in
+  `609b854 feat: add mission plan contracts`.
+- The Deterministic Mission Planner milestone is completed by the current change set.
+- The next milestone is Only Way Mission Quality Gate.
 
 ## Current architecture
 
@@ -183,6 +185,7 @@ provider, n8n, or external SDK types.
 49. Agent Company Chapter Closeout.
 50. Founder Intent / Mission Brief Foundation.
 51. Mission Plan Contracts.
+52. Deterministic Mission Planner.
 
 ## Implemented modules
 
@@ -482,6 +485,11 @@ provider, n8n, or external SDK types.
   mappings, dependencies, handoffs, expected outputs, success/failure/stop criteria,
   guardian and Fabio approval requirements, relative effort/cost classes, evidence,
   risks, quality, external-action denial, and first concrete action.
+- Deterministic provider-neutral Mission Planner with stable mission profiles for all
+  ten Founder Mission Brief types. It validates company readiness, selects the
+  smallest sufficient exact agent team, derives permissions, guardians, approvals,
+  dependencies and handoffs from current declarations, preserves assumptions, asks
+  only decision-blocking questions, and validates every generated Mission Plan.
 - Versioned Workflow Specification graph contracts, validators, and registry
   interface.
 - Versioned Tool Definition, invocation, result, permission, risk, registry, and
@@ -581,6 +589,8 @@ provider, n8n, or external SDK types.
 - Mission Plan, summary, strategy option, agent reference, step, structured expected
   output, approval queue, guardian queue, external-action boundary, effort/cost/risk,
   and mission-control contracts.
+- Mission Planner, planning result, status, assumptions, clarification, rejection,
+  and non-execution contracts.
 - agent capability, schema, limit, policy requirement, specification, and registry
   contracts.
 - workflow input/output/step/transition/condition/failure/specification and registry
@@ -625,6 +635,8 @@ provider, n8n, or external SDK types.
 - Mission Plan validator bound to supplied `READY` Agent Company declarations with
   exact ownership, dependency, capability, permission, handoff, approval, guardian,
   rollup, redaction, and non-execution checks.
+- Mission Planning Result validator for plan-ready, clarification-required, and
+  rejected outcomes.
 - OpenAI provider configuration validator.
 - Agent capability, input/output schema, limit, policy requirement, and full
   specification validators.
@@ -634,7 +646,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 69 test files and 622 tests covering:
+The latest verified suite contains 70 test files and 647 tests covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -817,6 +829,12 @@ The latest verified suite contains 69 test files and 622 tests covering:
   ordering, useful outputs and criteria, guardian and approval propagation, external
   action denial, effort/cost rollups, redaction, deep immutability, and compatibility
   with existing Core Brain/operator plan contracts.
+- Deterministic Mission Planner coverage for all mission types, repeatability,
+  minimal teams, exact capability/responsibility/permission/handoff selection,
+  guardian and approval propagation, blocking clarifications, conservative
+  assumptions, unsafe/contradictory rejection, unavailable-company rejection,
+  dependency ordering, useful steps, justified strategy alternatives, immutability,
+  no input mutation, and redaction-safe failure.
 - default-deny policy intersections and Core Brain enforcement.
 - agent specification validation, duplicates, versions, limits, capabilities, and
   policy requirements.
@@ -1015,6 +1033,10 @@ chapter.
   generate strategies, select agents, invoke agents, execute handoffs, grant runtime
   permissions, call models/providers, run tools/workflows, persist state, communicate,
   publish, spend, deliver, deploy, or act autonomously.
+- Deterministic Mission Planner creates validated Mission Plans from validated briefs
+  and declarations only. It does not call an LLM, model, provider, agent, guardian,
+  workflow, tool, repository, network, filesystem, external service, or execution
+  path.
 - Durable persistence currently covers task, request, audit, memory, and knowledge
   state; approvals and workflows remain non-durable.
 - Secret references can be resolved locally into ephemeral values and consumed by the
@@ -1164,6 +1186,8 @@ chapter.
   mission.
 - A caller can validate a full `MissionPlan` against the supplied `READY` Agent
   Company declarations and receive a deeply immutable copy without executing it.
+- A caller can run `DeterministicMissionPlanner` and receive a deeply immutable
+  `PLAN_READY`, `CLARIFICATION_REQUIRED`, or `REJECTED` result entirely offline.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1182,7 +1206,7 @@ path.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
-- Deterministic Mission Planner.
+- Only Way Mission Quality Gate.
 - Mission Planning Dry-Run Boundary.
 - Durable approvals and human-in-the-loop operations.
 - Production secret management.

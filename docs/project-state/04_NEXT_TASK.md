@@ -2,67 +2,61 @@
 
 ## Milestone name
 
-Deterministic Mission Planner
+Only Way Mission Quality Gate
 
 ## Goal
 
-Build the first provider-neutral, non-executing planning engine that converts a
-validated Founder Mission Brief plus `READY` Agent Company declarations into a valid
-Mission Plan without calling an LLM.
+Create a deterministic, non-LLM quality evaluator that scores Mission Plans for
+clarity, specificity, actionability, value, differentiation, founder alignment,
+feasibility, manual-work efficiency, evidence/uncertainty, and safety/control.
 
 ## Required scope
 
-- Validate the brief and Agent Company readiness.
-- Classify the mission and select required responsibility areas and capabilities.
-- Choose the smallest sufficient exact agent team.
-- Create useful ordered steps, dependencies, safe handoffs, structured outputs,
-  success/failure/stop criteria, effort/cost classes, approvals, and guardian reviews.
-- Return clarification-required results for decision-blocking unknowns.
-- Preserve conservative assumptions for assumable unknowns.
-- Support stable business opportunity, content campaign, technical implementation,
-  market research, and customer-delivery preparation profiles.
-- Fail closed for unsupported, contradictory, or unsafe requests.
-- Validate and deeply freeze every generated Mission Plan.
+- Integer scores from 0 to 10 for all ten quality dimensions.
+- Total score from 0 to 100, blocking defects, warnings, strengths, weaknesses,
+  remediation recommendations, status, and release recommendation.
+- `APPROVAL_READY` requires at least 82/100, no critical dimension below 7, no
+  blocking safety defect, useful expected outputs, complete approval/guardian
+  controls, and no generic filler step.
+- Deterministic anti-slop checks for vague directives without actor, target,
+  deliverable, evidence, metric, output, decision, or boundary.
+- Originality must never compensate for infeasibility, unsupported claims, excessive
+  cost, unsafe action, unclear value, or unnecessary complexity.
+- Fixed-template, redaction-safe, deeply immutable output.
 
 ## Forbidden scope
 
-- LLM/model/provider calls, agent invocation, handoff execution, workflow/tool
-  runtime, Core Brain changes, persistence, HTTP, dashboard, n8n, network, external
-  communication, publishing, spending, delivery, deployment, or autonomy.
-- Invented capabilities, permissions, evidence, pricing, responsibility owners, or
-  generic filler steps.
+- LLM judges, model/provider calls, live research, agent invocation, workflow/tool
+  execution, persistence, network, dashboard, external actions, or autonomy.
 
 ## Likely files to create
 
-- `src/missions/deterministic-mission-planner.ts`
-- `src/missions/mission-planner.ts`
-- `tests/missions/deterministic-mission-planner.test.ts`
+- `src/missions/mission-quality-gate.ts`
+- `src/missions/mission-quality-gate-validator.ts`
+- `src/missions/deterministic-mission-quality-gate.ts`
+- `tests/missions/mission-quality-gate.test.ts`
 
 ## Likely files to modify
 
 - `src/index.ts`
-- all project-state documents affected by milestone completion.
+- all affected project-state documents.
 
 ## Tests required
 
-- Identical brief produces identical plan.
-- Minimal sufficient agents and exact capabilities, responsibilities, permissions,
-  and handoffs.
-- Approval and guardian propagation.
-- Unsupported, unsafe, contradictory, and decision-blocking requests fail closed.
-- Conservative assumptions continue planning.
-- Dependency order and no cycles.
-- No empty-value steps, unnecessary agents, execution behavior, or sensitive output.
-- Existing tests continue passing.
+- Strong approval-ready plan and exact 82/100 threshold behavior.
+- Generic filler, original-but-infeasible, safe-but-valueless, unsafe commercial,
+  missing metrics, excessive manual work, unsupported certainty, unclear audience,
+  weak output, and blocking safety cases.
+- Critical dimension threshold, deterministic remediation, redaction, and immutability.
 
 ## Acceptance criteria
 
-- A validated brief can produce one useful, safe, deterministic Mission Plan.
-- Generated plans always pass `MissionPlanValidator`.
-- No execution or external side effect is introduced.
+- Every plan receives actionable deterministic quality evidence.
+- Numerical quality never overrides a blocking safety defect.
+- Every low score provides concrete remediation.
 
 ## Definition of done
 
-- Planner contracts, implementation, tests, exports, and project-state updates are complete.
+- Quality contracts, validator, evaluator, tests, exports, and project-state updates are complete.
 - All quality gates and `git diff --check` pass.
-- The milestone is committed separately before the quality gate milestone.
+- The milestone is committed separately before Scenario Lab work.

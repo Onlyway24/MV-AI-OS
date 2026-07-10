@@ -1291,3 +1291,31 @@ and plan validation cannot prove real-world evidence or commercial success.
 **Future impact:** The deterministic planner must generate this exact contract and
 pass the validator. A later local dry-run may summarize it into the existing operator
 protocol, but no workflow or agent runtime may treat plan presence as authorization.
+
+## ADR-047 — Deterministic planning is the safe baseline and fallback
+
+**Context:** Founder Mission Brief and Mission Plan contracts are validated, but Fabio
+needs useful plans before intelligent provider-backed planning exists. Calling an LLM
+now would make plan selection, cost, and safety nondeterministic before the baseline
+behavior is proven.
+
+**Decision:** Implement a deterministic, provider-neutral Mission Planner over
+validated briefs and supplied `READY` Agent Company declarations. Stable mission
+profiles map mission types to existing responsibility, capability, permission, and
+handoff IDs. The planner selects the smallest sufficient team, derives controls from
+declarations, asks only decision-blocking questions, preserves conservative
+assumptions, returns relative effort/cost classes, validates its final plan, and fails
+closed on invalid briefs or company state.
+
+**Reason:** A deterministic baseline gives Fabio immediate local planning value,
+creates an auditable fallback for future intelligent planning, and prevents models
+from inventing agents, permissions, evidence, or execution rights.
+
+**Tradeoffs:** Static profiles cannot produce genuinely novel strategy or reason from
+live evidence. Their value is reliable structure and control, not human-level market
+judgment. Profiles must remain general across mission families rather than encode one
+restaurant use case.
+
+**Future impact:** The Only Way Quality Gate and Scenario Lab must evaluate these
+plans. Any future provider-neutral intelligent planner must preserve this deterministic
+planner as a safe fallback and pass the same Mission Plan validator and quality gate.
