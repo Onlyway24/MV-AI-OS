@@ -19,6 +19,10 @@ import type {
   WorkflowAgentInvocationReceipt,
 } from "./workflow-agent-invocation.js";
 import type { WorkflowStepOutcomeReceipt } from "./workflow-step-outcome.js";
+import type {
+  WorkflowLifecycleEvent,
+  WorkflowLifecycleRecord,
+} from "./workflow-lifecycle.js";
 
 export const WORKFLOW_PERSISTENCE_CONTRACT_VERSION = "1" as const;
 
@@ -147,6 +151,17 @@ export interface WorkflowStepOutcomeRepository {
   insert(receipt: WorkflowStepOutcomeReceipt): Promise<void>;
 }
 
+export interface WorkflowLifecycleRecordRepository {
+  getById(recordId: string): Promise<WorkflowLifecycleRecord | undefined>;
+  insert(record: WorkflowLifecycleRecord): Promise<void>;
+  listByStep(instanceId: string, stepId: string): Promise<readonly WorkflowLifecycleRecord[]>;
+}
+
+export interface WorkflowLifecycleEventRepository {
+  append(event: WorkflowLifecycleEvent): Promise<void>;
+  listByRecordId(recordId: string): Promise<readonly WorkflowLifecycleEvent[]>;
+}
+
 export interface WorkflowPersistenceTransaction {
   readonly approvals: WorkflowApprovalCheckpointRepository;
   readonly controlEvents: WorkflowControlCheckpointEventRepository;
@@ -158,6 +173,8 @@ export interface WorkflowPersistenceTransaction {
   readonly agentInvocations: WorkflowAgentInvocationRepository;
   readonly agentInvocationEvents: WorkflowAgentInvocationEventRepository;
   readonly stepOutcomes: WorkflowStepOutcomeRepository;
+  readonly lifecycleRecords: WorkflowLifecycleRecordRepository;
+  readonly lifecycleEvents: WorkflowLifecycleEventRepository;
 }
 
 export interface WorkflowEventIdentifierGenerator {

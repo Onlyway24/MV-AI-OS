@@ -1629,3 +1629,28 @@ accepted automatically and requires later explicit lifecycle handling.
 
 **Future impact:** Future executors must declare their concrete bounded contracts in
 their immutable descriptor and carry them through reservation and outcome review.
+
+## ADR-061 — Retry authorization is durable, bounded, and non-executing
+
+**Context:** Invocation and outcome failures previously had durable evidence but no
+structured failure category, bounded attempt policy, or operator-controlled retry
+decision.
+
+**Decision:** Atomically pair an exact `FAIL_STEP` transition with immutable failure
+classification and lifecycle audit evidence. Retryability is limited to explicit
+timeout and transient-runtime categories, while validation, policy, safety, and
+permanent failures are non-retryable. The service configuration owns a maximum of one
+to five attempts; callers must match and cannot raise it. Only the configured operator
+may create a durable retry authorization, and authorization does not execute or reopen
+the step.
+
+**Reason:** Retry policy must survive restart, remain finite, preserve prior evidence,
+and never turn a failure into a hidden execution loop.
+
+**Tradeoffs:** An authorized retry remains in failed state until a separate explicit
+recovery transition consumes it. Correcting non-retryable failures requires new work
+or later lifecycle handling.
+
+**Future impact:** Explicit Retry Execution must consume one exact latest
+authorization, revalidate current controls, and restore eligibility without invoking
+AgentRuntime automatically.

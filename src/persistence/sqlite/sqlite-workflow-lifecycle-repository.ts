@@ -1,0 +1,27 @@
+import type { DatabaseSync } from "node:sqlite";
+
+import { RepositoryConflictError, RepositoryValidationError } from "../../errors/core-error.js";
+import type { WorkflowLifecycleEvent, WorkflowLifecycleRecord } from "../../workflows/runtime/workflow-lifecycle.js";
+import { WorkflowLifecycleEventValidator, WorkflowLifecycleRecordValidator } from "../../workflows/runtime/workflow-lifecycle.js";
+import type { WorkflowLifecycleEventRepository, WorkflowLifecycleRecordRepository } from "../../workflows/runtime/workflow-persistence.js";
+import { isSqliteConstraintError, SqliteRepositoryError } from "./sqlite-error.js";
+import { assertActiveTransaction, type SqliteTransactionScope } from "./sqlite-transaction-scope.js";
+
+export class SqliteWorkflowLifecycleRecordRepository implements WorkflowLifecycleRecordRepository {
+  readonly #validator = new WorkflowLifecycleRecordValidator();
+  public constructor(private readonly database: DatabaseSync, private readonly scope: SqliteTransactionScope) {}
+  public getById(recordId: string): Promise<WorkflowLifecycleRecord | undefined> { assertActiveTransaction(this.scope); const row = this.database.prepare("SELECT record_json FROM workflow_lifecycle_records WHERE record_id = ?").get(recordId); return Promise.resolve(row === undefined ? undefined : this.#decode(row.record_json)); }
+  public insert(record: WorkflowLifecycleRecord): Promise<void> { assertActiveTransaction(this.scope); const value = this.#validate(record); try { this.database.prepare("INSERT INTO workflow_lifecycle_records (record_id, fingerprint, kind, instance_id, instance_version, step_id, recorded_at, record_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(value.recordId, value.fingerprint, value.kind, value.instanceId, value.instanceVersion, value.stepId, value.recordedAt, JSON.stringify(value)); } catch (error) { if (isSqliteConstraintError(error)) throw new RepositoryConflictError("Workflow lifecycle record already exists"); throw new SqliteRepositoryError("Workflow lifecycle record write failed", "workflow_lifecycle_record.write"); } return Promise.resolve(); }
+  public listByStep(instanceId: string, stepId: string): Promise<readonly WorkflowLifecycleRecord[]> { assertActiveTransaction(this.scope); const rows = this.database.prepare("SELECT record_json FROM workflow_lifecycle_records WHERE instance_id = ? AND step_id = ? ORDER BY sequence ASC").all(instanceId, stepId); return Promise.resolve(Object.freeze(rows.map((row) => this.#decode(row.record_json)))); }
+  #validate(value: unknown): WorkflowLifecycleRecord { const result = this.#validator.validate(value); if (!result.ok) throw new RepositoryValidationError("Workflow lifecycle record failed validation", { issueCount: result.issues.length }); return result.value; }
+  #decode(value: unknown): WorkflowLifecycleRecord { if (typeof value !== "string") throw new RepositoryValidationError("Workflow lifecycle record is corrupted"); try { return this.#validate(JSON.parse(value)); } catch (error) { if (error instanceof RepositoryValidationError) throw error; throw new RepositoryValidationError("Workflow lifecycle record is corrupted"); } }
+}
+
+export class SqliteWorkflowLifecycleEventRepository implements WorkflowLifecycleEventRepository {
+  readonly #validator = new WorkflowLifecycleEventValidator();
+  public constructor(private readonly database: DatabaseSync, private readonly scope: SqliteTransactionScope) {}
+  public append(event: WorkflowLifecycleEvent): Promise<void> { assertActiveTransaction(this.scope); const value = this.#validate(event); try { this.database.prepare("INSERT INTO workflow_lifecycle_events (event_id, record_id, instance_id, occurred_at, record_json) VALUES (?, ?, ?, ?, ?)").run(value.eventId, value.recordId, value.instanceId, value.occurredAt, JSON.stringify(value)); } catch (error) { if (isSqliteConstraintError(error)) throw new RepositoryConflictError("Workflow lifecycle event already exists"); throw new SqliteRepositoryError("Workflow lifecycle event write failed", "workflow_lifecycle_event.write"); } return Promise.resolve(); }
+  public listByRecordId(recordId: string): Promise<readonly WorkflowLifecycleEvent[]> { assertActiveTransaction(this.scope); const rows = this.database.prepare("SELECT record_json FROM workflow_lifecycle_events WHERE record_id = ? ORDER BY sequence ASC").all(recordId); return Promise.resolve(Object.freeze(rows.map((row) => this.#decode(row.record_json)))); }
+  #validate(value: unknown): WorkflowLifecycleEvent { const result = this.#validator.validate(value); if (!result.ok) throw new RepositoryValidationError("Workflow lifecycle event failed validation", { issueCount: result.issues.length }); return result.value; }
+  #decode(value: unknown): WorkflowLifecycleEvent { if (typeof value !== "string") throw new RepositoryValidationError("Workflow lifecycle event is corrupted"); try { return this.#validate(JSON.parse(value)); } catch (error) { if (error instanceof RepositoryValidationError) throw error; throw new RepositoryValidationError("Workflow lifecycle event is corrupted"); } }
+}

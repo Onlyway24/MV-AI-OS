@@ -2,53 +2,49 @@
 
 ## Milestone name
 
-Workflow Lifecycle Failure, Retry, Pause, Resume, and Cancellation
+Explicit Workflow Retry Execution and Recovery
 
 ## Goal
 
-Define and implement explicit operator-controlled lifecycle behavior for failed,
-revision-required, paused, resumed, cancelled, and retry-eligible deterministic
-Workflow Steps without introducing automatic scheduling or external execution.
+Consume one exact durable `AUTHORIZED` retry decision and restore its failed
+Workflow Step to controlled execution eligibility without invoking an agent,
+automatically retrying, or bypassing current policy and control evidence.
 
 ## Why it matters
 
-MV AI OS can now resolve, invoke, validate, and complete one exact local deterministic
-Workflow Step with durable identity and restart-safe evidence. It still lacks a
-coherent lifecycle policy for outcomes that cannot be accepted immediately or for
-operator intervention after reservation.
+MV AI OS can now classify a durable failure and authorize or deny retry under a
+configured bounded attempt policy. Authorization deliberately does not alter failed
+state or execute work. The next boundary must turn one exact authorization into a
+safe restartable recovery transition.
 
 ## Required scope
 
-- Define bounded lifecycle commands and durable receipts for failure, revision,
-  retry authorization, pause, resume, and cancellation.
-- Preserve exact workflow, instance, step, invocation, executor, and version identity.
-- Separate retry authorization from retry execution.
-- Require explicit operator authority for lifecycle actions that change execution
-  eligibility.
-- Preserve atomic state, receipt, event, and audit persistence.
-- Preserve restart-safe idempotency and conflicting-command rejection.
-- Keep later readiness evaluation explicit.
+- Resolve the exact latest failure and retry authorization records.
+- Require exact instance, step, failure, authorization, and expected version identity.
+- Reject exhausted, non-retryable, stale, mismatched, or already-consumed decisions.
+- Atomically restore the failed Workflow and Step to an explicit retry-ready state.
+- Persist one lifecycle execution record, command receipt, Workflow Event, lifecycle
+  event, and exact version increment.
+- Preserve prior failure, invocation, outcome, approval, Guardian, and audit evidence.
+- Require a later explicit readiness/control evaluation before AgentRuntime invocation.
+- Provide restart-safe idempotency and bounded operator recovery instructions.
 
 ## Forbidden scope
 
-- Automatic retry loops, background workers, schedulers, parallel execution, or
-  automatic next-step execution.
-- Models, providers, tools, network, browser, publishing, outreach, payments,
-  customer delivery, or other external actions.
-- Approval UI, Web Console, n8n, callbacks, compensation, or a generic execution
-  framework.
-- New production dependencies or destructive migrations.
+- AgentRuntime invocation, automatic retry, loops, timers, schedulers, or workers.
+- Reusing stale approval, Guardian, policy, candidate, or executor evidence as current
+  authorization.
+- Models, providers, tools, network, browser, external actions, or new dependencies.
 
 ## Acceptance criteria
 
-- Lifecycle decisions are explicit, exact-versioned, atomic, auditable, and
-  idempotent.
-- Retry cannot occur without separate durable authorization.
-- Pause and cancellation prevent invocation before execution.
-- No lifecycle command starts an agent or dependent step automatically.
-- Existing deterministic vertical-slice guarantees remain intact.
+- One authorized retry can be consumed once through exact-version atomic persistence.
+- Failed state cannot reopen without the configured operator's durable authorization.
+- Retry execution grants eligibility only; it does not invoke work.
+- Duplicate retry execution replays without a second version increment.
+- Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-Failed and interrupted local deterministic Workflow Steps have a safe, operator-
-controlled lifecycle without adding autonomy or external side effects.
+One bounded failed deterministic Workflow Step can return to explicit retry-ready
+state without hidden execution or loss of durable failure evidence.

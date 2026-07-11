@@ -1290,6 +1290,29 @@ export {
   type RepositoryBackedWorkflowStepOutcomeDependencies,
 } from "./workflows/runtime/repository-backed-workflow-step-outcome-service.js";
 export {
+  WORKFLOW_LIFECYCLE_CONTRACT_VERSION,
+  WorkflowFailureRequestValidator,
+  WorkflowLifecycleEventValidator,
+  WorkflowLifecycleRecordValidator,
+  WorkflowRetryAuthorizationRequestValidator,
+  createWorkflowLifecycleFingerprint,
+  isRetryableFailureCategory,
+  type WorkflowFailureCategory,
+  type WorkflowFailureRequest,
+  type WorkflowLifecycleEvent,
+  type WorkflowLifecycleRecord,
+  type WorkflowLifecycleRecordKind,
+  type WorkflowLifecycleResult,
+  type WorkflowLifecycleService,
+  type WorkflowRetryAuthorizationRequest,
+  type WorkflowRetryDecision,
+} from "./workflows/runtime/workflow-lifecycle.js";
+export {
+  createWorkflowLifecycleService,
+  RepositoryBackedWorkflowLifecycleService,
+  type RepositoryBackedWorkflowLifecycleDependencies,
+} from "./workflows/runtime/repository-backed-workflow-lifecycle-service.js";
+export {
   PolicyGovernedToolGateway,
   type PolicyGovernedToolGatewayDependencies,
 } from "./tools/policy-governed-tool-gateway.js";

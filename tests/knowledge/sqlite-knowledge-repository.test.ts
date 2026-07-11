@@ -153,6 +153,8 @@ describe("SQLite knowledge persistence", () => {
 
       const legacyDatabase = new DatabaseSync(databasePath);
       legacyDatabase.exec(`
+        DROP TABLE workflow_lifecycle_events;
+        DROP TABLE workflow_lifecycle_records;
         DROP TABLE workflow_step_outcomes;
         DROP TABLE workflow_agent_invocation_events;
         DROP TABLE workflow_agent_invocations;
@@ -164,7 +166,7 @@ describe("SQLite knowledge persistence", () => {
         DROP TABLE workflow_instances;
         DROP TABLE workflow_definitions;
         DROP TABLE knowledge_records;
-        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7);
+        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7, 8);
         PRAGMA user_version = 2;
       `);
       legacyDatabase.close();

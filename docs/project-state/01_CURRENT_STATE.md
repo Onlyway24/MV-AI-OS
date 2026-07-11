@@ -106,9 +106,11 @@ and tests, not intended future behavior.
   explicitly accepted durable invocation outcome can atomically complete
   its exact step; no next step starts automatically.
 - The Local Deterministic Workflow Execution Vertical Slice adversarial review and
-  closeout is completed by the current change set.
-- The next milestone is Workflow Lifecycle Failure, Retry, Pause, Resume, and
-  Cancellation.
+  closeout was committed in `24a96a1`.
+- Workflow Failure Classification and Retry Eligibility is completed by the current
+  change set with bounded configured attempts, durable failure evidence, explicit
+  operator retry authorization, restart-safe replay, and no retry execution.
+- The next milestone is Explicit Workflow Retry Execution and Recovery.
 
 ## Current architecture
 
@@ -231,6 +233,7 @@ provider, n8n, or external SDK types.
 63. Controlled Workflow Step AgentRuntime Invocation.
 64. Workflow Step Outcome Validation and Completion.
 65. Local Deterministic Workflow Execution Vertical Slice Closeout.
+66. Workflow Failure Classification and Retry Eligibility.
 
 ## Implemented modules
 

@@ -24,6 +24,7 @@ import { SqliteWorkflowGuardianCheckpointRepository } from "./sqlite-workflow-gu
 import { SqliteWorkflowInstanceRepository } from "./sqlite-workflow-instance-repository.js";
 import { SqliteWorkflowAgentInvocationEventRepository, SqliteWorkflowAgentInvocationRepository } from "./sqlite-workflow-agent-invocation-repository.js";
 import { SqliteWorkflowStepOutcomeRepository } from "./sqlite-workflow-step-outcome-repository.js";
+import { SqliteWorkflowLifecycleEventRepository, SqliteWorkflowLifecycleRecordRepository } from "./sqlite-workflow-lifecycle-repository.js";
 
 export class SqliteRepositoryTransactionRunner
   implements RepositoryTransactionRunner
@@ -109,6 +110,14 @@ export class SqliteRepositoryTransactionRunner
             this.#database,
             scope,
             this.#codec,
+          ),
+          lifecycleEvents: new SqliteWorkflowLifecycleEventRepository(
+            this.#database,
+            scope,
+          ),
+          lifecycleRecords: new SqliteWorkflowLifecycleRecordRepository(
+            this.#database,
+            scope,
           ),
           instances: new SqliteWorkflowInstanceRepository(
             this.#database,

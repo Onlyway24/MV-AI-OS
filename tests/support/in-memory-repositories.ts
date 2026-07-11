@@ -59,6 +59,7 @@ import {
 } from "../../src/workflows/runtime/workflow-persistence-validator.js";
 import type { WorkflowAgentInvocationEvent, WorkflowAgentInvocationReceipt } from "../../src/workflows/runtime/workflow-agent-invocation.js";
 import type { WorkflowStepOutcomeReceipt } from "../../src/workflows/runtime/workflow-step-outcome.js";
+import type { WorkflowLifecycleEvent, WorkflowLifecycleRecord } from "../../src/workflows/runtime/workflow-lifecycle.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -76,6 +77,8 @@ interface RepositoryState {
   readonly workflowAgentInvocations: Map<string, WorkflowAgentInvocationReceipt>;
   readonly workflowAgentInvocationEvents: Map<string, WorkflowAgentInvocationEvent>;
   readonly workflowStepOutcomes: Map<string, WorkflowStepOutcomeReceipt>;
+  readonly workflowLifecycleRecords: Map<string, WorkflowLifecycleRecord>;
+  readonly workflowLifecycleEvents: Map<string, WorkflowLifecycleEvent>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -120,6 +123,8 @@ function createRepositories(
       events: new InMemoryWorkflowEventRepository(state),
       instances: new InMemoryWorkflowInstanceRepository(state),
       guardians: new InMemoryWorkflowGuardianCheckpointRepository(state),
+      lifecycleEvents: new InMemoryWorkflowLifecycleEventRepository(state),
+      lifecycleRecords: new InMemoryWorkflowLifecycleRecordRepository(state),
       receipts: new InMemoryWorkflowCommandReceiptRepository(state),
       stepOutcomes: new InMemoryWorkflowStepOutcomeRepository(state),
     }),
@@ -144,6 +149,19 @@ class InMemoryWorkflowStepOutcomeRepository {
   public getById(id: string): Promise<WorkflowStepOutcomeReceipt | undefined> { return Promise.resolve(cloneOptional(this.state.workflowStepOutcomes.get(id))); }
   public getByInvocationId(id: string): Promise<WorkflowStepOutcomeReceipt | undefined> { return Promise.resolve(cloneOptional([...this.state.workflowStepOutcomes.values()].find((entry) => entry.invocationId === id))); }
   public insert(receipt: WorkflowStepOutcomeReceipt): Promise<void> { if (this.state.workflowStepOutcomes.has(receipt.outcomeId) || [...this.state.workflowStepOutcomes.values()].some((entry) => entry.invocationId === receipt.invocationId)) throw new RepositoryConflictError("Workflow outcome exists"); this.state.workflowStepOutcomes.set(receipt.outcomeId, cloneFrozen(receipt)); return Promise.resolve(); }
+}
+
+class InMemoryWorkflowLifecycleRecordRepository {
+  public constructor(private readonly state: RepositoryState) {}
+  public getById(id: string): Promise<WorkflowLifecycleRecord | undefined> { return Promise.resolve(cloneOptional(this.state.workflowLifecycleRecords.get(id))); }
+  public insert(record: WorkflowLifecycleRecord): Promise<void> { if (this.state.workflowLifecycleRecords.has(record.recordId)) throw new RepositoryConflictError("Workflow lifecycle record exists"); this.state.workflowLifecycleRecords.set(record.recordId, cloneFrozen(record)); return Promise.resolve(); }
+  public listByStep(instanceId: string, stepId: string): Promise<readonly WorkflowLifecycleRecord[]> { return Promise.resolve(Object.freeze([...this.state.workflowLifecycleRecords.values()].filter((record) => record.instanceId === instanceId && record.stepId === stepId).map(cloneFrozen))); }
+}
+
+class InMemoryWorkflowLifecycleEventRepository {
+  public constructor(private readonly state: RepositoryState) {}
+  public append(event: WorkflowLifecycleEvent): Promise<void> { if (this.state.workflowLifecycleEvents.has(event.eventId)) throw new RepositoryConflictError("Workflow lifecycle event exists"); this.state.workflowLifecycleEvents.set(event.eventId, cloneFrozen(event)); return Promise.resolve(); }
+  public listByRecordId(recordId: string): Promise<readonly WorkflowLifecycleEvent[]> { return Promise.resolve(Object.freeze([...this.state.workflowLifecycleEvents.values()].filter((event) => event.recordId === recordId).map(cloneFrozen))); }
 }
 
 class InMemoryTaskRepository implements TaskRepository {
@@ -906,6 +924,8 @@ function createState(): RepositoryState {
     workflowAgentInvocations: new Map(),
     workflowAgentInvocationEvents: new Map(),
     workflowStepOutcomes: new Map(),
+    workflowLifecycleRecords: new Map(),
+    workflowLifecycleEvents: new Map(),
   };
 }
 
@@ -961,6 +981,8 @@ function cloneState(state: RepositoryState): RepositoryState {
     workflowAgentInvocations: new Map([...state.workflowAgentInvocations].map(([key, value]) => [key, cloneFrozen(value)])),
     workflowAgentInvocationEvents: new Map([...state.workflowAgentInvocationEvents].map(([key, value]) => [key, cloneFrozen(value)])),
     workflowStepOutcomes: new Map([...state.workflowStepOutcomes].map(([key, value]) => [key, cloneFrozen(value)])),
+    workflowLifecycleRecords: new Map([...state.workflowLifecycleRecords].map(([key, value]) => [key, cloneFrozen(value)])),
+    workflowLifecycleEvents: new Map([...state.workflowLifecycleEvents].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

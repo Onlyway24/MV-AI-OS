@@ -247,12 +247,15 @@ describe("Durable Workflow Approval and Guardian Checkpoints", () => {
 
       const database = new DatabaseSync(path);
       database.exec(`
+        DROP TABLE workflow_lifecycle_events;
+        DROP TABLE workflow_lifecycle_records;
         DROP TABLE workflow_step_outcomes;
         DROP TABLE workflow_agent_invocation_events;
         DROP TABLE workflow_agent_invocations;
         DROP TABLE workflow_control_checkpoint_events;
         DROP TABLE workflow_guardian_checkpoints;
         DROP TABLE workflow_approval_checkpoints;
+        DELETE FROM schema_migrations WHERE version = 8;
         DELETE FROM schema_migrations WHERE version = 7;
         DELETE FROM schema_migrations WHERE version = 6;
         DELETE FROM schema_migrations WHERE version = 5;
