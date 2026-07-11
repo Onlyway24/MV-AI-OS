@@ -153,7 +153,13 @@ and tests, not intended future behavior.
   returns the identical final report and durable evidence. Independent scenarios prove
   restaurant and engineering planning, pause/resume, cancellation, bounded retry
   recovery, and exact-deadline timeout without external effects.
-- The next milestone is Core V1 Operator and Recovery Guide.
+- Core V1 Operator and Recovery Guide is completed by the current change set in
+  `docs/CORE_V1_OPERATOR_GUIDE.md`, with validated deterministic configuration,
+  Workflow creation, and report fixtures under `examples/core-v1/`. The guide covers
+  all 22 allowlisted operations, exact versions and IDs, safe errors, lifecycle,
+  shutdown, restart, SQLite recovery, Git verification, and intentionally absent
+  capabilities without credentials or unsupported claims.
+- The next milestone is Core V1 Adversarial Release Review.
 
 ## Current architecture
 
@@ -283,6 +289,7 @@ provider, n8n, or external SDK types.
 70. Operator Workflow Report.
 71. Local Workflow Command Boundary.
 72. Complete Local Core V1 Vertical Slice.
+73. Core V1 Operator and Recovery Guide.
 
 ## Implemented modules
 

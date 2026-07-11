@@ -1,0 +1,1 @@
+{"actorId":"actor-local","commandId":"report-example-workflow","contractVersion":"1","input":{"contractVersion":"1","expectedVersion":0,"instanceId":"example-content-instance","maxItems":50},"operation":"GET_OPERATOR_REPORT","workspaceId":"workspace-local"}

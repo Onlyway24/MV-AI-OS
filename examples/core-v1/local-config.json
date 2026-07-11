@@ -1,0 +1,1 @@
+{"contractVersion":"1","maxRequestBytes":262144,"runtime":{"actorId":"actor-local","contentAgentMode":"deterministic","contractVersion":"1","permissions":{"actorGrants":[],"policyGrants":[],"taskGrants":[]},"sqlite":{"path":"./data/mv-ai-os-core-v1.sqlite","timeoutMs":1000},"workspaceId":"workspace-local"}}

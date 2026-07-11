@@ -1,0 +1,4 @@
+{
+  "actorId":"actor-local","commandId":"create-example-workflow","contractVersion":"1","operation":"CREATE_WORKFLOW","workspaceId":"workspace-local",
+  "input":{"definition":{"contractVersion":"1","definitionId":"example-content@1.0.0","missionObjective":"Prepare one safe local content direction for Fabio review.","nonExecuting":true,"steps":[{"approvalRequired":true,"dependencies":[],"guardianRequired":true,"nonExecuting":true,"stepId":"content-direction"}],"workflowId":"example-content","workflowVersion":"1.0.0"},"instance":{"contractVersion":"1","createdAt":"2026-07-12T00:00:00.000Z","definitionId":"example-content@1.0.0","instanceId":"example-content-instance","nonExecuting":true,"receipts":[],"status":"ACTIVE","steps":[{"blockers":[],"status":"PENDING","stepId":"content-direction"}],"stopReason":"NONE","updatedAt":"2026-07-12T00:00:00.000Z","version":0}}
+}

@@ -2,42 +2,43 @@
 
 ## Milestone name
 
-Core V1 Operator and Recovery Guide
+Core V1 Adversarial Release Review
 
 ## Goal
 
-Create one concise durable guide that lets Fabio operate, stop, restart, recover, and
-verify Core V1 safely through the existing CLI.
+Perform one focused final release review of the complete Core V1 path, fix every P0/P1
+and material P2 issue, and leave auditable findings for closeout.
 
 ## Why it matters
 
-The integrated local product path is now proven. Fabio needs one truthful manual with
-copyable bounded examples and recovery guidance before release review.
+The local product, restart scenario, and Operator Guide now exist. Release closeout
+requires an independent evidence-based challenge of authorization, durability,
+redaction, command usability, reporting accuracy, and documentation truth.
 
 ## Required scope
 
-- Explain what Core V1 can and cannot do and how to configure and start it.
-- Document Mission, Workflow, control, deterministic Agent, outcome, lifecycle,
-  timeout, report, audit, shutdown, restart, and recovery commands.
-- Include safe bounded fixtures and structured-error troubleshooting.
-- Explain how to verify Git state, tests, build, and persisted recovery.
-- Keep all examples preparation-only and free of credentials or private data.
+- Review Mission through report and restart recovery across the real boundaries.
+- Challenge approval and Guardian bypass, stale versions/candidates, duplicate
+  transitions/invocations/outcomes, retry ceilings, stopped Workflow invocation,
+  timeout correctness, partial persistence, command injection, output bounds,
+  redaction, next-action accuracy, and documentation claims.
+- Classify P0–P3 findings and fix all P0/P1 plus material P2 findings.
+- Avoid unrelated cleanup or speculative redesign.
 
 ## Forbidden scope
 
-- Multiple redundant manuals or a marketing-only document.
-- Real credentials, private data, unsupported model/tool instructions, claims of
-  autonomy, cloud deployment, or external action capability.
+- A whole-repository speculative audit or new architecture foundation.
+- Models, providers, tools, network/browser behavior, Web Console, deployment, or
+  external actions.
 
 ## Acceptance criteria
 
-- Fabio can follow the guide without editing TypeScript or SQLite.
-- Commands match the actual allowlisted operation contracts and current CLI syntax.
-- Recovery instructions use a genuinely persistent SQLite path and safe shutdown.
-- Unsupported capabilities are stated explicitly.
+- No unresolved P0/P1 finding remains.
+- Material P2 correctness, privacy, durability, usability, and maintainability issues
+  are fixed.
+- Findings and fixes are source-backed and the focused/full verification gates pass.
 - Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-One accurate Operator and Recovery Guide is tracked and validated against the local
-product boundary.
+Core V1 has one truthful release-review record and is ready for final release closeout.
