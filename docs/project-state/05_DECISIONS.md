@@ -1679,3 +1679,29 @@ and version checks.
 
 **Future impact:** Pause, resume, cancellation, and later timeout evaluation must
 retain this explicit-command, exact-version, atomic-evidence pattern.
+
+## ADR-063 — Workflow stop controls require configured-operator lifecycle evidence
+
+**Context:** The state machine already modeled pause, resume, and cancellation, but a
+generic persistence update could not prove the configured operator had authorized the
+transition or prevent an interrupted reserved invocation from resuming with stale
+pre-pause controls.
+
+**Decision:** Pause, resume, and cancellation are applied only through exact-version
+configured-operator requests. The transaction first creates immutable lifecycle
+evidence, then uses a privileged repository method that verifies the evidence and
+exact transition before atomically storing state, command receipt, Workflow Event,
+and lifecycle event. Generic updates cannot perform these transitions. Resume changes
+the Workflow version and does not invoke work; interrupted reservations require their
+original exact version and therefore cannot resume across pause/resume. Cancellation
+retains completed and failed Steps and makes remaining Steps terminal without claiming
+external compensation.
+
+**Reason:** Stop controls must be durable, attributable, idempotent, and unable to
+reuse stale readiness or safety decisions.
+
+**Tradeoffs:** A reserved invocation interrupted by pause cannot simply continue after
+resume. It requires later explicit lifecycle recovery rather than implicit execution.
+
+**Future impact:** Timeout evaluation must follow the same explicit, injected-clock,
+restart-safe evidence model and must not introduce timers or background loops.

@@ -1291,6 +1291,7 @@ export {
 } from "./workflows/runtime/repository-backed-workflow-step-outcome-service.js";
 export {
   WORKFLOW_LIFECYCLE_CONTRACT_VERSION,
+  WorkflowControlRequestValidator,
   WorkflowFailureRequestValidator,
   WorkflowLifecycleEventValidator,
   WorkflowLifecycleRecordValidator,
@@ -1299,6 +1300,8 @@ export {
   createWorkflowLifecycleFingerprint,
   isRetryableFailureCategory,
   type WorkflowFailureCategory,
+  type WorkflowControlAction,
+  type WorkflowControlRequest,
   type WorkflowFailureRequest,
   type WorkflowLifecycleEvent,
   type WorkflowLifecycleRecord,

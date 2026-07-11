@@ -214,15 +214,22 @@ describe("Workflow Persistence and Atomic Audit", () => {
   it("orders workflow events deterministically by durable sequence", async () => {
     const runner = createRunner(":memory:");
     const service = createService(runner, "ordered-event");
-    await service.createDefinition(workflowDefinition());
-    await service.createInstance(workflowInstance());
+    await service.createDefinition(workflowDefinition({ steps: [
+      { approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "step-01" },
+      { approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "step-02" },
+    ] }));
+    await service.createInstance(workflowInstance({ steps: [
+      { blockers: [], status: "AWAITING_RESULT", stepId: "step-01" },
+      { blockers: [], status: "AWAITING_RESULT", stepId: "step-02" },
+    ] }));
     await service.applyCommand(
-      commandApplication("PAUSE", { commandId: "ordered-pause" }),
+      commandApplication("COMPLETE_STEP", { commandId: "ordered-complete", stepId: "step-01" }),
     );
     await service.applyCommand(
-      commandApplication("RESUME", {
-        commandId: "ordered-resume",
+      commandApplication("FAIL_STEP", {
+        commandId: "ordered-fail",
         expectedVersion: 1,
+        stepId: "step-02",
       }),
     );
 
@@ -230,8 +237,8 @@ describe("Workflow Persistence and Atomic Audit", () => {
       workflows.events.listByInstanceId("workflow-instance-001", 10),
     );
     expect(events.map(({ commandId, sequence }) => ({ commandId, sequence }))).toEqual([
-      { commandId: "ordered-pause", sequence: 1 },
-      { commandId: "ordered-resume", sequence: 2 },
+      { commandId: "ordered-complete", sequence: 1 },
+      { commandId: "ordered-fail", sequence: 2 },
     ]);
     await runner.close();
   });
@@ -279,13 +286,14 @@ describe("Workflow Persistence and Atomic Audit", () => {
     await service.createDefinition(workflowDefinition());
     await service.createInstance(workflowInstance());
     await service.applyCommand(
-      commandApplication("PAUSE", { commandId: "shared-command" }),
+      commandApplication("COMPLETE_STEP", { commandId: "shared-command", stepId: "step-01" }),
     );
     await expect(
       service.applyCommand(
-        commandApplication("CANCEL", {
+        commandApplication("FAIL_STEP", {
           commandId: "shared-command",
           expectedVersion: 1,
+          stepId: "step-01",
         }),
       ),
     ).rejects.toMatchObject({ code: "repository_conflict" });
@@ -302,15 +310,17 @@ describe("Workflow Persistence and Atomic Audit", () => {
     await service.createInstance(secondInstance);
     const results = await Promise.allSettled([
       service.applyCommand(
-        commandApplication("PAUSE", {
-          commandId: "concurrent-pause",
+        commandApplication("COMPLETE_STEP", {
+          commandId: "concurrent-complete",
           instanceId: secondInstance.instanceId,
+          stepId: "step-01",
         }),
       ),
       service.applyCommand(
-        commandApplication("ACTIVATE", {
-          commandId: "concurrent-activate",
+        commandApplication("FAIL_STEP", {
+          commandId: "concurrent-fail",
           instanceId: secondInstance.instanceId,
+          stepId: "step-01",
         }),
       ),
     ]);
@@ -337,10 +347,10 @@ describe("Workflow Persistence and Atomic Audit", () => {
       const secondRunner = createRunner(path);
       const results = await Promise.allSettled([
         createService(firstRunner, "first-event").applyCommand(
-          commandApplication("PAUSE", { commandId: "first-writer" }),
+          commandApplication("COMPLETE_STEP", { commandId: "first-writer", stepId: "step-01" }),
         ),
         createService(secondRunner, "second-event").applyCommand(
-          commandApplication("ACTIVATE", { commandId: "second-writer" }),
+          commandApplication("FAIL_STEP", { commandId: "second-writer", stepId: "step-01" }),
         ),
       ]);
       expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
@@ -642,6 +652,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
         DROP TABLE workflow_command_receipts;
         DROP TABLE workflow_instances;
         DROP TABLE workflow_definitions;
+        DELETE FROM schema_migrations WHERE version = 10;
         DELETE FROM schema_migrations WHERE version = 9;
         DELETE FROM schema_migrations WHERE version = 8;
         DELETE FROM schema_migrations WHERE version = 7;
@@ -685,7 +696,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
       await reopenedKnowledge.close();
 
       const verification = new DatabaseSync(path);
-      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(9);
+      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(10);
       expect(
         verification
           .prepare("SELECT name FROM schema_migrations WHERE version = 5")
@@ -711,6 +722,11 @@ describe("Workflow Persistence and Atomic Audit", () => {
           .prepare("SELECT name FROM schema_migrations WHERE version = 9")
           .get()?.name,
       ).toBe("explicit_workflow_retry_execution");
+      expect(
+        verification
+          .prepare("SELECT name FROM schema_migrations WHERE version = 10")
+          .get()?.name,
+      ).toBe("explicit_workflow_lifecycle_control");
       verification.close();
     });
   });

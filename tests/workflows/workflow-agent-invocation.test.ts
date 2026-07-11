@@ -22,6 +22,7 @@ import {
   InProcessAgentRuntime,
   SqliteRepositoryTransactionRunner,
   createWorkflowAgentInvoker,
+  createWorkflowLifecycleService,
   createWorkflowPersistenceService,
   createWorkflowStepExecutionBoundary,
   type AgentInvocation,
@@ -129,6 +130,19 @@ describe("Controlled Workflow Agent Invocation", () => {
     expect(rollback.instance?.version).toBe(0);
     expect(rollback.receipt).toBeUndefined();
     await rollbackRunner.close();
+  });
+
+  it("does not resume an interrupted reservation after pause or resume changed its exact version", async () => {
+    const runner = createRunner(":memory:"); await seed(runner);
+    await expect(createInvoker(new FailOnTransactionRunner(runner, 4), new RecordingRuntime(runtime())).invoke(request())).rejects.toThrow("injected transaction failure");
+    const lifecycle = createWorkflowLifecycleService({ clock: new FixedClock(), maxAttempts: 3, operatorActorId: "fabio", repositories: runner });
+    await lifecycle.controlWorkflow({ action: "PAUSE", actorId: "fabio", commandId: "pause-reserved", contractVersion: "1", controlId: "pause-reserved-1", expectedVersion: 2, instanceId: "content-instance", reasonCode: "operator_pause" });
+    const pausedRuntime = new RecordingRuntime(runtime());
+    expect(await createInvoker(runner, pausedRuntime).invoke(request())).toMatchObject({ status: "BLOCKED", blocker: { code: "INVOCATION_STATE_INVALID" } });
+    await lifecycle.controlWorkflow({ action: "RESUME", actorId: "fabio", commandId: "resume-reserved", contractVersion: "1", controlId: "resume-reserved-1", expectedVersion: 3, instanceId: "content-instance", reasonCode: "operator_resume" });
+    expect(await createInvoker(runner, pausedRuntime).invoke(request())).toMatchObject({ status: "BLOCKED", blocker: { code: "INVOCATION_STATE_INVALID" } });
+    expect(pausedRuntime.invocations).toEqual([]);
+    await runner.close();
   });
 });
 

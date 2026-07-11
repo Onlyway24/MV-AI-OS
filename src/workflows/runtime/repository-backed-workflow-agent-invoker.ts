@@ -102,6 +102,11 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
   async #resume(receipt: WorkflowAgentInvocationReceipt, fingerprint: string): Promise<ControlledWorkflowAgentInvocationResult> {
     if (receipt.fingerprint !== fingerprint) return blocked("INVOCATION_CONFLICT", "Invocation ID has a conflicting fingerprint");
     if (receipt.status !== "RESERVED") return terminal(receipt, true);
+    const resumable = await this.dependencies.repositories.transaction(async ({ workflows }) => {
+      const instance = await workflows.instances.getById(receipt.instanceId);
+      return instance?.status === "ACTIVE" && instance.version === receipt.reservedInstanceVersion && instance.steps.find(({ stepId }) => stepId === receipt.stepId)?.status === "AWAITING_RESULT";
+    });
+    if (!resumable) return blocked("INVOCATION_STATE_INVALID", "Reserved invocation cannot resume while its Workflow is stopped");
     const resolved = this.dependencies.resolver.resolve({ requiredCapabilityIds: receipt.capabilityIds, specificationId: receipt.specificationId, specificationVersion: receipt.specificationVersion });
     const specification = this.dependencies.agentSpecifications.get(receipt.runtimeAgentId, receipt.specificationVersion);
     if (resolved.status !== "resolved" || specification === undefined || resolved.executor.executorId !== receipt.executorId || resolved.executor.executorVersion !== receipt.executorVersion) return blocked("INVOCATION_STATE_INVALID", "Reserved invocation binding no longer resolves exactly");

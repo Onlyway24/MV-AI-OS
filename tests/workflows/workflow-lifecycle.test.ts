@@ -16,6 +16,64 @@ import {
 import { FixedClock } from "../support/fixtures.js";
 
 describe("Workflow failure and retry eligibility", () => {
+  it("pauses, resumes, and cancels only through explicit durable operator controls", async () => {
+    const runner = createRunner(":memory:"); await seedWorkflow(runner);
+    const pause = await service(runner).controlWorkflow(controlRequest("PAUSE", { commandId: "pause-command", controlId: "pause-1" }));
+    expect(await service(runner).controlWorkflow(controlRequest("PAUSE", { commandId: "pause-command", controlId: "pause-1" }))).toEqual({ ...pause, replayed: true });
+    const resume = await service(runner).controlWorkflow(controlRequest("RESUME", { commandId: "resume-command", controlId: "resume-1", expectedVersion: 1 }));
+    const cancellation = await service(runner).controlWorkflow(controlRequest("CANCEL", { commandId: "cancel-command", controlId: "cancel-1", expectedVersion: 2 }));
+    expect([pause.record.kind, resume.record.kind, cancellation.record.kind]).toEqual(["PAUSE", "RESUME", "CANCELLATION"]);
+    const stored = await runner.transaction(async ({ workflows }) => ({
+      events: await workflows.events.listByInstanceId("instance-1", 10),
+      instance: await workflows.instances.getById("instance-1"),
+      records: await workflows.lifecycleRecords.listByStep("instance-1", "workflow"),
+    }));
+    expect(stored.instance).toMatchObject({ status: "CANCELLED", stopReason: "CANCELLED_BY_OPERATOR", version: 3, steps: [{ status: "CANCELLED" }] });
+    expect(stored.events.map(({ commandKind }) => commandKind)).toEqual(["PAUSE", "RESUME", "CANCEL"]);
+    expect(stored.records).toHaveLength(3);
+    expect(resume.record.recoveryInstructions).toContain("Re-evaluate readiness, policy, approval, Guardian, specification, executor, and version before invocation.");
+    expect(cancellation.record.recoveryInstructions).toContain("Completed and failure evidence is retained; no external compensation is claimed.");
+    await runner.close();
+  });
+
+  it("fails closed for unauthorized, stale, invalid-state, and bypassed lifecycle controls", async () => {
+    const runner = createRunner(":memory:"); await seedWorkflow(runner);
+    expect(() => service(runner).controlWorkflow(controlRequest("PAUSE", { actorId: "not-fabio" }))).toThrow(/operator/iu);
+    await expect(service(runner).controlWorkflow(controlRequest("PAUSE", { expectedVersion: 9 }))).rejects.toThrow(/stale/iu);
+    const persistence = createWorkflowPersistenceService({ eventIds: new EventIds(), repositories: runner, stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()) });
+    await expect(persistence.applyCommand({ actorCategory: "operator", command: { commandId: "bypass-pause", expectedVersion: 0, kind: "PAUSE", nonExecuting: true, reasonCode: "bypass" }, instanceId: "instance-1" })).rejects.toThrow(/operator evidence/iu);
+    await service(runner).controlWorkflow(controlRequest("PAUSE"));
+    await expect(service(runner).controlWorkflow(controlRequest("PAUSE", { commandId: "pause-again", controlId: "pause-again", expectedVersion: 1 }))).rejects.toThrow(/invalid workflow transition/iu);
+    await runner.close();
+  });
+
+  it("replays lifecycle control after restart and retains completed step evidence on cancellation", async () => {
+    await withDatabase(async (path) => {
+      const first = createRunner(path);
+      const persistence = createWorkflowPersistenceService({ eventIds: new EventIds(), repositories: first, stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()) });
+      const twoStepDefinition: WorkflowDefinition = { ...definition(), steps: [
+        { approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "step-1" },
+        { approvalRequired: false, dependencies: ["step-1"], guardianRequired: false, nonExecuting: true, stepId: "step-2" },
+      ] };
+      const twoStepInstance: WorkflowInstance = { ...instance(), steps: [
+        { blockers: [], status: "SUCCEEDED", stepId: "step-1" },
+        { blockers: [], status: "READY", stepId: "step-2" },
+      ] };
+      await persistence.createDefinition(twoStepDefinition); await persistence.createInstance(twoStepInstance);
+      const pause = await service(first).controlWorkflow(controlRequest("PAUSE"));
+      await first.close();
+      const reopened = createRunner(path);
+      expect(await service(reopened).controlWorkflow(controlRequest("PAUSE"))).toEqual({ ...pause, replayed: true });
+      await service(reopened).controlWorkflow(controlRequest("RESUME", { expectedVersion: 1 }));
+      await service(reopened).controlWorkflow(controlRequest("CANCEL", { expectedVersion: 2 }));
+      const cancelled = await reopened.transaction(({ workflows }) => workflows.instances.getById("instance-1"));
+      expect(cancelled?.steps).toEqual([
+        { blockers: [], status: "SUCCEEDED", stepId: "step-1" },
+        { blockers: [], status: "CANCELLED", stepId: "step-2" },
+      ]);
+      await reopened.close();
+    });
+  });
   it("atomically records bounded retryable failure evidence and fails the step", async () => {
     const runner = createRunner(":memory:"); await seedFailedInvocation(runner);
     const result = await service(runner).recordFailure(failureRequest());
@@ -136,10 +194,15 @@ function retryRequest(overrides: Partial<ReturnType<typeof retryRequestBase>> = 
 function retryRequestBase() { return { actorId: "fabio", authorizationId: "retry-auth-1", contractVersion: "1" as const, expectedVersion: 3, failureId: "failure-1", instanceId: "instance-1", stepId: "step-1" }; }
 function executionRequest(overrides: Partial<ReturnType<typeof executionRequestBase>> = {}) { return { ...executionRequestBase(), ...overrides }; }
 function executionRequestBase() { return { actorId: "fabio", authorizationId: "retry-auth-1", commandId: "retry-command-1", contractVersion: "1" as const, executionId: "retry-execution-1", expectedVersion: 3, failureId: "failure-1", instanceId: "instance-1", stepId: "step-1" }; }
+function controlRequest(action: "CANCEL" | "PAUSE" | "RESUME", overrides: Partial<{ actorId: string; commandId: string; controlId: string; expectedVersion: number; reasonCode: string }> = {}) { return { action, actorId: "fabio", commandId: `${action.toLowerCase()}-command`, contractVersion: "1" as const, controlId: `${action.toLowerCase()}-1`, expectedVersion: 0, instanceId: "instance-1", reasonCode: "operator_lifecycle_control", ...overrides }; }
 
-async function seedFailedInvocation(runner: SqliteRepositoryTransactionRunner) {
+async function seedWorkflow(runner: SqliteRepositoryTransactionRunner) {
   const persistence = createWorkflowPersistenceService({ eventIds: new EventIds(), repositories: runner, stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()) });
   await persistence.createDefinition(definition()); await persistence.createInstance(instance());
+}
+
+async function seedFailedInvocation(runner: SqliteRepositoryTransactionRunner) {
+  await seedWorkflow(runner);
   await runner.transaction(async ({ workflows }) => {
     const initial = await workflows.instances.getById("instance-1");
     if (initial === undefined) throw new Error("missing seed instance");

@@ -110,12 +110,17 @@ and tests, not intended future behavior.
 - Workflow Failure Classification and Retry Eligibility was committed in `ac3ed0a`
   with bounded configured attempts, durable failure evidence, explicit
   operator retry authorization, restart-safe replay, and no retry execution.
-- Explicit Workflow Retry Execution and Recovery is completed by the current change
-  set. One exact latest durable authorization can be consumed once to atomically
+- Explicit Workflow Retry Execution and Recovery was committed in `e79f0b5`. One
+  exact latest durable authorization can be consumed once to atomically
   restore only the failed Workflow Step to `READY`; no agent, tool, model, provider,
   network, or external action is invoked, and all current controls must be evaluated
   again before a later explicit invocation.
-- The next milestone is Explicit Workflow Pause, Resume, and Cancellation.
+- Explicit Workflow Pause, Resume, and Cancellation is completed by the current
+  change set. Only the configured operator can atomically apply these controls with
+  durable receipts and lifecycle audit evidence. Ordinary repository updates cannot
+  bypass the control boundary, completed and failure evidence is retained, and an
+  interrupted invocation cannot resume across a pause/resume version change.
+- The next milestone is Explicit Workflow Timeout Evaluation.
 
 ## Current architecture
 
@@ -240,6 +245,7 @@ provider, n8n, or external SDK types.
 65. Local Deterministic Workflow Execution Vertical Slice Closeout.
 66. Workflow Failure Classification and Retry Eligibility.
 67. Explicit Workflow Retry Execution and Recovery.
+68. Explicit Workflow Pause, Resume, and Cancellation.
 
 ## Implemented modules
 

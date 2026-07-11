@@ -2,52 +2,51 @@
 
 ## Milestone name
 
-Explicit Workflow Pause, Resume, and Cancellation
+Explicit Workflow Timeout Evaluation
 
 ## Goal
 
-Add explicit, idempotent operator lifecycle controls for pausing, resuming, and
-cancelling durable Workflows without invoking work or weakening failure and control
-evidence.
+Add deterministic, explicit timeout evaluation for durable Workflow activity without
+sleeping, timers, background workers, automatic retries, or hidden execution.
 
 ## Why it matters
 
-MV AI OS can now fail a step, authorize a bounded retry, and consume that exact
-authorization to restore eligibility without hidden execution. Operators also need
-durable stop controls that preserve evidence and prevent new invocation while stopped.
+MV AI OS now has explicit failure, bounded retry, recovery, pause, resume, and
+cancellation controls. Chapter 1 still requires timeout decisions that survive restart
+and are driven only by an explicit command and injected clock.
 
 ## Required scope
 
-- Add explicit operator pause, resume, and cancellation requests with exact instance
-  version identity.
-- Persist state, command receipt, Workflow Event, lifecycle evidence, and one exact
-  version increment atomically.
-- Make duplicate commands restart-safe and idempotent.
-- Prevent new invocation while paused or cancelled.
-- Require resume to re-evaluate readiness, policy, approval, Guardian, specification,
-  executor, and version before any later invocation.
-- Preserve failures, completed work, approvals, Guardians, invocations, outcomes, and
-  all prior audit evidence.
-- Define explicit cancellation handling for pending, ready, and awaiting-result steps
-  without claiming external compensation.
+- Define bounded timeout metadata and an explicit timeout-evaluation request.
+- Use only the injected clock and durable timestamps; do not call uncontrolled time
+  sources in deterministic paths.
+- Require exact Workflow, Step, invocation or activity identity, and expected version.
+- Record both not-expired and expired decisions durably and idempotently.
+- On expiry, atomically persist the exact failure transition, command receipt,
+  Workflow Event, timeout evidence, and version increment.
+- Classify timeout failure under the existing bounded retry policy without initiating
+  retry or recovery.
+- Preserve restart-safe replay and structured operator recovery instructions.
 
 ## Forbidden scope
 
-- AgentRuntime invocation, automatic resume, loops, timers, schedulers, or workers.
-- Erasing failure or approval-revocation evidence.
-- Claiming cancellation compensated or reversed any external effect.
+- Sleeping, timers, schedulers, workers, polling, or background evaluation.
+- AgentRuntime invocation, automatic retry/recovery, models, providers, tools, network,
+  browser, or external actions.
+- Caller-controlled unbounded timeout values.
 - Models, providers, tools, network, browser, external actions, or new dependencies.
 
 ## Acceptance criteria
 
-- Pause prevents new invocation and preserves durable evidence.
-- Resume grants eligibility only and requires fresh control evaluation.
-- Cancellation is explicit, terminal, idempotent, and retains completed evidence.
-- Stale versions, invalid actors, invalid source states, and conflicting command IDs
-  fail closed.
+- Evaluation before the deadline records a non-expired decision without changing the
+  Workflow version.
+- Evaluation at or after the deadline records an exact timeout failure atomically.
+- Duplicate evaluation replays after restart without a second transition.
+- Stale versions, mismatched activity, invalid metadata, and conflicting IDs fail
+  closed.
 - Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-Operators can explicitly pause, resume, or cancel a durable Workflow with atomic,
-restart-safe evidence and no hidden execution.
+One durable Workflow activity can be evaluated explicitly for timeout with bounded,
+restart-safe evidence and no background behavior.

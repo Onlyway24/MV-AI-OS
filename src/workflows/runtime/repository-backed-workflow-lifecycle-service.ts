@@ -6,6 +6,7 @@ import { DeterministicWorkflowStateMachine } from "./deterministic-workflow-stat
 import { WorkflowEventDraftValidator } from "./workflow-persistence-validator.js";
 import {
   WorkflowFailureRequestValidator,
+  WorkflowControlRequestValidator,
   WorkflowLifecycleEventValidator,
   WorkflowLifecycleRecordValidator,
   WorkflowRetryAuthorizationRequestValidator,
@@ -14,6 +15,7 @@ import {
   freeze,
   isRetryableFailureCategory,
   type WorkflowFailureRequest,
+  type WorkflowControlRequest,
   type WorkflowLifecycleEvent,
   type WorkflowLifecycleRecord,
   type WorkflowLifecycleResult,
@@ -28,6 +30,7 @@ export interface RepositoryBackedWorkflowLifecycleDependencies {
   readonly operatorActorId: string;
   readonly repositories: RepositoryTransactionRunner;
   readonly failureRequestValidator: Validator<WorkflowFailureRequest>;
+  readonly controlRequestValidator: Validator<WorkflowControlRequest>;
   readonly retryRequestValidator: Validator<WorkflowRetryAuthorizationRequest>;
   readonly retryExecutionRequestValidator: Validator<WorkflowRetryExecutionRequest>;
   readonly stateMachine: DeterministicWorkflowStateMachine;
@@ -64,6 +67,33 @@ export class RepositoryBackedWorkflowLifecycleService implements WorkflowLifecyc
       await workflows.receipts.insert(instance.instanceId, commandReceipt);
       await workflows.events.append(workflowEvent);
       await workflows.lifecycleRecords.insert(record);
+      await workflows.lifecycleEvents.append(lifecycleEvent(record));
+      return freeze({ contractVersion: "1", record, replayed: false });
+    });
+  }
+
+  public controlWorkflow(request: WorkflowControlRequest): Promise<WorkflowLifecycleResult> {
+    const valid = validate(validate(request, this.dependencies.controlRequestValidator, "Workflow control request"), new WorkflowControlRequestValidator(), "Workflow control request");
+    if (valid.actorId !== this.dependencies.operatorActorId) throw new RepositoryConflictError("Workflow control requires the configured operator");
+    const fingerprint = createWorkflowLifecycleFingerprint(valid);
+    return this.dependencies.repositories.transaction(async ({ workflows }) => {
+      const existing = await workflows.lifecycleRecords.getById(valid.controlId);
+      if (existing !== undefined) return replay(existing, fingerprint);
+      const instance = await workflows.instances.getById(valid.instanceId);
+      if (instance?.version !== valid.expectedVersion) throw new RepositoryConflictError("Workflow control request version is stale");
+      const definition = await workflows.definitions.getById(instance.definitionId);
+      if (definition === undefined) throw new RepositoryValidationError("Workflow definition is missing");
+      const transition = this.dependencies.stateMachine.apply(instance, { commandId: valid.commandId, expectedVersion: valid.expectedVersion, kind: valid.action, nonExecuting: true, reasonCode: valid.reasonCode });
+      const commandReceipt = transition.instance.receipts.at(-1);
+      if (commandReceipt === undefined) throw new RepositoryValidationError("Workflow control transition produced no receipt");
+      const recordedAt = now(this.dependencies.clock);
+      const kind = valid.action === "CANCEL" ? "CANCELLATION" : valid.action;
+      const record = lifecycleRecord({ actorId: valid.actorId, definitionId: definition.definitionId, fingerprint, instanceId: valid.instanceId, instanceVersion: transition.instance.version, kind, recordedAt, recordId: valid.controlId, recoveryInstructions: controlInstructions(valid.action), stepId: "workflow", workflowVersion: definition.workflowVersion });
+      const workflowEvent = validate({ actorCategory: "operator", commandId: valid.commandId, commandKind: valid.action, contractVersion: "1", definitionId: definition.definitionId, eventId: `${valid.controlId}-transition`, instanceId: valid.instanceId, instanceVersion: transition.instance.version, nextStatus: transition.instance.status, nonExecuting: true, occurredAt: recordedAt, previousStatus: instance.status, reasonCode: valid.reasonCode, summaryCode: "workflow_transition_applied", workflowId: definition.workflowId, workflowVersion: definition.workflowVersion }, new WorkflowEventDraftValidator(), "Workflow control event");
+      await workflows.lifecycleRecords.insert(record);
+      await workflows.instances.control(transition.instance, { version: instance.version }, valid.controlId);
+      await workflows.receipts.insert(instance.instanceId, commandReceipt);
+      await workflows.events.append(workflowEvent);
       await workflows.lifecycleEvents.append(lifecycleEvent(record));
       return freeze({ contractVersion: "1", record, replayed: false });
     });
@@ -143,13 +173,14 @@ export class RepositoryBackedWorkflowLifecycleService implements WorkflowLifecyc
   }
 }
 
-export function createWorkflowLifecycleService(dependencies: Omit<RepositoryBackedWorkflowLifecycleDependencies, "failureRequestValidator" | "retryRequestValidator" | "retryExecutionRequestValidator" | "stateMachine">): RepositoryBackedWorkflowLifecycleService { if (!Number.isSafeInteger(dependencies.maxAttempts) || dependencies.maxAttempts < 1 || dependencies.maxAttempts > 5) throw new RepositoryValidationError("Workflow retry limit is invalid"); return new RepositoryBackedWorkflowLifecycleService({ ...dependencies, failureRequestValidator: new WorkflowFailureRequestValidator(), retryRequestValidator: new WorkflowRetryAuthorizationRequestValidator(), retryExecutionRequestValidator: new WorkflowRetryExecutionRequestValidator(), stateMachine: new DeterministicWorkflowStateMachine(dependencies.clock) }); }
+export function createWorkflowLifecycleService(dependencies: Omit<RepositoryBackedWorkflowLifecycleDependencies, "controlRequestValidator" | "failureRequestValidator" | "retryRequestValidator" | "retryExecutionRequestValidator" | "stateMachine">): RepositoryBackedWorkflowLifecycleService { if (!Number.isSafeInteger(dependencies.maxAttempts) || dependencies.maxAttempts < 1 || dependencies.maxAttempts > 5) throw new RepositoryValidationError("Workflow retry limit is invalid"); return new RepositoryBackedWorkflowLifecycleService({ ...dependencies, controlRequestValidator: new WorkflowControlRequestValidator(), failureRequestValidator: new WorkflowFailureRequestValidator(), retryRequestValidator: new WorkflowRetryAuthorizationRequestValidator(), retryExecutionRequestValidator: new WorkflowRetryExecutionRequestValidator(), stateMachine: new DeterministicWorkflowStateMachine(dependencies.clock) }); }
 
 function lifecycleRecord(value: Omit<WorkflowLifecycleRecord, "contractVersion" | "externalEffects">): WorkflowLifecycleRecord { return validate({ ...value, contractVersion: "1", externalEffects: false }, new WorkflowLifecycleRecordValidator(), "Workflow lifecycle record"); }
-function lifecycleEvent(record: WorkflowLifecycleRecord): WorkflowLifecycleEvent { return validate({ contractVersion: "1", eventId: `${record.recordId}-event`, externalEffects: false, instanceId: record.instanceId, kind: record.kind, occurredAt: record.recordedAt, recordId: record.recordId, stepId: record.stepId, summaryCode: record.kind === "FAILURE" ? "workflow_failure_recorded" : record.kind === "RETRY_AUTHORIZATION" ? "workflow_retry_authorization_recorded" : "workflow_retry_execution_recorded" }, new WorkflowLifecycleEventValidator(), "Workflow lifecycle event"); }
+function lifecycleEvent(record: WorkflowLifecycleRecord): WorkflowLifecycleEvent { const summaryCode = record.kind === "FAILURE" ? "workflow_failure_recorded" : record.kind === "RETRY_AUTHORIZATION" ? "workflow_retry_authorization_recorded" : record.kind === "RETRY_EXECUTION" ? "workflow_retry_execution_recorded" : record.kind === "PAUSE" ? "workflow_pause_recorded" : record.kind === "RESUME" ? "workflow_resume_recorded" : "workflow_cancellation_recorded"; return validate({ contractVersion: "1", eventId: `${record.recordId}-event`, externalEffects: false, instanceId: record.instanceId, kind: record.kind, occurredAt: record.recordedAt, recordId: record.recordId, stepId: record.stepId, summaryCode }, new WorkflowLifecycleEventValidator(), "Workflow lifecycle event"); }
 function replay(record: WorkflowLifecycleRecord, fingerprint: string): WorkflowLifecycleResult { if (record.fingerprint !== fingerprint) throw new RepositoryConflictError("Workflow lifecycle record ID conflicts with prior request"); return freeze({ contractVersion: "1", record, replayed: true }); }
 function failureInstructions(category: WorkflowFailureRequest["category"], attempt: number, maxAttempts: number): readonly string[] { if (!isRetryableFailureCategory(category)) return Object.freeze(["Inspect the durable failure evidence.", "Correct the non-retryable condition before creating new work."]); if (attempt >= maxAttempts) return Object.freeze(["Retry attempts are exhausted.", "Inspect the durable audit trail and choose a manual recovery path."]); return Object.freeze(["Inspect the durable failure evidence.", "Request explicit operator retry authorization.", "Do not retry automatically."]); }
 function retryInstructions(decision: "AUTHORIZED" | "DENIED_EXHAUSTED" | "DENIED_NON_RETRYABLE"): readonly string[] { return decision === "AUTHORIZED" ? Object.freeze(["Retry is authorized but has not executed.", "Re-evaluate policy, approvals, Guardians, specification, executor, and version before explicit retry execution."]) : decision === "DENIED_EXHAUSTED" ? Object.freeze(["Retry authorization is denied because the attempt limit is exhausted.", "Choose a manual recovery or cancellation path."]) : Object.freeze(["Retry authorization is denied because the failure category is non-retryable.", "Correct the underlying condition before creating new work."]); }
 function retryExecutionInstructions(): readonly string[] { return Object.freeze(["Retry eligibility is restored for the exact failed step and workflow version.", "Re-evaluate readiness, policy, approval, Guardian, specification, executor, and version before any invocation.", "No invocation or external action occurred during retry execution."]); }
+function controlInstructions(action: WorkflowControlRequest["action"]): readonly string[] { return action === "PAUSE" ? Object.freeze(["Workflow is paused; no new invocation is authorized.", "Resume requires an explicit operator command and fresh control evaluation."]) : action === "RESUME" ? Object.freeze(["Workflow is active but no work was invoked.", "Re-evaluate readiness, policy, approval, Guardian, specification, executor, and version before invocation."]) : Object.freeze(["Workflow is cancelled and no further step invocation is authorized.", "Completed and failure evidence is retained; no external compensation is claimed."]); }
 function validate<T>(value: unknown, validator: Validator<T>, label: string): T { const result = validator.validate(value); if (!result.ok) throw new RepositoryValidationError(`${label} failed validation`, { issueCount: result.issues.length }); return result.value; }
 function now(clock: Clock): string { const value = clock.now(); if (Number.isNaN(value.getTime())) throw new RepositoryValidationError("Workflow lifecycle clock is invalid"); return value.toISOString(); }

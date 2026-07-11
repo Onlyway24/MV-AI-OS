@@ -527,10 +527,23 @@ class InMemoryWorkflowInstanceRepository {
     return this.#update(instance, expectation, authorization.stepId);
   }
 
+  public control(
+    instance: WorkflowInstance,
+    expectation: { readonly version: number },
+    controlId: string,
+  ): Promise<void> {
+    const control = this.#state.workflowLifecycleRecords.get(controlId);
+    if (control === undefined || !["CANCELLATION", "PAUSE", "RESUME"].includes(control.kind) || control.instanceId !== instance.instanceId) {
+      throw new RepositoryConflictError("Workflow control evidence is missing or invalid");
+    }
+    return this.#update(instance, expectation, undefined, control.kind as "CANCELLATION" | "PAUSE" | "RESUME");
+  }
+
   #update(
     instance: WorkflowInstance,
     expectation: { readonly version: number },
     retryStepId?: string,
+    controlKind?: "CANCELLATION" | "PAUSE" | "RESUME",
   ): Promise<void> {
     const validation = this.#validator.validate(instance);
     if (!validation.ok) {
@@ -559,7 +572,7 @@ class InMemoryWorkflowInstanceRepository {
         { instanceId: validation.value.instanceId },
       );
     }
-    assertAllowedWorkflowInstanceTransition(existing, validation.value, retryStepId);
+    assertAllowedWorkflowInstanceTransition(existing, validation.value, retryStepId, controlKind);
     this.#state.workflowInstances.set(
       validation.value.instanceId,
       cloneFrozen(validation.value),
@@ -572,6 +585,7 @@ function assertAllowedWorkflowInstanceTransition(
   previous: WorkflowInstance,
   next: WorkflowInstance,
   retryStepId?: string,
+  controlKind?: "CANCELLATION" | "PAUSE" | "RESUME",
 ): void {
   const recoverySteps = previous.steps.filter((step, index) => step.status === "FAILED" && next.steps[index]?.status === "READY");
   const isRecovery = previous.status === "FAILED" && next.status === "ACTIVE";
@@ -590,6 +604,13 @@ function assertAllowedWorkflowInstanceTransition(
       instanceId: next.instanceId,
       stepId: retryStepId,
     });
+  }
+  const expectedControl = previous.status === "ACTIVE" && next.status === "PAUSED" ? "PAUSE" : previous.status === "PAUSED" && next.status === "ACTIVE" ? "RESUME" : (previous.status === "ACTIVE" || previous.status === "PAUSED") && next.status === "CANCELLED" ? "CANCELLATION" : undefined;
+  if (expectedControl !== undefined && controlKind !== expectedControl) {
+    throw new RepositoryConflictError("Workflow lifecycle control requires exact operator evidence", { instanceId: next.instanceId });
+  }
+  if (controlKind !== undefined && expectedControl !== controlKind) {
+    throw new RepositoryConflictError("Workflow control transition does not match its evidence", { instanceId: next.instanceId });
   }
   if (
     previous.status !== next.status &&

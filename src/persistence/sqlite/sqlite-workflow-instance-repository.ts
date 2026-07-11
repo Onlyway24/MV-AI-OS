@@ -141,10 +141,31 @@ export class SqliteWorkflowInstanceRepository
     return this.#update(instance, expectation, validation.value.stepId);
   }
 
+  public control(
+    instance: WorkflowInstance,
+    expectation: WorkflowInstanceUpdateExpectation,
+    controlId: string,
+  ): Promise<void> {
+    assertActiveTransaction(this.#scope);
+    const row = this.#database
+      .prepare("SELECT record_json FROM workflow_lifecycle_records WHERE record_id = ? AND kind IN ('PAUSE', 'RESUME', 'CANCELLATION')")
+      .get(controlId);
+    const validation = new WorkflowLifecycleRecordValidator().validate(
+      row?.record_json === undefined || typeof row.record_json !== "string"
+        ? undefined
+        : JSON.parse(row.record_json),
+    );
+    if (!validation.ok || (validation.value.kind !== "CANCELLATION" && validation.value.kind !== "PAUSE" && validation.value.kind !== "RESUME") || validation.value.instanceId !== instance.instanceId) {
+      throw new RepositoryConflictError("Workflow control evidence is missing or invalid", { controlId, instanceId: instance.instanceId });
+    }
+    return this.#update(instance, expectation, undefined, validation.value.kind);
+  }
+
   #update(
     instance: WorkflowInstance,
     expectation: WorkflowInstanceUpdateExpectation,
     retryStepId?: string,
+    controlKind?: "CANCELLATION" | "PAUSE" | "RESUME",
   ): Promise<void> {
     assertActiveTransaction(this.#scope);
     assertExpectedVersion(expectation);
@@ -175,7 +196,7 @@ export class SqliteWorkflowInstanceRepository
         );
       }
       assertImmutableInstanceFields(existing, encoded.value);
-      assertAllowedInstanceTransition(existing, encoded.value, retryStepId);
+      assertAllowedInstanceTransition(existing, encoded.value, retryStepId, controlKind);
       const result = this.#database
         .prepare(
           "UPDATE workflow_instances SET status = ?, version = ?, updated_at = ?, record_json = ? WHERE instance_id = ? AND version = ?",
@@ -261,6 +282,7 @@ function assertAllowedInstanceTransition(
   previous: WorkflowInstance,
   next: WorkflowInstance,
   retryStepId?: string,
+  controlKind?: "CANCELLATION" | "PAUSE" | "RESUME",
 ): void {
   const recoverySteps = previous.steps.filter((step, index) => step.status === "FAILED" && next.steps[index]?.status === "READY");
   const isRecovery = previous.status === "FAILED" && next.status === "ACTIVE";
@@ -279,6 +301,13 @@ function assertAllowedInstanceTransition(
       instanceId: next.instanceId,
       stepId: retryStepId,
     });
+  }
+  const expectedControl = previous.status === "ACTIVE" && next.status === "PAUSED" ? "PAUSE" : previous.status === "PAUSED" && next.status === "ACTIVE" ? "RESUME" : (previous.status === "ACTIVE" || previous.status === "PAUSED") && next.status === "CANCELLED" ? "CANCELLATION" : undefined;
+  if (expectedControl !== undefined && controlKind !== expectedControl) {
+    throw new RepositoryConflictError("Workflow lifecycle control requires exact operator evidence", { instanceId: next.instanceId });
+  }
+  if (controlKind !== undefined && expectedControl !== controlKind) {
+    throw new RepositoryConflictError("Workflow control transition does not match its evidence", { instanceId: next.instanceId });
   }
   if (
     previous.status !== next.status &&
