@@ -1728,3 +1728,27 @@ evaluation ID is required for a later observation after a prior non-expired deci
 
 **Future impact:** Operator Workflow Report should expose durable timeout and retry
 state without mutating it or implying automatic recovery.
+
+## ADR-065 — Operator reports derive one exact action from durable evidence only
+
+**Context:** Durable Workflow state was complete but required an operator to interpret
+low-level instances, controls, invocations, lifecycle records, and events separately.
+
+**Decision:** The Operator Workflow Report reads one exact-version snapshot in a
+single repository transaction. It reports completed-step counts and declared-order
+critical-path text without percentages; current approval and per-domain Guardian
+state; failure and bounded retry evidence; actionable current-Step invocations; risks;
+the last meaningful durable event; and exactly one prioritized Fabio action. Mission
+objective is stored as optional immutable Workflow Definition metadata and is shown as
+unavailable rather than invented for legacy definitions. Cost and effort remain
+explicitly unavailable without durable evidence.
+
+**Reason:** A local product needs an operator-readable, deterministic projection that
+cannot mutate state, reuse stale controls, or conceal missing evidence.
+
+**Tradeoffs:** Legacy Workflow Definitions do not gain a fabricated Mission objective,
+and reports deliberately provide counts and path text rather than synthetic progress
+percentages.
+
+**Future impact:** The Local Workflow Command Boundary must return this report and its
+single next action through the existing bounded CLI/runtime path.

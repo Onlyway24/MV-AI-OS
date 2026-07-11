@@ -146,6 +146,7 @@ export interface WorkflowControlCheckpointEventRepository {
 
 export interface WorkflowAgentInvocationRepository {
   getById(invocationId: string): Promise<WorkflowAgentInvocationReceipt | undefined>;
+  listByInstanceId(instanceId: string, limit: number): Promise<readonly WorkflowAgentInvocationReceipt[]>;
   insert(receipt: WorkflowAgentInvocationReceipt): Promise<void>;
   update(receipt: WorkflowAgentInvocationReceipt, expectedStatus: "RESERVED"): Promise<void>;
 }

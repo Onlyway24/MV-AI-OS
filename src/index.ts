@@ -1320,6 +1320,16 @@ export {
   type RepositoryBackedWorkflowLifecycleDependencies,
 } from "./workflows/runtime/repository-backed-workflow-lifecycle-service.js";
 export {
+  WORKFLOW_OPERATOR_REPORT_CONTRACT_VERSION,
+  WorkflowOperatorReportRequestValidator,
+  WorkflowOperatorReportValidator,
+  RepositoryBackedWorkflowOperatorReportService,
+  createWorkflowOperatorReportService,
+  type WorkflowOperatorReport,
+  type WorkflowOperatorReportRequest,
+  type WorkflowOperatorStepReport,
+} from "./workflows/runtime/workflow-operator-report.js";
+export {
   PolicyGovernedToolGateway,
   type PolicyGovernedToolGatewayDependencies,
 } from "./tools/policy-governed-tool-gateway.js";

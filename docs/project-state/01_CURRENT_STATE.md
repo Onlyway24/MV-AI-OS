@@ -131,7 +131,12 @@ and tests, not intended future behavior.
   deadline behavior, restart replay, pause/resume reservation invalidation, and
   cancellation evidence retention.
 - Chapter 1 — Workflow Lifecycle Completion is complete.
-- The next milestone is Operator Workflow Report.
+- Operator Workflow Report is completed by the current change set. It derives one
+  immutable, bounded, redaction-safe, non-executing report from the exact durable
+  Workflow snapshot, current approval and Guardian evidence, lifecycle history,
+  invocation receipts, and Workflow events. It returns exactly one evidence-backed
+  next action and never invents percentages, cost, effort, or external activity.
+- The next milestone is Local Workflow Command Boundary.
 
 ## Current architecture
 
@@ -258,6 +263,7 @@ provider, n8n, or external SDK types.
 67. Explicit Workflow Retry Execution and Recovery.
 68. Explicit Workflow Pause, Resume, and Cancellation.
 69. Explicit Workflow Timeout Evaluation and Chapter 1 Closeout.
+70. Operator Workflow Report.
 
 ## Implemented modules
 

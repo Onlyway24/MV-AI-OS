@@ -134,6 +134,7 @@ function createRepositories(
 class InMemoryWorkflowAgentInvocationRepository {
   public constructor(private readonly state: RepositoryState) {}
   public getById(id: string): Promise<WorkflowAgentInvocationReceipt | undefined> { return Promise.resolve(cloneOptional(this.state.workflowAgentInvocations.get(id))); }
+  public listByInstanceId(id: string, limit: number): Promise<readonly WorkflowAgentInvocationReceipt[]> { return Promise.resolve(Object.freeze([...this.state.workflowAgentInvocations.values()].filter((entry) => entry.instanceId === id).slice(-limit).reverse().map(cloneFrozen))); }
   public insert(receipt: WorkflowAgentInvocationReceipt): Promise<void> { if (this.state.workflowAgentInvocations.has(receipt.invocationId)) throw new RepositoryConflictError("Workflow invocation exists"); this.state.workflowAgentInvocations.set(receipt.invocationId, cloneFrozen(receipt)); return Promise.resolve(); }
   public update(receipt: WorkflowAgentInvocationReceipt, expected: "RESERVED"): Promise<void> { const current = this.state.workflowAgentInvocations.get(receipt.invocationId); if (current?.status !== expected || current.fingerprint !== receipt.fingerprint) throw new RepositoryConflictError("Workflow invocation conflicts"); this.state.workflowAgentInvocations.set(receipt.invocationId, cloneFrozen(receipt)); return Promise.resolve(); }
 }

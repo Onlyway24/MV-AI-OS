@@ -8,7 +8,7 @@ export interface WorkflowBlocker { readonly code: WorkflowBlockerCode; readonly 
 export interface WorkflowFailure { readonly code: "STEP_FAILED"; readonly stepId: string; }
 export interface WorkflowNonExecutionDeclaration { readonly nonExecuting: true; readonly externalExecutionAllowed: false; }
 export interface WorkflowStepDefinition { readonly stepId: string; readonly dependencies: readonly string[]; readonly approvalRequired: boolean; readonly guardianRequired: boolean; readonly nonExecuting: true; }
-export interface WorkflowDefinition { readonly contractVersion: typeof WORKFLOW_RUNTIME_CONTRACT_VERSION; readonly definitionId: string; readonly workflowId: string; readonly workflowVersion: string; readonly steps: readonly WorkflowStepDefinition[]; readonly nonExecuting: true; }
+export interface WorkflowDefinition { readonly contractVersion: typeof WORKFLOW_RUNTIME_CONTRACT_VERSION; readonly definitionId: string; readonly workflowId: string; readonly workflowVersion: string; readonly missionObjective?: string; readonly steps: readonly WorkflowStepDefinition[]; readonly nonExecuting: true; }
 export interface WorkflowStepInstance { readonly stepId: string; readonly status: WorkflowStepInstanceStatus; readonly blockers: readonly WorkflowBlocker[]; }
 export interface WorkflowCommand { readonly commandId: string; readonly expectedVersion: number; readonly kind: WorkflowCommandKind; readonly stepId?: string; readonly reasonCode: string; readonly nonExecuting: true; }
 export interface WorkflowCommandReceipt { readonly commandId: string; readonly fingerprint: string; readonly resultingVersion: number; }

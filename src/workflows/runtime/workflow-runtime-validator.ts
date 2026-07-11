@@ -76,6 +76,7 @@ export class WorkflowDefinitionValidator
         "definitionId",
         "workflowId",
         "workflowVersion",
+        "missionObjective",
         "steps",
         "nonExecuting",
       ],
@@ -83,6 +84,9 @@ export class WorkflowDefinitionValidator
     );
     assertIdentifier(record, "definitionId", issues);
     assertIdentifier(record, "workflowId", issues);
+    if (record.missionObjective !== undefined && (typeof record.missionObjective !== "string" || record.missionObjective.trim().length === 0 || record.missionObjective.length > 500 || SENSITIVE_TEXT_PATTERN.test(record.missionObjective))) {
+      issues.push(issue("invalid_format", "missionObjective is invalid", "missionObjective"));
+    }
     if (
       typeof record.workflowVersion !== "string" ||
       !isSemanticVersion(record.workflowVersion)

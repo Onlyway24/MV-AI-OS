@@ -2,49 +2,50 @@
 
 ## Milestone name
 
-Operator Workflow Report
+Local Workflow Command Boundary
 
 ## Goal
 
-Create one deterministic, read-only operator report that turns durable Mission,
-Workflow, control, lifecycle, risk, and audit evidence into Fabio's exact next action.
+Expose the implemented Core V1 Mission, Workflow, control, deterministic Agent,
+lifecycle, report, and audit capabilities through one coherent local application
+boundary and the existing CLI transport.
 
 ## Why it matters
 
-Chapter 1 now provides complete explicit, restart-safe Workflow lifecycle controls.
-Private V1 use next requires a clear operator view that does not force Fabio to infer
-state from low-level records or misleading progress claims.
+The operator report now makes persisted Workflow state understandable. Fabio still
+needs an allowlisted local command surface so the complete flow is usable without
+editing TypeScript, calling internal methods, or modifying SQLite.
 
 ## Required scope
 
-- Show Mission objective, Workflow status, and critical-path progress without
-  misleading percentages.
-- Separate completed, ready, blocked, and pending Steps with blocker reasons.
-- Show pending approvals, Guardian states, active risks, and retry state.
-- Include cost and effort summaries only where durable evidence exists.
-- Show the last durable event and one exact next action for Fabio.
-- Confirm from evidence that no unauthorized external action occurred.
-- Validate, bound, redact, and freeze the report contract.
-- Build only from existing local durable repositories and deterministic services.
+- Reuse the existing local runtime, CLI transport, bounded JSON parsing, SQLite
+  initialization, configuration, validators, repositories, and structured errors.
+- Accept only explicit allowlisted Core V1 operation names.
+- Support Mission planning, Workflow creation and inspection, operator report,
+  readiness, candidate selection, approval and Guardian recording, deterministic
+  Agent invocation and result inspection, outcome acceptance/rejection, failure,
+  retry, pause/resume/cancel, timeout, and bounded audit inspection.
+- Require bounded structured input, stable IDs, exact versions, idempotency, and
+  default-deny authorization at every relevant command.
+- Return structured safe results with one exact next action and external-effect status.
 
 ## Forbidden scope
 
-- Mutation, command execution, AgentRuntime invocation, models, providers, tools,
-  network, browser, or external actions.
-- Invented cost, effort, risk, approval, Guardian, or progress evidence.
-- A second CLI architecture or UI work.
-- Models, providers, tools, network, browser, external actions, or new dependencies.
+- Arbitrary user-controlled service or method names.
+- A second CLI, parallel runtime, Web Console, public API, server, or background worker.
+- Models, providers, tools, browser/network integrations, external actions, or new
+  production dependencies.
 
 ## Acceptance criteria
 
-- The report is deterministic for one exact durable snapshot.
-- Missing or inconsistent evidence fails closed or is shown explicitly as unavailable.
-- The next action is concrete, safe, and derived from current blockers and lifecycle
-  state.
-- No report path mutates Workflow state or triggers execution.
+- Fabio can execute the allowlisted Core V1 flow through bounded local JSON commands.
+- Unknown operations, malformed input, stale versions, and unsafe text fail safely.
+- Commands preserve existing approval, Guardian, lifecycle, persistence, and
+  deterministic execution boundaries.
+- Output is bounded, redaction-safe, and confirms no unauthorized external effect.
 - Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-Fabio can inspect one Workflow and understand its evidence-backed state and next exact
-action without reading raw persistence records.
+Fabio can operate Core V1 locally without editing source code or interpreting raw
+database state.

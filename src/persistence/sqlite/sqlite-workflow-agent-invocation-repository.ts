@@ -17,6 +17,12 @@ export class SqliteWorkflowAgentInvocationRepository implements WorkflowAgentInv
       return row === undefined ? undefined : this.#decode(row.record_json);
     }));
   }
+  public listByInstanceId(instanceId: string, limit: number): Promise<readonly WorkflowAgentInvocationReceipt[]> {
+    assertActiveTransaction(this.scope);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new RepositoryValidationError("Workflow invocation list limit is invalid");
+    const rows = this.database.prepare("SELECT record_json FROM workflow_agent_invocations WHERE instance_id = ? ORDER BY rowid DESC LIMIT ?").all(instanceId, limit);
+    return Promise.resolve(Object.freeze(rows.map((row) => this.#decode(row.record_json))));
+  }
   public insert(receipt: WorkflowAgentInvocationReceipt): Promise<void> {
     assertActiveTransaction(this.scope);
     const value = this.#validate(receipt);
