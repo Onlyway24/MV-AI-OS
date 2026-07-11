@@ -1,7 +1,7 @@
 export const WORKFLOW_RUNTIME_CONTRACT_VERSION = "1" as const;
 export type WorkflowInstanceStatus = "ACTIVE" | "CANCELLED" | "COMPLETED" | "FAILED" | "PAUSED";
 export type WorkflowStepInstanceStatus = "AWAITING_RESULT" | "CANCELLED" | "FAILED" | "PENDING" | "READY" | "SUCCEEDED";
-export type WorkflowCommandKind = "ACTIVATE" | "CANCEL" | "COMPLETE_STEP" | "FAIL_STEP" | "PAUSE" | "RESUME";
+export type WorkflowCommandKind = "ACTIVATE" | "CANCEL" | "COMPLETE_STEP" | "FAIL_STEP" | "PAUSE" | "RESUME" | "RETRY_STEP";
 export type WorkflowBlockerCode = "APPROVAL_REQUIRED" | "DEPENDENCY_INCOMPLETE" | "GUARDIAN_REQUIRED";
 export type WorkflowStopReason = "CANCELLED_BY_OPERATOR" | "FAILED_STEP" | "NONE";
 export interface WorkflowBlocker { readonly code: WorkflowBlockerCode; readonly stepId: string; }

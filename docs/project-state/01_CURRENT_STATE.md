@@ -107,10 +107,15 @@ and tests, not intended future behavior.
   its exact step; no next step starts automatically.
 - The Local Deterministic Workflow Execution Vertical Slice adversarial review and
   closeout was committed in `24a96a1`.
-- Workflow Failure Classification and Retry Eligibility is completed by the current
-  change set with bounded configured attempts, durable failure evidence, explicit
+- Workflow Failure Classification and Retry Eligibility was committed in `ac3ed0a`
+  with bounded configured attempts, durable failure evidence, explicit
   operator retry authorization, restart-safe replay, and no retry execution.
-- The next milestone is Explicit Workflow Retry Execution and Recovery.
+- Explicit Workflow Retry Execution and Recovery is completed by the current change
+  set. One exact latest durable authorization can be consumed once to atomically
+  restore only the failed Workflow Step to `READY`; no agent, tool, model, provider,
+  network, or external action is invoked, and all current controls must be evaluated
+  again before a later explicit invocation.
+- The next milestone is Explicit Workflow Pause, Resume, and Cancellation.
 
 ## Current architecture
 
@@ -234,6 +239,7 @@ provider, n8n, or external SDK types.
 64. Workflow Step Outcome Validation and Completion.
 65. Local Deterministic Workflow Execution Vertical Slice Closeout.
 66. Workflow Failure Classification and Retry Eligibility.
+67. Explicit Workflow Retry Execution and Recovery.
 
 ## Implemented modules
 

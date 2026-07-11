@@ -1654,3 +1654,28 @@ or later lifecycle handling.
 **Future impact:** Explicit Retry Execution must consume one exact latest
 authorization, revalidate current controls, and restore eligibility without invoking
 AgentRuntime automatically.
+
+## ADR-062 — Retry execution consumes one exact authorization and restores eligibility only
+
+**Context:** A durable retry authorization records permission but deliberately leaves
+the Workflow and failed Step terminal. Recovery needs a separate restart-safe boundary
+that cannot be used as an unbounded or hidden invocation path.
+
+**Decision:** Only the configured operator may execute retry for the exact failed
+instance, Step, failure, latest authorized decision, and expected version. Execution
+consumes that authorization once, atomically transitions `FAILED` to `ACTIVE` and the
+authorized Step from `FAILED` to `READY`, and persists the command receipt, Workflow
+Event, lifecycle record, lifecycle event, and exact version increment. Ordinary
+repository updates cannot perform the recovery transition. Retry execution never
+invokes AgentRuntime and never treats prior control evidence as current.
+
+**Reason:** Authorization consumption, state recovery, and audit evidence must commit
+as one unit while all prior evidence remains immutable and restart replay cannot
+increment the version twice.
+
+**Tradeoffs:** Recovery makes the Step eligible but does not run it. A later explicit
+boundary must repeat readiness, policy, approval, Guardian, specification, executor,
+and version checks.
+
+**Future impact:** Pause, resume, cancellation, and later timeout evaluation must
+retain this explicit-command, exact-version, atomic-evidence pattern.

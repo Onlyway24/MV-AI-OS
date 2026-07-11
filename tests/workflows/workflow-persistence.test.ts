@@ -642,6 +642,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
         DROP TABLE workflow_command_receipts;
         DROP TABLE workflow_instances;
         DROP TABLE workflow_definitions;
+        DELETE FROM schema_migrations WHERE version = 9;
         DELETE FROM schema_migrations WHERE version = 8;
         DELETE FROM schema_migrations WHERE version = 7;
         DELETE FROM schema_migrations WHERE version = 6;
@@ -684,7 +685,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
       await reopenedKnowledge.close();
 
       const verification = new DatabaseSync(path);
-      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(8);
+      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(9);
       expect(
         verification
           .prepare("SELECT name FROM schema_migrations WHERE version = 5")
@@ -705,6 +706,11 @@ describe("Workflow Persistence and Atomic Audit", () => {
           .prepare("SELECT name FROM schema_migrations WHERE version = 8")
           .get()?.name,
       ).toBe("durable_workflow_lifecycle");
+      expect(
+        verification
+          .prepare("SELECT name FROM schema_migrations WHERE version = 9")
+          .get()?.name,
+      ).toBe("explicit_workflow_retry_execution");
       verification.close();
     });
   });

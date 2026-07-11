@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 8;
+export const SQLITE_SCHEMA_VERSION = 9;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -48,6 +48,7 @@ const VERSION_EIGHT_TABLES = Object.freeze([
   "workflow_lifecycle_events",
   "workflow_lifecycle_records",
 ]);
+const VERSION_NINE_TABLES = VERSION_EIGHT_TABLES;
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -127,6 +128,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 7, "durable_workflow_step_outcomes");
     applyWorkflowLifecycleMigration(database);
   }
+  const retryExecutionVersion = readPragmaInteger(database, "user_version");
+  if (retryExecutionVersion === 8) {
+    verifyDatabaseIdentity(database, 8);
+    verifyExpectedTables(database, VERSION_EIGHT_TABLES);
+    verifyMigration(database, 8, "durable_workflow_lifecycle");
+    applyWorkflowRetryExecutionMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -149,7 +157,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_EIGHT_TABLES);
+  verifyExpectedTables(database, VERSION_NINE_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -158,6 +166,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 6, "durable_workflow_agent_invocations");
   verifyMigration(database, 7, "durable_workflow_step_outcomes");
   verifyMigration(database, 8, "durable_workflow_lifecycle");
+  verifyMigration(database, 9, "explicit_workflow_retry_execution");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -526,6 +535,47 @@ function applyWorkflowLifecycleMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Workflow lifecycle migration failed");
+  }
+}
+
+function applyWorkflowRetryExecutionMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE workflow_lifecycle_records_v9 (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id TEXT NOT NULL UNIQUE,
+        fingerprint TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('FAILURE', 'RETRY_AUTHORIZATION', 'RETRY_EXECUTION')),
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        instance_version INTEGER NOT NULL CHECK (instance_version >= 0),
+        step_id TEXT NOT NULL,
+        recorded_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE TABLE workflow_lifecycle_events_v9 (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT NOT NULL UNIQUE,
+        record_id TEXT NOT NULL UNIQUE REFERENCES workflow_lifecycle_records_v9 (record_id),
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        occurred_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      INSERT INTO workflow_lifecycle_records_v9 SELECT * FROM workflow_lifecycle_records;
+      INSERT INTO workflow_lifecycle_events_v9 SELECT * FROM workflow_lifecycle_events;
+      DROP TABLE workflow_lifecycle_events;
+      DROP TABLE workflow_lifecycle_records;
+      ALTER TABLE workflow_lifecycle_records_v9 RENAME TO workflow_lifecycle_records;
+      ALTER TABLE workflow_lifecycle_events_v9 RENAME TO workflow_lifecycle_events;
+      CREATE INDEX workflow_lifecycle_records_step ON workflow_lifecycle_records (instance_id, step_id, sequence);
+      CREATE INDEX workflow_lifecycle_events_instance ON workflow_lifecycle_events (instance_id, sequence);
+      INSERT INTO schema_migrations (version, name) VALUES (9, 'explicit_workflow_retry_execution');
+      PRAGMA user_version = 9;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Workflow retry execution migration failed");
   }
 }
 

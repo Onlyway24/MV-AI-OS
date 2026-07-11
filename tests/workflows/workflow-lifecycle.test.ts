@@ -42,6 +42,56 @@ describe("Workflow failure and retry eligibility", () => {
     await runner.close();
   });
 
+  it("explicitly consumes authorization and durably restores only retry eligibility", async () => {
+    const runner = createRunner(":memory:"); await seedFailedInvocation(runner);
+    await service(runner).recordFailure(failureRequest());
+    await service(runner).authorizeRetry(retryRequest());
+    const first = await service(runner).executeRetry(executionRequest());
+    const replay = await service(runner).executeRetry(executionRequest());
+    expect(first).toMatchObject({ replayed: false, record: { authorizationId: "retry-auth-1", failureId: "failure-1", instanceVersion: 4, kind: "RETRY_EXECUTION" } });
+    expect(first.record.recoveryInstructions).toContain("No invocation or external action occurred during retry execution.");
+    expect(replay).toEqual({ ...first, replayed: true });
+    const stored = await runner.transaction(async ({ workflows }) => ({
+      instance: await workflows.instances.getById("instance-1"),
+      invocations: await workflows.agentInvocationEvents.listByInvocationId("invocation-1"),
+      lifecycleEvents: await workflows.lifecycleEvents.listByRecordId("retry-execution-1"),
+      records: await workflows.lifecycleRecords.listByStep("instance-1", "step-1"),
+      workflowEvents: await workflows.events.listByInstanceId("instance-1", 10),
+    }));
+    expect(stored.instance).toMatchObject({ status: "ACTIVE", stopReason: "NONE", version: 4, steps: [{ status: "READY" }] });
+    expect(stored.instance?.receipts.at(-1)).toMatchObject({ commandId: "retry-command-1", resultingVersion: 4 });
+    expect(stored.records.map(({ kind }) => kind)).toEqual(["FAILURE", "RETRY_AUTHORIZATION", "RETRY_EXECUTION"]);
+    expect(stored.lifecycleEvents).toHaveLength(1);
+    expect(stored.workflowEvents.at(-1)).toMatchObject({ actorCategory: "operator", commandKind: "RETRY_STEP", nextStatus: "ACTIVE", nextStepStatus: "READY", nonExecuting: true });
+    expect(stored.invocations).toEqual([]);
+    await runner.close();
+  });
+
+  it("fails closed for invalid, denied, stale, mismatched, or consumed retry execution", async () => {
+    const runner = createRunner(":memory:"); await seedFailedInvocation(runner);
+    await service(runner).recordFailure(failureRequest());
+    await service(runner).authorizeRetry(retryRequest());
+    await expect(runner.transaction(async ({ workflows }) => {
+      const failed = await workflows.instances.getById("instance-1");
+      if (failed === undefined) throw new Error("missing failed workflow");
+      const bypass = new DeterministicWorkflowStateMachine(new FixedClock()).apply(failed, { commandId: "bypass-retry", expectedVersion: 3, kind: "RETRY_STEP", nonExecuting: true, reasonCode: "bypass", stepId: "step-1" });
+      await workflows.instances.update(bypass.instance, { version: 3 });
+    })).rejects.toThrow(/explicit retry authorization/iu);
+    expect(() => service(runner).executeRetry(executionRequest({ actorId: "not-fabio" }))).toThrow(/operator/iu);
+    await expect(service(runner).executeRetry(executionRequest({ expectedVersion: 99 }))).rejects.toThrow(/snapshot/iu);
+    await expect(service(runner).executeRetry(executionRequest({ failureId: "wrong-failure" }))).rejects.toThrow(/authorization/iu);
+    await expect(service(runner).executeRetry(executionRequest({ authorizationId: "missing" }))).rejects.toThrow(/authorization/iu);
+    await service(runner).executeRetry(executionRequest());
+    await expect(service(runner).executeRetry(executionRequest({ executionId: "retry-execution-2", commandId: "retry-command-2", expectedVersion: 4 }))).rejects.toThrow(/snapshot|consumed/iu);
+    await runner.close();
+
+    const denied = createRunner(":memory:"); await seedFailedInvocation(denied);
+    await service(denied, 1).recordFailure(failureRequest({ maxAttempts: 1 }));
+    await service(denied, 1).authorizeRetry(retryRequest());
+    await expect(service(denied, 1).executeRetry(executionRequest())).rejects.toThrow(/authorization/iu);
+    await denied.close();
+  });
+
   it.each([
     ["PERMANENT", 3, "DENIED_NON_RETRYABLE"],
     ["TRANSIENT_RUNTIME", 1, "DENIED_EXHAUSTED"],
@@ -68,10 +118,12 @@ describe("Workflow failure and retry eligibility", () => {
       const first = createRunner(path); await seedFailedInvocation(first);
       const failure = await service(first).recordFailure(failureRequest());
       const authorization = await service(first).authorizeRetry(retryRequest());
+      const execution = await service(first).executeRetry(executionRequest());
       await first.close();
       const reopened = createRunner(path);
       expect(await service(reopened).recordFailure(failureRequest())).toEqual({ ...failure, replayed: true });
       expect(await service(reopened).authorizeRetry(retryRequest())).toEqual({ ...authorization, replayed: true });
+      expect(await service(reopened).executeRetry(executionRequest())).toEqual({ ...execution, replayed: true });
       await reopened.close();
     });
   });
@@ -82,6 +134,8 @@ function failureRequest(overrides: Partial<ReturnType<typeof failureRequestBase>
 function failureRequestBase() { return { actorId: "runtime-local", category: "TRANSIENT_RUNTIME" as WorkflowFailureCategory, commandId: "fail-command-1", contractVersion: "1" as const, expectedVersion: 2, failureId: "failure-1", instanceId: "instance-1", invocationId: "invocation-1", maxAttempts: 3, reasonCode: "deterministic_runtime_failure", stepId: "step-1" }; }
 function retryRequest(overrides: Partial<ReturnType<typeof retryRequestBase>> = {}) { return { ...retryRequestBase(), ...overrides }; }
 function retryRequestBase() { return { actorId: "fabio", authorizationId: "retry-auth-1", contractVersion: "1" as const, expectedVersion: 3, failureId: "failure-1", instanceId: "instance-1", stepId: "step-1" }; }
+function executionRequest(overrides: Partial<ReturnType<typeof executionRequestBase>> = {}) { return { ...executionRequestBase(), ...overrides }; }
+function executionRequestBase() { return { actorId: "fabio", authorizationId: "retry-auth-1", commandId: "retry-command-1", contractVersion: "1" as const, executionId: "retry-execution-1", expectedVersion: 3, failureId: "failure-1", instanceId: "instance-1", stepId: "step-1" }; }
 
 async function seedFailedInvocation(runner: SqliteRepositoryTransactionRunner) {
   const persistence = createWorkflowPersistenceService({ eventIds: new EventIds(), repositories: runner, stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()) });

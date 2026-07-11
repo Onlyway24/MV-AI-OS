@@ -30,6 +30,7 @@ const COMMAND_KINDS = new Set([
   "FAIL_STEP",
   "PAUSE",
   "RESUME",
+  "RETRY_STEP",
 ]);
 const WORKFLOW_STATUSES = new Set([
   "ACTIVE",

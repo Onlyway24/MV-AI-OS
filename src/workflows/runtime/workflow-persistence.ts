@@ -76,6 +76,11 @@ export interface WorkflowInstanceRepository {
     instance: WorkflowInstance,
     expectation: WorkflowInstanceUpdateExpectation,
   ): Promise<void>;
+  retry(
+    instance: WorkflowInstance,
+    expectation: WorkflowInstanceUpdateExpectation,
+    authorizationId: string,
+  ): Promise<void>;
 }
 
 export interface WorkflowCommandReceiptRepository {

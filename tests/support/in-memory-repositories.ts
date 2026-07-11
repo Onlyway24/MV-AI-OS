@@ -507,6 +507,31 @@ class InMemoryWorkflowInstanceRepository {
     instance: WorkflowInstance,
     expectation: { readonly version: number },
   ): Promise<void> {
+    return this.#update(instance, expectation);
+  }
+
+  public retry(
+    instance: WorkflowInstance,
+    expectation: { readonly version: number },
+    authorizationId: string,
+  ): Promise<void> {
+    const authorization = this.#state.workflowLifecycleRecords.get(authorizationId);
+    if (
+      authorization?.kind !== "RETRY_AUTHORIZATION" ||
+      authorization.retryDecision !== "AUTHORIZED" ||
+      authorization.instanceId !== instance.instanceId ||
+      instance.steps.find(({ stepId }) => stepId === authorization.stepId)?.status !== "READY"
+    ) {
+      throw new RepositoryConflictError("Workflow retry authorization is missing or invalid");
+    }
+    return this.#update(instance, expectation, authorization.stepId);
+  }
+
+  #update(
+    instance: WorkflowInstance,
+    expectation: { readonly version: number },
+    retryStepId?: string,
+  ): Promise<void> {
     const validation = this.#validator.validate(instance);
     if (!validation.ok) {
       throw new RepositoryValidationError("Workflow instance failed validation");
@@ -534,7 +559,7 @@ class InMemoryWorkflowInstanceRepository {
         { instanceId: validation.value.instanceId },
       );
     }
-    assertAllowedWorkflowInstanceTransition(existing, validation.value);
+    assertAllowedWorkflowInstanceTransition(existing, validation.value, retryStepId);
     this.#state.workflowInstances.set(
       validation.value.instanceId,
       cloneFrozen(validation.value),
@@ -546,7 +571,26 @@ class InMemoryWorkflowInstanceRepository {
 function assertAllowedWorkflowInstanceTransition(
   previous: WorkflowInstance,
   next: WorkflowInstance,
+  retryStepId?: string,
 ): void {
+  const recoverySteps = previous.steps.filter((step, index) => step.status === "FAILED" && next.steps[index]?.status === "READY");
+  const isRecovery = previous.status === "FAILED" && next.status === "ACTIVE";
+  if ((isRecovery || recoverySteps.length > 0) && retryStepId === undefined) {
+    throw new RepositoryConflictError(
+      "Workflow recovery requires an explicit retry authorization",
+      { instanceId: next.instanceId },
+    );
+  }
+  if (
+    retryStepId !== undefined &&
+    (!isRecovery || recoverySteps.length !== 1 || recoverySteps[0]?.stepId !== retryStepId ||
+      previous.steps.some((step, index) => step.stepId !== retryStepId && JSON.stringify(step) !== JSON.stringify(next.steps[index])))
+  ) {
+    throw new RepositoryConflictError("Workflow retry recovery delta is invalid", {
+      instanceId: next.instanceId,
+      stepId: retryStepId,
+    });
+  }
   if (
     previous.status !== next.status &&
     !isWorkflowTransitionAllowed(previous.status, next.status)

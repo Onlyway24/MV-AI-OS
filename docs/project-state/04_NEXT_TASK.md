@@ -2,49 +2,52 @@
 
 ## Milestone name
 
-Explicit Workflow Retry Execution and Recovery
+Explicit Workflow Pause, Resume, and Cancellation
 
 ## Goal
 
-Consume one exact durable `AUTHORIZED` retry decision and restore its failed
-Workflow Step to controlled execution eligibility without invoking an agent,
-automatically retrying, or bypassing current policy and control evidence.
+Add explicit, idempotent operator lifecycle controls for pausing, resuming, and
+cancelling durable Workflows without invoking work or weakening failure and control
+evidence.
 
 ## Why it matters
 
-MV AI OS can now classify a durable failure and authorize or deny retry under a
-configured bounded attempt policy. Authorization deliberately does not alter failed
-state or execute work. The next boundary must turn one exact authorization into a
-safe restartable recovery transition.
+MV AI OS can now fail a step, authorize a bounded retry, and consume that exact
+authorization to restore eligibility without hidden execution. Operators also need
+durable stop controls that preserve evidence and prevent new invocation while stopped.
 
 ## Required scope
 
-- Resolve the exact latest failure and retry authorization records.
-- Require exact instance, step, failure, authorization, and expected version identity.
-- Reject exhausted, non-retryable, stale, mismatched, or already-consumed decisions.
-- Atomically restore the failed Workflow and Step to an explicit retry-ready state.
-- Persist one lifecycle execution record, command receipt, Workflow Event, lifecycle
-  event, and exact version increment.
-- Preserve prior failure, invocation, outcome, approval, Guardian, and audit evidence.
-- Require a later explicit readiness/control evaluation before AgentRuntime invocation.
-- Provide restart-safe idempotency and bounded operator recovery instructions.
+- Add explicit operator pause, resume, and cancellation requests with exact instance
+  version identity.
+- Persist state, command receipt, Workflow Event, lifecycle evidence, and one exact
+  version increment atomically.
+- Make duplicate commands restart-safe and idempotent.
+- Prevent new invocation while paused or cancelled.
+- Require resume to re-evaluate readiness, policy, approval, Guardian, specification,
+  executor, and version before any later invocation.
+- Preserve failures, completed work, approvals, Guardians, invocations, outcomes, and
+  all prior audit evidence.
+- Define explicit cancellation handling for pending, ready, and awaiting-result steps
+  without claiming external compensation.
 
 ## Forbidden scope
 
-- AgentRuntime invocation, automatic retry, loops, timers, schedulers, or workers.
-- Reusing stale approval, Guardian, policy, candidate, or executor evidence as current
-  authorization.
+- AgentRuntime invocation, automatic resume, loops, timers, schedulers, or workers.
+- Erasing failure or approval-revocation evidence.
+- Claiming cancellation compensated or reversed any external effect.
 - Models, providers, tools, network, browser, external actions, or new dependencies.
 
 ## Acceptance criteria
 
-- One authorized retry can be consumed once through exact-version atomic persistence.
-- Failed state cannot reopen without the configured operator's durable authorization.
-- Retry execution grants eligibility only; it does not invoke work.
-- Duplicate retry execution replays without a second version increment.
+- Pause prevents new invocation and preserves durable evidence.
+- Resume grants eligibility only and requires fresh control evaluation.
+- Cancellation is explicit, terminal, idempotent, and retains completed evidence.
+- Stale versions, invalid actors, invalid source states, and conflicting command IDs
+  fail closed.
 - Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-One bounded failed deterministic Workflow Step can return to explicit retry-ready
-state without hidden execution or loss of durable failure evidence.
+Operators can explicitly pause, resume, or cancel a durable Workflow with atomic,
+restart-safe evidence and no hidden execution.

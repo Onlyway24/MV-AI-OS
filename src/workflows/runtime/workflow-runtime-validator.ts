@@ -46,6 +46,7 @@ const COMMAND_KINDS = new Set([
   "FAIL_STEP",
   "PAUSE",
   "RESUME",
+  "RETRY_STEP",
 ]);
 const BLOCKER_CODES = new Set([
   "APPROVAL_REQUIRED",
