@@ -13,8 +13,11 @@ delivery.
 
 ## Why it matters
 
-MV AI OS can now persist workflow state and controls and prepare one exact candidate,
-but it still cannot perform the candidate's internal agent work. This milestone is
+MV AI OS can now persist workflow state and controls, prepare one exact candidate,
+inspect immutable executor descriptors, and resolve an exact active deterministic-local
+Agent Specification/executor binding without execution. It also has one meaningful,
+model-free Content Director executor. It still cannot invoke that executor from a
+workflow candidate. This milestone is
 the first transition from orchestration preparation to controlled execution and must
 prove that AgentRuntime invocation cannot bypass candidate validation, limits,
 policy, durable approvals, Guardians, idempotency, or audit.
@@ -24,8 +27,9 @@ policy, durable approvals, Guardians, idempotency, or audit.
 - Define a narrow workflow-step invocation command and validated result contract.
 - Accept only a candidate produced from `DURABLE_ONLY` control evidence at the exact
   current workflow version.
-- Resolve the exact AgentSpecification and invoke only the existing injected
-  AgentRuntime interface.
+- Resolve the exact AgentSpecification and deterministic-local executor through the
+  read-only AgentRuntime resolver, then invoke only the existing injected AgentRuntime
+  interface.
 - Start with deterministic/local AgentRuntime implementations; no live provider is
   required or enabled by default.
 - Validate bounded JSON-safe step input and AgentResult output against the exact
@@ -53,6 +57,8 @@ policy, durable approvals, Guardians, idempotency, or audit.
   aggregation, or a new execution framework.
 - A second database, destructive migration, secrets/prompts/completions/provider
   payloads in durable workflow records, or weakening existing public contracts.
+- Role-name matching, bypassing the exact active binding, mutation through catalog
+  inspection, or treating resolution itself as execution authority.
 
 ## Likely files to create
 

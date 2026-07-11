@@ -95,8 +95,10 @@ and tests, not intended future behavior.
   `5e248e0 feat: add workflow step readiness engine`.
 - Workflow Step Execution Boundary was committed in
   `906a7f0 feat: add workflow step execution boundary`.
-- Durable Workflow Approval and Guardian Checkpoints is completed by the current
-  change set.
+- Durable Workflow Approval and Guardian Checkpoints was committed in `e28ed83`.
+- AgentRuntime Executor Resolution and Deterministic Agent Company Alignment is
+  completed by the current change set. A read-only, default-deny catalog resolves
+  one exact deterministic-local Content Director executor without invoking it.
 - The next milestone is Controlled Workflow Step AgentRuntime Invocation.
 
 ## Current architecture
@@ -216,6 +218,7 @@ provider, n8n, or external SDK types.
 59. Dependency Scheduler and Step Readiness Engine.
 60. Workflow Step Execution Boundary.
 61. Durable Workflow Approval and Guardian Checkpoints.
+62. AgentRuntime Executor Resolution and Deterministic Agent Company Alignment.
 
 ## Implemented modules
 

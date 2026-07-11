@@ -457,6 +457,33 @@ export {
   type AgentRegistry,
 } from "./agents/agent-registry.js";
 export { InProcessAgentRuntime } from "./agents/in-process-agent-runtime.js";
+export {
+  DETERMINISTIC_LOCAL_EXECUTION_MODE,
+  DefaultDenyAgentRuntimeResolver,
+  ImmutableAgentRuntimeCatalog,
+  type AgentExecutionBinding,
+  type AgentExecutorDescriptor,
+  type AgentExecutorRegistration,
+  type AgentExecutorSafetyProfile,
+  type AgentResolutionBlocker,
+  type AgentResolutionBlockerCode,
+  type AgentResolutionRequest,
+  type AgentResolutionResult,
+  type AgentRuntimeCatalog,
+  type AgentRuntimeResolver,
+} from "./agents/agent-runtime-resolution.js";
+export {
+  CONTENT_DIRECTOR_AGENT_ID,
+  DETERMINISTIC_CONTENT_DIRECTOR_EXECUTOR_ID,
+  DETERMINISTIC_CONTENT_DIRECTOR_EXECUTOR_VERSION,
+  DETERMINISTIC_CONTENT_DIRECTOR_BINDING,
+  DETERMINISTIC_CONTENT_DIRECTOR_DESCRIPTOR,
+  ContentDirectorDirectionInputValidator,
+  ContentDirectionArtifactValidator,
+  DeterministicContentDirectorExecutor,
+  type ContentDirectionArtifact,
+  type ContentDirectorDirectionInput,
+} from "./agents/content/deterministic-content-director.js";
 export { ContentAgent } from "./agents/content/content-agent.js";
 export { CONTENT_AGENT_MANIFEST } from "./agents/content/content-agent-manifest.js";
 export {

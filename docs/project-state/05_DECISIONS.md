@@ -1544,3 +1544,24 @@ callers but is not suitable for future execution.
 `DURABLE_ONLY` evidence and must not invoke an agent before rechecking the latest
 checkpoint chain. A later product layer may add operator UI and transport without
 changing checkpoint authority or repository semantics.
+
+## ADR-057 — AgentRuntime discovery is read-only and exact
+
+**Context:** Workflow candidates resolve Agent Specifications, while the execution
+registry previously exposed no safe way to inspect or resolve implementations.
+
+**Decision:** Keep Agent Specifications, immutable executor descriptors, exact active
+execution bindings, AgentRuntime execution, and read-only catalog/resolution as
+separate concepts. Deterministic-local resolution requires every safety property to
+be declared and safe, exact identity and version agreement, and requested capability
+support. Missing, ambiguous, or unsafe metadata fails closed.
+
+**Reason:** Future workflow invocation must prove compatibility without executing an
+agent or exposing its mutable implementation.
+
+**Tradeoffs:** Executor registration now requires parallel immutable metadata and an
+exact validated binding. Resolution grants no execution authority.
+
+**Future impact:** Controlled Workflow Step AgentRuntime Invocation must consume the
+resolver result and independently enforce all workflow controls before calling
+AgentRuntime.
