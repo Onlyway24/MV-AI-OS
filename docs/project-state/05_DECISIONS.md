@@ -1776,3 +1776,29 @@ arbitrary service lookup, interactive shell, network API, or background executio
 
 **Future impact:** The Core V1 vertical slice must use this command boundary across a
 genuine runtime restart and exercise each lifecycle branch independently.
+
+## ADR-067 — Core V1 integration is proven through the composed local runtime
+
+**Context:** Unit and service tests could not prove that Fabio's actual local entry
+path composed Mission Planning, durable Workflow controls, deterministic Agent
+execution, lifecycle, reporting, and restart recovery correctly.
+
+**Decision:** The Core V1 vertical slice creates the real composed runtime over a
+temporary SQLite file and uses only its allowlisted Workflow command boundary for the
+main Metodo Veloce flow. It validates the Mission and Quality Gate, creates the
+Workflow, records Fabio approval and two independent Guardian decisions, resolves and
+invokes the deterministic Content Director, inspects and accepts its preparation-only
+result, and verifies atomic completion. It closes all resources, creates a genuinely
+new runtime, and compares the final report while independently reading durable
+receipts, events, controls, invocation, and outcome evidence. Separate workflows cover
+pause/resume, cancellation, retry, and timeout and are also reopened.
+
+**Reason:** Product readiness requires evidence across the real composition and
+persistence boundaries, not a disconnected test harness or in-memory restart claim.
+
+**Tradeoffs:** Timeout setup uses repository-level seeding of a synthetic interrupted
+reservation because the normal deterministic command completes synchronously; the
+timeout decision itself still runs through the public command boundary.
+
+**Future impact:** The Operator Guide can document a path already proven by the same
+runtime and CLI contracts Fabio will use.

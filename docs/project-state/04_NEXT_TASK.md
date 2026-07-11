@@ -2,47 +2,42 @@
 
 ## Milestone name
 
-Complete Local Core V1 Vertical Slice
+Core V1 Operator and Recovery Guide
 
 ## Goal
 
-Prove through the real local application boundary and a genuine SQLite restart that
-Core V1 works as one coherent Mission-to-Workflow product.
+Create one concise durable guide that lets Fabio operate, stop, restart, recover, and
+verify Core V1 safely through the existing CLI.
 
 ## Why it matters
 
-The existing CLI now exposes allowlisted Core V1 operations. The next milestone must
-exercise those operations together rather than relying on disconnected service tests.
+The integrated local product path is now proven. Fabio needs one truthful manual with
+copyable bounded examples and recovery guidance before release review.
 
 ## Required scope
 
-- Run the synthetic Metodo Veloce Content Direction sequence from Mission Brief and
-  Quality Gate through durable Workflow, controls, deterministic Agent invocation,
-  result acceptance, and Step completion.
-- Exercise independent pause/resume, failure/retry, cancellation, and timeout cases.
-- Close the first runtime, create a genuinely new runtime and repository instance,
-  and prove all authoritative records survive.
-- Return the final Operator Workflow Report through the local boundary.
-- Add smaller safe planning scenarios for a restaurant offer and MV-AI-OS engineering.
+- Explain what Core V1 can and cannot do and how to configure and start it.
+- Document Mission, Workflow, control, deterministic Agent, outcome, lifecycle,
+  timeout, report, audit, shutdown, restart, and recovery commands.
+- Include safe bounded fixtures and structured-error troubleshooting.
+- Explain how to verify Git state, tests, build, and persisted recovery.
+- Keep all examples preparation-only and free of credentials or private data.
 
 ## Forbidden scope
 
-- Test-only replacement architecture, fake restart, or direct database mutation as the
-  main scenario.
-- Real research, publication, deployment, outreach, payment, or customer delivery.
-- Models, providers, tools, browser/network integrations, background execution, or
-  external actions.
+- Multiple redundant manuals or a marketing-only document.
+- Real credentials, private data, unsupported model/tool instructions, claims of
+  autonomy, cloud deployment, or external action capability.
 
 ## Acceptance criteria
 
-- The main scenario completes one preparation-only deterministic Workflow Step.
-- Approval and Guardian controls remain independent and effective.
-- Lifecycle scenarios prove bounded recovery and stop behavior.
-- A new runtime returns the same durable state, receipts, evidence, and final report.
-- Every result confirms no unauthorized external effect.
+- Fabio can follow the guide without editing TypeScript or SQLite.
+- Commands match the actual allowlisted operation contracts and current CLI syntax.
+- Recovery instructions use a genuinely persistent SQLite path and safe shutdown.
+- Unsupported capabilities are stated explicitly.
 - Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-One complete safe Core V1 sequence is proven through the same local commands Fabio can
-run.
+One accurate Operator and Recovery Guide is tracked and validated against the local
+product boundary.

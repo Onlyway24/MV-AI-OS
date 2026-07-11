@@ -144,7 +144,16 @@ and tests, not intended future behavior.
   input and output; preserves service-level idempotency and exact versions; and never
   permits external effects. Explicit Agent-result rejection is now durable and does
   not falsely complete or fail a Step.
-- The next milestone is Complete Local Core V1 Vertical Slice.
+- Complete Local Core V1 Vertical Slice is completed by the current change set. The
+  real composed runtime executes the synthetic Metodo Veloce Mission Brief, Mission
+  Plan and Quality Gate, durable Workflow creation, Fabio approval, independent
+  Guardian decisions, exact candidate resolution, deterministic local Content
+  Director invocation, structured result inspection, explicit outcome acceptance,
+  and atomic completion. A genuinely new runtime reopens the same SQLite database and
+  returns the identical final report and durable evidence. Independent scenarios prove
+  restaurant and engineering planning, pause/resume, cancellation, bounded retry
+  recovery, and exact-deadline timeout without external effects.
+- The next milestone is Core V1 Operator and Recovery Guide.
 
 ## Current architecture
 
@@ -273,6 +282,7 @@ provider, n8n, or external SDK types.
 69. Explicit Workflow Timeout Evaluation and Chapter 1 Closeout.
 70. Operator Workflow Report.
 71. Local Workflow Command Boundary.
+72. Complete Local Core V1 Vertical Slice.
 
 ## Implemented modules
 
