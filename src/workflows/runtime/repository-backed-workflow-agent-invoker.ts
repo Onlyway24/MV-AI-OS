@@ -75,8 +75,10 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
         executorVersion: descriptor.executorVersion,
         externalEffectsAllowed: false,
         fingerprint,
+        inputContractId: descriptor.inputContractId,
         instanceId: candidate.instanceId,
         invocationId: trusted.invocationId,
+        outputContractId: descriptor.outputContractId,
         reservedAt: timestamp,
         reservedInstanceVersion: reservedVersion,
         runtimeAgentId: descriptor.runtimeAgentId,
@@ -124,7 +126,7 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
       invocationId: receipt.invocationId,
       limits: { ...(limits.maxCostUsd === undefined ? {} : { maxCostUsd: limits.maxCostUsd }), maxResultBytes: limits.maxResultBytes, ...(limits.maxTokens === undefined ? {} : { maxTokens: limits.maxTokens }), maxToolCalls: 0, modelProfile: "deterministic-local", timeoutMs: limits.timeoutMs },
       objective: `Prepare bounded content direction for step ${receipt.stepId}`,
-      outputContract: { contractId: "content-director-output", contractVersion: "1" },
+      outputContract: contractReference(receipt.outputContractId),
       permissions: [],
       taskId: receipt.instanceId,
     };
@@ -191,3 +193,4 @@ function validate<T>(value: unknown, validator: Validator<T>, label: string): T 
 function now(clock: Clock): string { const value = clock.now(); if (Number.isNaN(value.getTime())) throw new RepositoryValidationError("Workflow invocation clock is invalid"); return value.toISOString(); }
 function blocked(code: "CANDIDATE_BLOCKED" | "EXECUTOR_UNRESOLVED" | "INVOCATION_CONFLICT" | "INVOCATION_STATE_INVALID", reason: string): ControlledWorkflowAgentInvocationResult { return freeze({ blocker: { code, reason }, contractVersion: "1", status: "BLOCKED" }); }
 function terminal(receipt: WorkflowAgentInvocationReceipt, replayed: boolean): ControlledWorkflowAgentInvocationResult { if (receipt.status === "RESERVED") return blocked("INVOCATION_STATE_INVALID", "Invocation has no durable outcome"); return freeze({ contractVersion: "1", receipt, replayed, status: receipt.status }); }
+function contractReference(identity: string | undefined): { readonly contractId: string; readonly contractVersion: string } { if (identity === undefined) throw new RepositoryValidationError("Workflow invocation output contract identity is missing"); const separator = identity.lastIndexOf("@"); if (separator < 1 || separator === identity.length - 1) throw new RepositoryValidationError("Workflow invocation output contract identity is invalid"); return Object.freeze({ contractId: identity.slice(0, separator), contractVersion: identity.slice(separator + 1) }); }

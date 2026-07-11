@@ -1607,3 +1607,25 @@ steps remain pending until a later explicit readiness evaluation.
 
 **Future impact:** Lifecycle controls may later govern retry, pause, resume, failure,
 and cancellation without weakening outcome acceptance or enabling automatic execution.
+
+## ADR-060 — Executor contracts and stored AgentResult identity are independently revalidated
+
+**Context:** An exact specification/executor binding is insufficient if durable
+invocation evidence omits the executor's concrete input/output contracts or if outcome
+acceptance trusts validation performed before persistence.
+
+**Decision:** New invocation receipts preserve the resolved executor input and output
+contract identities. The deterministic executor uses its own exact artifact contract,
+distinct from organizational Agent Specification metadata. Outcome acceptance
+re-resolves both contracts and independently validates the stored `AgentResult`, its
+invocation/task/runtime identity, and the structured artifact. Older receipts without
+contract metadata remain readable but fail closed at outcome acceptance.
+
+**Reason:** Persistence is a trust boundary. Exact execution and output acceptance
+must not depend on transient prior validation or a misleading contract name.
+
+**Tradeoffs:** A legacy reserved receipt lacking contract identities cannot be
+accepted automatically and requires later explicit lifecycle handling.
+
+**Future impact:** Future executors must declare their concrete bounded contracts in
+their immutable descriptor and carry them through reservation and outcome review.

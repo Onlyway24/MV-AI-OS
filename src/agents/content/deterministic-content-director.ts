@@ -12,8 +12,8 @@ export const DETERMINISTIC_CONTENT_DIRECTOR_DESCRIPTOR: AgentExecutorDescriptor 
   executionMode: "DETERMINISTIC_LOCAL",
   executorId: DETERMINISTIC_CONTENT_DIRECTOR_EXECUTOR_ID,
   executorVersion: DETERMINISTIC_CONTENT_DIRECTOR_EXECUTOR_VERSION,
-  inputContractId: "content-director-input@1",
-  outputContractId: "content-director-output@1",
+  inputContractId: "deterministic-content-direction-input@1",
+  outputContractId: "deterministic-content-direction-artifact@1",
   roleId: CONTENT_DIRECTOR_AGENT_ID,
   runtimeAgentId: CONTENT_DIRECTOR_AGENT_ID,
   runtimeAgentVersion: "1.0.0",
@@ -121,7 +121,7 @@ export class DeterministicContentDirectorExecutor implements AgentExecutor {
 
 function validateInvocationInput(invocation: AgentInvocation): ContentDirectorDirectionInput {
   if (invocation.agent.agentId !== CONTENT_DIRECTOR_AGENT_ID || invocation.agent.version !== "1.0.0" ||
-      invocation.outputContract.contractId !== "content-director-output" || invocation.outputContract.contractVersion !== "1") {
+      invocation.outputContract.contractId !== "deterministic-content-direction-artifact" || invocation.outputContract.contractVersion !== "1") {
     throw new Error("deterministic Content Director invocation identity is invalid");
   }
   return validateDirectionInput(invocation.input);

@@ -102,10 +102,13 @@ and tests, not intended future behavior.
 - Controlled Workflow Step AgentRuntime Invocation was committed in `a6f0f57` with
   durable reservation, outcome evidence, audit evidence, and restart-safe
   replay. Invocation does not complete the Workflow Step.
-- Workflow Step Outcome Validation and Completion is completed by the current change
-  set. Only an explicitly accepted durable invocation outcome can atomically complete
+- Workflow Step Outcome Validation and Completion was committed in `9dcf8c8`. Only an
+  explicitly accepted durable invocation outcome can atomically complete
   its exact step; no next step starts automatically.
-- The next milestone is Vertical-Slice Adversarial Review and Project-State Closeout.
+- The Local Deterministic Workflow Execution Vertical Slice adversarial review and
+  closeout is completed by the current change set.
+- The next milestone is Workflow Lifecycle Failure, Retry, Pause, Resume, and
+  Cancellation.
 
 ## Current architecture
 
@@ -227,6 +230,7 @@ provider, n8n, or external SDK types.
 62. AgentRuntime Executor Resolution and Deterministic Agent Company Alignment.
 63. Controlled Workflow Step AgentRuntime Invocation.
 64. Workflow Step Outcome Validation and Completion.
+65. Local Deterministic Workflow Execution Vertical Slice Closeout.
 
 ## Implemented modules
 
@@ -1156,7 +1160,9 @@ chapter.
 - Durable persistence now covers task, request, audit, memory, knowledge, immutable
   workflow definitions, workflow instances and step states, processed command
   receipts, ordered redaction-safe workflow events, and exact workflow approval and
-  Guardian checkpoints with atomic checkpoint audit events.
+  Guardian checkpoints with atomic checkpoint audit events. It also covers exact
+  deterministic-local invocation reservations, terminal invocation outcomes,
+  invocation audit events, and Workflow Step outcome receipts.
 - Workflow readiness is observational only: it reads one exact durable workflow
   snapshot through the existing transaction boundary, writes no state, receipts, or
   events, and never authorizes execution.
@@ -1164,11 +1170,19 @@ chapter.
   qualified candidate from the same durable snapshot. It writes no workflow state,
   command receipt, or event and invokes no agent, model, provider, tool, network, or
   external system.
+- Controlled Workflow invocation can re-create one `DURABLE_ONLY` candidate, resolve
+  its exact deterministic-local executor, atomically reserve the invocation and move
+  the selected step to `AWAITING_RESULT`, execute outside the database transaction,
+  and atomically persist one bounded terminal result or failure with audit evidence.
+- Workflow Step outcome review independently reloads and validates the durable
+  `AgentResult`, exact executor and contract identities, structured artifact evidence,
+  and quality requirements. Only explicit acceptance atomically persists the
+  `COMPLETE_STEP` transition, command receipt, Workflow Event, and outcome receipt.
 - Secret references can be resolved locally into ephemeral values and consumed by the
   OpenAI provider adapter through controlled runtime wiring.
 - Durable approval and Guardian checkpoint records can be written explicitly through
   the checkpoint service; there is still no approval UI, transport, autonomous
-  Guardian execution, or workflow step executor.
+  Guardian execution, or automatic workflow executor.
 
 ## What is actually executable
 
@@ -1343,6 +1357,9 @@ chapter.
 - A caller can explicitly record, replay, revoke, and reload exact workflow approval
   and Guardian checkpoints. In `DURABLE_ONLY` mode the candidate boundary ignores
   transient control claims and uses the latest durable decision per control stream.
+- A caller can explicitly invoke and complete one exact local deterministic Content
+  Director step with durable reservation, restart-safe replay, separate outcome
+  acceptance, atomic completion, and no automatic dependent-step execution.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1355,15 +1372,15 @@ path.
 ## Not implemented yet
 
 - Universal runtime enforcement of Agent Specifications for all executors.
-- Workflow dependency scheduling loops, retries, execution, or n8n.
+- Workflow dependency scheduling loops, lifecycle retries, or n8n.
 - Real tool implementations or direct tool execution.
-- Durable approval persistence and approval checkpoints.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
 - Approval UI/transport and autonomous Guardian evaluation.
-- Controlled AgentRuntime invocation, step result completion, lifecycle command coordination,
-  or any model/provider/tool/network/external execution from a workflow candidate.
+- Workflow lifecycle failure policy, retry budgets, retry execution, pause/resume
+  coordination, and cancellation propagation.
+- Any model/provider/tool/network/browser/external execution from a workflow candidate.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.
 - Cancellation propagation, production retry budgets, operational health checks,

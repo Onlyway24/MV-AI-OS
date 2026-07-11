@@ -4,6 +4,7 @@ import { RepositoryConflictError, RepositoryValidationError } from "../../errors
 import type { RepositoryTransactionRunner } from "../../persistence/repository-transaction.js";
 import type { Clock } from "../../ports/clock.js";
 import type { Validator } from "../../validation/validation.js";
+import { AgentResultValidator } from "../../validation/agent-result-validator.js";
 import { DeterministicWorkflowStateMachine } from "./deterministic-workflow-state-machine.js";
 import { WorkflowEventDraftValidator } from "./workflow-persistence-validator.js";
 import { freeze } from "./workflow-agent-invocation.js";
@@ -50,7 +51,10 @@ export class RepositoryBackedWorkflowStepOutcomeService implements WorkflowStepO
       if (step?.status !== "AWAITING_RESULT") return this.#persistDecision(workflows, trusted, "BLOCKED", invocation.fingerprint, ["Workflow Step is not awaiting this result"], identity, false);
       const resolved = this.dependencies.resolver.resolve({ requiredCapabilityIds: invocation.capabilityIds, specificationId: invocation.specificationId, specificationVersion: invocation.specificationVersion });
       if (resolved.status !== "resolved" || resolved.executor.executorId !== invocation.executorId || resolved.executor.executorVersion !== invocation.executorVersion || resolved.executor.runtimeAgentId !== invocation.runtimeAgentId || resolved.executor.runtimeAgentVersion !== invocation.runtimeAgentVersion) return this.#persistDecision(workflows, trusted, "BLOCKED", invocation.fingerprint, ["Exact invocation binding no longer resolves"], identity, false);
-      const artifactValidation = new ContentDirectionArtifactValidator().validate(invocation.result.output);
+      const resultValidation = new AgentResultValidator().validate(invocation.result);
+      if (!resultValidation.ok || resultValidation.value.status !== "succeeded" || resultValidation.value.invocationId !== invocation.invocationId || resultValidation.value.taskId !== invocation.instanceId || resultValidation.value.agent.agentId !== invocation.runtimeAgentId || resultValidation.value.agent.version !== invocation.runtimeAgentVersion) return this.#persistDecision(workflows, trusted, "INVALID", invocation.fingerprint, ["Durable AgentResult identity is invalid"], identity);
+      if (invocation.inputContractId !== resolved.executor.inputContractId || invocation.outputContractId !== resolved.executor.outputContractId) return this.#persistDecision(workflows, trusted, "BLOCKED", invocation.fingerprint, ["Exact invocation contract identity no longer resolves"], identity, false);
+      const artifactValidation = new ContentDirectionArtifactValidator().validate(resultValidation.value.output);
       if (!artifactValidation.ok) return this.#persistDecision(workflows, trusted, "INVALID", invocation.fingerprint, ["Structured Content Direction artifact is invalid"], identity);
       const decision = assess(artifactValidation.value);
       if (decision.decision !== "ACCEPTED_FOR_COMPLETION") return this.#persistDecision(workflows, trusted, decision.decision, invocation.fingerprint, decision.remediation, identity);

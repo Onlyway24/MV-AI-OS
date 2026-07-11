@@ -33,6 +33,8 @@ export interface WorkflowAgentInvocationReceipt {
   readonly specificationVersion: string;
   readonly executorId: string;
   readonly executorVersion: string;
+  readonly inputContractId?: string;
+  readonly outputContractId?: string;
   readonly runtimeAgentId: string;
   readonly runtimeAgentVersion: string;
   readonly capabilityIds: readonly string[];
@@ -87,6 +89,7 @@ export class WorkflowAgentInvocationReceiptValidator implements Validator<Workfl
     if (value.status === "RESERVED" && (value.result !== undefined || value.failure !== undefined || value.completedAt !== undefined)) return invalid("reserved invocation cannot contain an outcome");
     if (value.status === "COMPLETED" && (!record(value.result) || value.failure !== undefined || !timestamp(value.completedAt))) return invalid("completed invocation outcome is invalid");
     if (value.status === "FAILED" && (!record(value.failure) || value.result !== undefined || !timestamp(value.completedAt))) return invalid("failed invocation outcome is invalid");
+    if ((value.inputContractId !== undefined && !safeId(value.inputContractId)) || (value.outputContractId !== undefined && !safeId(value.outputContractId))) return invalid("workflow agent invocation contract identity is invalid");
     const json = JSON.stringify(value);
     if (json.length > 131_072 || /(?:sk-[a-z0-9]|rawPrompt|rawCompletion|providerPayload|secret)/iu.test(json)) return invalid("workflow agent invocation receipt contains prohibited material");
     return validationSuccess(freeze(structuredClone(value as unknown as WorkflowAgentInvocationReceipt)));

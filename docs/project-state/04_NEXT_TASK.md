@@ -2,47 +2,53 @@
 
 ## Milestone name
 
-Vertical-Slice Adversarial Review and Project-State Closeout
+Workflow Lifecycle Failure, Retry, Pause, Resume, and Cancellation
 
 ## Goal
 
-Perform one focused hostile review of deterministic executor resolution, controlled
-workflow invocation, durable invocation persistence, outcome acceptance, and atomic
-step completion; fix material findings and align project-state truth.
+Define and implement explicit operator-controlled lifecycle behavior for failed,
+revision-required, paused, resumed, cancelled, and retry-eligible deterministic
+Workflow Steps without introducing automatic scheduling or external execution.
+
+## Why it matters
+
+MV AI OS can now resolve, invoke, validate, and complete one exact local deterministic
+Workflow Step with durable identity and restart-safe evidence. It still lacks a
+coherent lifecycle policy for outcomes that cannot be accepted immediately or for
+operator intervention after reservation.
 
 ## Required scope
 
-- Review exact specification/executor binding and default-deny resolution.
-- Review reservation, execution-outside-transaction, terminal outcome persistence,
-  replay, and interrupted-reservation behavior.
-- Review authoritative result loading, structured artifact validation, explicit
-  outcome decisions, and atomic completion.
-- Verify fingerprints cover material identities and versions.
-- Verify duplicate invocation and duplicate completion behavior after restart.
-- Verify the next dependent step remains dormant until later explicit readiness
-  evaluation.
-- Fix all P0/P1 and material P2 findings.
-- Run the complete quality gate and update project-state documentation.
+- Define bounded lifecycle commands and durable receipts for failure, revision,
+  retry authorization, pause, resume, and cancellation.
+- Preserve exact workflow, instance, step, invocation, executor, and version identity.
+- Separate retry authorization from retry execution.
+- Require explicit operator authority for lifecycle actions that change execution
+  eligibility.
+- Preserve atomic state, receipt, event, and audit persistence.
+- Preserve restart-safe idempotency and conflicting-command rejection.
+- Keep later readiness evaluation explicit.
 
 ## Forbidden scope
 
-- Models, providers, tools, network, browser, arbitrary filesystem effects, external
-  actions, publishing, outreach, payments, delivery, schedulers, workers, or loops.
-- Automatic retry, automatic next-step execution, parallel execution, callbacks, or
-  compensation.
-- New production dependencies, destructive migrations, or weakening existing tests.
-- Starting the post-sprint lifecycle milestone.
+- Automatic retry loops, background workers, schedulers, parallel execution, or
+  automatic next-step execution.
+- Models, providers, tools, network, browser, publishing, outreach, payments,
+  customer delivery, or other external actions.
+- Approval UI, Web Console, n8n, callbacks, compensation, or a generic execution
+  framework.
+- New production dependencies or destructive migrations.
 
 ## Acceptance criteria
 
-- One complete durable Workflow-to-Agent-to-accepted-Completion path is proven.
-- Resolution never executes; execution never occurs inside a database transaction.
-- Successful invocation is never equated with successful step completion.
-- Completion is exact-versioned, atomic, idempotent, and restart-safe.
-- No external side effect or automatic next-step execution exists.
-- Lint, typecheck, all tests, build, and diff checks pass from a clean commit.
+- Lifecycle decisions are explicit, exact-versioned, atomic, auditable, and
+  idempotent.
+- Retry cannot occur without separate durable authorization.
+- Pause and cancellation prevent invocation before execution.
+- No lifecycle command starts an agent or dependent step automatically.
+- Existing deterministic vertical-slice guarantees remain intact.
 
 ## Definition of done
 
-Project-state records the completed local deterministic vertical slice and names
-exactly one later lifecycle milestone without beginning it.
+Failed and interrupted local deterministic Workflow Steps have a safe, operator-
+controlled lifecycle without adding autonomy or external side effects.

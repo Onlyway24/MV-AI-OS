@@ -31,6 +31,8 @@ import {
   type WorkflowEventIdentifierGenerator,
   type WorkflowInstance,
   type WorkflowStepExecutionBoundaryRequest,
+  type RepositoryTransaction,
+  type RepositoryTransactionRunner,
 } from "../../src/index.js";
 import { FixedClock } from "../support/fixtures.js";
 
@@ -108,9 +110,29 @@ describe("Controlled Workflow Agent Invocation", () => {
     expect(recording.invocations).toHaveLength(1);
     await runner.close();
   });
+
+  it("recovers an interrupted reservation only by deterministic replay and rolls back failed reservation", async () => {
+    const runner = createRunner(":memory:"); await seed(runner);
+    const firstRuntime = new RecordingRuntime(runtime());
+    await expect(createInvoker(new FailOnTransactionRunner(runner, 4), firstRuntime).invoke(request())).rejects.toThrow("injected transaction failure");
+    expect(firstRuntime.invocations).toHaveLength(1);
+    const reserved = await runner.transaction(({ workflows }) => workflows.agentInvocations.getById("workflow-invocation-1"));
+    expect(reserved?.status).toBe("RESERVED");
+    const replayRuntime = new RecordingRuntime(runtime());
+    expect(await createInvoker(runner, replayRuntime).invoke(request())).toMatchObject({ status: "COMPLETED" });
+    expect(replayRuntime.invocations).toHaveLength(1);
+    await runner.close();
+
+    const rollbackRunner = createRunner(":memory:"); await seed(rollbackRunner);
+    await expect(createInvoker(new FailOnTransactionRunner(rollbackRunner, 3), new RecordingRuntime(runtime())).invoke(request())).rejects.toThrow("injected transaction failure");
+    const rollback = await rollbackRunner.transaction(async ({ workflows }) => ({ instance: await workflows.instances.getById("content-instance"), receipt: await workflows.agentInvocations.getById("workflow-invocation-1") }));
+    expect(rollback.instance?.version).toBe(0);
+    expect(rollback.receipt).toBeUndefined();
+    await rollbackRunner.close();
+  });
 });
 
-function createInvoker(runner: SqliteRepositoryTransactionRunner, agentRuntime: AgentRuntime, includeBinding = true) {
+function createInvoker(runner: RepositoryTransactionRunner, agentRuntime: AgentRuntime, includeBinding = true) {
   const specifications = new ImmutableAgentSpecificationRegistry([CONTENT_DIRECTOR_SPECIFICATION], new AgentSpecificationValidator());
   const executor = new DeterministicContentDirectorExecutor();
   const catalog = new ImmutableAgentRuntimeCatalog([{ descriptor: DETERMINISTIC_CONTENT_DIRECTOR_DESCRIPTOR, executor }], includeBinding ? [DETERMINISTIC_CONTENT_DIRECTOR_BINDING] : [], specifications);
@@ -122,6 +144,11 @@ function runtime(): AgentRuntime { return new InProcessAgentRuntime([new Determi
 class RecordingRuntime implements AgentRuntime { public readonly invocations: AgentInvocation[] = []; public constructor(private readonly delegate: AgentRuntime) {} public execute(value: AgentInvocation) { this.invocations.push(value); return this.delegate.execute(value); } }
 class ThrowingRuntime implements AgentRuntime { public execute(): Promise<never> { return Promise.reject(new Error("sensitive internal failure")); } }
 class MalformedRuntime implements AgentRuntime { public execute(): Promise<never> { return Promise.resolve({ status: "succeeded", output: { externalEffects: true } } as never); } }
+class FailOnTransactionRunner implements RepositoryTransactionRunner {
+  #count = 0;
+  public constructor(private readonly delegate: RepositoryTransactionRunner, private readonly failAt: number) {}
+  public transaction<T>(operation: (repositories: RepositoryTransaction) => Promise<T>): Promise<T> { this.#count += 1; if (this.#count === this.failAt) return Promise.reject(new Error("injected transaction failure")); return this.delegate.transaction(operation); }
+}
 class WorkflowEventIds implements WorkflowEventIdentifierGenerator { #value = 0; public nextWorkflowEventId() { this.#value += 1; return `workflow-event-${String(this.#value)}`; } }
 
 async function seed(runner: SqliteRepositoryTransactionRunner): Promise<void> {

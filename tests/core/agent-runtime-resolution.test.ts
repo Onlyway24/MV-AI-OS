@@ -16,8 +16,8 @@ const descriptor: AgentExecutorDescriptor = {
   executionMode: "DETERMINISTIC_LOCAL",
   executorId: "deterministic-content-director",
   executorVersion: "1.0.0",
-  inputContractId: "content-director-input@1",
-  outputContractId: "content-director-output@1",
+  inputContractId: "deterministic-content-direction-input@1",
+  outputContractId: "deterministic-content-direction-artifact@1",
   roleId: "content-director",
   runtimeAgentId: "content-director",
   runtimeAgentVersion: "1.0.0",
@@ -105,7 +105,7 @@ function createInvocation(): AgentInvocation {
     context: {}, contractVersion: "1", correlationId: "correlation-1",
     input: { audience: "Busy founders", brandPreferences: ["Concise"], constraints: ["No unsupported claims"], deliverableType: "carousel", evidenceReferences: [], objective: "Explain the operating model" },
     invocationId: "invocation-1", limits: { maxResultBytes: 100_000, maxToolCalls: 0, modelProfile: "none", timeoutMs: 1_000 },
-    objective: "Prepare content direction", outputContract: { contractId: "content-director-output", contractVersion: "1" },
+    objective: "Prepare content direction", outputContract: { contractId: "deterministic-content-direction-artifact", contractVersion: "1" },
     permissions: [], taskId: "task-1",
   };
 }
