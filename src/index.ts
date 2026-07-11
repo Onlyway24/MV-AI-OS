@@ -1297,6 +1297,7 @@ export {
   WorkflowLifecycleRecordValidator,
   WorkflowRetryAuthorizationRequestValidator,
   WorkflowRetryExecutionRequestValidator,
+  WorkflowTimeoutEvaluationRequestValidator,
   createWorkflowLifecycleFingerprint,
   isRetryableFailureCategory,
   type WorkflowFailureCategory,
@@ -1310,6 +1311,7 @@ export {
   type WorkflowLifecycleService,
   type WorkflowRetryAuthorizationRequest,
   type WorkflowRetryExecutionRequest,
+  type WorkflowTimeoutEvaluationRequest,
   type WorkflowRetryDecision,
 } from "./workflows/runtime/workflow-lifecycle.js";
 export {

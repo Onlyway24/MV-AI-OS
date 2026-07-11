@@ -13,7 +13,7 @@ export type WorkflowFailureCategory =
   | "SAFETY"
   | "PERMANENT";
 
-export type WorkflowLifecycleRecordKind = "CANCELLATION" | "FAILURE" | "PAUSE" | "RESUME" | "RETRY_AUTHORIZATION" | "RETRY_EXECUTION";
+export type WorkflowLifecycleRecordKind = "CANCELLATION" | "FAILURE" | "PAUSE" | "RESUME" | "RETRY_AUTHORIZATION" | "RETRY_EXECUTION" | "TIMEOUT_EVALUATION";
 export type WorkflowRetryDecision = "AUTHORIZED" | "DENIED_EXHAUSTED" | "DENIED_NON_RETRYABLE";
 export type WorkflowControlAction = "CANCEL" | "PAUSE" | "RESUME";
 
@@ -26,6 +26,18 @@ export interface WorkflowControlRequest {
   readonly expectedVersion: number;
   readonly action: WorkflowControlAction;
   readonly reasonCode: string;
+}
+
+export interface WorkflowTimeoutEvaluationRequest {
+  readonly contractVersion: typeof WORKFLOW_LIFECYCLE_CONTRACT_VERSION;
+  readonly evaluationId: string;
+  readonly commandId: string;
+  readonly actorId: string;
+  readonly instanceId: string;
+  readonly expectedVersion: number;
+  readonly stepId: string;
+  readonly invocationId: string;
+  readonly timeoutMs: number;
 }
 
 export interface WorkflowFailureRequest {
@@ -85,6 +97,7 @@ export interface WorkflowLifecycleRecord {
   readonly maxAttempts?: number;
   readonly retryable?: boolean;
   readonly retryDecision?: WorkflowRetryDecision;
+  readonly timeoutMs?: number;
   readonly recoveryInstructions: readonly string[];
 }
 
@@ -96,7 +109,7 @@ export interface WorkflowLifecycleEvent {
   readonly stepId: string;
   readonly kind: WorkflowLifecycleRecordKind;
   readonly occurredAt: string;
-  readonly summaryCode: "workflow_cancellation_recorded" | "workflow_failure_recorded" | "workflow_pause_recorded" | "workflow_resume_recorded" | "workflow_retry_authorization_recorded" | "workflow_retry_execution_recorded";
+  readonly summaryCode: "workflow_cancellation_recorded" | "workflow_failure_recorded" | "workflow_pause_recorded" | "workflow_resume_recorded" | "workflow_retry_authorization_recorded" | "workflow_retry_execution_recorded" | "workflow_timeout_evaluated";
   readonly externalEffects: false;
 }
 
@@ -108,9 +121,17 @@ export interface WorkflowLifecycleResult {
 
 export interface WorkflowLifecycleService {
   controlWorkflow(request: WorkflowControlRequest): Promise<WorkflowLifecycleResult>;
+  evaluateTimeout(request: WorkflowTimeoutEvaluationRequest): Promise<WorkflowLifecycleResult>;
   recordFailure(request: WorkflowFailureRequest): Promise<WorkflowLifecycleResult>;
   authorizeRetry(request: WorkflowRetryAuthorizationRequest): Promise<WorkflowLifecycleResult>;
   executeRetry(request: WorkflowRetryExecutionRequest): Promise<WorkflowLifecycleResult>;
+}
+
+export class WorkflowTimeoutEvaluationRequestValidator implements Validator<WorkflowTimeoutEvaluationRequest> {
+  public validate(value: unknown): ValidationResult<WorkflowTimeoutEvaluationRequest> {
+    if (!record(value) || !onlyKeys(value, ["actorId", "commandId", "contractVersion", "evaluationId", "expectedVersion", "instanceId", "invocationId", "stepId", "timeoutMs"]) || value.contractVersion !== "1" || !ids(value, ["actorId", "commandId", "evaluationId", "instanceId", "invocationId", "stepId"]) || !version(value.expectedVersion) || !boundedTimeout(value.timeoutMs)) return invalid("Workflow timeout evaluation request is invalid");
+    return validationSuccess(freeze(structuredClone(value as unknown as WorkflowTimeoutEvaluationRequest)));
+  }
 }
 
 export class WorkflowControlRequestValidator implements Validator<WorkflowControlRequest> {
@@ -143,11 +164,12 @@ export class WorkflowRetryExecutionRequestValidator implements Validator<Workflo
 
 export class WorkflowLifecycleRecordValidator implements Validator<WorkflowLifecycleRecord> {
   public validate(value: unknown): ValidationResult<WorkflowLifecycleRecord> {
-    if (!record(value) || value.contractVersion !== "1" || !ids(value, ["actorId", "definitionId", "fingerprint", "instanceId", "recordId", "stepId", "workflowVersion"]) || !fingerprint(value.fingerprint) || !version(value.instanceVersion) || !timestamp(value.recordedAt) || value.externalEffects !== false || !instructions(value.recoveryInstructions) || !["CANCELLATION", "FAILURE", "PAUSE", "RESUME", "RETRY_AUTHORIZATION", "RETRY_EXECUTION"].includes(value.kind as string)) return invalid("Workflow lifecycle record is invalid");
-    if (value.kind === "FAILURE" && (!safeId(value.invocationId) || value.failureId !== undefined || value.authorizationId !== undefined || !FAILURE_CATEGORIES.has(value.category as string) || !positive(value.attempt) || !attemptLimit(value.maxAttempts) || typeof value.retryable !== "boolean" || value.retryDecision !== undefined)) return invalid("Workflow failure record is invalid");
-    if (value.kind === "RETRY_AUTHORIZATION" && (!safeId(value.failureId) || value.authorizationId !== undefined || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || !RETRY_DECISIONS.has(value.retryDecision as string))) return invalid("Workflow retry authorization record is invalid");
-    if (value.kind === "RETRY_EXECUTION" && (!safeId(value.failureId) || !safeId(value.authorizationId) || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || value.retryDecision !== undefined)) return invalid("Workflow retry execution record is invalid");
-    if ((value.kind === "CANCELLATION" || value.kind === "PAUSE" || value.kind === "RESUME") && (value.stepId !== "workflow" || value.failureId !== undefined || value.authorizationId !== undefined || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || value.retryDecision !== undefined)) return invalid("Workflow control record is invalid");
+    if (!record(value) || value.contractVersion !== "1" || !ids(value, ["actorId", "definitionId", "fingerprint", "instanceId", "recordId", "stepId", "workflowVersion"]) || !fingerprint(value.fingerprint) || !version(value.instanceVersion) || !timestamp(value.recordedAt) || value.externalEffects !== false || !instructions(value.recoveryInstructions) || !["CANCELLATION", "FAILURE", "PAUSE", "RESUME", "RETRY_AUTHORIZATION", "RETRY_EXECUTION", "TIMEOUT_EVALUATION"].includes(value.kind as string)) return invalid("Workflow lifecycle record is invalid");
+    if (value.kind === "FAILURE" && (!safeId(value.invocationId) || value.failureId !== undefined || value.authorizationId !== undefined || !FAILURE_CATEGORIES.has(value.category as string) || !positive(value.attempt) || !attemptLimit(value.maxAttempts) || typeof value.retryable !== "boolean" || value.retryDecision !== undefined || (value.category === "TIMEOUT" ? !boundedTimeout(value.timeoutMs) : value.timeoutMs !== undefined))) return invalid("Workflow failure record is invalid");
+    if (value.kind === "RETRY_AUTHORIZATION" && (!safeId(value.failureId) || value.authorizationId !== undefined || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || !RETRY_DECISIONS.has(value.retryDecision as string) || value.timeoutMs !== undefined)) return invalid("Workflow retry authorization record is invalid");
+    if (value.kind === "RETRY_EXECUTION" && (!safeId(value.failureId) || !safeId(value.authorizationId) || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || value.retryDecision !== undefined || value.timeoutMs !== undefined)) return invalid("Workflow retry execution record is invalid");
+    if ((value.kind === "CANCELLATION" || value.kind === "PAUSE" || value.kind === "RESUME") && (value.stepId !== "workflow" || value.failureId !== undefined || value.authorizationId !== undefined || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || value.retryDecision !== undefined || value.timeoutMs !== undefined)) return invalid("Workflow control record is invalid");
+    if (value.kind === "TIMEOUT_EVALUATION" && (!safeId(value.invocationId) || value.failureId !== undefined || value.authorizationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || value.retryDecision !== undefined || !boundedTimeout(value.timeoutMs))) return invalid("Workflow timeout evaluation record is invalid");
     const json = JSON.stringify(value);
     if (json.length > 16_384 || /(?:sk-[a-z0-9]|rawPrompt|rawCompletion|providerPayload|secret)/iu.test(json)) return invalid("Workflow lifecycle record contains prohibited material");
     return validationSuccess(freeze(structuredClone(value as unknown as WorkflowLifecycleRecord)));
@@ -157,13 +179,13 @@ export class WorkflowLifecycleRecordValidator implements Validator<WorkflowLifec
 export class WorkflowLifecycleEventValidator implements Validator<WorkflowLifecycleEvent> {
   public validate(value: unknown): ValidationResult<WorkflowLifecycleEvent> {
     if (!record(value) || !onlyKeys(value, ["contractVersion", "eventId", "externalEffects", "instanceId", "kind", "occurredAt", "recordId", "stepId", "summaryCode"]) || value.contractVersion !== "1" || !ids(value, ["eventId", "instanceId", "recordId", "stepId"]) || !timestamp(value.occurredAt) || value.externalEffects !== false) return invalid("Workflow lifecycle event is invalid");
-    const expected = value.kind === "FAILURE" ? "workflow_failure_recorded" : value.kind === "RETRY_AUTHORIZATION" ? "workflow_retry_authorization_recorded" : value.kind === "RETRY_EXECUTION" ? "workflow_retry_execution_recorded" : value.kind === "PAUSE" ? "workflow_pause_recorded" : value.kind === "RESUME" ? "workflow_resume_recorded" : value.kind === "CANCELLATION" ? "workflow_cancellation_recorded" : undefined;
+    const expected = value.kind === "FAILURE" ? "workflow_failure_recorded" : value.kind === "RETRY_AUTHORIZATION" ? "workflow_retry_authorization_recorded" : value.kind === "RETRY_EXECUTION" ? "workflow_retry_execution_recorded" : value.kind === "PAUSE" ? "workflow_pause_recorded" : value.kind === "RESUME" ? "workflow_resume_recorded" : value.kind === "CANCELLATION" ? "workflow_cancellation_recorded" : value.kind === "TIMEOUT_EVALUATION" ? "workflow_timeout_evaluated" : undefined;
     if (value.summaryCode !== expected) return invalid("Workflow lifecycle event kind is invalid");
     return validationSuccess(freeze(structuredClone(value as unknown as WorkflowLifecycleEvent)));
   }
 }
 
-export function createWorkflowLifecycleFingerprint(value: WorkflowControlRequest | WorkflowFailureRequest | WorkflowRetryAuthorizationRequest | WorkflowRetryExecutionRequest): string {
+export function createWorkflowLifecycleFingerprint(value: WorkflowControlRequest | WorkflowFailureRequest | WorkflowRetryAuthorizationRequest | WorkflowRetryExecutionRequest | WorkflowTimeoutEvaluationRequest): string {
   return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex");
 }
 
@@ -180,6 +202,7 @@ function fingerprint(value: unknown): value is string { return typeof value === 
 function version(value: unknown): value is number { return Number.isSafeInteger(value) && (value as number) >= 0; }
 function positive(value: unknown): value is number { return Number.isSafeInteger(value) && (value as number) >= 1; }
 function attemptLimit(value: unknown): value is number { return Number.isSafeInteger(value) && (value as number) >= 1 && (value as number) <= 5; }
+function boundedTimeout(value: unknown): value is number { return Number.isSafeInteger(value) && (value as number) >= 1 && (value as number) <= 3_600_000; }
 function timestamp(value: unknown): value is string { return typeof value === "string" && value.length <= 40 && !Number.isNaN(Date.parse(value)); }
 function instructions(value: unknown): value is readonly string[] { return Array.isArray(value) && value.length >= 1 && value.length <= 8 && value.every((entry) => typeof entry === "string" && entry.length > 0 && entry.length <= 300); }
 function invalid<T>(message: string): ValidationResult<T> { return validationFailure([{ code: "invalid_value", message, path: "$" }]); }

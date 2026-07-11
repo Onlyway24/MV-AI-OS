@@ -115,12 +115,23 @@ and tests, not intended future behavior.
   restore only the failed Workflow Step to `READY`; no agent, tool, model, provider,
   network, or external action is invoked, and all current controls must be evaluated
   again before a later explicit invocation.
-- Explicit Workflow Pause, Resume, and Cancellation is completed by the current
-  change set. Only the configured operator can atomically apply these controls with
+- Explicit Workflow Pause, Resume, and Cancellation was committed in `079faba`.
+  Only the configured operator can atomically apply these controls with
   durable receipts and lifecycle audit evidence. Ordinary repository updates cannot
   bypass the control boundary, completed and failure evidence is retained, and an
   interrupted invocation cannot resume across a pause/resume version change.
-- The next milestone is Explicit Workflow Timeout Evaluation.
+- Explicit Workflow Timeout Evaluation is completed by the current change set. An
+  exact reserved activity is evaluated only by explicit configured-operator request,
+  bounded configured timeout metadata, durable timestamps, and the injected clock.
+  Non-expired evaluation does not change state; expiry atomically records a bounded
+  retryable timeout failure. No timer, sleep, polling, worker, invocation, retry, or
+  external action exists in this boundary.
+- The focused Chapter 1 lifecycle adversarial review passes, including wrong actors,
+  stale versions, mismatched evidence, retry exhaustion, repository bypass, exact
+  deadline behavior, restart replay, pause/resume reservation invalidation, and
+  cancellation evidence retention.
+- Chapter 1 — Workflow Lifecycle Completion is complete.
+- The next milestone is Operator Workflow Report.
 
 ## Current architecture
 
@@ -246,6 +257,7 @@ provider, n8n, or external SDK types.
 66. Workflow Failure Classification and Retry Eligibility.
 67. Explicit Workflow Retry Execution and Recovery.
 68. Explicit Workflow Pause, Resume, and Cancellation.
+69. Explicit Workflow Timeout Evaluation and Chapter 1 Closeout.
 
 ## Implemented modules
 

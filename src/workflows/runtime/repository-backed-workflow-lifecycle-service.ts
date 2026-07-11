@@ -11,6 +11,7 @@ import {
   WorkflowLifecycleRecordValidator,
   WorkflowRetryAuthorizationRequestValidator,
   WorkflowRetryExecutionRequestValidator,
+  WorkflowTimeoutEvaluationRequestValidator,
   createWorkflowLifecycleFingerprint,
   freeze,
   isRetryableFailureCategory,
@@ -22,6 +23,7 @@ import {
   type WorkflowLifecycleService,
   type WorkflowRetryAuthorizationRequest,
   type WorkflowRetryExecutionRequest,
+  type WorkflowTimeoutEvaluationRequest,
 } from "./workflow-lifecycle.js";
 
 export interface RepositoryBackedWorkflowLifecycleDependencies {
@@ -33,7 +35,9 @@ export interface RepositoryBackedWorkflowLifecycleDependencies {
   readonly controlRequestValidator: Validator<WorkflowControlRequest>;
   readonly retryRequestValidator: Validator<WorkflowRetryAuthorizationRequest>;
   readonly retryExecutionRequestValidator: Validator<WorkflowRetryExecutionRequest>;
+  readonly timeoutRequestValidator: Validator<WorkflowTimeoutEvaluationRequest>;
   readonly stateMachine: DeterministicWorkflowStateMachine;
+  readonly timeoutMs: number;
 }
 
 export class RepositoryBackedWorkflowLifecycleService implements WorkflowLifecycleService {
@@ -63,6 +67,46 @@ export class RepositoryBackedWorkflowLifecycleService implements WorkflowLifecyc
       const recordedAt = now(this.dependencies.clock);
       const record = lifecycleRecord({ actorId: valid.actorId, attempt, category: valid.category, definitionId: definition.definitionId, fingerprint, instanceId: valid.instanceId, instanceVersion: transition.instance.version, invocationId: valid.invocationId, kind: "FAILURE", maxAttempts: valid.maxAttempts, recordedAt, recordId: valid.failureId, recoveryInstructions: failureInstructions(valid.category, attempt, valid.maxAttempts), retryable: isRetryableFailureCategory(valid.category), stepId: valid.stepId, workflowVersion: definition.workflowVersion });
       const workflowEvent = validate({ actorCategory: "runtime", commandId: valid.commandId, commandKind: "FAIL_STEP", contractVersion: "1", definitionId: definition.definitionId, eventId: `${valid.failureId}-transition`, instanceId: valid.instanceId, instanceVersion: transition.instance.version, nextStatus: "FAILED", nextStepStatus: "FAILED", nonExecuting: true, occurredAt: recordedAt, previousStatus: instance.status, previousStepStatus: "AWAITING_RESULT", reasonCode: valid.reasonCode, stepId: valid.stepId, summaryCode: "workflow_transition_applied", workflowId: definition.workflowId, workflowVersion: definition.workflowVersion }, new WorkflowEventDraftValidator(), "Workflow failure event");
+      await workflows.instances.update(transition.instance, { version: instance.version });
+      await workflows.receipts.insert(instance.instanceId, commandReceipt);
+      await workflows.events.append(workflowEvent);
+      await workflows.lifecycleRecords.insert(record);
+      await workflows.lifecycleEvents.append(lifecycleEvent(record));
+      return freeze({ contractVersion: "1", record, replayed: false });
+    });
+  }
+
+  public evaluateTimeout(request: WorkflowTimeoutEvaluationRequest): Promise<WorkflowLifecycleResult> {
+    const valid = validate(validate(request, this.dependencies.timeoutRequestValidator, "Workflow timeout evaluation request"), new WorkflowTimeoutEvaluationRequestValidator(), "Workflow timeout evaluation request");
+    if (valid.actorId !== this.dependencies.operatorActorId) throw new RepositoryConflictError("Workflow timeout evaluation requires the configured operator");
+    if (valid.timeoutMs !== this.dependencies.timeoutMs) throw new RepositoryConflictError("Workflow timeout evaluation does not match the configured timeout");
+    const fingerprint = createWorkflowLifecycleFingerprint(valid);
+    return this.dependencies.repositories.transaction(async ({ workflows }) => {
+      const existing = await workflows.lifecycleRecords.getById(valid.evaluationId);
+      if (existing !== undefined) return replay(existing, fingerprint);
+      const instance = await workflows.instances.getById(valid.instanceId);
+      if (instance?.version !== valid.expectedVersion || instance.status !== "ACTIVE" || instance.steps.find(({ stepId }) => stepId === valid.stepId)?.status !== "AWAITING_RESULT") throw new RepositoryConflictError("Workflow timeout evaluation snapshot is invalid");
+      const invocation = await workflows.agentInvocations.getById(valid.invocationId);
+      if (invocation?.status !== "RESERVED" || invocation.instanceId !== valid.instanceId || invocation.stepId !== valid.stepId || invocation.reservedInstanceVersion !== valid.expectedVersion) throw new RepositoryConflictError("Workflow timeout evaluation activity is missing or mismatched");
+      const definition = await workflows.definitions.getById(instance.definitionId);
+      if (definition?.definitionId !== invocation.definitionId || definition.workflowVersion !== invocation.workflowVersion) throw new RepositoryConflictError("Workflow timeout evaluation version evidence is mismatched");
+      const evaluatedAt = now(this.dependencies.clock);
+      const deadline = Date.parse(invocation.reservedAt) + valid.timeoutMs;
+      if (!Number.isSafeInteger(deadline)) throw new RepositoryValidationError("Workflow timeout deadline is invalid");
+      if (Date.parse(evaluatedAt) < deadline) {
+        const record = lifecycleRecord({ actorId: valid.actorId, definitionId: definition.definitionId, fingerprint, instanceId: valid.instanceId, instanceVersion: instance.version, invocationId: valid.invocationId, kind: "TIMEOUT_EVALUATION", recordedAt: evaluatedAt, recordId: valid.evaluationId, recoveryInstructions: Object.freeze(["The activity has not reached its configured timeout.", "No state transition, retry, invocation, or external action occurred."]), stepId: valid.stepId, timeoutMs: valid.timeoutMs, workflowVersion: definition.workflowVersion });
+        await workflows.lifecycleRecords.insert(record);
+        await workflows.lifecycleEvents.append(lifecycleEvent(record));
+        return freeze({ contractVersion: "1", record, replayed: false });
+      }
+      const prior = await workflows.lifecycleRecords.listByStep(valid.instanceId, valid.stepId);
+      const attempt = prior.filter(({ kind }) => kind === "FAILURE").length + 1;
+      if (attempt > this.dependencies.maxAttempts) throw new RepositoryConflictError("Workflow timeout failure exceeds the bounded retry policy");
+      const transition = this.dependencies.stateMachine.apply(instance, { commandId: valid.commandId, expectedVersion: valid.expectedVersion, kind: "FAIL_STEP", nonExecuting: true, reasonCode: "explicit_timeout_expired", stepId: valid.stepId });
+      const commandReceipt = transition.instance.receipts.at(-1);
+      if (commandReceipt === undefined) throw new RepositoryValidationError("Workflow timeout transition produced no receipt");
+      const record = lifecycleRecord({ actorId: valid.actorId, attempt, category: "TIMEOUT", definitionId: definition.definitionId, fingerprint, instanceId: valid.instanceId, instanceVersion: transition.instance.version, invocationId: valid.invocationId, kind: "FAILURE", maxAttempts: this.dependencies.maxAttempts, recordedAt: evaluatedAt, recordId: valid.evaluationId, recoveryInstructions: failureInstructions("TIMEOUT", attempt, this.dependencies.maxAttempts), retryable: true, stepId: valid.stepId, timeoutMs: valid.timeoutMs, workflowVersion: definition.workflowVersion });
+      const workflowEvent = validate({ actorCategory: "operator", commandId: valid.commandId, commandKind: "FAIL_STEP", contractVersion: "1", definitionId: definition.definitionId, eventId: `${valid.evaluationId}-transition`, instanceId: valid.instanceId, instanceVersion: transition.instance.version, nextStatus: "FAILED", nextStepStatus: "FAILED", nonExecuting: true, occurredAt: evaluatedAt, previousStatus: "ACTIVE", previousStepStatus: "AWAITING_RESULT", reasonCode: "explicit_timeout_expired", stepId: valid.stepId, summaryCode: "workflow_transition_applied", workflowId: definition.workflowId, workflowVersion: definition.workflowVersion }, new WorkflowEventDraftValidator(), "Workflow timeout event");
       await workflows.instances.update(transition.instance, { version: instance.version });
       await workflows.receipts.insert(instance.instanceId, commandReceipt);
       await workflows.events.append(workflowEvent);
@@ -173,10 +217,10 @@ export class RepositoryBackedWorkflowLifecycleService implements WorkflowLifecyc
   }
 }
 
-export function createWorkflowLifecycleService(dependencies: Omit<RepositoryBackedWorkflowLifecycleDependencies, "controlRequestValidator" | "failureRequestValidator" | "retryRequestValidator" | "retryExecutionRequestValidator" | "stateMachine">): RepositoryBackedWorkflowLifecycleService { if (!Number.isSafeInteger(dependencies.maxAttempts) || dependencies.maxAttempts < 1 || dependencies.maxAttempts > 5) throw new RepositoryValidationError("Workflow retry limit is invalid"); return new RepositoryBackedWorkflowLifecycleService({ ...dependencies, controlRequestValidator: new WorkflowControlRequestValidator(), failureRequestValidator: new WorkflowFailureRequestValidator(), retryRequestValidator: new WorkflowRetryAuthorizationRequestValidator(), retryExecutionRequestValidator: new WorkflowRetryExecutionRequestValidator(), stateMachine: new DeterministicWorkflowStateMachine(dependencies.clock) }); }
+export function createWorkflowLifecycleService(dependencies: Omit<RepositoryBackedWorkflowLifecycleDependencies, "controlRequestValidator" | "failureRequestValidator" | "retryRequestValidator" | "retryExecutionRequestValidator" | "stateMachine" | "timeoutMs" | "timeoutRequestValidator"> & { readonly timeoutMs?: number }): RepositoryBackedWorkflowLifecycleService { if (!Number.isSafeInteger(dependencies.maxAttempts) || dependencies.maxAttempts < 1 || dependencies.maxAttempts > 5) throw new RepositoryValidationError("Workflow retry limit is invalid"); const timeoutMs = dependencies.timeoutMs ?? 60_000; if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 3_600_000) throw new RepositoryValidationError("Workflow timeout configuration is invalid"); return new RepositoryBackedWorkflowLifecycleService({ ...dependencies, controlRequestValidator: new WorkflowControlRequestValidator(), failureRequestValidator: new WorkflowFailureRequestValidator(), retryRequestValidator: new WorkflowRetryAuthorizationRequestValidator(), retryExecutionRequestValidator: new WorkflowRetryExecutionRequestValidator(), stateMachine: new DeterministicWorkflowStateMachine(dependencies.clock), timeoutMs, timeoutRequestValidator: new WorkflowTimeoutEvaluationRequestValidator() }); }
 
 function lifecycleRecord(value: Omit<WorkflowLifecycleRecord, "contractVersion" | "externalEffects">): WorkflowLifecycleRecord { return validate({ ...value, contractVersion: "1", externalEffects: false }, new WorkflowLifecycleRecordValidator(), "Workflow lifecycle record"); }
-function lifecycleEvent(record: WorkflowLifecycleRecord): WorkflowLifecycleEvent { const summaryCode = record.kind === "FAILURE" ? "workflow_failure_recorded" : record.kind === "RETRY_AUTHORIZATION" ? "workflow_retry_authorization_recorded" : record.kind === "RETRY_EXECUTION" ? "workflow_retry_execution_recorded" : record.kind === "PAUSE" ? "workflow_pause_recorded" : record.kind === "RESUME" ? "workflow_resume_recorded" : "workflow_cancellation_recorded"; return validate({ contractVersion: "1", eventId: `${record.recordId}-event`, externalEffects: false, instanceId: record.instanceId, kind: record.kind, occurredAt: record.recordedAt, recordId: record.recordId, stepId: record.stepId, summaryCode }, new WorkflowLifecycleEventValidator(), "Workflow lifecycle event"); }
+function lifecycleEvent(record: WorkflowLifecycleRecord): WorkflowLifecycleEvent { const summaryCode = record.kind === "FAILURE" ? "workflow_failure_recorded" : record.kind === "RETRY_AUTHORIZATION" ? "workflow_retry_authorization_recorded" : record.kind === "RETRY_EXECUTION" ? "workflow_retry_execution_recorded" : record.kind === "PAUSE" ? "workflow_pause_recorded" : record.kind === "RESUME" ? "workflow_resume_recorded" : record.kind === "TIMEOUT_EVALUATION" ? "workflow_timeout_evaluated" : "workflow_cancellation_recorded"; return validate({ contractVersion: "1", eventId: `${record.recordId}-event`, externalEffects: false, instanceId: record.instanceId, kind: record.kind, occurredAt: record.recordedAt, recordId: record.recordId, stepId: record.stepId, summaryCode }, new WorkflowLifecycleEventValidator(), "Workflow lifecycle event"); }
 function replay(record: WorkflowLifecycleRecord, fingerprint: string): WorkflowLifecycleResult { if (record.fingerprint !== fingerprint) throw new RepositoryConflictError("Workflow lifecycle record ID conflicts with prior request"); return freeze({ contractVersion: "1", record, replayed: true }); }
 function failureInstructions(category: WorkflowFailureRequest["category"], attempt: number, maxAttempts: number): readonly string[] { if (!isRetryableFailureCategory(category)) return Object.freeze(["Inspect the durable failure evidence.", "Correct the non-retryable condition before creating new work."]); if (attempt >= maxAttempts) return Object.freeze(["Retry attempts are exhausted.", "Inspect the durable audit trail and choose a manual recovery path."]); return Object.freeze(["Inspect the durable failure evidence.", "Request explicit operator retry authorization.", "Do not retry automatically."]); }
 function retryInstructions(decision: "AUTHORIZED" | "DENIED_EXHAUSTED" | "DENIED_NON_RETRYABLE"): readonly string[] { return decision === "AUTHORIZED" ? Object.freeze(["Retry is authorized but has not executed.", "Re-evaluate policy, approvals, Guardians, specification, executor, and version before explicit retry execution."]) : decision === "DENIED_EXHAUSTED" ? Object.freeze(["Retry authorization is denied because the attempt limit is exhausted.", "Choose a manual recovery or cancellation path."]) : Object.freeze(["Retry authorization is denied because the failure category is non-retryable.", "Correct the underlying condition before creating new work."]); }

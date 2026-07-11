@@ -16,6 +16,53 @@ import {
 import { FixedClock } from "../support/fixtures.js";
 
 describe("Workflow failure and retry eligibility", () => {
+  it("records an explicit non-expired timeout evaluation without changing state", async () => {
+    const runner = createRunner(":memory:"); await seedReservedInvocation(runner);
+    const lifecycle = service(runner, 3, new FixedClock("2026-01-01T00:00:30.000Z"));
+    const first = await lifecycle.evaluateTimeout(timeoutRequest());
+    expect(first).toMatchObject({ replayed: false, record: { instanceVersion: 2, invocationId: "invocation-1", kind: "TIMEOUT_EVALUATION" } });
+    expect(await lifecycle.evaluateTimeout(timeoutRequest())).toEqual({ ...first, replayed: true });
+    const stored = await runner.transaction(async ({ workflows }) => ({ instance: await workflows.instances.getById("instance-1"), events: await workflows.events.listByInstanceId("instance-1", 10) }));
+    expect(stored.instance).toMatchObject({ status: "ACTIVE", version: 2, steps: [{ status: "AWAITING_RESULT" }] });
+    expect(stored.events).toEqual([]);
+    await runner.close();
+  });
+
+  it("atomically classifies timeout at the deadline as a bounded retryable failure", async () => {
+    const runner = createRunner(":memory:"); await seedReservedInvocation(runner);
+    const lifecycle = service(runner, 3, new FixedClock("2026-01-01T00:01:00.000Z"));
+    const expired = await lifecycle.evaluateTimeout(timeoutRequest());
+    expect(expired).toMatchObject({ record: { attempt: 1, category: "TIMEOUT", instanceVersion: 3, kind: "FAILURE", maxAttempts: 3, retryable: true } });
+    expect(await lifecycle.authorizeRetry({ ...retryRequest(), failureId: "timeout-evaluation-1" })).toMatchObject({ record: { retryDecision: "AUTHORIZED" } });
+    const stored = await runner.transaction(({ workflows }) => workflows.instances.getById("instance-1"));
+    expect(stored).toMatchObject({ status: "FAILED", version: 3, steps: [{ status: "FAILED" }] });
+    await runner.close();
+  });
+
+  it("fails closed for unauthorized, unconfigured, stale, and mismatched timeout evaluation", async () => {
+    const runner = createRunner(":memory:"); await seedReservedInvocation(runner);
+    const lifecycle = service(runner, 3, new FixedClock("2026-01-01T00:01:00.000Z"));
+    expect(() => lifecycle.evaluateTimeout(timeoutRequest({ actorId: "not-fabio" }))).toThrow(/operator/iu);
+    expect(() => lifecycle.evaluateTimeout(timeoutRequest({ timeoutMs: 30_000 }))).toThrow(/configured timeout/iu);
+    await expect(lifecycle.evaluateTimeout(timeoutRequest({ expectedVersion: 9 }))).rejects.toThrow(/snapshot/iu);
+    await expect(lifecycle.evaluateTimeout(timeoutRequest({ invocationId: "missing" }))).rejects.toThrow(/activity/iu);
+    await runner.close();
+  });
+
+  it("replays an expired timeout after restart without a second failure transition", async () => {
+    await withDatabase(async (path) => {
+      const first = createRunner(path); await seedReservedInvocation(first);
+      const clock = new FixedClock("2026-01-01T00:01:00.000Z");
+      const expired = await service(first, 3, clock).evaluateTimeout(timeoutRequest());
+      await first.close();
+      const reopened = createRunner(path);
+      expect(await service(reopened, 3, clock).evaluateTimeout(timeoutRequest())).toEqual({ ...expired, replayed: true });
+      const stored = await reopened.transaction(async ({ workflows }) => ({ instance: await workflows.instances.getById("instance-1"), records: await workflows.lifecycleRecords.listByStep("instance-1", "step-1") }));
+      expect(stored.instance?.version).toBe(3);
+      expect(stored.records.filter(({ kind }) => kind === "FAILURE")).toHaveLength(1);
+      await reopened.close();
+    });
+  });
   it("pauses, resumes, and cancels only through explicit durable operator controls", async () => {
     const runner = createRunner(":memory:"); await seedWorkflow(runner);
     const pause = await service(runner).controlWorkflow(controlRequest("PAUSE", { commandId: "pause-command", controlId: "pause-1" }));
@@ -187,7 +234,7 @@ describe("Workflow failure and retry eligibility", () => {
   });
 });
 
-function service(runner: SqliteRepositoryTransactionRunner, maxAttempts = 3) { return createWorkflowLifecycleService({ clock: new FixedClock(), maxAttempts, operatorActorId: "fabio", repositories: runner }); }
+function service(runner: SqliteRepositoryTransactionRunner, maxAttempts = 3, clock = new FixedClock(), timeoutMs = 60_000) { return createWorkflowLifecycleService({ clock, maxAttempts, operatorActorId: "fabio", repositories: runner, timeoutMs }); }
 function failureRequest(overrides: Partial<ReturnType<typeof failureRequestBase>> = {}) { return { ...failureRequestBase(), ...overrides }; }
 function failureRequestBase() { return { actorId: "runtime-local", category: "TRANSIENT_RUNTIME" as WorkflowFailureCategory, commandId: "fail-command-1", contractVersion: "1" as const, expectedVersion: 2, failureId: "failure-1", instanceId: "instance-1", invocationId: "invocation-1", maxAttempts: 3, reasonCode: "deterministic_runtime_failure", stepId: "step-1" }; }
 function retryRequest(overrides: Partial<ReturnType<typeof retryRequestBase>> = {}) { return { ...retryRequestBase(), ...overrides }; }
@@ -195,6 +242,8 @@ function retryRequestBase() { return { actorId: "fabio", authorizationId: "retry
 function executionRequest(overrides: Partial<ReturnType<typeof executionRequestBase>> = {}) { return { ...executionRequestBase(), ...overrides }; }
 function executionRequestBase() { return { actorId: "fabio", authorizationId: "retry-auth-1", commandId: "retry-command-1", contractVersion: "1" as const, executionId: "retry-execution-1", expectedVersion: 3, failureId: "failure-1", instanceId: "instance-1", stepId: "step-1" }; }
 function controlRequest(action: "CANCEL" | "PAUSE" | "RESUME", overrides: Partial<{ actorId: string; commandId: string; controlId: string; expectedVersion: number; reasonCode: string }> = {}) { return { action, actorId: "fabio", commandId: `${action.toLowerCase()}-command`, contractVersion: "1" as const, controlId: `${action.toLowerCase()}-1`, expectedVersion: 0, instanceId: "instance-1", reasonCode: "operator_lifecycle_control", ...overrides }; }
+function timeoutRequest(overrides: Partial<ReturnType<typeof timeoutRequestBase>> = {}) { return { ...timeoutRequestBase(), ...overrides }; }
+function timeoutRequestBase() { return { actorId: "fabio", commandId: "timeout-command-1", contractVersion: "1" as const, evaluationId: "timeout-evaluation-1", expectedVersion: 2, instanceId: "instance-1", invocationId: "invocation-1", stepId: "step-1", timeoutMs: 60_000 }; }
 
 async function seedWorkflow(runner: SqliteRepositoryTransactionRunner) {
   const persistence = createWorkflowPersistenceService({ eventIds: new EventIds(), repositories: runner, stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()) });
@@ -213,6 +262,20 @@ async function seedFailedInvocation(runner: SqliteRepositoryTransactionRunner) {
     const awaiting = { ...ready, receipts: [...ready.receipts, reserveReceipt], steps: [{ blockers: [], status: "AWAITING_RESULT" as const, stepId: "step-1" }], version: 2 };
     await workflows.instances.update(awaiting, { version: 1 }); await workflows.receipts.insert("instance-1", reserveReceipt);
     await workflows.agentInvocations.insert({ capabilityIds: ["content-strategy"], completedAt: "2026-01-01T00:00:00.000Z", contractVersion: "1", definitionId: "definition@1.0.0", executorId: "deterministic-content-director", executorVersion: "1.0.0", externalEffectsAllowed: false, failure: { code: "AGENT_EXECUTION_FAILED", message: "Agent execution failed safely" }, fingerprint: "c".repeat(64), inputContractId: "deterministic-content-direction-input@1", instanceId: "instance-1", invocationId: "invocation-1", outputContractId: "deterministic-content-direction-artifact@1", reservedAt: "2026-01-01T00:00:00.000Z", reservedInstanceVersion: 2, runtimeAgentId: "content-director", runtimeAgentVersion: "1.0.0", specificationId: "content-director@1.0.0", specificationVersion: "1.0.0", status: "FAILED", stepId: "step-1", workflowId: "workflow", workflowVersion: "1.0.0" });
+  });
+}
+async function seedReservedInvocation(runner: SqliteRepositoryTransactionRunner) {
+  await seedWorkflow(runner);
+  await runner.transaction(async ({ workflows }) => {
+    const initial = await workflows.instances.getById("instance-1");
+    if (initial === undefined) throw new Error("missing seed instance");
+    const readyReceipt = { commandId: "seed-ready", fingerprint: "a".repeat(64), resultingVersion: 1 };
+    const ready = { ...initial, receipts: [readyReceipt], steps: [{ blockers: [], status: "READY" as const, stepId: "step-1" }], updatedAt: "2026-01-01T00:00:00.000Z", version: 1 };
+    await workflows.instances.update(ready, { version: 0 }); await workflows.receipts.insert("instance-1", readyReceipt);
+    const reserveReceipt = { commandId: "seed-reserve", fingerprint: "b".repeat(64), resultingVersion: 2 };
+    const awaiting = { ...ready, receipts: [...ready.receipts, reserveReceipt], steps: [{ blockers: [], status: "AWAITING_RESULT" as const, stepId: "step-1" }], version: 2 };
+    await workflows.instances.update(awaiting, { version: 1 }); await workflows.receipts.insert("instance-1", reserveReceipt);
+    await workflows.agentInvocations.insert({ capabilityIds: ["content-strategy"], contractVersion: "1", definitionId: "definition@1.0.0", executorId: "deterministic-content-director", executorVersion: "1.0.0", externalEffectsAllowed: false, fingerprint: "c".repeat(64), inputContractId: "deterministic-content-direction-input@1", instanceId: "instance-1", invocationId: "invocation-1", outputContractId: "deterministic-content-direction-artifact@1", reservedAt: "2026-01-01T00:00:00.000Z", reservedInstanceVersion: 2, runtimeAgentId: "content-director", runtimeAgentVersion: "1.0.0", specificationId: "content-director@1.0.0", specificationVersion: "1.0.0", status: "RESERVED", stepId: "step-1", workflowId: "workflow", workflowVersion: "1.0.0" });
   });
 }
 function definition(): WorkflowDefinition { return { contractVersion: "1", definitionId: "definition@1.0.0", nonExecuting: true, steps: [{ approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "step-1" }], workflowId: "workflow", workflowVersion: "1.0.0" }; }

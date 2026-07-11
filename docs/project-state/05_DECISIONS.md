@@ -1705,3 +1705,26 @@ resume. It requires later explicit lifecycle recovery rather than implicit execu
 
 **Future impact:** Timeout evaluation must follow the same explicit, injected-clock,
 restart-safe evidence model and must not introduce timers or background loops.
+
+## ADR-064 — Timeout evaluation is explicit, bounded, and clock-injected
+
+**Context:** Workflow activity can remain durably reserved across restart, but elapsed
+time alone must not create a background retry loop or allow callers to choose an
+unbounded timeout.
+
+**Decision:** Only the configured operator may evaluate an exact reserved invocation,
+Workflow, Step, version, and configured timeout. Evaluation uses the invocation's
+durable reservation timestamp and the injected clock. Before the deadline it stores a
+durable `TIMEOUT_EVALUATION` record with no version change. At or after the deadline it
+atomically applies the existing failed-Step transition and stores a `TIMEOUT` failure,
+bounded attempt metadata, command receipt, Workflow Event, and lifecycle evidence.
+Neither decision invokes work or starts retry.
+
+**Reason:** Timeout behavior must be deterministic, restart-safe, auditable, and
+incapable of becoming a timer-driven hidden execution path.
+
+**Tradeoffs:** Nothing happens merely because wall-clock time passes. An explicit new
+evaluation ID is required for a later observation after a prior non-expired decision.
+
+**Future impact:** Operator Workflow Report should expose durable timeout and retry
+state without mutating it or implying automatic recovery.

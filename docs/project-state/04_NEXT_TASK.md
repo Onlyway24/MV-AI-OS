@@ -2,51 +2,49 @@
 
 ## Milestone name
 
-Explicit Workflow Timeout Evaluation
+Operator Workflow Report
 
 ## Goal
 
-Add deterministic, explicit timeout evaluation for durable Workflow activity without
-sleeping, timers, background workers, automatic retries, or hidden execution.
+Create one deterministic, read-only operator report that turns durable Mission,
+Workflow, control, lifecycle, risk, and audit evidence into Fabio's exact next action.
 
 ## Why it matters
 
-MV AI OS now has explicit failure, bounded retry, recovery, pause, resume, and
-cancellation controls. Chapter 1 still requires timeout decisions that survive restart
-and are driven only by an explicit command and injected clock.
+Chapter 1 now provides complete explicit, restart-safe Workflow lifecycle controls.
+Private V1 use next requires a clear operator view that does not force Fabio to infer
+state from low-level records or misleading progress claims.
 
 ## Required scope
 
-- Define bounded timeout metadata and an explicit timeout-evaluation request.
-- Use only the injected clock and durable timestamps; do not call uncontrolled time
-  sources in deterministic paths.
-- Require exact Workflow, Step, invocation or activity identity, and expected version.
-- Record both not-expired and expired decisions durably and idempotently.
-- On expiry, atomically persist the exact failure transition, command receipt,
-  Workflow Event, timeout evidence, and version increment.
-- Classify timeout failure under the existing bounded retry policy without initiating
-  retry or recovery.
-- Preserve restart-safe replay and structured operator recovery instructions.
+- Show Mission objective, Workflow status, and critical-path progress without
+  misleading percentages.
+- Separate completed, ready, blocked, and pending Steps with blocker reasons.
+- Show pending approvals, Guardian states, active risks, and retry state.
+- Include cost and effort summaries only where durable evidence exists.
+- Show the last durable event and one exact next action for Fabio.
+- Confirm from evidence that no unauthorized external action occurred.
+- Validate, bound, redact, and freeze the report contract.
+- Build only from existing local durable repositories and deterministic services.
 
 ## Forbidden scope
 
-- Sleeping, timers, schedulers, workers, polling, or background evaluation.
-- AgentRuntime invocation, automatic retry/recovery, models, providers, tools, network,
-  browser, or external actions.
-- Caller-controlled unbounded timeout values.
+- Mutation, command execution, AgentRuntime invocation, models, providers, tools,
+  network, browser, or external actions.
+- Invented cost, effort, risk, approval, Guardian, or progress evidence.
+- A second CLI architecture or UI work.
 - Models, providers, tools, network, browser, external actions, or new dependencies.
 
 ## Acceptance criteria
 
-- Evaluation before the deadline records a non-expired decision without changing the
-  Workflow version.
-- Evaluation at or after the deadline records an exact timeout failure atomically.
-- Duplicate evaluation replays after restart without a second transition.
-- Stale versions, mismatched activity, invalid metadata, and conflicting IDs fail
-  closed.
+- The report is deterministic for one exact durable snapshot.
+- Missing or inconsistent evidence fails closed or is shown explicitly as unavailable.
+- The next action is concrete, safe, and derived from current blockers and lifecycle
+  state.
+- No report path mutates Workflow state or triggers execution.
 - Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-One durable Workflow activity can be evaluated explicitly for timeout with bounded,
-restart-safe evidence and no background behavior.
+Fabio can inspect one Workflow and understand its evidence-backed state and next exact
+action without reading raw persistence records.
