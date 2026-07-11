@@ -75,6 +75,7 @@ import {
   type LocalRuntime,
   type LocalRuntimeResource,
 } from "./local-runtime.js";
+import { createLocalWorkflowCommandBoundary } from "./create-local-workflow-command-boundary.js";
 
 export interface LocalRuntimeOverrides {
   readonly clock?: Clock;
@@ -169,6 +170,7 @@ export async function createLocalRuntime(
       router: new RegistryRouter(agentRegistry, clock, identifiers),
       taskResponseValidator: new TaskResponseValidator(),
     });
+    const workflowCommands = createLocalWorkflowCommandBoundary({ actorId: config.actorId, clock, repositories, workspaceId: config.workspaceId });
 
     return new ComposedLocalRuntime(
       coreBrain,
@@ -178,6 +180,7 @@ export async function createLocalRuntime(
         actorId: config.actorId,
         workspaceId: config.workspaceId,
       },
+      workflowCommands,
     );
   } catch (error) {
     await closeResources(openedResources);

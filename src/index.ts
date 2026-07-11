@@ -529,6 +529,7 @@ export {
 } from "./cli/local-cli-config.js";
 export { LocalCliConfigValidator } from "./cli/local-cli-config-validator.js";
 export { CliRequestParser } from "./cli/cli-request-parser.js";
+export { LocalCliInputValidator, isLocalWorkflowCommand, type LocalCliInput } from "./cli/local-cli-input-validator.js";
 export {
   CLI_ERROR_RESPONSE_CONTRACT_VERSION,
   CliBoundaryError,
@@ -1078,6 +1079,7 @@ export {
   type LocalRuntimeOverrides,
 } from "./runtime/create-local-runtime.js";
 export type { LocalRuntime } from "./runtime/local-runtime.js";
+export { createLocalWorkflowCommandBoundary } from "./runtime/create-local-workflow-command-boundary.js";
 export type {
   ValidationIssue,
   ValidationResult,
@@ -1277,10 +1279,12 @@ export {
   WORKFLOW_STEP_OUTCOME_CONTRACT_VERSION,
   WorkflowStepOutcomeReceiptValidator,
   WorkflowStepOutcomeRequestValidator,
+  WorkflowStepRejectionRequestValidator,
   createWorkflowStepOutcomeFingerprint,
   type WorkflowStepOutcomeDecision,
   type WorkflowStepOutcomeReceipt,
   type WorkflowStepOutcomeRequest,
+  type WorkflowStepRejectionRequest,
   type WorkflowStepOutcomeResult,
   type WorkflowStepOutcomeService,
 } from "./workflows/runtime/workflow-step-outcome.js";
@@ -1289,6 +1293,16 @@ export {
   RepositoryBackedWorkflowStepOutcomeService,
   type RepositoryBackedWorkflowStepOutcomeDependencies,
 } from "./workflows/runtime/repository-backed-workflow-step-outcome-service.js";
+export {
+  LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION,
+  LOCAL_WORKFLOW_OPERATIONS,
+  LocalWorkflowCommandValidator,
+  LocalWorkflowCommandBoundary,
+  type LocalWorkflowCommand,
+  type LocalWorkflowCommandDependencies,
+  type LocalWorkflowCommandResponse,
+  type LocalWorkflowOperation,
+} from "./runtime/local-workflow-command.js";
 export {
   WORKFLOW_LIFECYCLE_CONTRACT_VERSION,
   WorkflowControlRequestValidator,

@@ -11,12 +11,14 @@ import { freeze } from "./workflow-agent-invocation.js";
 import {
   WorkflowStepOutcomeReceiptValidator,
   WorkflowStepOutcomeRequestValidator,
+  WorkflowStepRejectionRequestValidator,
   createWorkflowStepOutcomeFingerprint,
   type WorkflowStepOutcomeDecision,
   type WorkflowStepOutcomeReceipt,
   type WorkflowStepOutcomeRequest,
   type WorkflowStepOutcomeResult,
   type WorkflowStepOutcomeService,
+  type WorkflowStepRejectionRequest,
 } from "./workflow-step-outcome.js";
 
 export interface RepositoryBackedWorkflowStepOutcomeDependencies {
@@ -90,6 +92,23 @@ export class RepositoryBackedWorkflowStepOutcomeService implements WorkflowStepO
       await workflows.instances.update(transition.instance, { version: instance.version });
       await workflows.receipts.insert(instance.instanceId, commandReceipt);
       await workflows.events.append(event);
+      await workflows.stepOutcomes.insert(receipt);
+      return freeze({ contractVersion: "1", receipt, replayed: false });
+    });
+  }
+
+  public reject(request: WorkflowStepRejectionRequest): Promise<WorkflowStepOutcomeResult> {
+    const trusted = validate(request, new WorkflowStepRejectionRequestValidator(), "Workflow Step rejection request");
+    return this.dependencies.repositories.transaction(async ({ workflows }) => {
+      const invocation = await workflows.agentInvocations.getById(trusted.invocationId);
+      if (invocation === undefined) throw new RepositoryConflictError("Workflow Step rejection invocation is missing");
+      if (invocation.status !== "COMPLETED") throw new RepositoryConflictError("Only a completed Agent result can be explicitly rejected");
+      const instance = await workflows.instances.getById(invocation.instanceId);
+      if (instance?.version !== trusted.expectedInstanceVersion || instance.steps.find(({ stepId }) => stepId === invocation.stepId)?.status !== "AWAITING_RESULT") throw new RepositoryConflictError("Workflow Step rejection snapshot is stale or invalid");
+      const fingerprint = createWorkflowStepOutcomeFingerprint(trusted, `${invocation.fingerprint}:${trusted.reasonCode}`);
+      const existing = await workflows.stepOutcomes.getByInvocationId(trusted.invocationId);
+      if (existing !== undefined) { if (existing.fingerprint !== fingerprint) throw new RepositoryConflictError("Workflow Step rejection conflicts with prior outcome"); return freeze({ contractVersion: "1", receipt: existing, replayed: true }); }
+      const receipt = validate({ contractVersion: "1", decision: "REJECTED", externalEffects: false, fingerprint, instanceId: invocation.instanceId, invocationFingerprint: invocation.fingerprint, invocationId: invocation.invocationId, outcomeId: trusted.outcomeId, remediation: [`Operator rejected result: ${trusted.reasonCode}`], reviewedAt: now(this.dependencies.clock), stepId: invocation.stepId }, new WorkflowStepOutcomeReceiptValidator(), "Workflow Step rejection receipt");
       await workflows.stepOutcomes.insert(receipt);
       return freeze({ contractVersion: "1", receipt, replayed: false });
     });

@@ -1752,3 +1752,27 @@ percentages.
 
 **Future impact:** The Local Workflow Command Boundary must return this report and its
 single next action through the existing bounded CLI/runtime path.
+
+## ADR-066 — Core V1 commands extend the existing local runtime and CLI
+
+**Context:** Core V1 services were callable from TypeScript but Fabio needed one local
+product boundary without a second transport or arbitrary internal method access.
+
+**Decision:** The existing CLI parser validates a strict union of the original local
+Request Envelope and an allowlisted Workflow Command Envelope. The composed runtime
+owns one `LocalWorkflowCommandBoundary` that dispatches exactly 22 named operations to
+existing services. Commands enforce configured actor/workspace identity, bounded JSON,
+safe IDs, exact service validators, stable operation IDs, structured responses, and a
+single next action. Workflow creation is exact, atomic, and replay-safe. Explicit
+outcome rejection persists a `REJECTED` receipt while leaving the Step awaiting later
+lifecycle handling.
+
+**Reason:** Fabio can operate the implemented system without source edits while all
+authorization, version, control, persistence, and deterministic Agent boundaries stay
+authoritative.
+
+**Tradeoffs:** The CLI remains one-command-per-process and intentionally exposes no
+arbitrary service lookup, interactive shell, network API, or background execution.
+
+**Future impact:** The Core V1 vertical slice must use this command boundary across a
+genuine runtime restart and exercise each lifecycle branch independently.

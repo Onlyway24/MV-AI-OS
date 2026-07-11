@@ -20,6 +20,7 @@ import {
 
 import {
   CliRequestParser,
+  DEFAULT_FOUNDER_MISSION_BRIEF,
   LocalCliConfigValidator,
   type LocalCliConfig,
   type LocalRuntime,
@@ -136,6 +137,33 @@ describe("Controlled local CLI contracts", () => {
 });
 
 describe("Controlled local CLI process", () => {
+  it("executes allowlisted Workflow commands through the existing CLI and survives restart", async () => {
+    await withTemporaryDirectory(async (directory) => {
+      const configPath = await writeConfig(directory, { databaseName: "workflow-command.sqlite" });
+      const definition = { contractVersion: "1", definitionId: "cli-workflow@1.0.0", missionObjective: "Prepare a bounded local content direction.", nonExecuting: true, steps: [{ approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "direction" }], workflowId: "cli-workflow", workflowVersion: "1.0.0" };
+      const instance = { contractVersion: "1", createdAt: "2026-01-01T00:00:00.000Z", definitionId: definition.definitionId, instanceId: "cli-instance", nonExecuting: true, receipts: [], status: "ACTIVE", steps: [{ blockers: [], status: "READY", stepId: "direction" }], stopReason: "NONE", updatedAt: "2026-01-01T00:00:00.000Z", version: 0 };
+      const create = await runCli(configPath, JSON.stringify(workflowCommand("CREATE_WORKFLOW", { definition, instance })));
+      expect(create.exitCode).toBe(0);
+      expect(JSON.parse(create.stdout)).toMatchObject({ operation: "CREATE_WORKFLOW", result: { created: true }, status: "ok", unauthorizedExternalEffectOccurred: false });
+      const replay = await runCli(configPath, JSON.stringify(workflowCommand("CREATE_WORKFLOW", { definition, instance })));
+      expect(JSON.parse(replay.stdout)).toMatchObject({ result: { created: false }, status: "ok" });
+      const report = await runCli(configPath, JSON.stringify(workflowCommand("GET_OPERATOR_REPORT", { contractVersion: "1", expectedVersion: 0, instanceId: "cli-instance", maxItems: 20 })));
+      expect(report.exitCode).toBe(0);
+      expect(JSON.parse(report.stdout)).toMatchObject({ nextAction: "Select and invoke the controlled candidate for step direction at Workflow version 0.", operation: "GET_OPERATOR_REPORT", result: { mission: { objective: definition.missionObjective }, overallStatus: "ACTIVE" }, status: "ok" });
+    });
+  });
+
+  it("validates Mission commands and rejects arbitrary operation names", async () => {
+    await withTemporaryDirectory(async (directory) => {
+      const configPath = await writeConfig(directory, { databaseName: "mission-command.sqlite" });
+      const mission = await runCli(configPath, JSON.stringify(workflowCommand("CREATE_MISSION", { brief: DEFAULT_FOUNDER_MISSION_BRIEF })));
+      expect(mission.exitCode).toBe(0);
+      expect(JSON.parse(mission.stdout)).toMatchObject({ operation: "CREATE_MISSION", status: "ok", unauthorizedExternalEffectOccurred: false });
+      const unsafe = await runCli(configPath, JSON.stringify({ ...workflowCommand("CREATE_MISSION", { brief: DEFAULT_FOUNDER_MISSION_BRIEF }), operation: "CALL_INTERNAL_METHOD" }));
+      expect(unsafe.exitCode).toBe(2);
+      expect(JSON.parse(unsafe.stdout)).toMatchObject({ error: { code: "cli_request_invalid" }, status: "error" });
+    });
+  });
   it("executes a deterministic request and emits one JSON response", async () => {
     await withTemporaryDirectory(async (directory) => {
       const configPath = await writeConfig(directory);
@@ -300,6 +328,8 @@ describe("Controlled local CLI process", () => {
     });
   });
 });
+
+function workflowCommand(operation: string, input: Readonly<Record<string, unknown>>) { return { actorId: "actor-local", commandId: `command-${operation.toLowerCase()}`, contractVersion: "1", input, operation, workspaceId: "workspace-local" }; }
 
 class RecordingRuntime implements LocalRuntime {
   public closeCount = 0;

@@ -2,14 +2,14 @@ import type { RequestEnvelope } from "../contracts/request-envelope.js";
 import type { Validator } from "../validation/validation.js";
 import { CliBoundaryError } from "./cli-error-response.js";
 
-export class CliRequestParser {
-  readonly #validator: Validator<RequestEnvelope>;
+export class CliRequestParser<T = RequestEnvelope> {
+  readonly #validator: Validator<T>;
 
-  public constructor(validator: Validator<RequestEnvelope>) {
+  public constructor(validator: Validator<T>) {
     this.#validator = validator;
   }
 
-  public parse(input: Uint8Array, maximumBytes: number): RequestEnvelope {
+  public parse(input: Uint8Array, maximumBytes: number): T {
     if (input.byteLength === 0) {
       throw new CliBoundaryError(
         "cli_request_missing",
@@ -55,7 +55,7 @@ export class CliRequestParser {
         "cli_request_validation",
       );
     }
-    if (validation.value.source !== "local") {
+    if (typeof validation.value === "object" && validation.value !== null && "source" in validation.value && validation.value.source !== "local") {
       throw new CliBoundaryError(
         "cli_request_source_invalid",
         "The local CLI accepts only requests with source local",

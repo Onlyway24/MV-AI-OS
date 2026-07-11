@@ -2,50 +2,47 @@
 
 ## Milestone name
 
-Local Workflow Command Boundary
+Complete Local Core V1 Vertical Slice
 
 ## Goal
 
-Expose the implemented Core V1 Mission, Workflow, control, deterministic Agent,
-lifecycle, report, and audit capabilities through one coherent local application
-boundary and the existing CLI transport.
+Prove through the real local application boundary and a genuine SQLite restart that
+Core V1 works as one coherent Mission-to-Workflow product.
 
 ## Why it matters
 
-The operator report now makes persisted Workflow state understandable. Fabio still
-needs an allowlisted local command surface so the complete flow is usable without
-editing TypeScript, calling internal methods, or modifying SQLite.
+The existing CLI now exposes allowlisted Core V1 operations. The next milestone must
+exercise those operations together rather than relying on disconnected service tests.
 
 ## Required scope
 
-- Reuse the existing local runtime, CLI transport, bounded JSON parsing, SQLite
-  initialization, configuration, validators, repositories, and structured errors.
-- Accept only explicit allowlisted Core V1 operation names.
-- Support Mission planning, Workflow creation and inspection, operator report,
-  readiness, candidate selection, approval and Guardian recording, deterministic
-  Agent invocation and result inspection, outcome acceptance/rejection, failure,
-  retry, pause/resume/cancel, timeout, and bounded audit inspection.
-- Require bounded structured input, stable IDs, exact versions, idempotency, and
-  default-deny authorization at every relevant command.
-- Return structured safe results with one exact next action and external-effect status.
+- Run the synthetic Metodo Veloce Content Direction sequence from Mission Brief and
+  Quality Gate through durable Workflow, controls, deterministic Agent invocation,
+  result acceptance, and Step completion.
+- Exercise independent pause/resume, failure/retry, cancellation, and timeout cases.
+- Close the first runtime, create a genuinely new runtime and repository instance,
+  and prove all authoritative records survive.
+- Return the final Operator Workflow Report through the local boundary.
+- Add smaller safe planning scenarios for a restaurant offer and MV-AI-OS engineering.
 
 ## Forbidden scope
 
-- Arbitrary user-controlled service or method names.
-- A second CLI, parallel runtime, Web Console, public API, server, or background worker.
-- Models, providers, tools, browser/network integrations, external actions, or new
-  production dependencies.
+- Test-only replacement architecture, fake restart, or direct database mutation as the
+  main scenario.
+- Real research, publication, deployment, outreach, payment, or customer delivery.
+- Models, providers, tools, browser/network integrations, background execution, or
+  external actions.
 
 ## Acceptance criteria
 
-- Fabio can execute the allowlisted Core V1 flow through bounded local JSON commands.
-- Unknown operations, malformed input, stale versions, and unsafe text fail safely.
-- Commands preserve existing approval, Guardian, lifecycle, persistence, and
-  deterministic execution boundaries.
-- Output is bounded, redaction-safe, and confirms no unauthorized external effect.
+- The main scenario completes one preparation-only deterministic Workflow Step.
+- Approval and Guardian controls remain independent and effective.
+- Lifecycle scenarios prove bounded recovery and stop behavior.
+- A new runtime returns the same durable state, receipts, evidence, and final report.
+- Every result confirms no unauthorized external effect.
 - Existing deterministic execution and completion guarantees remain green.
 
 ## Definition of done
 
-Fabio can operate Core V1 locally without editing source code or interpreting raw
-database state.
+One complete safe Core V1 sequence is proven through the same local commands Fabio can
+run.

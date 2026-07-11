@@ -3,6 +3,7 @@ import type { RequestEnvelope } from "../contracts/request-envelope.js";
 import type { CoreBrain } from "../core/core-brain.js";
 import { RequestValidationError } from "../errors/core-error.js";
 import type { Validator } from "../validation/validation.js";
+import type { LocalWorkflowCommand, LocalWorkflowCommandBoundary, LocalWorkflowCommandResponse } from "./local-workflow-command.js";
 import {
   LocalRuntimeIdentityError,
   LocalRuntimeStateError,
@@ -10,6 +11,7 @@ import {
 
 export interface LocalRuntime {
   execute(request: unknown): Promise<TaskResponse>;
+  executeWorkflowCommand?(command: LocalWorkflowCommand): Promise<LocalWorkflowCommandResponse>;
   close(): Promise<void>;
 }
 
@@ -19,7 +21,7 @@ export interface LocalRuntimeResource {
 
 export class ComposedLocalRuntime implements LocalRuntime {
   readonly #coreBrain: CoreBrain;
-  readonly #inFlight = new Set<Promise<TaskResponse>>();
+  readonly #inFlight = new Set<Promise<unknown>>();
   readonly #actorId: string;
   readonly #requestValidator: Validator<RequestEnvelope>;
   readonly #resources: readonly LocalRuntimeResource[];
@@ -35,12 +37,22 @@ export class ComposedLocalRuntime implements LocalRuntime {
       readonly actorId: string;
       readonly workspaceId: string;
     },
+    private readonly workflowCommands?: LocalWorkflowCommandBoundary,
   ) {
     this.#actorId = identity.actorId;
     this.#coreBrain = coreBrain;
     this.#requestValidator = requestValidator;
     this.#resources = Object.freeze([...resources]);
     this.#workspaceId = identity.workspaceId;
+  }
+
+  public executeWorkflowCommand(command: LocalWorkflowCommand): Promise<LocalWorkflowCommandResponse> {
+    if (!this.#acceptingRequests) return Promise.reject(new LocalRuntimeStateError());
+    if (this.workflowCommands === undefined) return Promise.reject(new LocalRuntimeStateError());
+    const execution = this.workflowCommands.execute(command);
+    this.#inFlight.add(execution);
+    execution.then(() => this.#inFlight.delete(execution), () => this.#inFlight.delete(execution));
+    return execution;
   }
 
   public execute(request: unknown): Promise<TaskResponse> {

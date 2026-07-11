@@ -6,10 +6,10 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { TaskResponse } from "../contracts/task-response.js";
+import type { LocalWorkflowCommandResponse } from "../runtime/local-workflow-command.js";
 import type { LocalRuntimeConfig } from "../runtime/local-runtime-config.js";
 import { createLocalRuntime } from "../runtime/create-local-runtime.js";
 import type { LocalRuntime } from "../runtime/local-runtime.js";
-import { RequestEnvelopeValidator } from "../validation/request-envelope-validator.js";
 import {
   CliBoundaryError,
   createCliErrorResponse,
@@ -21,6 +21,7 @@ import {
   type LocalCliConfig,
 } from "./local-cli-config.js";
 import { LocalCliConfigValidator } from "./local-cli-config-validator.js";
+import { LocalCliInputValidator, isLocalWorkflowCommand } from "./local-cli-input-validator.js";
 
 export const LOCAL_CLI_EXIT_CODE = Object.freeze({
   executionFailure: 4,
@@ -53,7 +54,7 @@ export async function runLocalRuntimeCli(
   let runtimeCreation: Promise<LocalRuntime> | undefined;
   let closePromise: Promise<void> | undefined;
   let exitCode: CliExitCode = LOCAL_CLI_EXIT_CODE.invalidInput;
-  let output: TaskResponse | CliErrorResponse;
+  let output: TaskResponse | LocalWorkflowCommandResponse | CliErrorResponse;
 
   const closeRuntime = (): Promise<void> => {
     closePromise ??=
@@ -97,12 +98,13 @@ export async function runLocalRuntimeCli(
       host.input,
       config.maxRequestBytes,
     );
-    const request = new CliRequestParser(
-      new RequestEnvelopeValidator(),
-    ).parse(requestBytes, config.maxRequestBytes);
+    const request = new CliRequestParser(new LocalCliInputValidator()).parse(requestBytes, config.maxRequestBytes);
 
     exitCode = LOCAL_CLI_EXIT_CODE.executionFailure;
-    output = await runtime.execute(request);
+    if (isLocalWorkflowCommand(request)) {
+      if (runtime.executeWorkflowCommand === undefined) throw new CliBoundaryError("cli_workflow_commands_unavailable", "The local runtime does not support Workflow commands", "workflow_command", "internal");
+      output = await runtime.executeWorkflowCommand(request);
+    } else output = await runtime.execute(request);
     exitCode = LOCAL_CLI_EXIT_CODE.success;
   } catch (error) {
     output = createCliErrorResponse(error);
@@ -194,7 +196,7 @@ async function readBoundedInput(
 
 function writeJson(
   host: LocalCliHost,
-  value: TaskResponse | CliErrorResponse,
+  value: TaskResponse | LocalWorkflowCommandResponse | CliErrorResponse,
 ): void {
   host.writeOutput(`${JSON.stringify(value)}\n`);
 }

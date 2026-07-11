@@ -13,6 +13,7 @@ export interface WorkflowStepOutcomeRequest {
   readonly invocationId: string;
   readonly expectedInstanceVersion: number;
 }
+export interface WorkflowStepRejectionRequest extends WorkflowStepOutcomeRequest { readonly reasonCode: string; }
 
 export interface WorkflowStepOutcomeReceipt {
   readonly contractVersion: typeof WORKFLOW_STEP_OUTCOME_CONTRACT_VERSION;
@@ -31,7 +32,14 @@ export interface WorkflowStepOutcomeReceipt {
 }
 
 export interface WorkflowStepOutcomeResult { readonly contractVersion: "1"; readonly receipt: WorkflowStepOutcomeReceipt; readonly replayed: boolean }
-export interface WorkflowStepOutcomeService { review(request: WorkflowStepOutcomeRequest): Promise<WorkflowStepOutcomeResult>; }
+export interface WorkflowStepOutcomeService { review(request: WorkflowStepOutcomeRequest): Promise<WorkflowStepOutcomeResult>; reject(request: WorkflowStepRejectionRequest): Promise<WorkflowStepOutcomeResult>; }
+
+export class WorkflowStepRejectionRequestValidator implements Validator<WorkflowStepRejectionRequest> {
+  public validate(value: unknown): ValidationResult<WorkflowStepRejectionRequest> {
+    if (!record(value) || !onlyKeys(value, ["contractVersion", "expectedInstanceVersion", "invocationId", "outcomeId", "reasonCode"]) || value.contractVersion !== "1" || !safeId(value.outcomeId) || !safeId(value.invocationId) || !safeId(value.reasonCode) || !Number.isSafeInteger(value.expectedInstanceVersion) || (value.expectedInstanceVersion as number) < 1) return invalid("Workflow Step rejection request is invalid");
+    return validationSuccess(freeze(structuredClone(value as unknown as WorkflowStepRejectionRequest)));
+  }
+}
 
 export class WorkflowStepOutcomeRequestValidator implements Validator<WorkflowStepOutcomeRequest> {
   public validate(value: unknown): ValidationResult<WorkflowStepOutcomeRequest> {

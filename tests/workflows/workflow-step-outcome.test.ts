@@ -78,6 +78,19 @@ describe("Workflow Step Outcome Validation and Completion", () => {
     await runner.close();
   });
 
+  it("records an explicit operator rejection without completing or failing the Step", async () => {
+    const runner = createRunner(":memory:"); await seed(runner);
+    const context = runtimeContext(runner, deterministicRuntime());
+    await context.invoker.invoke(invocationRequest());
+    const first = await context.outcomes.reject({ ...outcomeRequest(), reasonCode: "operator_rejected_direction" });
+    expect(first).toMatchObject({ replayed: false, receipt: { decision: "REJECTED", remediation: ["Operator rejected result: operator_rejected_direction"] } });
+    expect(await context.outcomes.reject({ ...outcomeRequest(), reasonCode: "operator_rejected_direction" })).toEqual({ ...first, replayed: true });
+    const instance = await runner.transaction(({ workflows }) => workflows.instances.getById("content-instance"));
+    expect(instance?.version).toBe(2);
+    expect(instance?.steps[0]).toMatchObject({ status: "AWAITING_RESULT" });
+    await runner.close();
+  });
+
   it("fails closed for failed invocation, stale version, and missing exact binding", async () => {
     const failedRunner = createRunner(":memory:"); await seed(failedRunner);
     const failedContext = runtimeContext(failedRunner, new ThrowingRuntime());

@@ -136,7 +136,15 @@ and tests, not intended future behavior.
   Workflow snapshot, current approval and Guardian evidence, lifecycle history,
   invocation receipts, and Workflow events. It returns exactly one evidence-backed
   next action and never invents percentages, cost, effort, or external activity.
-- The next milestone is Local Workflow Command Boundary.
+- Local Workflow Command Boundary is completed by the current change set. The
+  existing CLI now accepts either its original local task request or one of 22 exact
+  Core V1 operations. The command boundary composes the existing Mission Planning,
+  Workflow, control, deterministic Content Director, lifecycle, report, and audit
+  services; rejects arbitrary operation names and identity mismatches; bounds JSON
+  input and output; preserves service-level idempotency and exact versions; and never
+  permits external effects. Explicit Agent-result rejection is now durable and does
+  not falsely complete or fail a Step.
+- The next milestone is Complete Local Core V1 Vertical Slice.
 
 ## Current architecture
 
@@ -264,6 +272,7 @@ provider, n8n, or external SDK types.
 68. Explicit Workflow Pause, Resume, and Cancellation.
 69. Explicit Workflow Timeout Evaluation and Chapter 1 Closeout.
 70. Operator Workflow Report.
+71. Local Workflow Command Boundary.
 
 ## Implemented modules
 
