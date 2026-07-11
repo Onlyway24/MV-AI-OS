@@ -1586,3 +1586,24 @@ does not complete the Workflow Step and requires a separate outcome-acceptance b
 
 **Future impact:** Workflow Step Outcome Validation and Completion must consume only
 the exact durably completed invocation and must not call AgentRuntime.
+
+## ADR-059 — Invocation success and Workflow Step acceptance are separate trust boundaries
+
+**Context:** A technically successful AgentRuntime call can still return incomplete,
+unsafe, low-quality, mismatched, or insufficiently evidenced output.
+
+**Decision:** Load outcomes only from durable invocation storage, re-resolve the exact
+specification/executor identity, validate the structured Content Direction artifact,
+and produce an explicit outcome decision. Only `ACCEPTED_FOR_COMPLETION` applies the
+existing `COMPLETE_STEP` transition and atomically persists the instance update,
+command receipt, Workflow Event, and outcome receipt. Blocked checks do not consume
+the invocation's unique review slot.
+
+**Reason:** Completion requires independent evidence of Workflow Step success and
+must remain recoverable, atomic, and protected from stale-review denial of service.
+
+**Tradeoffs:** Revision and failure do not automatically reinvoke an agent. Dependent
+steps remain pending until a later explicit readiness evaluation.
+
+**Future impact:** Lifecycle controls may later govern retry, pause, resume, failure,
+and cancellation without weakening outcome acceptance or enabling automatic execution.

@@ -45,7 +45,7 @@ describe("Controlled Workflow Agent Invocation", () => {
     expect(result).toMatchObject({ replayed: false, status: "COMPLETED", receipt: { executorId: "deterministic-content-director", status: "COMPLETED" } });
     expect(recording.invocations).toHaveLength(1);
     expect(recording.invocations[0]?.input).toEqual({
-      audience: "Workflow stakeholders", brandPreferences: [], constraints: ["Preparation only", "No external effects", "Use only supplied evidence"], deliverableType: "workflow-content-direction", evidenceReferences: [], objective: "Prepare content direction for workflow content-workflow step direction",
+      audience: "Workflow stakeholders", brandPreferences: [], constraints: ["Preparation only", "No external effects", "Use only supplied evidence"], deliverableType: "workflow-content-direction", evidenceReferences: ["content-workflow@1.0.0"], objective: "Prepare content direction for workflow content-workflow step direction",
     });
     const stored = await runner.transaction(async ({ workflows }) => ({
       events: await workflows.agentInvocationEvents.listByInvocationId("workflow-invocation-1"),

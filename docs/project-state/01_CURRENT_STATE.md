@@ -99,10 +99,13 @@ and tests, not intended future behavior.
 - AgentRuntime Executor Resolution and Deterministic Agent Company Alignment is
   completed and was committed in `26005c2`. A read-only, default-deny catalog resolves
   one exact deterministic-local Content Director executor without invoking it.
-- Controlled Workflow Step AgentRuntime Invocation is completed by the current change
-  set with durable reservation, outcome evidence, audit evidence, and restart-safe
+- Controlled Workflow Step AgentRuntime Invocation was committed in `a6f0f57` with
+  durable reservation, outcome evidence, audit evidence, and restart-safe
   replay. Invocation does not complete the Workflow Step.
-- The next milestone is Workflow Step Outcome Validation and Completion.
+- Workflow Step Outcome Validation and Completion is completed by the current change
+  set. Only an explicitly accepted durable invocation outcome can atomically complete
+  its exact step; no next step starts automatically.
+- The next milestone is Vertical-Slice Adversarial Review and Project-State Closeout.
 
 ## Current architecture
 
@@ -223,6 +226,7 @@ provider, n8n, or external SDK types.
 61. Durable Workflow Approval and Guardian Checkpoints.
 62. AgentRuntime Executor Resolution and Deterministic Agent Company Alignment.
 63. Controlled Workflow Step AgentRuntime Invocation.
+64. Workflow Step Outcome Validation and Completion.
 
 ## Implemented modules
 

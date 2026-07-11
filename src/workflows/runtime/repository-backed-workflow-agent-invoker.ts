@@ -118,7 +118,7 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
         brandPreferences: [],
         constraints: ["Preparation only", "No external effects", "Use only supplied evidence"],
         deliverableType: "workflow-content-direction",
-        evidenceReferences: [],
+        evidenceReferences: [receipt.definitionId],
         objective: `Prepare content direction for workflow ${receipt.workflowId} step ${receipt.stepId}`,
       },
       invocationId: receipt.invocationId,

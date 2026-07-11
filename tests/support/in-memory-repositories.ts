@@ -58,6 +58,7 @@ import {
   WorkflowEventValidator,
 } from "../../src/workflows/runtime/workflow-persistence-validator.js";
 import type { WorkflowAgentInvocationEvent, WorkflowAgentInvocationReceipt } from "../../src/workflows/runtime/workflow-agent-invocation.js";
+import type { WorkflowStepOutcomeReceipt } from "../../src/workflows/runtime/workflow-step-outcome.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -74,6 +75,7 @@ interface RepositoryState {
   readonly workflowGuardianCheckpoints: Map<string, WorkflowGuardianCheckpoint>;
   readonly workflowAgentInvocations: Map<string, WorkflowAgentInvocationReceipt>;
   readonly workflowAgentInvocationEvents: Map<string, WorkflowAgentInvocationEvent>;
+  readonly workflowStepOutcomes: Map<string, WorkflowStepOutcomeReceipt>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -119,6 +121,7 @@ function createRepositories(
       instances: new InMemoryWorkflowInstanceRepository(state),
       guardians: new InMemoryWorkflowGuardianCheckpointRepository(state),
       receipts: new InMemoryWorkflowCommandReceiptRepository(state),
+      stepOutcomes: new InMemoryWorkflowStepOutcomeRepository(state),
     }),
   });
 }
@@ -134,6 +137,13 @@ class InMemoryWorkflowAgentInvocationEventRepository {
   public constructor(private readonly state: RepositoryState) {}
   public append(event: WorkflowAgentInvocationEvent): Promise<void> { if (this.state.workflowAgentInvocationEvents.has(event.eventId)) throw new RepositoryConflictError("Workflow invocation event exists"); this.state.workflowAgentInvocationEvents.set(event.eventId, cloneFrozen(event)); return Promise.resolve(); }
   public listByInvocationId(id: string): Promise<readonly WorkflowAgentInvocationEvent[]> { return Promise.resolve(Object.freeze([...this.state.workflowAgentInvocationEvents.values()].filter((event) => event.invocationId === id).map(cloneFrozen))); }
+}
+
+class InMemoryWorkflowStepOutcomeRepository {
+  public constructor(private readonly state: RepositoryState) {}
+  public getById(id: string): Promise<WorkflowStepOutcomeReceipt | undefined> { return Promise.resolve(cloneOptional(this.state.workflowStepOutcomes.get(id))); }
+  public getByInvocationId(id: string): Promise<WorkflowStepOutcomeReceipt | undefined> { return Promise.resolve(cloneOptional([...this.state.workflowStepOutcomes.values()].find((entry) => entry.invocationId === id))); }
+  public insert(receipt: WorkflowStepOutcomeReceipt): Promise<void> { if (this.state.workflowStepOutcomes.has(receipt.outcomeId) || [...this.state.workflowStepOutcomes.values()].some((entry) => entry.invocationId === receipt.invocationId)) throw new RepositoryConflictError("Workflow outcome exists"); this.state.workflowStepOutcomes.set(receipt.outcomeId, cloneFrozen(receipt)); return Promise.resolve(); }
 }
 
 class InMemoryTaskRepository implements TaskRepository {
@@ -895,6 +905,7 @@ function createState(): RepositoryState {
     workflowGuardianCheckpoints: new Map(),
     workflowAgentInvocations: new Map(),
     workflowAgentInvocationEvents: new Map(),
+    workflowStepOutcomes: new Map(),
   };
 }
 
@@ -949,6 +960,7 @@ function cloneState(state: RepositoryState): RepositoryState {
     ),
     workflowAgentInvocations: new Map([...state.workflowAgentInvocations].map(([key, value]) => [key, cloneFrozen(value)])),
     workflowAgentInvocationEvents: new Map([...state.workflowAgentInvocationEvents].map(([key, value]) => [key, cloneFrozen(value)])),
+    workflowStepOutcomes: new Map([...state.workflowStepOutcomes].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

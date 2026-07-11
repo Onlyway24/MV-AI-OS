@@ -2,80 +2,47 @@
 
 ## Milestone name
 
-Workflow Step Outcome Validation and Completion
+Vertical-Slice Adversarial Review and Project-State Closeout
 
 ## Goal
 
-Validate one durably completed deterministic AgentRuntime invocation against its
-exact Workflow Step and atomically accept or reject the outcome without automatically
-starting another step.
-
-## Why it matters
-
-MV AI OS can now reserve, invoke, and durably replay one exact deterministic-local
-Content Director outcome while leaving the Workflow Step in `AWAITING_RESULT`.
-Successful invocation is not yet trusted as successful Workflow Step completion.
+Perform one focused hostile review of deterministic executor resolution, controlled
+workflow invocation, durable invocation persistence, outcome acceptance, and atomic
+step completion; fix material findings and align project-state truth.
 
 ## Required scope
 
-- Resolve the exact durable invocation, workflow, step, specification, executor, and
-  fingerprint.
-- Validate structured output, success requirements, evidence requirements, quality
-  requirements, and the non-external-effects declaration.
-- Produce an explicit accepted, revision, rejected, failed, invalid, or blocked
-  outcome decision using the smallest sufficient status set.
-- Atomically persist accepted step completion, workflow version, command receipt,
-  outcome evidence, and Workflow Event.
-- Preserve duplicate acceptance idempotency and restart-safe readback.
-- Leave rejected, invalid, failed, and revision outcomes incomplete without automatic
-  reinvocation.
-- Reveal any newly ready step only on a later explicit readiness evaluation.
-- Update project-state documents.
+- Review exact specification/executor binding and default-deny resolution.
+- Review reservation, execution-outside-transaction, terminal outcome persistence,
+  replay, and interrupted-reservation behavior.
+- Review authoritative result loading, structured artifact validation, explicit
+  outcome decisions, and atomic completion.
+- Verify fingerprints cover material identities and versions.
+- Verify duplicate invocation and duplicate completion behavior after restart.
+- Verify the next dependent step remains dormant until later explicit readiness
+  evaluation.
+- Fix all P0/P1 and material P2 findings.
+- Run the complete quality gate and update project-state documentation.
 
 ## Forbidden scope
 
-- Browser, filesystem mutation, HTTP, n8n, dashboard, webhook, scheduler, background
-  worker, autonomous loop, real tool execution, publishing, outreach, payment,
-  customer delivery, or other external side effects.
-- Agent invocation, automatic retry, automatic next-step execution, scheduling,
-  callbacks, compensation, or workflow result aggregation.
-- Treating successful invocation as sufficient evidence of step success.
-- A second database, destructive migration, secrets/prompts/completions/provider
-  payloads in durable workflow records, or weakening existing public contracts.
-- Role-name matching, bypassing the exact active binding, mutation through catalog
-  inspection, or treating resolution itself as execution authority.
-
-## Likely files to create
-
-- `src/workflows/runtime/workflow-step-outcome.ts`
-- `src/workflows/runtime/repository-backed-workflow-step-outcome-service.ts`
-- `tests/workflows/workflow-step-outcome.test.ts`
-
-## Likely files to modify
-
-- existing workflow persistence/state-machine services only where required for the
-  atomic awaiting-result and completion/failure transitions
-- `src/index.ts`
-- affected project-state documents
-
-## Tests required
-
-- valid accepted output, missing fields/evidence, low quality, wrong identities,
-  stale versions, blocked controls, external-effect claims, and sensitive leakage;
-- accepted completion, rollback, duplicate acceptance, restart readback, and exact
-  single version increment;
-- no automatic AgentRuntime invocation or next-step execution;
-- all existing tests remain green.
+- Models, providers, tools, network, browser, arbitrary filesystem effects, external
+  actions, publishing, outreach, payments, delivery, schedulers, workers, or loops.
+- Automatic retry, automatic next-step execution, parallel execution, callbacks, or
+  compensation.
+- New production dependencies, destructive migrations, or weakening existing tests.
+- Starting the post-sprint lifecycle milestone.
 
 ## Acceptance criteria
 
-- Exactly one valid durable invocation outcome can be explicitly accepted.
-- Completion is atomic and idempotent under exact version and fingerprint checks.
-- Every invalid, stale, unsafe, or incomplete outcome fails closed.
-- No external side effect is introduced.
-- Full lint, typecheck, test, build, and diff checks pass in a separate clean commit.
+- One complete durable Workflow-to-Agent-to-accepted-Completion path is proven.
+- Resolution never executes; execution never occurs inside a database transaction.
+- Successful invocation is never equated with successful step completion.
+- Completion is exact-versioned, atomic, idempotent, and restart-safe.
+- No external side effect or automatic next-step execution exists.
+- Lint, typecheck, all tests, build, and diff checks pass from a clean commit.
 
 ## Definition of done
 
-One deterministic/local Workflow Step can be completed only after separate explicit
-outcome acceptance. Automatic progression and all external execution remain absent.
+Project-state records the completed local deterministic vertical slice and names
+exactly one later lifecycle milestone without beginning it.

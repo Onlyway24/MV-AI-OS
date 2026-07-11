@@ -1274,6 +1274,22 @@ export {
   type RepositoryBackedWorkflowAgentInvokerDependencies,
 } from "./workflows/runtime/repository-backed-workflow-agent-invoker.js";
 export {
+  WORKFLOW_STEP_OUTCOME_CONTRACT_VERSION,
+  WorkflowStepOutcomeReceiptValidator,
+  WorkflowStepOutcomeRequestValidator,
+  createWorkflowStepOutcomeFingerprint,
+  type WorkflowStepOutcomeDecision,
+  type WorkflowStepOutcomeReceipt,
+  type WorkflowStepOutcomeRequest,
+  type WorkflowStepOutcomeResult,
+  type WorkflowStepOutcomeService,
+} from "./workflows/runtime/workflow-step-outcome.js";
+export {
+  createWorkflowStepOutcomeService,
+  RepositoryBackedWorkflowStepOutcomeService,
+  type RepositoryBackedWorkflowStepOutcomeDependencies,
+} from "./workflows/runtime/repository-backed-workflow-step-outcome-service.js";
+export {
   PolicyGovernedToolGateway,
   type PolicyGovernedToolGatewayDependencies,
 } from "./tools/policy-governed-tool-gateway.js";
