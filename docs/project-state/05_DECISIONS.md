@@ -1565,3 +1565,24 @@ exact validated binding. Resolution grants no execution authority.
 **Future impact:** Controlled Workflow Step AgentRuntime Invocation must consume the
 resolver result and independently enforce all workflow controls before calling
 AgentRuntime.
+
+## ADR-058 — Workflow invocation uses durable reservation and separate outcome persistence
+
+**Context:** Agent execution cannot occur inside an SQLite write transaction, and a
+crash may occur after reservation but before durable outcome persistence.
+
+**Decision:** Atomically reserve an exact fingerprinted deterministic-local invocation
+and move its step to `AWAITING_RESULT`, execute outside the transaction, then atomically
+persist one terminal invocation outcome and audit event. Matching terminal invocations
+replay from storage. An interrupted reservation may be recomputed only while its exact
+executor remains deterministic, replay-safe, local, and side-effect-free.
+
+**Reason:** This provides durable identity, at-most-one accepted outcome, safe restart
+behavior, and no long-running database transaction without claiming exactly-once
+computation.
+
+**Tradeoffs:** Interrupted deterministic computation may run again. Invocation success
+does not complete the Workflow Step and requires a separate outcome-acceptance boundary.
+
+**Future impact:** Workflow Step Outcome Validation and Completion must consume only
+the exact durably completed invocation and must not call AgentRuntime.

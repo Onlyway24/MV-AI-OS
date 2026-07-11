@@ -2,48 +2,34 @@
 
 ## Milestone name
 
-Controlled Workflow Step AgentRuntime Invocation
+Workflow Step Outcome Validation and Completion
 
 ## Goal
 
-Invoke exactly one durable, policy-qualified workflow step candidate through the
-existing AgentRuntime boundary and persist the resulting workflow step transition
-atomically, without tools, network side effects, autonomous scheduling, or external
-delivery.
+Validate one durably completed deterministic AgentRuntime invocation against its
+exact Workflow Step and atomically accept or reject the outcome without automatically
+starting another step.
 
 ## Why it matters
 
-MV AI OS can now persist workflow state and controls, prepare one exact candidate,
-inspect immutable executor descriptors, and resolve an exact active deterministic-local
-Agent Specification/executor binding without execution. It also has one meaningful,
-model-free Content Director executor. It still cannot invoke that executor from a
-workflow candidate. This milestone is
-the first transition from orchestration preparation to controlled execution and must
-prove that AgentRuntime invocation cannot bypass candidate validation, limits,
-policy, durable approvals, Guardians, idempotency, or audit.
+MV AI OS can now reserve, invoke, and durably replay one exact deterministic-local
+Content Director outcome while leaving the Workflow Step in `AWAITING_RESULT`.
+Successful invocation is not yet trusted as successful Workflow Step completion.
 
 ## Required scope
 
-- Define a narrow workflow-step invocation command and validated result contract.
-- Accept only a candidate produced from `DURABLE_ONLY` control evidence at the exact
-  current workflow version.
-- Resolve the exact AgentSpecification and deterministic-local executor through the
-  read-only AgentRuntime resolver, then invoke only the existing injected AgentRuntime
-  interface.
-- Start with deterministic/local AgentRuntime implementations; no live provider is
-  required or enabled by default.
-- Validate bounded JSON-safe step input and AgentResult output against the exact
-  specification schemas.
-- Enforce existing model/tool/cost limits and default-deny effective permissions
-  before invocation.
-- Atomically persist the step transition, command receipt, redaction-safe workflow
-  event, and resulting version through existing workflow persistence.
-- Make duplicate command replay restart-safe and prevent duplicate AgentRuntime
-  invocation.
-- Fail closed on stale candidate, missing controls, invalid result, timeout, agent
-  failure, or persistence failure.
-- Add deterministic invocation, replay, rollback, restart, validation, redaction, and
-  no-external-side-effect tests.
+- Resolve the exact durable invocation, workflow, step, specification, executor, and
+  fingerprint.
+- Validate structured output, success requirements, evidence requirements, quality
+  requirements, and the non-external-effects declaration.
+- Produce an explicit accepted, revision, rejected, failed, invalid, or blocked
+  outcome decision using the smallest sufficient status set.
+- Atomically persist accepted step completion, workflow version, command receipt,
+  outcome evidence, and Workflow Event.
+- Preserve duplicate acceptance idempotency and restart-safe readback.
+- Leave rejected, invalid, failed, and revision outcomes incomplete without automatic
+  reinvocation.
+- Reveal any newly ready step only on a later explicit readiness evaluation.
 - Update project-state documents.
 
 ## Forbidden scope
@@ -51,10 +37,9 @@ policy, durable approvals, Guardians, idempotency, or audit.
 - Browser, filesystem mutation, HTTP, n8n, dashboard, webhook, scheduler, background
   worker, autonomous loop, real tool execution, publishing, outreach, payment,
   customer delivery, or other external side effects.
-- Direct provider SDK calls or bypass of LlmGateway, model limits, usage accounting,
-  budget enforcement, policy, AgentSpecifications, checkpoints, or audit.
-- Parallel scheduling, retries, callback processing, compensation, workflow result
-  aggregation, or a new execution framework.
+- Agent invocation, automatic retry, automatic next-step execution, scheduling,
+  callbacks, compensation, or workflow result aggregation.
+- Treating successful invocation as sufficient evidence of step success.
 - A second database, destructive migration, secrets/prompts/completions/provider
   payloads in durable workflow records, or weakening existing public contracts.
 - Role-name matching, bypassing the exact active binding, mutation through catalog
@@ -62,10 +47,9 @@ policy, durable approvals, Guardians, idempotency, or audit.
 
 ## Likely files to create
 
-- `src/workflows/runtime/workflow-step-invocation.ts`
-- `src/workflows/runtime/workflow-step-invocation-validator.ts`
-- `src/workflows/runtime/repository-backed-workflow-step-invoker.ts`
-- `tests/workflows/workflow-step-invocation.test.ts`
+- `src/workflows/runtime/workflow-step-outcome.ts`
+- `src/workflows/runtime/repository-backed-workflow-step-outcome-service.ts`
+- `tests/workflows/workflow-step-outcome.test.ts`
 
 ## Likely files to modify
 
@@ -76,32 +60,22 @@ policy, durable approvals, Guardians, idempotency, or audit.
 
 ## Tests required
 
-- one exact durable candidate invokes one deterministic AgentRuntime once;
-- missing/stale policy, specification, approval, Guardian, version, or permission
-  blocks before AgentRuntime;
-- duplicate command after restart replays without a second invocation;
-- invalid input/output, agent failure, timeout, and persistence failure fail closed;
-- state, receipt, event, and version updates are atomic;
-- terminal or already-awaiting-result steps cannot be reinvoked;
-- outputs and errors are bounded, immutable, JSON-safe, and redaction-safe;
-- no tool, browser, filesystem, network, n8n, HTTP, provider SDK, or external action
-  occurs;
+- valid accepted output, missing fields/evidence, low quality, wrong identities,
+  stale versions, blocked controls, external-effect claims, and sensitive leakage;
+- accepted completion, rollback, duplicate acceptance, restart readback, and exact
+  single version increment;
+- no automatic AgentRuntime invocation or next-step execution;
 - all existing tests remain green.
 
 ## Acceptance criteria
 
-- Exactly one validated durable candidate can enter AgentRuntime through dependency
-  injection.
-- No candidate or command can invoke the agent twice.
-- Every missing or stale control fails before invocation.
-- Successful and failed invocation outcomes preserve workflow transaction and audit
-  invariants.
+- Exactly one valid durable invocation outcome can be explicitly accepted.
+- Completion is atomic and idempotent under exact version and fingerprint checks.
+- Every invalid, stale, unsafe, or incomplete outcome fails closed.
 - No external side effect is introduced.
 - Full lint, typecheck, test, build, and diff checks pass in a separate clean commit.
 
 ## Definition of done
 
-One deterministic/local workflow step can be invoked once through AgentRuntime with
-durable controls, restart-safe idempotency, and atomic workflow evidence. Scheduling,
-parallelism, external tools, providers, callbacks, and delivery remain later
-milestones.
+One deterministic/local Workflow Step can be completed only after separate explicit
+outcome acceptance. Automatic progression and all external execution remain absent.

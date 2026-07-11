@@ -57,6 +57,7 @@ import {
   WorkflowEventDraftValidator,
   WorkflowEventValidator,
 } from "../../src/workflows/runtime/workflow-persistence-validator.js";
+import type { WorkflowAgentInvocationEvent, WorkflowAgentInvocationReceipt } from "../../src/workflows/runtime/workflow-agent-invocation.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -71,6 +72,8 @@ interface RepositoryState {
   readonly workflowEvents: Map<string, WorkflowEvent>;
   readonly workflowInstances: Map<string, WorkflowInstance>;
   readonly workflowGuardianCheckpoints: Map<string, WorkflowGuardianCheckpoint>;
+  readonly workflowAgentInvocations: Map<string, WorkflowAgentInvocationReceipt>;
+  readonly workflowAgentInvocationEvents: Map<string, WorkflowAgentInvocationEvent>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -107,6 +110,8 @@ function createRepositories(
     requests: new InMemoryRequestRepository(state),
     tasks: new InMemoryTaskRepository(state),
     workflows: Object.freeze({
+      agentInvocationEvents: new InMemoryWorkflowAgentInvocationEventRepository(state),
+      agentInvocations: new InMemoryWorkflowAgentInvocationRepository(state),
       approvals: new InMemoryWorkflowApprovalCheckpointRepository(state),
       controlEvents: new InMemoryWorkflowControlCheckpointEventRepository(state),
       definitions: new InMemoryWorkflowDefinitionRepository(state),
@@ -116,6 +121,19 @@ function createRepositories(
       receipts: new InMemoryWorkflowCommandReceiptRepository(state),
     }),
   });
+}
+
+class InMemoryWorkflowAgentInvocationRepository {
+  public constructor(private readonly state: RepositoryState) {}
+  public getById(id: string): Promise<WorkflowAgentInvocationReceipt | undefined> { return Promise.resolve(cloneOptional(this.state.workflowAgentInvocations.get(id))); }
+  public insert(receipt: WorkflowAgentInvocationReceipt): Promise<void> { if (this.state.workflowAgentInvocations.has(receipt.invocationId)) throw new RepositoryConflictError("Workflow invocation exists"); this.state.workflowAgentInvocations.set(receipt.invocationId, cloneFrozen(receipt)); return Promise.resolve(); }
+  public update(receipt: WorkflowAgentInvocationReceipt, expected: "RESERVED"): Promise<void> { const current = this.state.workflowAgentInvocations.get(receipt.invocationId); if (current?.status !== expected || current.fingerprint !== receipt.fingerprint) throw new RepositoryConflictError("Workflow invocation conflicts"); this.state.workflowAgentInvocations.set(receipt.invocationId, cloneFrozen(receipt)); return Promise.resolve(); }
+}
+
+class InMemoryWorkflowAgentInvocationEventRepository {
+  public constructor(private readonly state: RepositoryState) {}
+  public append(event: WorkflowAgentInvocationEvent): Promise<void> { if (this.state.workflowAgentInvocationEvents.has(event.eventId)) throw new RepositoryConflictError("Workflow invocation event exists"); this.state.workflowAgentInvocationEvents.set(event.eventId, cloneFrozen(event)); return Promise.resolve(); }
+  public listByInvocationId(id: string): Promise<readonly WorkflowAgentInvocationEvent[]> { return Promise.resolve(Object.freeze([...this.state.workflowAgentInvocationEvents.values()].filter((event) => event.invocationId === id).map(cloneFrozen))); }
 }
 
 class InMemoryTaskRepository implements TaskRepository {
@@ -875,6 +893,8 @@ function createState(): RepositoryState {
     workflowEvents: new Map(),
     workflowInstances: new Map(),
     workflowGuardianCheckpoints: new Map(),
+    workflowAgentInvocations: new Map(),
+    workflowAgentInvocationEvents: new Map(),
   };
 }
 
@@ -927,6 +947,8 @@ function cloneState(state: RepositoryState): RepositoryState {
     workflowGuardianCheckpoints: new Map(
       [...state.workflowGuardianCheckpoints].map(([key, value]) => [key, cloneFrozen(value)]),
     ),
+    workflowAgentInvocations: new Map([...state.workflowAgentInvocations].map(([key, value]) => [key, cloneFrozen(value)])),
+    workflowAgentInvocationEvents: new Map([...state.workflowAgentInvocationEvents].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

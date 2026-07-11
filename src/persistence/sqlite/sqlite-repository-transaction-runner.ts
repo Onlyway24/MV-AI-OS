@@ -22,6 +22,7 @@ import { SqliteWorkflowDefinitionRepository } from "./sqlite-workflow-definition
 import { SqliteWorkflowEventRepository } from "./sqlite-workflow-event-repository.js";
 import { SqliteWorkflowGuardianCheckpointRepository } from "./sqlite-workflow-guardian-checkpoint-repository.js";
 import { SqliteWorkflowInstanceRepository } from "./sqlite-workflow-instance-repository.js";
+import { SqliteWorkflowAgentInvocationEventRepository, SqliteWorkflowAgentInvocationRepository } from "./sqlite-workflow-agent-invocation-repository.js";
 
 export class SqliteRepositoryTransactionRunner
   implements RepositoryTransactionRunner
@@ -75,6 +76,14 @@ export class SqliteRepositoryTransactionRunner
           this.#codec,
         ),
         workflows: Object.freeze({
+          agentInvocationEvents: new SqliteWorkflowAgentInvocationEventRepository(
+            this.#database,
+            scope,
+          ),
+          agentInvocations: new SqliteWorkflowAgentInvocationRepository(
+            this.#database,
+            scope,
+          ),
           approvals: new SqliteWorkflowApprovalCheckpointRepository(
             this.#database,
             scope,

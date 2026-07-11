@@ -14,6 +14,10 @@ import type {
   WorkflowControlCheckpointEventDraft,
   WorkflowGuardianCheckpoint,
 } from "./workflow-control-checkpoint.js";
+import type {
+  WorkflowAgentInvocationEvent,
+  WorkflowAgentInvocationReceipt,
+} from "./workflow-agent-invocation.js";
 
 export const WORKFLOW_PERSISTENCE_CONTRACT_VERSION = "1" as const;
 
@@ -125,6 +129,17 @@ export interface WorkflowControlCheckpointEventRepository {
   ): Promise<readonly WorkflowControlCheckpointEvent[]>;
 }
 
+export interface WorkflowAgentInvocationRepository {
+  getById(invocationId: string): Promise<WorkflowAgentInvocationReceipt | undefined>;
+  insert(receipt: WorkflowAgentInvocationReceipt): Promise<void>;
+  update(receipt: WorkflowAgentInvocationReceipt, expectedStatus: "RESERVED"): Promise<void>;
+}
+
+export interface WorkflowAgentInvocationEventRepository {
+  append(event: WorkflowAgentInvocationEvent): Promise<void>;
+  listByInvocationId(invocationId: string): Promise<readonly WorkflowAgentInvocationEvent[]>;
+}
+
 export interface WorkflowPersistenceTransaction {
   readonly approvals: WorkflowApprovalCheckpointRepository;
   readonly controlEvents: WorkflowControlCheckpointEventRepository;
@@ -133,6 +148,8 @@ export interface WorkflowPersistenceTransaction {
   readonly guardians: WorkflowGuardianCheckpointRepository;
   readonly receipts: WorkflowCommandReceiptRepository;
   readonly events: WorkflowEventRepository;
+  readonly agentInvocations: WorkflowAgentInvocationRepository;
+  readonly agentInvocationEvents: WorkflowAgentInvocationEventRepository;
 }
 
 export interface WorkflowEventIdentifierGenerator {

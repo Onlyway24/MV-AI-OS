@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 5;
+export const SQLITE_SCHEMA_VERSION = 6;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -33,6 +33,11 @@ const VERSION_FIVE_TABLES = Object.freeze([
   "workflow_approval_checkpoints",
   "workflow_control_checkpoint_events",
   "workflow_guardian_checkpoints",
+]);
+const VERSION_SIX_TABLES = Object.freeze([
+  ...VERSION_FIVE_TABLES,
+  "workflow_agent_invocation_events",
+  "workflow_agent_invocations",
 ]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
@@ -92,6 +97,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 4, "durable_workflows");
     applyWorkflowControlCheckpointMigration(database);
   }
+  const invocationVersion = readPragmaInteger(database, "user_version");
+  if (invocationVersion === 5) {
+    verifyDatabaseIdentity(database, 5);
+    verifyExpectedTables(database, VERSION_FIVE_TABLES);
+    verifyMigration(database, 5, "durable_workflow_control_checkpoints");
+    applyWorkflowAgentInvocationMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -114,12 +126,13 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_FIVE_TABLES);
+  verifyExpectedTables(database, VERSION_SIX_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
   verifyMigration(database, 4, "durable_workflows");
   verifyMigration(database, 5, "durable_workflow_control_checkpoints");
+  verifyMigration(database, 6, "durable_workflow_agent_invocations");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -387,6 +400,43 @@ function applyWorkflowControlCheckpointMigration(database: DatabaseSync): void {
       "sqlite_schema_invalid",
       "SQLite workflow control checkpoint migration failed",
     );
+  }
+}
+
+function applyWorkflowAgentInvocationMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE workflow_agent_invocations (
+        invocation_id TEXT PRIMARY KEY,
+        fingerprint TEXT NOT NULL,
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        step_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('RESERVED', 'COMPLETED', 'FAILED')),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX workflow_agent_invocations_instance_step
+        ON workflow_agent_invocations (instance_id, step_id, invocation_id);
+      CREATE TABLE workflow_agent_invocation_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT NOT NULL UNIQUE,
+        invocation_id TEXT NOT NULL REFERENCES workflow_agent_invocations (invocation_id),
+        instance_id TEXT NOT NULL REFERENCES workflow_instances (instance_id),
+        status TEXT NOT NULL,
+        occurred_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (invocation_id, status)
+      ) STRICT;
+      CREATE INDEX workflow_agent_invocation_events_invocation
+        ON workflow_agent_invocation_events (invocation_id, sequence);
+      INSERT INTO schema_migrations (version, name)
+      VALUES (6, 'durable_workflow_agent_invocations');
+      PRAGMA user_version = 6;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite workflow agent invocation migration failed");
   }
 }
 
