@@ -189,11 +189,16 @@ async function reserveInstance(workflows: Parameters<Parameters<RepositoryTransa
 async function assertControlsUnchanged(workflows: Parameters<Parameters<RepositoryTransactionRunner["transaction"]>[0]>[0]["workflows"], candidate: { readonly approvalEvidenceIds: readonly string[]; readonly guardianEvidenceIds: readonly string[]; readonly instanceId: string; readonly instanceVersion: number; readonly stepId: string }): Promise<void> {
   const approvals = await workflows.approvals.listBySnapshot(candidate.instanceId, candidate.instanceVersion, candidate.stepId);
   const guardians = await workflows.guardians.listBySnapshot(candidate.instanceId, candidate.instanceVersion, candidate.stepId);
-  const latestApproval = approvals.at(-1);
-  if (candidate.approvalEvidenceIds.length > 0 && (latestApproval?.status !== "APPROVED" || !candidate.approvalEvidenceIds.includes(latestApproval.evidenceId))) throw new RepositoryConflictError("Workflow approval changed before invocation reservation");
-  const latest = new Map(guardians.map((entry) => [entry.domain, entry]));
-  if (candidate.guardianEvidenceIds.some((id) => ![...latest.values()].some((entry) => entry.evidenceId === id && entry.status === "CLEAR"))) throw new RepositoryConflictError("Workflow Guardian evidence changed before invocation reservation");
+  let latestApproval: typeof approvals[number] | undefined;
+  for (const entry of approvals) if (await workflows.controlEvents.getByCheckpoint("APPROVAL", entry.evidenceId) !== undefined) latestApproval = entry;
+  const approvalIds = latestApproval?.status === "APPROVED" ? [latestApproval.evidenceId] : [];
+  if (!sameIds(candidate.approvalEvidenceIds, approvalIds)) throw new RepositoryConflictError("Workflow approval changed before invocation reservation");
+  const latest = new Map<string, typeof guardians[number]>();
+  for (const entry of guardians) if (await workflows.controlEvents.getByCheckpoint("GUARDIAN", entry.evidenceId) !== undefined) latest.set(entry.domain, entry);
+  const guardianIds = [...latest.values()].filter(({ status }) => status === "CLEAR").map(({ evidenceId }) => evidenceId);
+  if (!sameIds(candidate.guardianEvidenceIds, guardianIds)) throw new RepositoryConflictError("Workflow Guardian evidence changed before invocation reservation");
 }
+function sameIds(left: readonly string[], right: readonly string[]): boolean { return [...left].sort().join("\n") === [...right].sort().join("\n"); }
 function validate<T>(value: unknown, validator: Validator<T>, label: string): T { const result = validator.validate(value); if (!result.ok) throw new RepositoryValidationError(`${label} failed validation`, { issueCount: result.issues.length }); return result.value; }
 function now(clock: Clock): string { const value = clock.now(); if (Number.isNaN(value.getTime())) throw new RepositoryValidationError("Workflow invocation clock is invalid"); return value.toISOString(); }
 function blocked(code: "CANDIDATE_BLOCKED" | "EXECUTOR_UNRESOLVED" | "INVOCATION_CONFLICT" | "INVOCATION_STATE_INVALID", reason: string): ControlledWorkflowAgentInvocationResult { return freeze({ blocker: { code, reason }, contractVersion: "1", status: "BLOCKED" }); }

@@ -198,10 +198,10 @@ describe("Workflow failure and retry eligibility", () => {
   });
 
   it.each([
-    ["PERMANENT", 3, "DENIED_NON_RETRYABLE"],
+    ["VALIDATION", 1, "DENIED_EXHAUSTED"],
     ["TRANSIENT_RUNTIME", 1, "DENIED_EXHAUSTED"],
   ] as const)("denies bounded retry for %s", async (category, maxAttempts, decision) => {
-    const runner = createRunner(":memory:"); await seedFailedInvocation(runner);
+    const runner = createRunner(":memory:"); await seedFailedInvocation(runner, category === "VALIDATION" ? "AGENT_RESULT_INVALID" : "AGENT_EXECUTION_FAILED");
     await service(runner, maxAttempts).recordFailure(failureRequest({ category, maxAttempts }));
     expect(await service(runner, maxAttempts).authorizeRetry(retryRequest())).toMatchObject({ record: { retryDecision: decision } });
     await runner.close();
@@ -250,7 +250,7 @@ async function seedWorkflow(runner: SqliteRepositoryTransactionRunner) {
   await persistence.createDefinition(definition()); await persistence.createInstance(instance());
 }
 
-async function seedFailedInvocation(runner: SqliteRepositoryTransactionRunner) {
+async function seedFailedInvocation(runner: SqliteRepositoryTransactionRunner, failureCode: "AGENT_EXECUTION_FAILED" | "AGENT_RESULT_INVALID" = "AGENT_EXECUTION_FAILED") {
   await seedWorkflow(runner);
   await runner.transaction(async ({ workflows }) => {
     const initial = await workflows.instances.getById("instance-1");
@@ -261,7 +261,7 @@ async function seedFailedInvocation(runner: SqliteRepositoryTransactionRunner) {
     const reserveReceipt = { commandId: "seed-reserve", fingerprint: "b".repeat(64), resultingVersion: 2 };
     const awaiting = { ...ready, receipts: [...ready.receipts, reserveReceipt], steps: [{ blockers: [], status: "AWAITING_RESULT" as const, stepId: "step-1" }], version: 2 };
     await workflows.instances.update(awaiting, { version: 1 }); await workflows.receipts.insert("instance-1", reserveReceipt);
-    await workflows.agentInvocations.insert({ capabilityIds: ["content-strategy"], completedAt: "2026-01-01T00:00:00.000Z", contractVersion: "1", definitionId: "definition@1.0.0", executorId: "deterministic-content-director", executorVersion: "1.0.0", externalEffectsAllowed: false, failure: { code: "AGENT_EXECUTION_FAILED", message: "Agent execution failed safely" }, fingerprint: "c".repeat(64), inputContractId: "deterministic-content-direction-input@1", instanceId: "instance-1", invocationId: "invocation-1", outputContractId: "deterministic-content-direction-artifact@1", reservedAt: "2026-01-01T00:00:00.000Z", reservedInstanceVersion: 2, runtimeAgentId: "content-director", runtimeAgentVersion: "1.0.0", specificationId: "content-director@1.0.0", specificationVersion: "1.0.0", status: "FAILED", stepId: "step-1", workflowId: "workflow", workflowVersion: "1.0.0" });
+    await workflows.agentInvocations.insert({ capabilityIds: ["content-strategy"], completedAt: "2026-01-01T00:00:00.000Z", contractVersion: "1", definitionId: "definition@1.0.0", executorId: "deterministic-content-director", executorVersion: "1.0.0", externalEffectsAllowed: false, failure: { code: failureCode, message: "Agent execution failed safely" }, fingerprint: "c".repeat(64), inputContractId: "deterministic-content-direction-input@1", instanceId: "instance-1", invocationId: "invocation-1", outputContractId: "deterministic-content-direction-artifact@1", reservedAt: "2026-01-01T00:00:00.000Z", reservedInstanceVersion: 2, runtimeAgentId: "content-director", runtimeAgentVersion: "1.0.0", specificationId: "content-director@1.0.0", specificationVersion: "1.0.0", status: "FAILED", stepId: "step-1", workflowId: "workflow", workflowVersion: "1.0.0" });
   });
 }
 async function seedReservedInvocation(runner: SqliteRepositoryTransactionRunner) {

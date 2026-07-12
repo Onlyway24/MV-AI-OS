@@ -82,9 +82,9 @@ describe("Workflow Step Outcome Validation and Completion", () => {
     const runner = createRunner(":memory:"); await seed(runner);
     const context = runtimeContext(runner, deterministicRuntime());
     await context.invoker.invoke(invocationRequest());
-    const first = await context.outcomes.reject({ ...outcomeRequest(), reasonCode: "operator_rejected_direction" });
+    const first = await context.outcomes.reject({ ...outcomeRequest(), actorId: "fabio", reasonCode: "operator_rejected_direction" });
     expect(first).toMatchObject({ replayed: false, receipt: { decision: "REJECTED", remediation: ["Operator rejected result: operator_rejected_direction"] } });
-    expect(await context.outcomes.reject({ ...outcomeRequest(), reasonCode: "operator_rejected_direction" })).toEqual({ ...first, replayed: true });
+    expect(await context.outcomes.reject({ ...outcomeRequest(), actorId: "fabio", reasonCode: "operator_rejected_direction" })).toEqual({ ...first, replayed: true });
     const instance = await runner.transaction(({ workflows }) => workflows.instances.getById("content-instance"));
     expect(instance?.version).toBe(2);
     expect(instance?.steps[0]).toMatchObject({ status: "AWAITING_RESULT" });
@@ -130,7 +130,7 @@ class WorkflowEventIds implements WorkflowEventIdentifierGenerator { #value = 0;
 async function seed(runner: SqliteRepositoryTransactionRunner) {
   const persistence = createWorkflowPersistenceService({ eventIds: new WorkflowEventIds(), repositories: runner, stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()) });
   await persistence.createDefinition(definition()); await persistence.createInstance(instance());
-  await runner.transaction(async ({ workflows }) => { for (const domain of ["operator_safety", "quality"] as const) await workflows.guardians.insert({ contractVersion: "1", definitionId: "content-workflow@1.0.0", domain, evidenceId: `guardian-${domain}`, guardianId: `${domain}-guardian`, instanceId: "content-instance", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:00.000Z", status: "CLEAR", stepId: "direction", workflowVersion: "1.0.0" }); });
+  await runner.transaction(async ({ workflows }) => { let sequence = 0; for (const domain of ["operator_safety", "quality"] as const) { const evidenceId = `guardian-${domain}`; await workflows.guardians.insert({ contractVersion: "1", definitionId: "content-workflow@1.0.0", domain, evidenceId, guardianId: `${domain}-guardian`, instanceId: "content-instance", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:00.000Z", status: "CLEAR", stepId: "direction", workflowVersion: "1.0.0" }); sequence += 1; await workflows.controlEvents.append({ checkpointId: evidenceId, checkpointKind: "GUARDIAN", contractVersion: "1", eventId: `guardian-seed-event-${String(sequence)}`, instanceId: "content-instance", instanceVersion: 0, nonExecuting: true, occurredAt: "2026-01-01T00:00:00.000Z", status: "CLEAR", stepId: "direction", summaryCode: "workflow_control_checkpoint_recorded" }); } });
 }
 function definition(): WorkflowDefinition { return { contractVersion: "1", definitionId: "content-workflow@1.0.0", nonExecuting: true, steps: [{ approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "direction" }, { approvalRequired: false, dependencies: ["direction"], guardianRequired: false, nonExecuting: true, stepId: "publish-preparation" }], workflowId: "content-workflow", workflowVersion: "1.0.0" }; }
 function instance(): WorkflowInstance { return { contractVersion: "1", createdAt: "2026-01-01T00:00:00.000Z", definitionId: "content-workflow@1.0.0", instanceId: "content-instance", nonExecuting: true, receipts: [], status: "ACTIVE", steps: [{ blockers: [], status: "PENDING", stepId: "direction" }, { blockers: [], status: "PENDING", stepId: "publish-preparation" }], stopReason: "NONE", updatedAt: "2026-01-01T00:00:00.000Z", version: 0 }; }

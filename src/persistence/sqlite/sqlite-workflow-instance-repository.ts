@@ -131,6 +131,7 @@ export class SqliteWorkflowInstanceRepository
       validation.value.kind !== "RETRY_AUTHORIZATION" ||
       validation.value.retryDecision !== "AUTHORIZED" ||
       validation.value.instanceId !== instance.instanceId ||
+      validation.value.instanceVersion !== expectation.version ||
       instance.steps.find(({ stepId }) => stepId === validation.value.stepId)?.status !== "READY"
     ) {
       throw new RepositoryConflictError("Workflow retry authorization is missing or invalid", {
@@ -138,6 +139,11 @@ export class SqliteWorkflowInstanceRepository
         instanceId: instance.instanceId,
       });
     }
+    const records = this.#database.prepare("SELECT record_json FROM workflow_lifecycle_records WHERE instance_id = ? AND step_id = ? ORDER BY sequence ASC").all(instance.instanceId, validation.value.stepId).map((entry) => { if (typeof entry.record_json !== "string") throw new RepositoryValidationError("Workflow lifecycle evidence is corrupted"); const checked = new WorkflowLifecycleRecordValidator().validate(JSON.parse(entry.record_json)); if (!checked.ok) throw new RepositoryValidationError("Workflow lifecycle evidence is corrupted"); return checked.value; });
+    const latestFailure = records.filter(({ kind }) => kind === "FAILURE").at(-1);
+    const latestAuthorization = records.filter(({ kind, failureId }) => kind === "RETRY_AUTHORIZATION" && failureId === validation.value.failureId).at(-1);
+    const consumed = records.some(({ kind, authorizationId: consumedAuthorizationId }) => kind === "RETRY_EXECUTION" && consumedAuthorizationId === authorizationId);
+    if (latestFailure?.recordId !== validation.value.failureId || latestAuthorization?.recordId !== authorizationId || consumed) throw new RepositoryConflictError("Workflow retry authorization is stale or consumed");
     return this.#update(instance, expectation, validation.value.stepId);
   }
 
@@ -155,7 +161,7 @@ export class SqliteWorkflowInstanceRepository
         ? undefined
         : JSON.parse(row.record_json),
     );
-    if (!validation.ok || (validation.value.kind !== "CANCELLATION" && validation.value.kind !== "PAUSE" && validation.value.kind !== "RESUME") || validation.value.instanceId !== instance.instanceId) {
+    if (!validation.ok || (validation.value.kind !== "CANCELLATION" && validation.value.kind !== "PAUSE" && validation.value.kind !== "RESUME") || validation.value.instanceId !== instance.instanceId || validation.value.instanceVersion !== instance.version) {
       throw new RepositoryConflictError("Workflow control evidence is missing or invalid", { controlId, instanceId: instance.instanceId });
     }
     return this.#update(instance, expectation, undefined, validation.value.kind);

@@ -267,9 +267,11 @@ async function withDurableControlEvidence(
     request.expectedVersion,
     stepId,
   );
-  const latestApproval = approvals.at(-1);
+  let latestApproval: typeof approvals[number] | undefined;
+  for (const checkpoint of approvals) if (await workflows.controlEvents.getByCheckpoint("APPROVAL", checkpoint.evidenceId) !== undefined) latestApproval = checkpoint;
   const latestGuardians = new Map<MainAssistantSafetyDomain, WorkflowGuardianEvidence>();
   for (const checkpoint of guardians) {
+    if (await workflows.controlEvents.getByCheckpoint("GUARDIAN", checkpoint.evidenceId) === undefined) continue;
     latestGuardians.set(checkpoint.domain, {
       definitionId: checkpoint.definitionId,
       domain: checkpoint.domain,

@@ -13,7 +13,7 @@ export interface WorkflowStepOutcomeRequest {
   readonly invocationId: string;
   readonly expectedInstanceVersion: number;
 }
-export interface WorkflowStepRejectionRequest extends WorkflowStepOutcomeRequest { readonly reasonCode: string; }
+export interface WorkflowStepRejectionRequest extends WorkflowStepOutcomeRequest { readonly actorId: string; readonly reasonCode: string; }
 
 export interface WorkflowStepOutcomeReceipt {
   readonly contractVersion: typeof WORKFLOW_STEP_OUTCOME_CONTRACT_VERSION;
@@ -29,6 +29,7 @@ export interface WorkflowStepOutcomeReceipt {
   readonly resultingInstanceVersion?: number;
   readonly workflowEventId?: string;
   readonly externalEffects: false;
+  readonly reviewerActorId?: string;
 }
 
 export interface WorkflowStepOutcomeResult { readonly contractVersion: "1"; readonly receipt: WorkflowStepOutcomeReceipt; readonly replayed: boolean }
@@ -36,7 +37,7 @@ export interface WorkflowStepOutcomeService { review(request: WorkflowStepOutcom
 
 export class WorkflowStepRejectionRequestValidator implements Validator<WorkflowStepRejectionRequest> {
   public validate(value: unknown): ValidationResult<WorkflowStepRejectionRequest> {
-    if (!record(value) || !onlyKeys(value, ["contractVersion", "expectedInstanceVersion", "invocationId", "outcomeId", "reasonCode"]) || value.contractVersion !== "1" || !safeId(value.outcomeId) || !safeId(value.invocationId) || !safeId(value.reasonCode) || !Number.isSafeInteger(value.expectedInstanceVersion) || (value.expectedInstanceVersion as number) < 1) return invalid("Workflow Step rejection request is invalid");
+    if (!record(value) || !onlyKeys(value, ["actorId", "contractVersion", "expectedInstanceVersion", "invocationId", "outcomeId", "reasonCode"]) || value.contractVersion !== "1" || !safeId(value.actorId) || !safeId(value.outcomeId) || !safeId(value.invocationId) || !safeId(value.reasonCode) || !Number.isSafeInteger(value.expectedInstanceVersion) || (value.expectedInstanceVersion as number) < 1) return invalid("Workflow Step rejection request is invalid");
     return validationSuccess(freeze(structuredClone(value as unknown as WorkflowStepRejectionRequest)));
   }
 }
@@ -50,7 +51,7 @@ export class WorkflowStepOutcomeRequestValidator implements Validator<WorkflowSt
 
 export class WorkflowStepOutcomeReceiptValidator implements Validator<WorkflowStepOutcomeReceipt> {
   public validate(value: unknown): ValidationResult<WorkflowStepOutcomeReceipt> {
-    if (!record(value) || value.contractVersion !== "1" || !safeId(value.outcomeId) || !safeId(value.invocationId) || !fingerprint(value.invocationFingerprint) || !fingerprint(value.fingerprint) || !safeId(value.instanceId) || !safeId(value.stepId) || !["ACCEPTED_FOR_COMPLETION", "NEEDS_REVISION", "REJECTED", "FAILED", "INVALID", "BLOCKED"].includes(value.decision as string) || !timestamp(value.reviewedAt) || !boundedStrings(value.remediation) || value.externalEffects !== false) return invalid("Workflow Step outcome receipt is invalid");
+    if (!record(value) || !receiptKeys(value) || value.contractVersion !== "1" || !safeId(value.outcomeId) || !safeId(value.invocationId) || !fingerprint(value.invocationFingerprint) || !fingerprint(value.fingerprint) || !safeId(value.instanceId) || !safeId(value.stepId) || !["ACCEPTED_FOR_COMPLETION", "NEEDS_REVISION", "REJECTED", "FAILED", "INVALID", "BLOCKED"].includes(value.decision as string) || !timestamp(value.reviewedAt) || !boundedStrings(value.remediation) || value.externalEffects !== false || (value.reviewerActorId !== undefined && !safeId(value.reviewerActorId))) return invalid("Workflow Step outcome receipt is invalid");
     if (value.decision === "ACCEPTED_FOR_COMPLETION") {
       if (!Number.isSafeInteger(value.resultingInstanceVersion) || (value.resultingInstanceVersion as number) < 1 || !safeId(value.workflowEventId) || (value.remediation as readonly unknown[]).length !== 0) return invalid("Accepted Workflow Step outcome receipt is invalid");
     } else if (value.resultingInstanceVersion !== undefined || value.workflowEventId !== undefined) return invalid("Non-accepted outcome cannot contain completion evidence");
@@ -65,6 +66,11 @@ export function createWorkflowStepOutcomeFingerprint(request: WorkflowStepOutcom
 }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function onlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean { return Object.keys(value).length === allowed.length && Object.keys(value).every((key) => allowed.includes(key)); }
+function receiptKeys(value: Record<string, unknown>): boolean {
+  const required = ["contractVersion", "decision", "externalEffects", "fingerprint", "instanceId", "invocationFingerprint", "invocationId", "outcomeId", "remediation", "reviewedAt", "stepId"];
+  const optional = ["resultingInstanceVersion", "reviewerActorId", "workflowEventId"];
+  return required.every((key) => key in value) && Object.keys(value).every((key) => required.includes(key) || optional.includes(key));
+}
 function safeId(value: unknown): value is string { return typeof value === "string" && value.length > 0 && value.length <= 128 && /^[a-zA-Z0-9@._:-]+$/u.test(value); }
 function fingerprint(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value); }
 function timestamp(value: unknown): value is string { return typeof value === "string" && value.length <= 40 && !Number.isNaN(Date.parse(value)); }

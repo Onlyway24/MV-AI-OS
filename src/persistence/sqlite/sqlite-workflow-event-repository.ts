@@ -98,7 +98,7 @@ export class SqliteWorkflowEventRepository implements WorkflowEventRepository {
       withSqliteErrors("workflow_event.list_by_instance", () => {
         const rows = this.#database
           .prepare(
-            "SELECT sequence, event_id, instance_id, command_id, occurred_at, record_json FROM workflow_events WHERE instance_id = ? ORDER BY sequence ASC LIMIT ?",
+            "SELECT sequence, event_id, instance_id, command_id, occurred_at, record_json FROM (SELECT sequence, event_id, instance_id, command_id, occurred_at, record_json FROM workflow_events WHERE instance_id = ? ORDER BY sequence DESC LIMIT ?) ORDER BY sequence ASC",
           )
           .all(instanceId, limit);
         return Object.freeze(rows.map((row) => this.#decodeRow(row)));

@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 import {
@@ -46,7 +47,7 @@ describe("MV-AI-OS Core V1 local vertical slice", () => {
       await runtime.close();
 
       const reopened = await createRuntime(path);
-      expect(await report(reopened, instance.instanceId, 3)).toEqual(completed);
+      expect(await report(reopened, instance.instanceId, 3)).toEqual({ ...completed, replayed: true });
       const verifier = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
       const evidence = await verifier.transaction(async ({ workflows }) => ({ approvals: await workflows.approvals.listBySnapshot(instance.instanceId, 0, "content-direction"), events: await workflows.events.listByInstanceId(instance.instanceId, 20), guardians: await workflows.guardians.listBySnapshot(instance.instanceId, 0, "content-direction"), instance: await workflows.instances.getById(instance.instanceId), invocation: await workflows.agentInvocations.getById("invocation-metodo-1"), outcome: await workflows.stepOutcomes.getById("outcome-metodo-1"), receipts: await workflows.receipts.listByInstanceId(instance.instanceId) }));
       expect(evidence).toMatchObject({ approvals: [{ status: "APPROVED" }], guardians: [{ status: "CLEAR" }, { status: "CLEAR" }], instance: { status: "COMPLETED", version: 3 }, invocation: { status: "COMPLETED" }, outcome: { decision: "ACCEPTED_FOR_COMPLETION" } });
@@ -79,11 +80,46 @@ describe("MV-AI-OS Core V1 local vertical slice", () => {
       for (const domain of ["operator_safety", "quality"] as const) await run(runtime, "RECORD_GUARDIAN", { checkpoint: { contractVersion: "1", definitionId: retryDefinition.definitionId, domain, evidenceId: `guardian-${domain}-retry`, guardianId: `${domain}-guardian`, instanceId: "retry-instance", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-07-02T10:00:01.000Z", status: "CLEAR", stepId: "content-direction", workflowVersion: "1.0.0" } });
       const retryBoundary = candidateRequest("retry-instance", retryDefinition.definitionId, 0);
       expect(await run(runtime, "INVOKE_AGENT", { boundaryRequest: retryBoundary, contractVersion: "1", invocationId: "invocation-retry-1" })).toMatchObject({ result: { status: "COMPLETED" } });
-      await run(runtime, "REJECT_OUTCOME", { contractVersion: "1", expectedInstanceVersion: 2, invocationId: "invocation-retry-1", outcomeId: "outcome-retry-rejected", reasonCode: "operator_rejected_result" });
-      await run(runtime, "FAIL_STEP", { actorId: "runtime-local", category: "TRANSIENT_RUNTIME", commandId: "fail-retry-command", contractVersion: "1", expectedVersion: 2, failureId: "failure-retry-1", instanceId: "retry-instance", invocationId: "invocation-retry-1", maxAttempts: 3, reasonCode: "rejected_result", stepId: "content-direction" }, "fail-retry-command");
+      await run(runtime, "REJECT_OUTCOME", { actorId: "actor-local", contractVersion: "1", expectedInstanceVersion: 2, invocationId: "invocation-retry-1", outcomeId: "outcome-retry-rejected", reasonCode: "operator_rejected_result" });
+      await run(runtime, "FAIL_STEP", { actorId: "runtime-local", category: "VALIDATION", commandId: "fail-retry-command", contractVersion: "1", expectedVersion: 2, failureId: "failure-retry-1", instanceId: "retry-instance", invocationId: "invocation-retry-1", maxAttempts: 3, reasonCode: "rejected_result", stepId: "content-direction" }, "fail-retry-command");
       expect(await report(runtime, "retry-instance", 3)).toMatchObject({ result: { retry: { attemptsRemaining: 2, retryable: true } } });
       await run(runtime, "AUTHORIZE_RETRY", { actorId: "actor-local", authorizationId: "retry-auth-1", contractVersion: "1", expectedVersion: 3, failureId: "failure-retry-1", instanceId: "retry-instance", stepId: "content-direction" });
       await run(runtime, "EXECUTE_RETRY", { actorId: "actor-local", authorizationId: "retry-auth-1", commandId: "execute-retry-command", contractVersion: "1", executionId: "retry-execution-1", expectedVersion: 3, failureId: "failure-retry-1", instanceId: "retry-instance", stepId: "content-direction" }, "execute-retry-command");
+
+      await run(runtime, "RECORD_GUARDIAN", {
+        checkpoint: {
+          contractVersion: "1",
+          definitionId: retryDefinition.definitionId,
+          domain: "operator_safety",
+          evidenceId: "guardian-operator-safety-retry-v4",
+          guardianId: "operator_safety-guardian",
+          instanceId: "retry-instance",
+          instanceVersion: 4,
+          nonExecuting: true,
+          recordedAt: "2026-07-02T10:00:02.000Z",
+          status: "CLEAR",
+          stepId: "content-direction",
+          workflowVersion: "1.0.0",
+        },
+      });
+
+      await run(runtime, "RECORD_GUARDIAN", {
+        checkpoint: {
+          contractVersion: "1",
+          definitionId: retryDefinition.definitionId,
+          domain: "quality",
+          evidenceId: "guardian-quality-retry-v4",
+          guardianId: "quality-guardian",
+          instanceId: "retry-instance",
+          instanceVersion: 4,
+          nonExecuting: true,
+          recordedAt: "2026-07-02T10:00:03.000Z",
+          status: "CLEAR",
+          stepId: "content-direction",
+          workflowVersion: "1.0.0",
+        },
+      });
+
       expect(await report(runtime, "retry-instance", 4)).toMatchObject({ result: { overallStatus: "ACTIVE", readySteps: [{ stepId: "content-direction" }] } });
 
       const timeoutDefinition = workflowDefinition("timeout@1.0.0", "timeout", "Exercise explicit timeout evaluation.");
@@ -113,7 +149,7 @@ describe("MV-AI-OS Core V1 local vertical slice", () => {
   });
 });
 
-async function run(runtime: LocalRuntime, operation: LocalWorkflowCommand["operation"], input: Readonly<Record<string, unknown>>, commandId = `core-${operation.toLowerCase()}`) { if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow commands unavailable"); return runtime.executeWorkflowCommand({ actorId: "actor-local", commandId, contractVersion: "1", input, operation, workspaceId: "workspace-local" }); }
+async function run(runtime: LocalRuntime, operation: LocalWorkflowCommand["operation"], input: Readonly<Record<string, unknown>>, commandId = `core-${operation.toLowerCase()}-${createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 16)}`) { if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow commands unavailable"); return runtime.executeWorkflowCommand({ actorId: "actor-local", commandId, contractVersion: "1", input, operation, workspaceId: "workspace-local" }); }
 function report(runtime: LocalRuntime, instanceId: string, expectedVersion: number) { return run(runtime, "GET_OPERATOR_REPORT", { contractVersion: "1", expectedVersion, instanceId, maxItems: 50 }); }
 function lifecycleControl(controlId: string, commandId: string, instanceId: string, expectedVersion: number) { return { actorId: "actor-local", commandId, contractVersion: "1", controlId, expectedVersion, instanceId, reasonCode: "operator_control" }; }
 function workflowDefinition(definitionId: string, workflowId: string, missionObjective: string, approvalRequired = false, guardianRequired = false): WorkflowDefinition { return { contractVersion: "1", definitionId, missionObjective, nonExecuting: true, steps: [{ approvalRequired, dependencies: [], guardianRequired, nonExecuting: true, stepId: "content-direction" }], workflowId, workflowVersion: "1.0.0" }; }

@@ -24,12 +24,13 @@ describe("Operator Workflow Report", () => {
       externalActions: { evidenceComplete: true, unauthorizedActionOccurred: false },
       nextAction: "Record Fabio approval for step content-direction at Workflow version 0.",
     });
-    expect(first.blockedSteps[0]?.reasons).toEqual(["Fabio approval required", "Guardian decision required"]);
+    expect(first.blockedSteps[0]?.reasons).toEqual(["Fabio approval required", "Guardian operator_safety decision required"]);
     expect(Object.isFrozen(first)).toBe(true);
 
     await runner.transaction(async ({ workflows }) => {
       await workflows.approvals.insert({ authorityActorId: "fabio", contractVersion: "1", definitionId: "metodo@1.0.0", evidenceId: "approval-17", instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:01.000Z", scope: "STEP_CANDIDATE_PREPARATION", status: "APPROVED", stepId: "content-direction", workflowVersion: "1.0.0" });
-      await workflows.guardians.insert({ contractVersion: "1", definitionId: "metodo@1.0.0", domain: "quality", evidenceId: "guardian-quality-17", guardianId: "quality-guardian", instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:02.000Z", status: "CLEAR", stepId: "content-direction", workflowVersion: "1.0.0" });
+      await workflows.controlEvents.append({ checkpointId: "approval-17", checkpointKind: "APPROVAL", contractVersion: "1", eventId: "approval-event-17", instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, occurredAt: "2026-01-01T00:00:01.000Z", status: "APPROVED", stepId: "content-direction", summaryCode: "workflow_control_checkpoint_recorded" });
+      for (const domain of ["operator_safety", "quality"] as const) { const evidenceId = `guardian-${domain}-17`; await workflows.guardians.insert({ contractVersion: "1", definitionId: "metodo@1.0.0", domain, evidenceId, guardianId: `${domain}-guardian`, instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:02.000Z", status: "CLEAR", stepId: "content-direction", workflowVersion: "1.0.0" }); await workflows.controlEvents.append({ checkpointId: evidenceId, checkpointKind: "GUARDIAN", contractVersion: "1", eventId: `${evidenceId}-event`, instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, occurredAt: "2026-01-01T00:00:02.000Z", status: "CLEAR", stepId: "content-direction", summaryCode: "workflow_control_checkpoint_recorded" }); }
     });
     const cleared = await service.create(request());
     expect(cleared.nextAction).toBe("Select and invoke the controlled candidate for step content-direction at Workflow version 0.");

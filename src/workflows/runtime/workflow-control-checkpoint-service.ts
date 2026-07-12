@@ -25,6 +25,7 @@ export interface RepositoryBackedWorkflowControlCheckpointDependencies {
   readonly eventDraftValidator: Validator<WorkflowControlCheckpointEventDraft>;
   readonly eventIds: WorkflowControlCheckpointEventIdentifierGenerator;
   readonly guardianValidator: Validator<WorkflowGuardianCheckpoint>;
+  readonly guardianAuthorities?: Readonly<Partial<Record<WorkflowGuardianCheckpoint["domain"], string>>>;
   readonly operatorActorId: string;
   readonly repositories: RepositoryTransactionRunner;
 }
@@ -83,6 +84,8 @@ export class RepositoryBackedWorkflowControlCheckpointService
       this.#trustedGuardianValidator,
       "Workflow Guardian checkpoint",
     );
+    const expectedGuardianId = this.#dependencies.guardianAuthorities?.[valid.domain] ?? `guardian-${valid.domain.replace("_", "-")}`;
+    if (valid.guardianId !== expectedGuardianId) throw new RepositoryValidationError("Workflow Guardian authority is not permitted");
     return this.#dependencies.repositories.transaction(async ({ workflows }) => {
       const existing = await workflows.guardians.getById(valid.evidenceId);
       if (existing !== undefined) {

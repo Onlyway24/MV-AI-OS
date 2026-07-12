@@ -22,12 +22,14 @@ import {
   InProcessAgentRuntime,
   SqliteRepositoryTransactionRunner,
   createWorkflowAgentInvoker,
+  createWorkflowControlCheckpointService,
   createWorkflowLifecycleService,
   createWorkflowPersistenceService,
   createWorkflowStepExecutionBoundary,
   type AgentInvocation,
   type AgentRuntime,
   type ControlledWorkflowAgentInvocationRequest,
+  type WorkflowControlCheckpointEventIdentifierGenerator,
   type WorkflowDefinition,
   type WorkflowEventIdentifierGenerator,
   type WorkflowInstance,
@@ -165,12 +167,48 @@ class FailOnTransactionRunner implements RepositoryTransactionRunner {
 }
 class WorkflowEventIds implements WorkflowEventIdentifierGenerator { #value = 0; public nextWorkflowEventId() { this.#value += 1; return `workflow-event-${String(this.#value)}`; } }
 
+class WorkflowControlEventIds
+  implements WorkflowControlCheckpointEventIdentifierGenerator {
+  #value = 0;
+
+  public nextWorkflowControlCheckpointEventId(): string {
+    this.#value += 1;
+    return `workflow-control-event-${String(this.#value)}`;
+  }
+}
+
 async function seed(runner: SqliteRepositoryTransactionRunner): Promise<void> {
-  const service = createWorkflowPersistenceService({ eventIds: new WorkflowEventIds(), repositories: runner, stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()) });
-  await service.createDefinition(definition()); await service.createInstance(instance());
-  await runner.transaction(async ({ workflows }) => {
-    for (const domain of ["operator_safety", "quality"] as const) await workflows.guardians.insert({ contractVersion: "1", definitionId: "content-workflow@1.0.0", domain, evidenceId: `guardian-${domain}`, guardianId: `${domain}-guardian`, instanceId: "content-instance", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:00.000Z", status: "CLEAR", stepId: "direction", workflowVersion: "1.0.0" });
+  const persistenceService = createWorkflowPersistenceService({
+    eventIds: new WorkflowEventIds(),
+    repositories: runner,
+    stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()),
   });
+
+  await persistenceService.createDefinition(definition());
+  await persistenceService.createInstance(instance());
+
+  const checkpointService = createWorkflowControlCheckpointService({
+    eventIds: new WorkflowControlEventIds(),
+    operatorActorId: "fabio",
+    repositories: runner,
+  });
+
+  for (const domain of ["operator_safety", "quality"] as const) {
+    await checkpointService.recordGuardian({
+      contractVersion: "1",
+      definitionId: "content-workflow@1.0.0",
+      domain,
+      evidenceId: `guardian-${domain}`,
+      guardianId: `guardian-${domain.replaceAll("_", "-")}`,
+      instanceId: "content-instance",
+      instanceVersion: 0,
+      nonExecuting: true,
+      recordedAt: "2026-01-01T00:00:00.000Z",
+      status: "CLEAR",
+      stepId: "direction",
+      workflowVersion: "1.0.0",
+    });
+  }
 }
 function definition(): WorkflowDefinition { return { contractVersion: "1", definitionId: "content-workflow@1.0.0", nonExecuting: true, steps: [{ approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "direction" }], workflowId: "content-workflow", workflowVersion: "1.0.0" }; }
 function instance(): WorkflowInstance { return { contractVersion: "1", createdAt: "2026-01-01T00:00:00.000Z", definitionId: "content-workflow@1.0.0", instanceId: "content-instance", nonExecuting: true, receipts: [], status: "ACTIVE", steps: [{ blockers: [], status: "PENDING", stepId: "direction" }], stopReason: "NONE", updatedAt: "2026-01-01T00:00:00.000Z", version: 0 }; }

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { ContentDirectionArtifactValidator, type ContentDirectionArtifact } from "../../agents/content/deterministic-content-director.js";
 import type { AgentRuntimeResolver } from "../../agents/agent-runtime-resolution.js";
 import { RepositoryConflictError, RepositoryValidationError } from "../../errors/core-error.js";
@@ -26,6 +28,7 @@ export interface RepositoryBackedWorkflowStepOutcomeDependencies {
   readonly repositories: RepositoryTransactionRunner;
   readonly requestValidator: Validator<WorkflowStepOutcomeRequest>;
   readonly resolver: AgentRuntimeResolver;
+  readonly operatorActorId: string;
   readonly stateMachine: DeterministicWorkflowStateMachine;
 }
 
@@ -99,16 +102,17 @@ export class RepositoryBackedWorkflowStepOutcomeService implements WorkflowStepO
 
   public reject(request: WorkflowStepRejectionRequest): Promise<WorkflowStepOutcomeResult> {
     const trusted = validate(request, new WorkflowStepRejectionRequestValidator(), "Workflow Step rejection request");
+    if (trusted.actorId !== this.dependencies.operatorActorId) throw new RepositoryConflictError("Workflow Step rejection requires the configured operator");
     return this.dependencies.repositories.transaction(async ({ workflows }) => {
       const invocation = await workflows.agentInvocations.getById(trusted.invocationId);
       if (invocation === undefined) throw new RepositoryConflictError("Workflow Step rejection invocation is missing");
+      const fingerprint = createHash("sha256").update(JSON.stringify({ invocationFingerprint: invocation.fingerprint, request: trusted }), "utf8").digest("hex");
+      const existing = await workflows.stepOutcomes.getByInvocationId(trusted.invocationId);
+      if (existing !== undefined) { if (existing.fingerprint !== fingerprint) throw new RepositoryConflictError("Workflow Step rejection conflicts with prior outcome"); return freeze({ contractVersion: "1", receipt: existing, replayed: true }); }
       if (invocation.status !== "COMPLETED") throw new RepositoryConflictError("Only a completed Agent result can be explicitly rejected");
       const instance = await workflows.instances.getById(invocation.instanceId);
       if (instance?.version !== trusted.expectedInstanceVersion || instance.steps.find(({ stepId }) => stepId === invocation.stepId)?.status !== "AWAITING_RESULT") throw new RepositoryConflictError("Workflow Step rejection snapshot is stale or invalid");
-      const fingerprint = createWorkflowStepOutcomeFingerprint(trusted, `${invocation.fingerprint}:${trusted.reasonCode}`);
-      const existing = await workflows.stepOutcomes.getByInvocationId(trusted.invocationId);
-      if (existing !== undefined) { if (existing.fingerprint !== fingerprint) throw new RepositoryConflictError("Workflow Step rejection conflicts with prior outcome"); return freeze({ contractVersion: "1", receipt: existing, replayed: true }); }
-      const receipt = validate({ contractVersion: "1", decision: "REJECTED", externalEffects: false, fingerprint, instanceId: invocation.instanceId, invocationFingerprint: invocation.fingerprint, invocationId: invocation.invocationId, outcomeId: trusted.outcomeId, remediation: [`Operator rejected result: ${trusted.reasonCode}`], reviewedAt: now(this.dependencies.clock), stepId: invocation.stepId }, new WorkflowStepOutcomeReceiptValidator(), "Workflow Step rejection receipt");
+      const receipt = validate({ contractVersion: "1", decision: "REJECTED", externalEffects: false, fingerprint, instanceId: invocation.instanceId, invocationFingerprint: invocation.fingerprint, invocationId: invocation.invocationId, outcomeId: trusted.outcomeId, remediation: [`Operator rejected result: ${trusted.reasonCode}`], reviewedAt: now(this.dependencies.clock), reviewerActorId: trusted.actorId, stepId: invocation.stepId }, new WorkflowStepOutcomeReceiptValidator(), "Workflow Step rejection receipt");
       await workflows.stepOutcomes.insert(receipt);
       return freeze({ contractVersion: "1", receipt, replayed: false });
     });
@@ -132,7 +136,7 @@ export class RepositoryBackedWorkflowStepOutcomeService implements WorkflowStepO
   }
 }
 
-export function createWorkflowStepOutcomeService(dependencies: Omit<RepositoryBackedWorkflowStepOutcomeDependencies, "requestValidator" | "stateMachine">): RepositoryBackedWorkflowStepOutcomeService { return new RepositoryBackedWorkflowStepOutcomeService({ ...dependencies, requestValidator: new WorkflowStepOutcomeRequestValidator(), stateMachine: new DeterministicWorkflowStateMachine(dependencies.clock) }); }
+export function createWorkflowStepOutcomeService(dependencies: Omit<RepositoryBackedWorkflowStepOutcomeDependencies, "operatorActorId" | "requestValidator" | "stateMachine"> & { readonly operatorActorId?: string }): RepositoryBackedWorkflowStepOutcomeService { return new RepositoryBackedWorkflowStepOutcomeService({ ...dependencies, operatorActorId: dependencies.operatorActorId ?? "fabio", requestValidator: new WorkflowStepOutcomeRequestValidator(), stateMachine: new DeterministicWorkflowStateMachine(dependencies.clock) }); }
 
 function assess(artifact: ContentDirectionArtifact): { readonly decision: "ACCEPTED_FOR_COMPLETION" | "NEEDS_REVISION" | "REJECTED"; readonly remediation: readonly string[] } {
   const remediation = [

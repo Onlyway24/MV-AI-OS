@@ -164,7 +164,7 @@ export class WorkflowRetryExecutionRequestValidator implements Validator<Workflo
 
 export class WorkflowLifecycleRecordValidator implements Validator<WorkflowLifecycleRecord> {
   public validate(value: unknown): ValidationResult<WorkflowLifecycleRecord> {
-    if (!record(value) || value.contractVersion !== "1" || !ids(value, ["actorId", "definitionId", "fingerprint", "instanceId", "recordId", "stepId", "workflowVersion"]) || !fingerprint(value.fingerprint) || !version(value.instanceVersion) || !timestamp(value.recordedAt) || value.externalEffects !== false || !instructions(value.recoveryInstructions) || !["CANCELLATION", "FAILURE", "PAUSE", "RESUME", "RETRY_AUTHORIZATION", "RETRY_EXECUTION", "TIMEOUT_EVALUATION"].includes(value.kind as string)) return invalid("Workflow lifecycle record is invalid");
+    if (!record(value) || !lifecycleRecordKeys(value) || value.contractVersion !== "1" || !ids(value, ["actorId", "definitionId", "fingerprint", "instanceId", "recordId", "stepId", "workflowVersion"]) || !fingerprint(value.fingerprint) || !version(value.instanceVersion) || !timestamp(value.recordedAt) || value.externalEffects !== false || !instructions(value.recoveryInstructions) || !["CANCELLATION", "FAILURE", "PAUSE", "RESUME", "RETRY_AUTHORIZATION", "RETRY_EXECUTION", "TIMEOUT_EVALUATION"].includes(value.kind as string)) return invalid("Workflow lifecycle record is invalid");
     if (value.kind === "FAILURE" && (!safeId(value.invocationId) || value.failureId !== undefined || value.authorizationId !== undefined || !FAILURE_CATEGORIES.has(value.category as string) || !positive(value.attempt) || !attemptLimit(value.maxAttempts) || typeof value.retryable !== "boolean" || value.retryDecision !== undefined || (value.category === "TIMEOUT" ? !boundedTimeout(value.timeoutMs) : value.timeoutMs !== undefined))) return invalid("Workflow failure record is invalid");
     if (value.kind === "RETRY_AUTHORIZATION" && (!safeId(value.failureId) || value.authorizationId !== undefined || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || !RETRY_DECISIONS.has(value.retryDecision as string) || value.timeoutMs !== undefined)) return invalid("Workflow retry authorization record is invalid");
     if (value.kind === "RETRY_EXECUTION" && (!safeId(value.failureId) || !safeId(value.authorizationId) || value.invocationId !== undefined || value.category !== undefined || value.attempt !== undefined || value.maxAttempts !== undefined || value.retryable !== undefined || value.retryDecision !== undefined || value.timeoutMs !== undefined)) return invalid("Workflow retry execution record is invalid");
@@ -189,13 +189,18 @@ export function createWorkflowLifecycleFingerprint(value: WorkflowControlRequest
   return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex");
 }
 
-export function isRetryableFailureCategory(value: WorkflowFailureCategory): boolean { return value === "TIMEOUT" || value === "TRANSIENT_RUNTIME"; }
+export function isRetryableFailureCategory(value: WorkflowFailureCategory): boolean { return value === "TIMEOUT" || value === "TRANSIENT_RUNTIME" || value === "VALIDATION"; }
 
 const FAILURE_CATEGORIES = new Set(["TIMEOUT", "TRANSIENT_RUNTIME", "VALIDATION", "POLICY", "SAFETY", "PERMANENT"]);
 const RETRY_DECISIONS = new Set(["AUTHORIZED", "DENIED_EXHAUSTED", "DENIED_NON_RETRYABLE"]);
 const CONTROL_ACTIONS = new Set(["CANCEL", "PAUSE", "RESUME"]);
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function onlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean { return Object.keys(value).length === allowed.length && Object.keys(value).every((key) => allowed.includes(key)); }
+function lifecycleRecordKeys(value: Record<string, unknown>): boolean {
+  const required = ["actorId", "contractVersion", "definitionId", "externalEffects", "fingerprint", "instanceId", "instanceVersion", "kind", "recordId", "recordedAt", "recoveryInstructions", "stepId", "workflowVersion"];
+  const optional = ["attempt", "authorizationId", "category", "failureId", "invocationId", "maxAttempts", "retryDecision", "retryable", "timeoutMs"];
+  return required.every((key) => key in value) && Object.keys(value).every((key) => required.includes(key) || optional.includes(key));
+}
 function safeId(value: unknown): value is string { return typeof value === "string" && value.length > 0 && value.length <= 128 && /^[a-zA-Z0-9@._:-]+$/u.test(value); }
 function ids(value: Record<string, unknown>, keys: readonly string[]): boolean { return keys.every((key) => safeId(value[key])); }
 function fingerprint(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value); }
