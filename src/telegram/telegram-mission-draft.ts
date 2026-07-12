@@ -30,6 +30,7 @@ export type TelegramMissionDraftStatus =
   | "COLLECTING"
   | "CONFIRMED"
   | "EXPIRED"
+  | "PLANNING_AUTHORIZED"
   | "REVIEW_READY";
 
 export type TelegramMissionDraftField =
@@ -40,9 +41,11 @@ export type TelegramMissionDraftField =
   | "DEADLINE"
   | "DELIVERABLES"
   | "EXTERNAL_ACTIONS"
+  | "KNOWN_FACTS"
   | "MISSION_TYPE"
   | "OBJECTIVE"
   | "OBJECTIVE_DETAILS"
+  | "APPROVAL_POLICY"
   | "PROFILE_SELECTION"
   | "SUCCESS_METRICS"
   | "UNKNOWNS";
@@ -103,6 +106,7 @@ export interface TelegramMissionDraft {
   readonly successMetrics?: readonly MissionSuccessMetric[];
   readonly knownFacts?: readonly MissionKnownFact[];
   readonly reviewContextFingerprint?: string;
+  readonly planningContextFingerprint?: string;
   readonly terminalReasonCode?: TelegramMissionDraftTerminalReasonCode;
 }
 
@@ -136,6 +140,7 @@ const TOP_LEVEL_KEYS = new Set([
   "objectiveDetails",
   "missionApprovalPolicy",
   "profileSelection",
+  "planningContextFingerprint",
   "successMetrics",
   "knownFacts",
   "reviewContextFingerprint",
@@ -154,6 +159,7 @@ const STATUSES = new Set<TelegramMissionDraftStatus>([
   "COLLECTING",
   "CONFIRMED",
   "EXPIRED",
+  "PLANNING_AUTHORIZED",
   "REVIEW_READY",
 ]);
 const FIELDS = new Set<TelegramMissionDraftField>([
@@ -164,9 +170,11 @@ const FIELDS = new Set<TelegramMissionDraftField>([
   "DEADLINE",
   "DELIVERABLES",
   "EXTERNAL_ACTIONS",
+  "KNOWN_FACTS",
   "MISSION_TYPE",
   "OBJECTIVE",
   "OBJECTIVE_DETAILS",
+  "APPROVAL_POLICY",
   "PROFILE_SELECTION",
   "SUCCESS_METRICS",
   "UNKNOWNS",
@@ -356,6 +364,9 @@ function validateOptionalMissionFields(
   if (record.reviewContextFingerprint !== undefined && (typeof record.reviewContextFingerprint !== "string" || !IDENTITY_HASH_PATTERN.test(record.reviewContextFingerprint))) {
     issue(issues, "invalid_format", "reviewContextFingerprint must be a SHA-256 hex hash", "reviewContextFingerprint");
   }
+  if (record.planningContextFingerprint !== undefined && (typeof record.planningContextFingerprint !== "string" || !IDENTITY_HASH_PATTERN.test(record.planningContextFingerprint))) {
+    issue(issues, "invalid_format", "planningContextFingerprint must be a SHA-256 hex hash", "planningContextFingerprint");
+  }
   if (
     record.missionType !== undefined &&
     (typeof record.missionType !== "string" ||
@@ -398,6 +409,16 @@ function validateStatusConsistency(
     if (record.terminalReasonCode !== undefined) {
       issue(issues, "invalid_value", "confirmed drafts cannot have a terminal reason", "terminalReasonCode");
     }
+    return;
+  }
+  if (record.status === "PLANNING_AUTHORIZED") {
+    requiredTimestamp(record, "confirmedAt", issues);
+    for (const key of ["reviewContextFingerprint", "planningContextFingerprint"] as const) {
+      if (typeof record[key] !== "string" || !IDENTITY_HASH_PATTERN.test(record[key])) {
+        issue(issues, "required", "planning-authorized drafts require exact context fingerprints", key);
+      }
+    }
+    if (record.terminalReasonCode !== undefined) issue(issues, "invalid_value", "planning-authorized drafts cannot have a terminal reason", "terminalReasonCode");
     return;
   }
   if (record.status === "CANCELLED" || record.status === "EXPIRED") {

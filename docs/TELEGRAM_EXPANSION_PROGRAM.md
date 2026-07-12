@@ -13,10 +13,11 @@ bounded operations, identity/version binding, and legal transitions without read
 clock, writing storage, or activating Telegram. Checkpoints A, B, and C are complete:
 conversion context is exact and review-bound, SQLite draft operations are durable and
 replay-safe, and one authorized session is atomically coordinated with one exact
-draft and one-use callbacks. Guided Telegram UX and planning integration remain Phase
-1B.2. `/mission` remains inactive. No Mission,
-Workflow, or external action is executed. Phase 1C Core V1 Workflow Flow has not
-started.
+draft and one-use callbacks. Checkpoint D delivers Phase 1B.2: `/mission` is the
+guided private Telegram Mission Planning Console. It requires separate data and
+planning confirmations and invokes only the existing deterministic Mission validation,
+planner, and Quality Gate boundaries. It creates no Workflow and performs no external
+action. Phase 1C Core V1 Workflow Flow has not started.
 
 ## Phase 2 — Developer Control Plane
 

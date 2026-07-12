@@ -24,13 +24,17 @@ network access, resolves the token only in memory, removes the webhook while dro
 pending historical updates, establishes a fresh polling position, and requests only
 `message` and `callback_query`. Every process stops cleanly on SIGINT/SIGTERM.
 
-Phase 1A accepts only `/start`, `/help`, `/status`, `/cancel_action`, `/stop`, and
-`/developer`. `/stop` requires a second explicit `/stop` confirmation and never
-changes a Core V1 Workflow. The Developer response is inactive by design. Mission
-planning and Workflow controls are hidden until Phase 1B and 1C. It replies only in
-the configured private chat. Unknown, group, channel, forwarded, edited, business,
-media, contact, location, and unauthorized updates are discarded before the Local
-Runtime is reached.
+Phase 1 accepts `/start`, `/help`, `/status`, `/mission`, `/cancel_action`, `/stop`,
+and `/developer`; `/workflows` and `/report` remain hidden. `/mission` collects only
+the structured FounderMissionBrief data, shows an Italian review, requires “Conferma
+dati Missione”, then requires the separately bound “Genera piano Missione” action
+before running the local deterministic Mission validation, planner, and Quality Gate.
+It never creates a Workflow or runs an Agent Runtime, model, provider, tool, network,
+or external action. `/stop` requires a second explicit `/stop` confirmation and never
+changes a Core V1 Workflow. The Developer response is inactive by design. It replies
+only in the configured private chat. Unknown, group, channel, forwarded, edited,
+business, media, contact, location, and unauthorized updates are discarded before the
+Local Runtime is reached.
 
 Phase 1 creates no transcript and stores no raw Update, message text, names,
 usernames, language, profile, contact, location, media, response body, or token.
@@ -43,5 +47,5 @@ command remains replay-safe and is never repeated solely to retry delivery.
 
 Verify BotFather settings above, exact user/chat allowlisting, `/start`, a rejected
 unknown sender, a rejected forwarded message, restart behavior, and graceful stop.
-Do not enable Developer Mode, H24, tools, external models, Mission planning, Workflow
-controls, n8n, Web Console, or any Phase 2 capability.
+Do not enable Developer Mode, H24, tools, external models, Workflow controls, n8n,
+Web Console, or any Phase 2 capability.

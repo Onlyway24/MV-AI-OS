@@ -187,9 +187,15 @@ and tests, not intended future behavior.
   coordinated atomically with one exact draft. Session/draft creation, updates,
   navigation, review, confirmation, cancellation, expiry, restart recovery, and
   one-use callbacks preserve synchronized optimistic versions and privacy-safe state.
-  `/mission` remains inactive and no planning, Workflow, Agent Runtime, model,
-  provider, tool, network, or external action is reachable from this boundary.
-- The next milestone is Workflow Specification Admission Boundary.
+- Phase 1B Checkpoint D is complete. `/mission` now provides bounded Italian guided
+  Mission collection from the real FounderMissionBrief requirements, exact profile and
+  conversion-context selection, review/edit/cancel/restart behavior, explicit draft
+  confirmation, separately bound planning authorization, existing deterministic
+  Mission validation/planning/Quality Gate, durable command replay, and a
+  restart-safe result. The console creates no Workflow and invokes no Agent Runtime,
+  model, provider, tool, network, or external action. The private Bot API transport
+  remains the only Telegram access path.
+- Phase 1C Workflow controls remain unstarted.
 
 ## Current architecture
 

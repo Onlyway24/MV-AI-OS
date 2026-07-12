@@ -16,7 +16,7 @@ export interface TelegramMissionDraftSessionCommand {
   readonly actorId: string;
   readonly authorizedIdentityHash: string;
   readonly contractVersion: "1";
-  readonly coordinationKind: "APPLY_FIELD" | "CANCEL" | "CONFIRM" | "EXPIRE" | "MARK_REVIEW_READY" | "MOVE_BACK" | "OPEN_REVIEW";
+  readonly coordinationKind: "APPLY_FIELD" | "AUTHORIZE_PLANNING" | "CANCEL" | "CONFIRM" | "EXPIRE" | "MARK_REVIEW_READY" | "MOVE_BACK" | "OPEN_REVIEW";
   readonly expectedDraftVersion: number;
   readonly expectedSessionVersion: number;
   readonly operation: TelegramMissionDraftOperation;
@@ -47,7 +47,7 @@ export class TelegramMissionDraftSessionCoordinator {
   public apply(command: TelegramMissionDraftSessionCommand): TelegramMissionDraftApplyResult { return this.store.applyMissionDraftSessionCommand(command); }
 
   public moveBackward(snapshot: TelegramMissionDraftSessionSnapshot, operationId: string): TelegramMissionDraftApplyResult {
-    const fields: readonly TelegramMissionDraft["currentField"][] = ["OBJECTIVE", "OBJECTIVE_DETAILS", "MISSION_TYPE", "AUDIENCE", "DELIVERABLES", "DEADLINE", "BUDGET", "CONSTRAINTS", "EXTERNAL_ACTIONS", "ASSUMPTIONS", "UNKNOWNS", "PROFILE_SELECTION", "SUCCESS_METRICS"];
+    const fields: readonly TelegramMissionDraft["currentField"][] = ["OBJECTIVE", "OBJECTIVE_DETAILS", "MISSION_TYPE", "AUDIENCE", "DELIVERABLES", "DEADLINE", "BUDGET", "CONSTRAINTS", "EXTERNAL_ACTIONS", "ASSUMPTIONS", "UNKNOWNS", "KNOWN_FACTS", "PROFILE_SELECTION", "SUCCESS_METRICS"];
     const index = fields.indexOf(snapshot.draft.currentField);
     const currentField = fields[Math.max(0, index - 1)] ?? "OBJECTIVE";
     const kind = snapshot.draft.status === "REVIEW_READY" ? "RETURN_TO_COLLECTING" : "SET_CURRENT_FIELD";
@@ -64,6 +64,10 @@ export class TelegramMissionDraftSessionCoordinator {
 
   public confirm(snapshot: TelegramMissionDraftSessionSnapshot, operationId: string, contextFingerprint: string): TelegramMissionDraftApplyResult {
     return this.apply(commandFor(snapshot, { ...operationBase(snapshot, operationId), kind: "CONFIRM_DRAFT", payload: { contextFingerprint } }, "CONFIRM"));
+  }
+
+  public authorizePlanning(snapshot: TelegramMissionDraftSessionSnapshot, operationId: string, contextFingerprint: string): TelegramMissionDraftApplyResult {
+    return this.apply(commandFor(snapshot, { ...operationBase(snapshot, operationId), kind: "AUTHORIZE_PLANNING", payload: { contextFingerprint } }, "AUTHORIZE_PLANNING"));
   }
 
   public cancel(snapshot: TelegramMissionDraftSessionSnapshot, operationId: string): TelegramMissionDraftApplyResult {

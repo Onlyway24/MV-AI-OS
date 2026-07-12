@@ -19,7 +19,11 @@ through immutable registries, profile substitution fails closed, every
 `FounderMissionBrief` field has documented provenance, and a deterministic conversion
 context is reviewable and confirmation-bound; draft operations are durable and
 replay-safe; and one authorized session/draft pair now advances atomically with exact
-one-use callback bindings. The guided `/mission` UX remains a subsequent checkpoint.
+one-use callback bindings. Checkpoint D delivers the complete guided `/mission`
+Mission Planning Console: structured collection, review, separate data and planning
+confirmations, deterministic Mission validation/planner/Quality Gate, and restart-safe
+Italian result presentation. It creates no Workflow; Phase 1C Workflow controls remain
+unstarted.
 
 ## Phase 0 — Architecture and engineering baseline
 
