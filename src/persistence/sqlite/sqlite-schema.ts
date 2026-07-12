@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 15;
+export const SQLITE_SCHEMA_VERSION = 16;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -55,6 +55,7 @@ const VERSION_TWELVE_TABLES = Object.freeze([...VERSION_ELEVEN_TABLES, "local_wo
 const VERSION_THIRTEEN_TABLES = Object.freeze([...VERSION_TWELVE_TABLES, "telegram_callback_tokens", "telegram_inbound_receipts", "telegram_operator_sessions", "telegram_outbound_deliveries", "telegram_pending_confirmations", "telegram_polling_state"]);
 const VERSION_FOURTEEN_TABLES = Object.freeze([...VERSION_THIRTEEN_TABLES, "telegram_operator_drafts"]);
 const VERSION_FIFTEEN_TABLES = Object.freeze([...VERSION_FOURTEEN_TABLES, "telegram_mission_draft_operations"]);
+const VERSION_SIXTEEN_TABLES = VERSION_FIFTEEN_TABLES;
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -183,6 +184,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 14, "durable_telegram_operator_sessions");
     applyTelegramMissionDraftMigration(database);
   }
+  const missionCoordinationVersion = readPragmaInteger(database, "user_version");
+  if (missionCoordinationVersion === 15) {
+    verifyDatabaseIdentity(database, 15);
+    verifyExpectedTables(database, VERSION_FIFTEEN_TABLES);
+    verifyMigration(database, 15, "durable_telegram_mission_drafts");
+    applyTelegramMissionCoordinationMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -205,7 +213,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_FIFTEEN_TABLES);
+  verifyExpectedTables(database, VERSION_SIXTEEN_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -221,6 +229,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 13, "controlled_telegram_operator_console");
   verifyMigration(database, 14, "durable_telegram_operator_sessions");
   verifyMigration(database, 15, "durable_telegram_mission_drafts");
+  verifyMigration(database, 16, "atomic_telegram_mission_sessions");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -871,6 +880,28 @@ function applyTelegramMissionDraftMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Telegram Mission draft migration failed");
+  }
+}
+
+function applyTelegramMissionCoordinationMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      ALTER TABLE telegram_callback_tokens ADD COLUMN mission_action TEXT;
+      ALTER TABLE telegram_callback_tokens ADD COLUMN draft_id TEXT;
+      ALTER TABLE telegram_callback_tokens ADD COLUMN expected_session_version INTEGER;
+      ALTER TABLE telegram_callback_tokens ADD COLUMN expected_draft_version INTEGER;
+      ALTER TABLE telegram_callback_tokens ADD COLUMN context_fingerprint TEXT;
+      ALTER TABLE telegram_callback_tokens ADD COLUMN operation_json TEXT CHECK (operation_json IS NULL OR json_valid(operation_json));
+      CREATE INDEX telegram_callback_tokens_mission_snapshot
+        ON telegram_callback_tokens (session_id, draft_id, expected_session_version, expected_draft_version);
+      INSERT OR IGNORE INTO schema_migrations (version, name) VALUES (16, 'atomic_telegram_mission_sessions');
+      PRAGMA user_version = 16;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Telegram Mission coordination migration failed");
   }
 }
 

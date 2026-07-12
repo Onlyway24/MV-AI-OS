@@ -711,7 +711,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
       await reopenedKnowledge.close();
 
       const verification = new DatabaseSync(path);
-      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(15);
+      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(16);
       expect(
         verification
           .prepare("SELECT name FROM schema_migrations WHERE version = 5")

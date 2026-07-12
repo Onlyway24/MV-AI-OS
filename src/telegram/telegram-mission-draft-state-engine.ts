@@ -354,7 +354,7 @@ function cancel(draft: TelegramMissionDraft, now: string): TelegramMissionDraft 
 
 function expire(draft: TelegramMissionDraft, now: string): TelegramMissionDraft {
   const base = withoutTerminalMetadata(draft);
-  return { ...base, status: "EXPIRED", terminalReasonCode: "expired", updatedAt: now, version: draft.version + 1 };
+  return { ...base, expiresAt: now, status: "EXPIRED", terminalReasonCode: "expired", updatedAt: now, version: draft.version + 1 };
 }
 
 function withoutTerminalMetadata(draft: TelegramMissionDraft): TelegramMissionDraft {

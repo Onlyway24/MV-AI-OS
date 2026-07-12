@@ -1924,3 +1924,21 @@ implicit persistence or execution path.
 SQLite operation receipts remain Phase 1B.1B, atomic session/draft integration remains
 Phase 1B.1C, and guided Telegram UX/planning remain Phase 1B.2. `/mission` remains
 inactive; no Mission, Workflow, or external action is executed.
+
+## ADR-074 — Telegram Mission sessions and drafts advance as one durable aggregate
+
+**Decision:** Phase 1B Checkpoint C treats the authorized operator session and its
+single Mission draft as one optimistic-version aggregate. Every logical mutation
+validates the exact session, draft, actor, workspace, authorized identity, version,
+action, context, and expiry, then commits the session, draft, receipt, and callback
+consumption atomically. Terminal cancellation and expiry minimize collected content
+and invalidate prior callbacks. Explicit-discard restart creates a new exact draft on
+the same authorized session only after terminal state.
+
+**Reason:** Independent durable records must not create partial progress, stale
+confirmation authority, ownership confusion, or restart ambiguity.
+
+**Future impact:** Phase 1B.2 may render this coordination boundary through a guided
+Telegram UX, but it must not duplicate its state machine or persistence logic. Public
+`/mission`, Mission planning, Quality Gate, and Workflow admission remain separate
+future authorization points.

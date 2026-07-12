@@ -22,6 +22,7 @@ export {
 export { FetchTelegramBotApiTransport, TelegramBotApiClient, type TelegramBotApiTransport } from "./telegram/telegram-bot-api.js";
 export { ControlledTelegramOperatorConsole } from "./telegram/telegram-operator-console.js";
 export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
+export { TelegramMissionDraftSessionCoordinator, telegramMissionCommandFingerprint, type TelegramMissionDraftCallback, type TelegramMissionDraftSessionCommand, type TelegramMissionDraftSessionSnapshot } from "./telegram/telegram-mission-draft-session-coordinator.js";
 export {
   TELEGRAM_MISSION_DRAFT_CONTRACT_VERSION,
   TelegramMissionDraftValidator,

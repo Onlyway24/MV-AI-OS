@@ -182,6 +182,13 @@ and tests, not intended future behavior.
   Mission-specific values remain explicitly structured draft values; no profile,
   objective text, Telegram metadata, model, tool, Workflow, network, or external
   action can supply or execute them.
+- Phase 1B Checkpoints B and C are complete. Structured Mission drafts and operation
+  receipts are durable in SQLite, and one exact authorized Telegram session is now
+  coordinated atomically with one exact draft. Session/draft creation, updates,
+  navigation, review, confirmation, cancellation, expiry, restart recovery, and
+  one-use callbacks preserve synchronized optimistic versions and privacy-safe state.
+  `/mission` remains inactive and no planning, Workflow, Agent Runtime, model,
+  provider, tool, network, or external action is reachable from this boundary.
 - The next milestone is Workflow Specification Admission Boundary.
 
 ## Current architecture

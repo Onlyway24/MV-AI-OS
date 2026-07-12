@@ -4,11 +4,12 @@ import type { LocalRuntime } from "../runtime/local-runtime.js";
 import type { TelegramOperatorConfig } from "./telegram-contracts.js";
 import { TelegramBotApiClient } from "./telegram-bot-api.js";
 import { TelegramSqliteStateStore } from "./telegram-sqlite-state-store.js";
+import type { TelegramMissionDraftSessionCoordinator } from "./telegram-mission-draft-session-coordinator.js";
 
 export class ControlledTelegramOperatorConsole {
   #started = false;
   #stopped = false;
-  public constructor(private readonly input: { readonly actorId: string; readonly api: TelegramBotApiClient; readonly config: TelegramOperatorConfig; readonly clock: Clock; readonly runtime: LocalRuntime; readonly state: TelegramSqliteStateStore; readonly workspaceId: string }) {}
+  public constructor(private readonly input: { readonly actorId: string; readonly api: TelegramBotApiClient; readonly config: TelegramOperatorConfig; readonly clock: Clock; readonly missionDrafts?: TelegramMissionDraftSessionCoordinator; readonly runtime: LocalRuntime; readonly state: TelegramSqliteStateStore; readonly workspaceId: string }) {}
 
   public async bootstrap(): Promise<void> {
     if (this.#started) return;
