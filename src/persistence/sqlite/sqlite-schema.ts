@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 11;
+export const SQLITE_SCHEMA_VERSION = 12;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -51,6 +51,7 @@ const VERSION_EIGHT_TABLES = Object.freeze([
 const VERSION_NINE_TABLES = VERSION_EIGHT_TABLES;
 const VERSION_TEN_TABLES = VERSION_NINE_TABLES;
 const VERSION_ELEVEN_TABLES = VERSION_TEN_TABLES;
+const VERSION_TWELVE_TABLES = Object.freeze([...VERSION_ELEVEN_TABLES, "local_workflow_commands", "local_workflow_ownership"]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -151,6 +152,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 10, "explicit_workflow_lifecycle_control");
     applyWorkflowTimeoutMigration(database);
   }
+  const productizationVersion = readPragmaInteger(database, "user_version");
+  if (productizationVersion === 11) {
+    verifyDatabaseIdentity(database, 11);
+    verifyExpectedTables(database, VERSION_ELEVEN_TABLES);
+    verifyMigration(database, 11, "explicit_workflow_timeout_evaluation");
+    applyCoreV1ProductizationMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -173,7 +181,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_ELEVEN_TABLES);
+  verifyExpectedTables(database, VERSION_TWELVE_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -185,6 +193,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 9, "explicit_workflow_retry_execution");
   verifyMigration(database, 10, "explicit_workflow_lifecycle_control");
   verifyMigration(database, 11, "explicit_workflow_timeout_evaluation");
+  verifyMigration(database, 12, "core_v1_local_productization");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -676,6 +685,33 @@ function applyWorkflowTimeoutMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Workflow timeout migration failed");
+  }
+}
+
+function applyCoreV1ProductizationMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE local_workflow_commands (
+        command_id TEXT PRIMARY KEY,
+        fingerprint TEXT NOT NULL,
+        operation TEXT NOT NULL,
+        response_json TEXT NOT NULL CHECK (json_valid(response_json))
+      ) STRICT;
+      CREATE TABLE local_workflow_ownership (
+        instance_id TEXT PRIMARY KEY REFERENCES workflow_instances (instance_id),
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX audit_events_workspace_correlation
+        ON audit_events (correlation_id, json_extract(record_json, '$.workspaceId'), sequence);
+      INSERT INTO schema_migrations (version, name) VALUES (12, 'core_v1_local_productization');
+      PRAGMA user_version = 12;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Core V1 productization migration failed");
   }
 }
 

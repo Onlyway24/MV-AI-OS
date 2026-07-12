@@ -1297,6 +1297,7 @@ export {
   LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION,
   LOCAL_WORKFLOW_OPERATIONS,
   LocalWorkflowCommandValidator,
+  LocalWorkflowCommandResponseValidator,
   LocalWorkflowCommandBoundary,
   type LocalWorkflowCommand,
   type LocalWorkflowCommandDependencies,

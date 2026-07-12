@@ -5,4 +5,5 @@ export interface AuditRepository {
   listByCorrelationId(
     correlationId: string,
   ): Promise<readonly AuditEvent[]>;
+  listByWorkspaceAndCorrelationId(workspaceId: string, correlationId: string, limit: number): Promise<readonly AuditEvent[]>;
 }

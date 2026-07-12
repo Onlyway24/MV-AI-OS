@@ -166,7 +166,10 @@ describe("SQLite knowledge persistence", () => {
         DROP TABLE workflow_instances;
         DROP TABLE workflow_definitions;
         DROP TABLE knowledge_records;
-        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7, 8, 9, 10, 11);
+        DROP TABLE local_workflow_commands;
+        DROP TABLE local_workflow_ownership;
+        DROP INDEX audit_events_workspace_correlation;
+        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
         PRAGMA user_version = 2;
       `);
       legacyDatabase.close();

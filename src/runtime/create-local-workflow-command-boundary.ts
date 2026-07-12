@@ -35,11 +35,11 @@ export function createLocalWorkflowCommandBoundary(input: { readonly actorId: st
   return new LocalWorkflowCommandBoundary({
     actorId: input.actorId,
     candidates: boundary,
-    controls: createWorkflowControlCheckpointService({ eventIds: { nextWorkflowControlCheckpointEventId: () => randomId() }, operatorActorId: input.actorId, repositories: input.repositories }),
+    controls: createWorkflowControlCheckpointService({ eventIds: { nextWorkflowControlCheckpointEventId: () => randomId() }, guardianAuthorities: { operator_safety: "operator_safety-guardian", quality: "quality-guardian" }, operatorActorId: input.actorId, repositories: input.repositories }),
     invoker: createWorkflowAgentInvoker({ agentRuntime, agentSpecifications: specifications, boundary, clock: input.clock, repositories: input.repositories, resolver, resultValidator }),
     lifecycle: createWorkflowLifecycleService({ clock: input.clock, maxAttempts: 3, operatorActorId: input.actorId, repositories: input.repositories, timeoutMs: 60_000 }),
     missionPlanning: new DeterministicLocalMissionPlanningDryRun(),
-    outcomes: createWorkflowStepOutcomeService({ clock: input.clock, repositories: input.repositories, resolver }),
+    outcomes: createWorkflowStepOutcomeService({ clock: input.clock, operatorActorId: input.actorId, repositories: input.repositories, resolver }),
     readiness: createWorkflowReadinessService({ repositories: input.repositories }),
     report: createWorkflowOperatorReportService(input.repositories),
     repositories: input.repositories,

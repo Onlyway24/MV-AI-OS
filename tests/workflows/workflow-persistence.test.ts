@@ -652,6 +652,10 @@ describe("Workflow Persistence and Atomic Audit", () => {
         DROP TABLE workflow_command_receipts;
         DROP TABLE workflow_instances;
         DROP TABLE workflow_definitions;
+        DROP TABLE local_workflow_commands;
+        DROP TABLE local_workflow_ownership;
+        DROP INDEX audit_events_workspace_correlation;
+        DELETE FROM schema_migrations WHERE version = 12;
         DELETE FROM schema_migrations WHERE version = 11;
         DELETE FROM schema_migrations WHERE version = 10;
         DELETE FROM schema_migrations WHERE version = 9;
@@ -697,7 +701,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
       await reopenedKnowledge.close();
 
       const verification = new DatabaseSync(path);
-      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(11);
+      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(12);
       expect(
         verification
           .prepare("SELECT name FROM schema_migrations WHERE version = 5")
@@ -733,6 +737,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
           .prepare("SELECT name FROM schema_migrations WHERE version = 11")
           .get()?.name,
       ).toBe("explicit_workflow_timeout_evaluation");
+      expect(verification.prepare("SELECT name FROM schema_migrations WHERE version = 12").get()?.name).toBe("core_v1_local_productization");
       verification.close();
     });
   });

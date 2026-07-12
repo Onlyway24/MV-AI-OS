@@ -165,7 +165,7 @@ export interface WorkflowStepOutcomeRepository {
 export interface WorkflowLifecycleRecordRepository {
   getById(recordId: string): Promise<WorkflowLifecycleRecord | undefined>;
   insert(record: WorkflowLifecycleRecord): Promise<void>;
-  listByStep(instanceId: string, stepId: string): Promise<readonly WorkflowLifecycleRecord[]>;
+  listByStep(instanceId: string, stepId: string, limit?: number): Promise<readonly WorkflowLifecycleRecord[]>;
 }
 
 export interface WorkflowLifecycleEventRepository {

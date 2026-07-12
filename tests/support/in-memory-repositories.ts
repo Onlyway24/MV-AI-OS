@@ -60,6 +60,7 @@ import {
 import type { WorkflowAgentInvocationEvent, WorkflowAgentInvocationReceipt } from "../../src/workflows/runtime/workflow-agent-invocation.js";
 import type { WorkflowStepOutcomeReceipt } from "../../src/workflows/runtime/workflow-step-outcome.js";
 import type { WorkflowLifecycleEvent, WorkflowLifecycleRecord } from "../../src/workflows/runtime/workflow-lifecycle.js";
+import type { LocalWorkflowCommandReceipt, LocalWorkflowOwnership } from "../../src/runtime/local-workflow-command-repository.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -79,6 +80,8 @@ interface RepositoryState {
   readonly workflowStepOutcomes: Map<string, WorkflowStepOutcomeReceipt>;
   readonly workflowLifecycleRecords: Map<string, WorkflowLifecycleRecord>;
   readonly workflowLifecycleEvents: Map<string, WorkflowLifecycleEvent>;
+  readonly localWorkflowCommands: Map<string, LocalWorkflowCommandReceipt>;
+  readonly localWorkflowOwnership: Map<string, LocalWorkflowOwnership>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -114,6 +117,7 @@ function createRepositories(
     audits: new InMemoryAuditRepository(state),
     requests: new InMemoryRequestRepository(state),
     tasks: new InMemoryTaskRepository(state),
+    workflowCommands: new InMemoryLocalWorkflowCommandRepository(state),
     workflows: Object.freeze({
       agentInvocationEvents: new InMemoryWorkflowAgentInvocationEventRepository(state),
       agentInvocations: new InMemoryWorkflowAgentInvocationRepository(state),
@@ -129,6 +133,14 @@ function createRepositories(
       stepOutcomes: new InMemoryWorkflowStepOutcomeRepository(state),
     }),
   });
+}
+
+class InMemoryLocalWorkflowCommandRepository {
+  public constructor(private readonly state: RepositoryState) {}
+  public getById(id: string): Promise<LocalWorkflowCommandReceipt | undefined> { return Promise.resolve(cloneOptional(this.state.localWorkflowCommands.get(id))); }
+  public insert(receipt: LocalWorkflowCommandReceipt): Promise<void> { if (this.state.localWorkflowCommands.has(receipt.commandId)) throw new RepositoryConflictError("Local Workflow command ID already exists"); this.state.localWorkflowCommands.set(receipt.commandId, cloneFrozen(receipt)); return Promise.resolve(); }
+  public getOwnership(id: string): Promise<LocalWorkflowOwnership | undefined> { return Promise.resolve(cloneOptional(this.state.localWorkflowOwnership.get(id))); }
+  public insertOwnership(ownership: LocalWorkflowOwnership): Promise<void> { if (this.state.localWorkflowOwnership.has(ownership.instanceId)) throw new RepositoryConflictError("Local Workflow ownership already exists"); this.state.localWorkflowOwnership.set(ownership.instanceId, cloneFrozen(ownership)); return Promise.resolve(); }
 }
 
 class InMemoryWorkflowAgentInvocationRepository {
@@ -156,7 +168,7 @@ class InMemoryWorkflowLifecycleRecordRepository {
   public constructor(private readonly state: RepositoryState) {}
   public getById(id: string): Promise<WorkflowLifecycleRecord | undefined> { return Promise.resolve(cloneOptional(this.state.workflowLifecycleRecords.get(id))); }
   public insert(record: WorkflowLifecycleRecord): Promise<void> { if (this.state.workflowLifecycleRecords.has(record.recordId)) throw new RepositoryConflictError("Workflow lifecycle record exists"); this.state.workflowLifecycleRecords.set(record.recordId, cloneFrozen(record)); return Promise.resolve(); }
-  public listByStep(instanceId: string, stepId: string): Promise<readonly WorkflowLifecycleRecord[]> { return Promise.resolve(Object.freeze([...this.state.workflowLifecycleRecords.values()].filter((record) => record.instanceId === instanceId && record.stepId === stepId).map(cloneFrozen))); }
+  public listByStep(instanceId: string, stepId: string, limit?: number): Promise<readonly WorkflowLifecycleRecord[]> { const records = [...this.state.workflowLifecycleRecords.values()].filter((record) => record.instanceId === instanceId && record.stepId === stepId); return Promise.resolve(Object.freeze((limit === undefined ? records : records.slice(-limit)).map(cloneFrozen))); }
 }
 
 class InMemoryWorkflowLifecycleEventRepository {
@@ -415,6 +427,7 @@ class InMemoryAuditRepository implements AuditRepository {
       .map((event) => cloneFrozen(event));
     return Promise.resolve(Object.freeze(events));
   }
+  public listByWorkspaceAndCorrelationId(workspaceId: string, correlationId: string, limit: number): Promise<readonly AuditEvent[]> { return Promise.resolve(Object.freeze([...this.#state.audits.values()].filter((event) => event.workspaceId === workspaceId && event.correlationId === correlationId).slice(-limit).reverse().map(cloneFrozen))); }
 }
 
 class InMemoryWorkflowDefinitionRepository {
@@ -521,10 +534,15 @@ class InMemoryWorkflowInstanceRepository {
       authorization?.kind !== "RETRY_AUTHORIZATION" ||
       authorization.retryDecision !== "AUTHORIZED" ||
       authorization.instanceId !== instance.instanceId ||
+      authorization.instanceVersion !== expectation.version ||
       instance.steps.find(({ stepId }) => stepId === authorization.stepId)?.status !== "READY"
     ) {
       throw new RepositoryConflictError("Workflow retry authorization is missing or invalid");
     }
+    const records = [...this.#state.workflowLifecycleRecords.values()].filter((entry) => entry.instanceId === instance.instanceId && entry.stepId === authorization.stepId);
+    const latestFailure = records.filter(({ kind }) => kind === "FAILURE").at(-1);
+    const latestAuthorization = records.filter(({ kind, failureId }) => kind === "RETRY_AUTHORIZATION" && failureId === authorization.failureId).at(-1);
+    if (latestFailure?.recordId !== authorization.failureId || latestAuthorization?.recordId !== authorizationId || records.some(({ kind, authorizationId: consumedId }) => kind === "RETRY_EXECUTION" && consumedId === authorizationId)) throw new RepositoryConflictError("Workflow retry authorization is stale or consumed");
     return this.#update(instance, expectation, authorization.stepId);
   }
 
@@ -534,7 +552,7 @@ class InMemoryWorkflowInstanceRepository {
     controlId: string,
   ): Promise<void> {
     const control = this.#state.workflowLifecycleRecords.get(controlId);
-    if (control === undefined || !["CANCELLATION", "PAUSE", "RESUME"].includes(control.kind) || control.instanceId !== instance.instanceId) {
+    if (control === undefined || !["CANCELLATION", "PAUSE", "RESUME"].includes(control.kind) || control.instanceId !== instance.instanceId || control.instanceVersion !== instance.version) {
       throw new RepositoryConflictError("Workflow control evidence is missing or invalid");
     }
     return this.#update(instance, expectation, undefined, control.kind as "CANCELLATION" | "PAUSE" | "RESUME");
@@ -992,6 +1010,8 @@ function createState(): RepositoryState {
     workflowStepOutcomes: new Map(),
     workflowLifecycleRecords: new Map(),
     workflowLifecycleEvents: new Map(),
+    localWorkflowCommands: new Map(),
+    localWorkflowOwnership: new Map(),
   };
 }
 
@@ -1049,6 +1069,8 @@ function cloneState(state: RepositoryState): RepositoryState {
     workflowStepOutcomes: new Map([...state.workflowStepOutcomes].map(([key, value]) => [key, cloneFrozen(value)])),
     workflowLifecycleRecords: new Map([...state.workflowLifecycleRecords].map(([key, value]) => [key, cloneFrozen(value)])),
     workflowLifecycleEvents: new Map([...state.workflowLifecycleEvents].map(([key, value]) => [key, cloneFrozen(value)])),
+    localWorkflowCommands: new Map([...state.localWorkflowCommands].map(([key, value]) => [key, cloneFrozen(value)])),
+    localWorkflowOwnership: new Map([...state.localWorkflowOwnership].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

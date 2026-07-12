@@ -25,6 +25,7 @@ import { SqliteWorkflowInstanceRepository } from "./sqlite-workflow-instance-rep
 import { SqliteWorkflowAgentInvocationEventRepository, SqliteWorkflowAgentInvocationRepository } from "./sqlite-workflow-agent-invocation-repository.js";
 import { SqliteWorkflowStepOutcomeRepository } from "./sqlite-workflow-step-outcome-repository.js";
 import { SqliteWorkflowLifecycleEventRepository, SqliteWorkflowLifecycleRecordRepository } from "./sqlite-workflow-lifecycle-repository.js";
+import { SqliteLocalWorkflowCommandRepository } from "./sqlite-local-workflow-command-repository.js";
 
 export class SqliteRepositoryTransactionRunner
   implements RepositoryTransactionRunner
@@ -77,6 +78,7 @@ export class SqliteRepositoryTransactionRunner
           scope,
           this.#codec,
         ),
+        workflowCommands: new SqliteLocalWorkflowCommandRepository(this.#database, scope),
         workflows: Object.freeze({
           agentInvocationEvents: new SqliteWorkflowAgentInvocationEventRepository(
             this.#database,

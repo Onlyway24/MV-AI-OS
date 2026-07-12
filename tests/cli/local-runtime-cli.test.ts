@@ -146,10 +146,10 @@ describe("Controlled local CLI process", () => {
       expect(create.exitCode).toBe(0);
       expect(JSON.parse(create.stdout)).toMatchObject({ operation: "CREATE_WORKFLOW", result: { created: true }, status: "ok", unauthorizedExternalEffectOccurred: false });
       const replay = await runCli(configPath, JSON.stringify(workflowCommand("CREATE_WORKFLOW", { definition, instance })));
-      expect(JSON.parse(replay.stdout)).toMatchObject({ result: { created: false }, status: "ok" });
+      expect(JSON.parse(replay.stdout)).toMatchObject({ replayed: true, result: { created: true }, status: "ok" });
       const report = await runCli(configPath, JSON.stringify(workflowCommand("GET_OPERATOR_REPORT", { contractVersion: "1", expectedVersion: 0, instanceId: "cli-instance", maxItems: 20 })));
       expect(report.exitCode).toBe(0);
-      expect(JSON.parse(report.stdout)).toMatchObject({ nextAction: "Select and invoke the controlled candidate for step direction at Workflow version 0.", operation: "GET_OPERATOR_REPORT", result: { mission: { objective: definition.missionObjective }, overallStatus: "ACTIVE" }, status: "ok" });
+      expect(JSON.parse(report.stdout)).toMatchObject({ nextAction: "Record the required operator_safety Guardian decision for step direction at Workflow version 0.", operation: "GET_OPERATOR_REPORT", result: { mission: { objective: definition.missionObjective }, overallStatus: "ACTIVE" }, status: "ok" });
     });
   });
 

@@ -88,6 +88,11 @@ export class SqliteAuditRepository implements AuditRepository {
       }),
     );
   }
+  public listByWorkspaceAndCorrelationId(workspaceId: string, correlationId: string, limit: number): Promise<readonly AuditEvent[]> {
+    assertActiveTransaction(this.#scope);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new RepositoryValidationError("Audit list limit is invalid");
+    return Promise.resolve(withSqliteErrors("audit.list_by_workspace_correlation", () => Object.freeze(this.#database.prepare("SELECT event_id, correlation_id, occurred_at, record_json FROM audit_events WHERE correlation_id = ? AND json_extract(record_json, '$.workspaceId') = ? ORDER BY sequence DESC LIMIT ?").all(correlationId, workspaceId, limit).map((row) => this.#decodeRow(row)))));
+  }
 
   #selectByEventId(
     eventId: string,

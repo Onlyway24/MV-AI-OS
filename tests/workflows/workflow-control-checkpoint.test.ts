@@ -255,6 +255,10 @@ describe("Durable Workflow Approval and Guardian Checkpoints", () => {
         DROP TABLE workflow_control_checkpoint_events;
         DROP TABLE workflow_guardian_checkpoints;
         DROP TABLE workflow_approval_checkpoints;
+        DROP TABLE local_workflow_commands;
+        DROP TABLE local_workflow_ownership;
+        DROP INDEX audit_events_workspace_correlation;
+        DELETE FROM schema_migrations WHERE version = 12;
         DELETE FROM schema_migrations WHERE version = 11;
         DELETE FROM schema_migrations WHERE version = 10;
         DELETE FROM schema_migrations WHERE version = 9;
