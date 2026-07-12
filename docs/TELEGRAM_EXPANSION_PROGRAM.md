@@ -8,10 +8,14 @@ Phase 1A durable sessions are complete: a single exact user/chat binding has a
 versioned, restart-safe, expiring session with explicit cancellation and no Mission or
 Workflow mutation. Phase 1B.1A-1 is complete: the storage- and transport-neutral,
 privacy-safe Telegram Mission Draft contract and strict structural validator exist.
-The Mission Draft state engine, FounderMissionBrief conversion/readiness, SQLite
-persistence, Telegram UX, and `/mission` activation have not started. No Mission,
-Workflow, or external action is executed by this contract. Phase 1C Core V1 Workflow
-Flow has not started.
+Phase 1B.1A-2 is complete: a deterministic, in-memory Draft state engine validates
+bounded operations, identity/version binding, and legal transitions without reading a
+clock, writing storage, or activating Telegram. FounderMissionBrief readiness and
+conversion remain Phase 1B.1A-3; SQLite persistence and operation receipts remain
+Phase 1B.1B; session/draft atomic integration remains Phase 1B.1C; guided Telegram UX
+and planning integration remain Phase 1B.2. `/mission` remains inactive. No Mission,
+Workflow, or external action is executed. Phase 1C Core V1 Workflow Flow has not
+started.
 
 ## Phase 2 — Developer Control Plane
 

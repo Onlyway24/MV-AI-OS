@@ -44,6 +44,18 @@ export type TelegramMissionDraftTerminalReasonCode =
   | "cancelled_by_operator"
   | "expired";
 
+export type TelegramMissionDraftMutableField =
+  | "assumptions"
+  | "audience"
+  | "budget"
+  | "constraints"
+  | "deadline"
+  | "deliverables"
+  | "missionType"
+  | "objective"
+  | "proposedExternalActions"
+  | "unknowns";
+
 /**
  * Storage- and transport-neutral progressive Mission data. It intentionally holds
  * no Telegram update, message, identity-profile, repository, or execution data.
@@ -176,6 +188,66 @@ export class TelegramMissionDraftValidator
     if (issues.length > 0) return validationFailure(issues);
     return validationSuccess(cloneAndFreeze(value) as TelegramMissionDraft);
   }
+}
+
+/**
+ * Reuses the draft contract's exact field rules for a single structured update.
+ * It is intentionally storage- and transport-neutral so the pure state engine can
+ * validate operation payloads without constructing a synthetic complete draft.
+ */
+export function validateTelegramMissionDraftFieldValue(
+  fieldName: TelegramMissionDraftMutableField,
+  value: unknown,
+): ValidationResult<unknown> {
+  if (!isJsonObject({ value })) {
+    return failure("invalid_type", "draft field value must be JSON-safe", fieldName);
+  }
+
+  const issues: ValidationIssue[] = [];
+  rejectForbiddenTelegramKeys(value, issues, fieldName);
+  rejectSensitiveContent(value, issues, fieldName);
+  const record: Readonly<Record<string, unknown>> = { [fieldName]: value };
+
+  switch (fieldName) {
+    case "objective":
+      requiredText(record, fieldName, issues);
+      break;
+    case "missionType":
+      if (
+        typeof value !== "string" ||
+        !FOUNDER_MISSION_TYPES.includes(value as FounderMissionType)
+      ) {
+        issue(issues, "invalid_value", "missionType is not supported", fieldName);
+      }
+      break;
+    case "audience":
+      optionalObject(record, fieldName, ["description", "market", "segments"], issues, validateAudience);
+      break;
+    case "deliverables":
+      optionalArray(record, fieldName, 8, "deliverableId", issues, validateDeliverable, false);
+      break;
+    case "deadline":
+      optionalObject(record, fieldName, ["dueAt", "status", "timezone"], issues, validateDeadline);
+      break;
+    case "budget":
+      optionalObject(record, fieldName, ["currency", "maximumAmount", "status"], issues, validateBudget);
+      break;
+    case "constraints":
+      requiredArray(record, fieldName, 16, "constraintId", issues, validateConstraint);
+      break;
+    case "proposedExternalActions":
+      requiredArray(record, fieldName, 8, "actionId", issues, validateExternalAction);
+      break;
+    case "assumptions":
+      requiredArray(record, fieldName, 16, "assumptionId", issues, validateAssumption);
+      break;
+    case "unknowns":
+      requiredArray(record, fieldName, 16, "unknownId", issues, validateUnknown);
+      break;
+  }
+
+  if (issues.length > 0) return validationFailure(issues);
+  return validationSuccess(cloneAndFreeze(value));
 }
 
 function validateScalarBoundary(

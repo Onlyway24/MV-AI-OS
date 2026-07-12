@@ -1889,3 +1889,21 @@ later explicitly approved sub-milestones.
 **Future impact:** The next Telegram Mission sub-milestone may add only the pure
 in-memory state engine over this exact contract; persistence, conversion, `/mission`,
 and execution remain separate decisions.
+
+## ADR-072 — Telegram Mission Draft operations are deterministic and memory-only
+
+**Decision:** Phase 1B.1A-2 adds a strict, versioned operation contract and pure
+state engine for one validated `TelegramMissionDraft`. The engine accepts an injected
+RFC 3339 timestamp, requires exact draft/session/actor/workspace/identity/version
+binding, and returns one immutable next draft or a bounded reason code. It permits
+only collecting-field updates, explicit return from `REVIEW_READY`, cancellation, and
+expiry; it does not create review-ready or confirmed drafts.
+
+**Reason:** A deterministic state boundary makes future storage integration safe to
+add without letting Telegram input, a system clock, or an optimistic update become an
+implicit persistence or execution path.
+
+**Future impact:** FounderMissionBrief readiness/conversion remains Phase 1B.1A-3,
+SQLite operation receipts remain Phase 1B.1B, atomic session/draft integration remains
+Phase 1B.1C, and guided Telegram UX/planning remain Phase 1B.2. `/mission` remains
+inactive; no Mission, Workflow, or external action is executed.

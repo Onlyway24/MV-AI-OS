@@ -25,11 +25,26 @@ export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store
 export {
   TELEGRAM_MISSION_DRAFT_CONTRACT_VERSION,
   TelegramMissionDraftValidator,
+  validateTelegramMissionDraftFieldValue,
   type TelegramMissionDraft,
   type TelegramMissionDraftField,
+  type TelegramMissionDraftMutableField,
   type TelegramMissionDraftStatus,
   type TelegramMissionDraftTerminalReasonCode,
 } from "./telegram/telegram-mission-draft.js";
+export {
+  TELEGRAM_MISSION_DRAFT_OPERATION_CONTRACT_VERSION,
+  TelegramMissionDraftApplyFailureValidator,
+  TelegramMissionDraftApplySuccessValidator,
+  TelegramMissionDraftOperationValidator,
+  TelegramMissionDraftStateEngine,
+  type TelegramMissionDraftApplyFailure,
+  type TelegramMissionDraftApplyResult,
+  type TelegramMissionDraftApplySuccess,
+  type TelegramMissionDraftFailureReasonCode,
+  type TelegramMissionDraftOperation,
+  type TelegramMissionDraftOperationKind,
+} from "./telegram/telegram-mission-draft-state-engine.js";
 export { TelegramOperatorSessionValidator, TelegramSessionTransitionValidator, isTelegramSessionTransitionAllowed, type TelegramOperatorSessionRecord, type TelegramSessionAction, type TelegramSessionState, type TelegramSessionTransition } from "./telegram/telegram-operator-session.js";
 export { createTelegramOperatorConsole, TelegramApplicationConfigValidator, type TelegramApplicationConfig } from "./telegram/telegram-runtime.js";
 export type {
