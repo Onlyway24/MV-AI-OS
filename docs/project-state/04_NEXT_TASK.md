@@ -2,6 +2,14 @@
 
 ## Milestone name
 
+Controlled Telegram Operator Console — Phase 1
+
+Workflow Specification Admission Boundary is paused, not deleted. Telegram is never
+an observation source for Fabio's personal account activity. Telegram Developer
+Control Plane remains Phase 2 and has not started.
+
+## Paused milestone
+
 Workflow Specification Admission Boundary
 
 ## Goal

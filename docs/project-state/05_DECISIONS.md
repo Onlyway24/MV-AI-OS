@@ -1853,3 +1853,13 @@ the existing bounded evidence path when they need history.
 **Future impact:** Any later operator projection, dashboard, API, or workflow report
 must use the same terminal-state precedence rule and preserve the distinction between
 historical evidence and active remediation.
+
+## ADR-070 — Telegram is a dedicated-bot private command transport only
+
+**Decision:** Telegram may use only the standard Bot API with one exact allowlisted
+private user/chat pair. It is fail-closed, stores only bounded replay metadata, and
+cannot access or infer from Fabio's personal account, chats, contacts, history,
+groups, channels, media, or social graph.
+
+**Future impact:** Every Telegram, H24, improvement, Developer Control Plane, and Web
+Console milestone must comply with `TELEGRAM_PERSONAL_PRIVACY_BOUNDARY.md`.

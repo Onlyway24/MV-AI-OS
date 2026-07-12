@@ -148,8 +148,14 @@ describe("SQLite memory persistence", () => {
         DROP TABLE memory_records;
         DROP TABLE local_workflow_commands;
         DROP TABLE local_workflow_ownership;
+        DROP TABLE telegram_outbound_deliveries;
+        DROP TABLE telegram_polling_state;
+        DROP TABLE telegram_pending_confirmations;
+        DROP TABLE telegram_operator_sessions;
+        DROP TABLE telegram_callback_tokens;
+        DROP TABLE telegram_inbound_receipts;
         DROP INDEX audit_events_workspace_correlation;
-        DELETE FROM schema_migrations WHERE version IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+        DELETE FROM schema_migrations WHERE version IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
         PRAGMA user_version = 1;
       `);
       legacyDatabase.close();

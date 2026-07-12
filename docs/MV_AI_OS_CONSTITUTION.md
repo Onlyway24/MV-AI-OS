@@ -27,6 +27,11 @@ environment where Fabio can turn goals into tasks, tasks into specialist work,
 specialist work into validated artifacts, and validated artifacts into approved
 business outcomes.
 
+Any Telegram surface is governed by
+`docs/TELEGRAM_PERSONAL_PRIVACY_BOUNDARY.md`: it is only a dedicated-bot command and
+output transport and must never access Fabio's personal account, chats, contacts,
+history, Saved Messages, groups, channels, social graph, media, or private activity.
+
 The mature system should feel simple from Fabio's perspective:
 
 ```text

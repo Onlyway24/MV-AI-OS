@@ -167,6 +167,12 @@ and tests, not intended future behavior.
   approval/Guardian remediation in the immutable report projection. Durable approval,
   Guardian, event, invocation, outcome, and audit records are unchanged and remain
   queryable. The next milestone remains Workflow Specification Admission Boundary.
+- Controlled Telegram Operator Console — Phase 1 is in progress. The repository now
+  contains the authoritative personal-privacy boundary, strict Bot API-only transport
+  contracts, exact private user/chat authorization, minimal SQLite replay metadata,
+  fresh long-poll bootstrap, and a local process entrypoint. It does not grant access
+  to Fabio's personal Telegram account or activity, and Telegram Developer Control
+  Plane remains unstarted.
 - The next milestone is Workflow Specification Admission Boundary.
 
 ## Current architecture
@@ -806,8 +812,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified Core V1 Operator Report correctness-hotfix suite contains 87 test
-files and 792 tests
+The latest verified suite contains 90 test files and 802 tests
 covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
@@ -868,6 +873,9 @@ covering:
   states cannot surface stale approval/Guardian remediation as active blockers or
   risks; completed durable control evidence survives SQLite restart and remains
   queryable without becoming an active requirement.
+- Telegram privacy-boundary documentation, strict configuration/update validation,
+  exact private user/chat authorization, rejected group/forwarded/business/media
+  input, allowlisted long-poll update types, and restricted outbound delivery.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - OpenAI provider configuration validation, credential handling, Responses API request

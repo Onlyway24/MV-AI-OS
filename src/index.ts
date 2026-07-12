@@ -8,6 +8,21 @@ export type {
   ContractReference,
   MemoryCategory,
 } from "./agents/agent-manifest.js";
+export {
+  TELEGRAM_ALLOWED_UPDATE_TYPES,
+  TELEGRAM_OPERATOR_CONTRACT_VERSION,
+  TelegramInboundUpdateValidator,
+  TelegramOperatorActionValidator,
+  TelegramOperatorConfigValidator,
+  TelegramOutboundMessageIntentValidator,
+  type TelegramInboundUpdate,
+  type TelegramOperatorAction,
+  type TelegramOperatorConfig,
+} from "./telegram/telegram-contracts.js";
+export { FetchTelegramBotApiTransport, TelegramBotApiClient, type TelegramBotApiTransport } from "./telegram/telegram-bot-api.js";
+export { ControlledTelegramOperatorConsole } from "./telegram/telegram-operator-console.js";
+export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
+export { createTelegramOperatorConsole, TelegramApplicationConfigValidator, type TelegramApplicationConfig } from "./telegram/telegram-runtime.js";
 export type {
   AgentCapability,
   AgentCapabilityType,

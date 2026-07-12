@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 12;
+export const SQLITE_SCHEMA_VERSION = 13;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -52,6 +52,7 @@ const VERSION_NINE_TABLES = VERSION_EIGHT_TABLES;
 const VERSION_TEN_TABLES = VERSION_NINE_TABLES;
 const VERSION_ELEVEN_TABLES = VERSION_TEN_TABLES;
 const VERSION_TWELVE_TABLES = Object.freeze([...VERSION_ELEVEN_TABLES, "local_workflow_commands", "local_workflow_ownership"]);
+const VERSION_THIRTEEN_TABLES = Object.freeze([...VERSION_TWELVE_TABLES, "telegram_callback_tokens", "telegram_inbound_receipts", "telegram_operator_sessions", "telegram_outbound_deliveries", "telegram_pending_confirmations", "telegram_polling_state"]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -159,6 +160,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 11, "explicit_workflow_timeout_evaluation");
     applyCoreV1ProductizationMigration(database);
   }
+  const telegramVersion = readPragmaInteger(database, "user_version");
+  if (telegramVersion === 12) {
+    verifyDatabaseIdentity(database, 12);
+    verifyExpectedTables(database, VERSION_TWELVE_TABLES);
+    verifyMigration(database, 12, "core_v1_local_productization");
+    applyTelegramOperatorMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -181,7 +189,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_TWELVE_TABLES);
+  verifyExpectedTables(database, VERSION_THIRTEEN_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -194,6 +202,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 10, "explicit_workflow_lifecycle_control");
   verifyMigration(database, 11, "explicit_workflow_timeout_evaluation");
   verifyMigration(database, 12, "core_v1_local_productization");
+  verifyMigration(database, 13, "controlled_telegram_operator_console");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -712,6 +721,66 @@ function applyCoreV1ProductizationMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Core V1 productization migration failed");
+  }
+}
+
+function applyTelegramOperatorMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE telegram_inbound_receipts (
+        update_id TEXT PRIMARY KEY,
+        action_fingerprint TEXT NOT NULL,
+        identity_binding TEXT NOT NULL,
+        action_kind TEXT NOT NULL,
+        processing_state TEXT NOT NULL CHECK (processing_state IN ('RECEIVED', 'COMPLETED', 'REJECTED')),
+        received_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        command_id TEXT
+      ) STRICT;
+      CREATE INDEX telegram_inbound_receipts_expiry ON telegram_inbound_receipts (expires_at, update_id);
+      CREATE TABLE telegram_callback_tokens (
+        token_hash TEXT PRIMARY KEY,
+        identity_binding TEXT NOT NULL,
+        action_kind TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        workflow_id TEXT,
+        workflow_version TEXT
+      ) STRICT;
+      CREATE INDEX telegram_callback_tokens_expiry ON telegram_callback_tokens (expires_at, token_hash);
+      CREATE TABLE telegram_operator_sessions (
+        session_id TEXT PRIMARY KEY,
+        identity_binding TEXT NOT NULL,
+        state TEXT NOT NULL CHECK (state IN ('IDLE', 'MISSION_DRAFT', 'PENDING_CONFIRMATION')),
+        expires_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE telegram_pending_confirmations (
+        confirmation_id TEXT PRIMARY KEY,
+        identity_binding TEXT NOT NULL,
+        action_kind TEXT NOT NULL,
+        action_fingerprint TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE telegram_polling_state (
+        state_id INTEGER PRIMARY KEY CHECK (state_id = 1),
+        offset TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE telegram_outbound_deliveries (
+        delivery_id TEXT PRIMARY KEY,
+        update_id TEXT,
+        state TEXT NOT NULL CHECK (state IN ('DELIVERED', 'UNCERTAIN')),
+        occurred_at TEXT NOT NULL
+      ) STRICT;
+      INSERT INTO schema_migrations (version, name) VALUES (13, 'controlled_telegram_operator_console');
+      PRAGMA user_version = 13;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Telegram operator migration failed");
   }
 }
 

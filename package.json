@@ -20,6 +20,7 @@
     "build": "tsc --project tsconfig.build.json",
     "cli": "node ./dist/cli/local-runtime-cli.js",
     "lint": "eslint . --max-warnings 0",
+    "telegram": "node ./dist/telegram/telegram-cli.js",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --project tsconfig.json",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"

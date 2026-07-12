@@ -257,7 +257,14 @@ describe("Durable Workflow Approval and Guardian Checkpoints", () => {
         DROP TABLE workflow_approval_checkpoints;
         DROP TABLE local_workflow_commands;
         DROP TABLE local_workflow_ownership;
+        DROP TABLE telegram_outbound_deliveries;
+        DROP TABLE telegram_polling_state;
+        DROP TABLE telegram_pending_confirmations;
+        DROP TABLE telegram_operator_sessions;
+        DROP TABLE telegram_callback_tokens;
+        DROP TABLE telegram_inbound_receipts;
         DROP INDEX audit_events_workspace_correlation;
+        DELETE FROM schema_migrations WHERE version = 13;
         DELETE FROM schema_migrations WHERE version = 12;
         DELETE FROM schema_migrations WHERE version = 11;
         DELETE FROM schema_migrations WHERE version = 10;

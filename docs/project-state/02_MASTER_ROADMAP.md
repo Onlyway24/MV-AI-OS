@@ -6,6 +6,15 @@ This roadmap starts from verified repository state and ends at a production-read
 AI OS. It complements the product roadmap in `docs/ROADMAP.md` without replacing its
 authority. Status must be updated after every completed milestone.
 
+## Controlled Telegram Operator Console — Phase 1
+
+**Objective:** Provide a dedicated-bot, single-private-chat, local operator transport
+without personal-account access or autonomous execution.
+
+**Status:** In progress. The Telegram personal privacy boundary is authoritative;
+Developer Control Plane is Phase 2 and has not started. Workflow Specification
+Admission Boundary is paused, not deleted.
+
 ## Phase 0 — Architecture and engineering baseline
 
 **Objective:** Establish authoritative architecture, agent rules, strict TypeScript,
