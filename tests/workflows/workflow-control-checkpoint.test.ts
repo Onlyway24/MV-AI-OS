@@ -264,6 +264,7 @@ describe("Durable Workflow Approval and Guardian Checkpoints", () => {
         DROP TABLE telegram_callback_tokens;
         DROP TABLE telegram_inbound_receipts;
         DROP TABLE telegram_operator_drafts;
+        DROP TABLE telegram_mission_draft_operations;
         DROP INDEX audit_events_workspace_correlation;
         DELETE FROM schema_migrations WHERE version = 14;
         DELETE FROM schema_migrations WHERE version = 13;

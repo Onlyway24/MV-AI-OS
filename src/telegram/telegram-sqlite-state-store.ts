@@ -6,12 +6,17 @@ import { openSqliteDatabase } from "../persistence/sqlite/sqlite-database.js";
 import type { SqliteConnectionConfig } from "../persistence/sqlite/sqlite-connection-config.js";
 import type { TelegramCallbackToken, TelegramInboundUpdateReceipt, TelegramOperatorAction, TelegramPollingOffset } from "./telegram-contracts.js";
 import { isTelegramSessionTransitionAllowed, TelegramOperatorSessionValidator, TelegramSessionTransitionValidator, type TelegramOperatorSessionRecord, type TelegramSessionTransition } from "./telegram-operator-session.js";
+import { TelegramMissionDraftStateEngine, TelegramMissionDraftOperationValidator, type TelegramMissionDraftApplyResult, type TelegramMissionDraftOperation } from "./telegram-mission-draft-state-engine.js";
+import { TelegramMissionDraftValidator, type TelegramMissionDraft } from "./telegram-mission-draft.js";
 
 export class TelegramSqliteStateStore {
   readonly #database: DatabaseSync;
   #closed = false;
   readonly #sessionValidator = new TelegramOperatorSessionValidator();
   readonly #transitionValidator = new TelegramSessionTransitionValidator();
+  readonly #draftValidator = new TelegramMissionDraftValidator();
+  readonly #draftOperationValidator = new TelegramMissionDraftOperationValidator();
+  readonly #draftEngine = new TelegramMissionDraftStateEngine();
   public constructor(config: SqliteConnectionConfig, private readonly clock: Clock, private readonly tokenSource: () => string = randomUUID) { this.#database = openSqliteDatabase(config).database; }
   public claim(action: TelegramOperatorAction, retentionSeconds: number): "CLAIMED" | "REPLAYED" {
     this.#assertOpen(); const existing = this.#database.prepare("SELECT action_fingerprint FROM telegram_inbound_receipts WHERE update_id = ?").get(action.updateId);
@@ -29,6 +34,31 @@ export class TelegramSqliteStateStore {
   }
   public getSession(identityBinding: string): TelegramOperatorSessionRecord | undefined {
     this.#assertOpen(); const row = this.#database.prepare("SELECT record_json FROM telegram_operator_sessions WHERE identity_binding = ? ORDER BY updated_at DESC LIMIT 1").get(identityBinding); if (row === undefined || typeof row.record_json !== "string") return undefined; return parseSession(row.record_json, this.#sessionValidator);
+  }
+  public createMissionDraft(candidate: TelegramMissionDraft): TelegramMissionDraft {
+    this.#assertOpen(); const draft = validDraft(candidate, this.#draftValidator);
+    const existing = this.getMissionDraft(draft.sessionId);
+    if (existing !== undefined) { if (JSON.stringify(existing) !== JSON.stringify(draft)) throw new Error("Telegram Mission draft conflicts with existing session draft"); return existing; }
+    this.#database.prepare("INSERT INTO telegram_operator_drafts (session_id, expires_at, record_json) VALUES (?, ?, ?)").run(draft.sessionId, draft.expiresAt, JSON.stringify(draft));
+    return draft;
+  }
+  public getMissionDraft(sessionId: string): TelegramMissionDraft | undefined {
+    this.#assertOpen(); const row = this.#database.prepare("SELECT record_json FROM telegram_operator_drafts WHERE session_id = ?").get(sessionId);
+    if (row === undefined || typeof row.record_json !== "string") return undefined;
+    try { return validDraft(JSON.parse(row.record_json) as unknown, this.#draftValidator); } catch { throw new Error("Telegram Mission draft record is corrupt"); }
+  }
+  public applyMissionDraftOperation(candidate: TelegramMissionDraftOperation): TelegramMissionDraftApplyResult {
+    this.#assertOpen(); const operation = validDraftOperation(candidate, this.#draftOperationValidator); const fingerprint = hash(JSON.stringify(operation));
+    const receipt = this.#database.prepare("SELECT fingerprint, record_json FROM telegram_mission_draft_operations WHERE operation_id = ?").get(operation.operationId);
+    if (receipt !== undefined) { if (receipt.fingerprint !== fingerprint || typeof receipt.record_json !== "string") throw new Error("Telegram Mission draft operation conflicts with prior receipt"); return parseDraftResult(receipt.record_json); }
+    const current = this.getMissionDraft(operation.sessionId); if (current === undefined) throw new Error("Telegram Mission draft is not found");
+    const result = this.#draftEngine.apply(current, operation, this.clock.now().toISOString());
+    this.#database.exec("BEGIN IMMEDIATE");
+    try {
+      if (result.ok) { const write = this.#database.prepare("UPDATE telegram_operator_drafts SET expires_at = ?, record_json = ? WHERE session_id = ? AND record_json = ?").run(result.draft.expiresAt, JSON.stringify(result.draft), result.draft.sessionId, JSON.stringify(current)); if (write.changes !== 1) throw new Error("Telegram Mission draft operation conflicted"); }
+      this.#database.prepare("INSERT INTO telegram_mission_draft_operations (operation_id, draft_id, fingerprint, resulting_version, applied_at, record_json) VALUES (?, ?, ?, ?, ?, ?)").run(operation.operationId, operation.draftId, fingerprint, result.ok ? result.draft.version : current.version, this.clock.now().toISOString(), JSON.stringify(result));
+      this.#database.exec("COMMIT"); return result;
+    } catch (error) { try { this.#database.exec("ROLLBACK"); } catch {} throw error; }
   }
   public transitionSession(identityBinding: string, candidate: TelegramSessionTransition): TelegramOperatorSessionRecord {
     this.#assertOpen(); const transition = validateTransition(candidate, this.#transitionValidator); const current = this.getSession(identityBinding); if (current === undefined) throw new Error("Telegram session transition is invalid or stale"); if (current.sessionId !== transition.sessionId || current.version !== transition.expectedVersion || current.expiresAt <= this.clock.now().toISOString() || !isTelegramSessionTransitionAllowed(current.state, transition.nextState)) throw new Error("Telegram session transition is invalid or stale");
@@ -48,6 +78,9 @@ export class TelegramSqliteStateStore {
 function receiptFor(action: TelegramOperatorAction, retentionSeconds: number, now: Date): TelegramInboundUpdateReceipt { return Object.freeze({ actionFingerprint: action.fingerprint, actionKind: action.kind, contractVersion: "1", expiresAt: new Date(now.getTime() + retentionSeconds * 1_000).toISOString(), identityBinding: hash(`${action.userId}:${action.chatId}`), processingState: "RECEIVED", receivedAt: now.toISOString(), updateId: action.updateId }); }
 function hash(value: string): string { return createHash("sha256").update(value, "utf8").digest("hex"); }
 function validateSession(value: unknown): TelegramOperatorSessionRecord { const result = new TelegramOperatorSessionValidator().validate(value); if (!result.ok) throw new Error("Telegram session failed validation"); return result.value; }
+function validDraft(value: unknown, validator: TelegramMissionDraftValidator): TelegramMissionDraft { const result = validator.validate(value); if (!result.ok) throw new Error("Telegram Mission draft failed validation"); return result.value; }
+function validDraftOperation(value: unknown, validator: TelegramMissionDraftOperationValidator): TelegramMissionDraftOperation { const result = validator.validate(value); if (!result.ok) throw new Error("Telegram Mission draft operation failed validation"); return result.value; }
+function parseDraftResult(value: string): TelegramMissionDraftApplyResult { const parsed = JSON.parse(value) as TelegramMissionDraftApplyResult; if (parsed.ok && new TelegramMissionDraftValidator().validate(parsed.draft).ok) return Object.freeze(parsed); if (!parsed.ok && typeof parsed.reasonCode === "string") return Object.freeze(parsed); throw new Error("Telegram Mission draft receipt is corrupt"); }
 function validateTransition(value: unknown, validator: TelegramSessionTransitionValidator): TelegramSessionTransition { const result = validator.validate(value); if (!result.ok) throw new Error("Telegram session transition failed validation"); return result.value; }
 function parseSession(value: string, validator: TelegramOperatorSessionValidator): TelegramOperatorSessionRecord { try { return validateSessionWith(value, validator); } catch { throw new Error("Telegram session record is corrupt"); } }
 function validateSessionWith(value: string, validator: TelegramOperatorSessionValidator): TelegramOperatorSessionRecord { const result = validator.validate(JSON.parse(value) as unknown); if (!result.ok) throw new Error("Telegram session record is invalid"); return result.value; }
