@@ -18,7 +18,9 @@ export const TELEGRAM_MISSION_DRAFT_OPERATION_CONTRACT_VERSION = "1" as const;
 
 export type TelegramMissionDraftOperationKind =
   | "CANCEL_DRAFT"
+  | "CONFIRM_DRAFT"
   | "EXPIRE_DRAFT"
+  | "MARK_REVIEW_READY"
   | "REPLACE_ASSUMPTIONS"
   | "REPLACE_CONSTRAINTS"
   | "REPLACE_PROPOSED_EXTERNAL_ACTIONS"
@@ -34,6 +36,7 @@ export type TelegramMissionDraftOperationKind =
 
 export type TelegramMissionDraftFailureReasonCode =
   | "ACTOR_MISMATCH"
+  | "CONTEXT_FINGERPRINT_MISMATCH"
   | "DRAFT_ID_MISMATCH"
   | "EXPIRED_DRAFT"
   | "IDENTITY_MISMATCH"
@@ -70,12 +73,20 @@ type CurrentFieldOperation<Kind extends "RETURN_TO_COLLECTING" | "SET_CURRENT_FI
     readonly payload: Readonly<{ currentField: TelegramMissionDraftField }>;
   };
 
+type ContextBoundOperation<Kind extends "MARK_REVIEW_READY" | "CONFIRM_DRAFT"> =
+  TelegramMissionDraftOperationBase & {
+    readonly kind: Kind;
+    readonly payload: Readonly<{ contextFingerprint: string }>;
+  };
+
 type TerminalOperation<Kind extends "CANCEL_DRAFT" | "EXPIRE_DRAFT"> =
   TelegramMissionDraftOperationBase & { readonly kind: Kind };
 
 export type TelegramMissionDraftOperation =
   | TerminalOperation<"CANCEL_DRAFT">
   | TerminalOperation<"EXPIRE_DRAFT">
+  | ContextBoundOperation<"MARK_REVIEW_READY">
+  | ContextBoundOperation<"CONFIRM_DRAFT">
   | FieldOperation<"UPDATE_OBJECTIVE", "objective">
   | FieldOperation<"UPDATE_MISSION_TYPE", "missionType">
   | FieldOperation<"UPDATE_AUDIENCE", "audience">
@@ -109,7 +120,7 @@ export type TelegramMissionDraftApplyResult =
   | TelegramMissionDraftApplySuccess;
 
 const OPERATION_KINDS = new Set<TelegramMissionDraftOperationKind>([
-  "CANCEL_DRAFT", "EXPIRE_DRAFT", "REPLACE_ASSUMPTIONS", "REPLACE_CONSTRAINTS",
+  "CANCEL_DRAFT", "CONFIRM_DRAFT", "EXPIRE_DRAFT", "MARK_REVIEW_READY", "REPLACE_ASSUMPTIONS", "REPLACE_CONSTRAINTS",
   "REPLACE_PROPOSED_EXTERNAL_ACTIONS", "REPLACE_UNKNOWNS", "RETURN_TO_COLLECTING",
   "SET_CURRENT_FIELD", "UPDATE_AUDIENCE", "UPDATE_BUDGET", "UPDATE_DEADLINE",
   "UPDATE_DELIVERABLES", "UPDATE_MISSION_TYPE", "UPDATE_OBJECTIVE",
@@ -119,7 +130,7 @@ const DRAFT_FIELDS = new Set<TelegramMissionDraftField>([
   "EXTERNAL_ACTIONS", "MISSION_TYPE", "OBJECTIVE", "UNKNOWNS",
 ]);
 const FAILURE_CODES = new Set<TelegramMissionDraftFailureReasonCode>([
-  "ACTOR_MISMATCH", "DRAFT_ID_MISMATCH", "EXPIRED_DRAFT", "IDENTITY_MISMATCH",
+  "ACTOR_MISMATCH", "CONTEXT_FINGERPRINT_MISMATCH", "DRAFT_ID_MISMATCH", "EXPIRED_DRAFT", "IDENTITY_MISMATCH",
   "INVALID_OPERATION", "INVALID_STATE_TRANSITION", "SESSION_ID_MISMATCH",
   "STALE_DRAFT_VERSION", "TERMINAL_DRAFT", "VALIDATION_FAILED", "WORKSPACE_MISMATCH",
 ]);
@@ -222,6 +233,10 @@ export class TelegramMissionDraftStateEngine {
     }
 
     if (draft.status === "REVIEW_READY") {
+      if (request.kind === "CONFIRM_DRAFT") {
+        if (request.payload.contextFingerprint !== draft.reviewContextFingerprint) return this.failure("CONTEXT_FINGERPRINT_MISMATCH", request.operationId);
+        return this.success(confirm(draft, now), request.operationId, now);
+      }
       if (request.kind === "RETURN_TO_COLLECTING") return this.success(returnToCollecting(draft, request, now), request.operationId, now);
       if (request.kind === "CANCEL_DRAFT") return this.success(cancel(draft, now), request.operationId, now);
       if (request.kind === "EXPIRE_DRAFT") return this.expire(draft, request.operationId, now);
@@ -231,6 +246,8 @@ export class TelegramMissionDraftStateEngine {
     if (request.kind === "RETURN_TO_COLLECTING") return this.failure("INVALID_STATE_TRANSITION", request.operationId);
     if (request.kind === "CANCEL_DRAFT") return this.success(cancel(draft, now), request.operationId, now);
     if (request.kind === "EXPIRE_DRAFT") return this.expire(draft, request.operationId, now);
+    if (request.kind === "MARK_REVIEW_READY") return this.success(markReviewReady(draft, request.payload.contextFingerprint, now), request.operationId, now);
+    if (request.kind === "CONFIRM_DRAFT") return this.failure("INVALID_STATE_TRANSITION", request.operationId);
     return this.success(applyCollectingUpdate(draft, request, now), request.operationId, now);
   }
 
@@ -262,6 +279,11 @@ function validateOperationPayload(record: Readonly<Record<string, unknown>>, kin
     issue(issues, "required", "operation requires a JSON payload", "payload");
     return;
   }
+  if (kind === "MARK_REVIEW_READY" || kind === "CONFIRM_DRAFT") {
+    rejectUnknown(payload, new Set(["contextFingerprint"]), issues, "payload");
+    if (typeof payload.contextFingerprint !== "string" || !IDENTITY_HASH_PATTERN.test(payload.contextFingerprint)) issue(issues, "invalid_format", "contextFingerprint must be a SHA-256 hex hash", "payload.contextFingerprint");
+    return;
+  }
   const field = fieldForKind(kind);
   rejectUnknown(payload, new Set([field]), issues, "payload");
   if (!(field in payload)) {
@@ -278,7 +300,7 @@ function validateOperationPayload(record: Readonly<Record<string, unknown>>, kin
   if (!fieldValidation.ok) for (const entry of fieldValidation.issues) issue(issues, entry.code, entry.message, `payload.${entry.path}`);
 }
 
-function fieldForKind(kind: Exclude<TelegramMissionDraftOperationKind, "CANCEL_DRAFT" | "EXPIRE_DRAFT">): TelegramMissionDraftMutableField | "currentField" {
+function fieldForKind(kind: Exclude<TelegramMissionDraftOperationKind, "CANCEL_DRAFT" | "CONFIRM_DRAFT" | "EXPIRE_DRAFT" | "MARK_REVIEW_READY">): TelegramMissionDraftMutableField | "currentField" {
   switch (kind) {
     case "UPDATE_OBJECTIVE": return "objective";
     case "UPDATE_MISSION_TYPE": return "missionType";
@@ -295,7 +317,7 @@ function fieldForKind(kind: Exclude<TelegramMissionDraftOperationKind, "CANCEL_D
   }
 }
 
-function applyCollectingUpdate(draft: TelegramMissionDraft, operation: Exclude<TelegramMissionDraftOperation, TerminalOperation<"CANCEL_DRAFT"> | TerminalOperation<"EXPIRE_DRAFT"> | CurrentFieldOperation<"RETURN_TO_COLLECTING">>, now: string): TelegramMissionDraft {
+function applyCollectingUpdate(draft: TelegramMissionDraft, operation: Exclude<TelegramMissionDraftOperation, TerminalOperation<"CANCEL_DRAFT"> | TerminalOperation<"EXPIRE_DRAFT"> | ContextBoundOperation<"MARK_REVIEW_READY"> | ContextBoundOperation<"CONFIRM_DRAFT"> | CurrentFieldOperation<"RETURN_TO_COLLECTING">>, now: string): TelegramMissionDraft {
   const base = { ...draft, updatedAt: now, version: draft.version + 1 };
   switch (operation.kind) {
     case "UPDATE_OBJECTIVE": return { ...base, objective: operation.payload.objective };
@@ -317,6 +339,14 @@ function returnToCollecting(draft: TelegramMissionDraft, operation: CurrentField
   return { ...base, currentField: operation.payload.currentField, status: "COLLECTING", updatedAt: now, version: draft.version + 1 };
 }
 
+function markReviewReady(draft: TelegramMissionDraft, contextFingerprint: string, now: string): TelegramMissionDraft {
+  return { ...draft, reviewContextFingerprint: contextFingerprint, status: "REVIEW_READY", updatedAt: now, version: draft.version + 1 };
+}
+
+function confirm(draft: TelegramMissionDraft, now: string): TelegramMissionDraft {
+  return { ...draft, confirmedAt: now, status: "CONFIRMED", updatedAt: now, version: draft.version + 1 };
+}
+
 function cancel(draft: TelegramMissionDraft, now: string): TelegramMissionDraft {
   const base = withoutTerminalMetadata(draft);
   return { ...base, status: "CANCELLED", terminalReasonCode: "cancelled_by_operator", updatedAt: now, version: draft.version + 1 };
@@ -329,7 +359,7 @@ function expire(draft: TelegramMissionDraft, now: string): TelegramMissionDraft 
 
 function withoutTerminalMetadata(draft: TelegramMissionDraft): TelegramMissionDraft {
   return Object.fromEntries(
-    Object.entries(draft).filter(([key]) => key !== "confirmedAt" && key !== "terminalReasonCode"),
+    Object.entries(draft).filter(([key]) => key !== "confirmedAt" && key !== "terminalReasonCode" && key !== "reviewContextFingerprint"),
   ) as TelegramMissionDraft;
 }
 

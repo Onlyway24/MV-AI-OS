@@ -1890,6 +1890,23 @@ later explicitly approved sub-milestones.
 in-memory state engine over this exact contract; persistence, conversion, `/mission`,
 and execution remain separate decisions.
 
+## ADR-073 — Telegram Mission conversion uses explicit versioned profiles and explicit Mission data
+
+**Decision:** Telegram Mission conversion uses explicit versioned Founder, Brand, and
+optional Mission-type profiles plus explicitly collected Mission-specific fields.
+Profiles are never hidden defaults: their exact identities, versions, fingerprints,
+and expanded material rules are shown and explicitly confirmed by Fabio. The
+conversion context binds the draft version, actor, workspace, exact profile content,
+and confirmation fingerprint; substitution or stale confirmation fails closed.
+
+**Reason:** This preserves usability without repeating stable boilerplate while never
+assuming deadlines, budgets, market facts, success-metric targets, evidence,
+approval, customer identity, legal conclusions, or external-action authorization.
+
+**Future impact:** Telegram personal metadata is never a profile source. Any later
+storage, session, UI, or planner boundary must retain exact profile references and
+make all profile-derived values reviewable before confirmation.
+
 ## ADR-072 — Telegram Mission Draft operations are deterministic and memory-only
 
 **Decision:** Phase 1B.1A-2 adds a strict, versioned operation contract and pure

@@ -3,11 +3,15 @@ import {
   type FounderMissionType,
   type MissionAssumption,
   type MissionAudience,
+  type MissionApprovalPolicy,
   type MissionBudget,
   type MissionConstraint,
   type MissionDeadline,
   type MissionDeliverable,
   type MissionExternalActionRequest,
+  type MissionKnownFact,
+  type MissionObjective,
+  type MissionSuccessMetric,
   type MissionUnknown,
 } from "../missions/founder-mission-brief.js";
 import { asRecord, isJsonObject, isRfc3339Timestamp } from "../validation/primitives.js";
@@ -38,6 +42,9 @@ export type TelegramMissionDraftField =
   | "EXTERNAL_ACTIONS"
   | "MISSION_TYPE"
   | "OBJECTIVE"
+  | "OBJECTIVE_DETAILS"
+  | "PROFILE_SELECTION"
+  | "SUCCESS_METRICS"
   | "UNKNOWNS";
 
 export type TelegramMissionDraftTerminalReasonCode =
@@ -53,7 +60,12 @@ export type TelegramMissionDraftMutableField =
   | "deliverables"
   | "missionType"
   | "objective"
+  | "objectiveDetails"
+  | "missionApprovalPolicy"
+  | "profileSelection"
   | "proposedExternalActions"
+  | "successMetrics"
+  | "knownFacts"
   | "unknowns";
 
 /**
@@ -84,7 +96,24 @@ export interface TelegramMissionDraft {
   readonly deliverables?: readonly MissionDeliverable[];
   readonly missionType?: FounderMissionType;
   readonly objective?: string;
+  /** Structured objective is collected explicitly; the text objective remains the operator-facing summary. */
+  readonly objectiveDetails?: MissionObjective;
+  readonly missionApprovalPolicy?: MissionApprovalPolicy;
+  readonly profileSelection?: TelegramMissionProfileSelection;
+  readonly successMetrics?: readonly MissionSuccessMetric[];
+  readonly knownFacts?: readonly MissionKnownFact[];
+  readonly reviewContextFingerprint?: string;
   readonly terminalReasonCode?: TelegramMissionDraftTerminalReasonCode;
+}
+
+/** Exact profile identities chosen by the operator. This contains no Telegram identity data. */
+export interface TelegramMissionProfileSelection {
+  readonly brandProfileId: string;
+  readonly brandProfileVersion: string;
+  readonly founderProfileId: string;
+  readonly founderProfileVersion: string;
+  readonly missionTypeProfileId?: string;
+  readonly missionTypeProfileVersion?: string;
 }
 
 const TOP_LEVEL_KEYS = new Set([
@@ -104,6 +133,12 @@ const TOP_LEVEL_KEYS = new Set([
   "expiresAt",
   "missionType",
   "objective",
+  "objectiveDetails",
+  "missionApprovalPolicy",
+  "profileSelection",
+  "successMetrics",
+  "knownFacts",
+  "reviewContextFingerprint",
   "proposedExternalActions",
   "sessionId",
   "status",
@@ -131,6 +166,9 @@ const FIELDS = new Set<TelegramMissionDraftField>([
   "EXTERNAL_ACTIONS",
   "MISSION_TYPE",
   "OBJECTIVE",
+  "OBJECTIVE_DETAILS",
+  "PROFILE_SELECTION",
+  "SUCCESS_METRICS",
   "UNKNOWNS",
 ]);
 const FORBIDDEN_TELEGRAM_KEYS = new Set([
@@ -211,6 +249,21 @@ export function validateTelegramMissionDraftFieldValue(
   switch (fieldName) {
     case "objective":
       requiredText(record, fieldName, issues);
+      break;
+    case "objectiveDetails":
+      optionalObject(record, fieldName, ["businessValues", "desiredOutcome", "purpose", "statement"], issues, validateObjective);
+      break;
+    case "missionApprovalPolicy":
+      optionalObject(record, fieldName, ["approvalRequiredFor", "fabioIsFinalAuthority"], issues, validateApprovalPolicy);
+      break;
+    case "profileSelection":
+      optionalObject(record, fieldName, ["brandProfileId", "brandProfileVersion", "founderProfileId", "founderProfileVersion", "missionTypeProfileId", "missionTypeProfileVersion"], issues, validateProfileSelection);
+      break;
+    case "successMetrics":
+      requiredArray(record, fieldName, 16, "metricId", issues, validateSuccessMetric);
+      break;
+    case "knownFacts":
+      requiredArray(record, fieldName, 32, "factId", issues, validateKnownFact);
       break;
     case "missionType":
       if (
@@ -295,6 +348,14 @@ function validateOptionalMissionFields(
   issues: ValidationIssue[],
 ): void {
   optionalText(record, "objective", issues);
+  optionalObject(record, "objectiveDetails", ["businessValues", "desiredOutcome", "purpose", "statement"], issues, validateObjective);
+  optionalObject(record, "missionApprovalPolicy", ["approvalRequiredFor", "fabioIsFinalAuthority"], issues, validateApprovalPolicy);
+  optionalObject(record, "profileSelection", ["brandProfileId", "brandProfileVersion", "founderProfileId", "founderProfileVersion", "missionTypeProfileId", "missionTypeProfileVersion"], issues, validateProfileSelection);
+  optionalArray(record, "successMetrics", 16, "metricId", issues, validateSuccessMetric, false);
+  optionalArray(record, "knownFacts", 32, "factId", issues, validateKnownFact, false);
+  if (record.reviewContextFingerprint !== undefined && (typeof record.reviewContextFingerprint !== "string" || !IDENTITY_HASH_PATTERN.test(record.reviewContextFingerprint))) {
+    issue(issues, "invalid_format", "reviewContextFingerprint must be a SHA-256 hex hash", "reviewContextFingerprint");
+  }
   if (
     record.missionType !== undefined &&
     (typeof record.missionType !== "string" ||
@@ -331,6 +392,9 @@ function validateStatusConsistency(
 ): void {
   if (record.status === "CONFIRMED") {
     requiredTimestamp(record, "confirmedAt", issues);
+    if (typeof record.reviewContextFingerprint !== "string" || !IDENTITY_HASH_PATTERN.test(record.reviewContextFingerprint)) {
+      issue(issues, "required", "confirmed drafts require their exact review context fingerprint", "reviewContextFingerprint");
+    }
     if (record.terminalReasonCode !== undefined) {
       issue(issues, "invalid_value", "confirmed drafts cannot have a terminal reason", "terminalReasonCode");
     }
@@ -346,7 +410,13 @@ function validateStatusConsistency(
     }
     return;
   }
-  if (record.confirmedAt !== undefined || record.terminalReasonCode !== undefined) {
+  if (record.status === "REVIEW_READY") {
+    if (typeof record.reviewContextFingerprint !== "string" || !IDENTITY_HASH_PATTERN.test(record.reviewContextFingerprint)) {
+      issue(issues, "required", "review-ready drafts require an exact context fingerprint", "reviewContextFingerprint");
+    }
+    return;
+  }
+  if (record.confirmedAt !== undefined || record.terminalReasonCode !== undefined || record.reviewContextFingerprint !== undefined) {
     issue(issues, "invalid_value", "non-terminal drafts cannot have confirmation or terminal reason", "status");
   }
 }
@@ -355,6 +425,42 @@ function validateAudience(value: Readonly<Record<string, unknown>>, issues: Vali
   requiredText(value, "description", issues, path);
   optionalText(value, "market", issues, path);
   validateStringArray(value.segments, 8, false, issues, `${path}.segments`);
+}
+
+function validateObjective(value: Readonly<Record<string, unknown>>, issues: ValidationIssue[], path: string): void {
+  requiredText(value, "statement", issues, path);
+  requiredText(value, "purpose", issues, path);
+  requiredText(value, "desiredOutcome", issues, path);
+  validateStringArray(value.businessValues, 5, true, issues, `${path}.businessValues`);
+}
+
+function validateApprovalPolicy(value: Readonly<Record<string, unknown>>, issues: ValidationIssue[], path: string): void {
+  if (value.fabioIsFinalAuthority !== true) issue(issues, "invalid_value", "fabioIsFinalAuthority must be true", `${path}.fabioIsFinalAuthority`);
+  validateStringArray(value.approvalRequiredFor, 8, false, issues, `${path}.approvalRequiredFor`);
+}
+
+function validateProfileSelection(value: Readonly<Record<string, unknown>>, issues: ValidationIssue[], path: string): void {
+  for (const key of ["founderProfileId", "founderProfileVersion", "brandProfileId", "brandProfileVersion"] as const) requiredIdentifier(value, key, issues, path);
+  const hasMissionTypeId = value.missionTypeProfileId !== undefined;
+  const hasMissionTypeVersion = value.missionTypeProfileVersion !== undefined;
+  if (hasMissionTypeId !== hasMissionTypeVersion) issue(issues, "invalid_value", "mission-type profile identity and version must be provided together", path);
+  if (hasMissionTypeId) {
+    requiredIdentifier(value, "missionTypeProfileId", issues, path);
+    requiredText(value, "missionTypeProfileVersion", issues, path);
+  }
+}
+
+function validateSuccessMetric(value: Readonly<Record<string, unknown>>, issues: ValidationIssue[], path: string): void {
+  requiredIdentifier(value, "metricId", issues, path);
+  requiredText(value, "measurement", issues, path);
+  requiredText(value, "target", issues, path);
+  requiredText(value, "evidenceRequired", issues, path);
+}
+
+function validateKnownFact(value: Readonly<Record<string, unknown>>, issues: ValidationIssue[], path: string): void {
+  requiredIdentifier(value, "factId", issues, path);
+  requiredText(value, "statement", issues, path);
+  if (value.sourceRef !== undefined) requiredText(value, "sourceRef", issues, path);
 }
 
 function validateDeliverable(value: Readonly<Record<string, unknown>>, issues: ValidationIssue[], path: string): void {
@@ -487,6 +593,8 @@ function keysForArray(path: string): ReadonlySet<string> {
     case "proposedExternalActions": return new Set(["actionId", "actionType", "approvalRequired", "purpose", "status"]);
     case "assumptions": return new Set(["assumptionId", "rationale", "sourceUnknownId", "statement"]);
     case "unknowns": return new Set(["classification", "conservativeAssumption", "impact", "topic", "unknownId"]);
+    case "successMetrics": return new Set(["evidenceRequired", "measurement", "metricId", "target"]);
+    case "knownFacts": return new Set(["factId", "sourceRef", "statement"]);
     default: return new Set();
   }
 }

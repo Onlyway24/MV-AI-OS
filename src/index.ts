@@ -29,6 +29,7 @@ export {
   type TelegramMissionDraft,
   type TelegramMissionDraftField,
   type TelegramMissionDraftMutableField,
+  type TelegramMissionProfileSelection,
   type TelegramMissionDraftStatus,
   type TelegramMissionDraftTerminalReasonCode,
 } from "./telegram/telegram-mission-draft.js";
@@ -421,6 +422,24 @@ export {
   type MissionUnknownClassification,
 } from "./missions/founder-mission-brief.js";
 export { FounderMissionBriefValidator } from "./missions/founder-mission-brief-validator.js";
+export {
+  FOUNDER_MISSION_BRIEF_FIELD_SOURCES,
+  MISSION_CONVERSION_CONTEXT_CONTRACT_VERSION,
+  ONLY_WAY_MISSION_CONVERSION_POLICY,
+  ONLY_WAY_MISSION_CONVERSION_POLICY_ID,
+  ONLY_WAY_MISSION_CONVERSION_POLICY_VERSION,
+  DeterministicFounderMissionConverter,
+  ImmutableMissionConversionProfileRegistry,
+  MissionConversionContextValidator,
+  type FounderMissionBriefFieldSource,
+  type FounderMissionConversionPolicyProfile,
+  type FounderMissionConversionResult,
+  type MissionConversionContext,
+  type MissionConversionExpandedReview,
+  type MissionConversionReadiness,
+  type MissionConversionReadinessFinding,
+  type ResolvedMissionConversionProfile,
+} from "./missions/mission-conversion-context.js";
 export {
   DEFAULT_MISSION_PLAN,
   DEFAULT_MISSION_PLAN_ID,

@@ -36,7 +36,7 @@ describe("Telegram Mission Draft pure state engine", () => {
   });
 
   it("applies every collecting field update exactly once without automatic progression", () => {
-    for (const operation of operations().filter(({ kind }) => !["CANCEL_DRAFT", "EXPIRE_DRAFT", "RETURN_TO_COLLECTING"].includes(kind))) {
+    for (const operation of operations().filter(({ kind }) => !["CANCEL_DRAFT", "CONFIRM_DRAFT", "EXPIRE_DRAFT", "MARK_REVIEW_READY", "RETURN_TO_COLLECTING"].includes(kind))) {
       const result = engine.apply(draft(), operation, NOW);
       expect(result.ok).toBe(true);
       if (!result.ok) continue;
@@ -66,10 +66,16 @@ describe("Telegram Mission Draft pure state engine", () => {
 
   it("enforces the closed transition matrix including terminal and expiry behavior", () => {
     expect(engine.apply(reviewDraft(), operation("RETURN_TO_COLLECTING", { currentField: "BUDGET" }), NOW)).toMatchObject({ ok: true, draft: { currentField: "BUDGET", status: "COLLECTING", version: 1 } });
+    const marked = engine.apply(draft(), operation("MARK_REVIEW_READY", { contextFingerprint: hash }), NOW);
+    expect(marked).toMatchObject({ ok: true, draft: { reviewContextFingerprint: hash, status: "REVIEW_READY", version: 1 } });
+    if (marked.ok) {
+      expect(engine.apply(marked.draft, operation("CONFIRM_DRAFT", { contextFingerprint: hash }, { expectedVersion: 1 }), NOW)).toMatchObject({ ok: true, draft: { confirmedAt: NOW, status: "CONFIRMED", version: 2 } });
+      expect(engine.apply(marked.draft, operation("CONFIRM_DRAFT", { contextFingerprint: "b".repeat(64) }, { expectedVersion: 1 }), NOW)).toMatchObject({ ok: false, reasonCode: "CONTEXT_FINGERPRINT_MISMATCH" });
+    }
     expect(engine.apply(draft(), operation("RETURN_TO_COLLECTING", { currentField: "BUDGET" }), NOW)).toMatchObject({ ok: false, reasonCode: "INVALID_STATE_TRANSITION" });
     expect(engine.apply(draft(), operation("CANCEL_DRAFT"), NOW)).toMatchObject({ ok: true, draft: { status: "CANCELLED", terminalReasonCode: "cancelled_by_operator" } });
     expect(engine.apply(reviewDraft(), operation("CANCEL_DRAFT"), NOW)).toMatchObject({ ok: true, draft: { status: "CANCELLED" } });
-    expect(engine.apply(draft({ status: "CONFIRMED", confirmedAt: NOW }), operation("CANCEL_DRAFT"), NOW)).toMatchObject({ ok: false, reasonCode: "TERMINAL_DRAFT" });
+    expect(engine.apply(draft({ status: "CONFIRMED", confirmedAt: NOW, reviewContextFingerprint: hash }), operation("CANCEL_DRAFT"), NOW)).toMatchObject({ ok: false, reasonCode: "TERMINAL_DRAFT" });
     expect(engine.apply(draft({ status: "CANCELLED", terminalReasonCode: "cancelled_by_operator" }), operation("CANCEL_DRAFT"), NOW)).toMatchObject({ ok: false, reasonCode: "TERMINAL_DRAFT" });
     expect(engine.apply(draft({ status: "EXPIRED", terminalReasonCode: "expired" }), operation("CANCEL_DRAFT"), NOW)).toMatchObject({ ok: false, reasonCode: "TERMINAL_DRAFT" });
     expect(engine.apply(draft({ expiresAt: NOW }), operation("EXPIRE_DRAFT"), NOW)).toMatchObject({ ok: true, draft: { status: "EXPIRED", terminalReasonCode: "expired" } });
@@ -137,7 +143,7 @@ function draft(overrides: Record<string, unknown> = {}): TelegramMissionDraft {
 }
 
 function reviewDraft(overrides: Record<string, unknown> = {}): TelegramMissionDraft {
-  return draft({ status: "REVIEW_READY", ...overrides });
+  return draft({ reviewContextFingerprint: hash, status: "REVIEW_READY", ...overrides });
 }
 
 function operation(kind: string, payload?: Record<string, unknown>, overrides: Record<string, unknown> = {}): TelegramMissionDraftOperation {
@@ -169,6 +175,8 @@ function operations(): readonly TelegramMissionDraftOperation[] {
     operation("REPLACE_ASSUMPTIONS", { assumptions: [assumption("assumption-a")] }),
     operation("REPLACE_UNKNOWNS", { unknowns: [unknown("unknown-a")] }),
     operation("SET_CURRENT_FIELD", { currentField: "AUDIENCE" }),
+    operation("MARK_REVIEW_READY", { contextFingerprint: hash }),
+    operation("CONFIRM_DRAFT", { contextFingerprint: hash }),
     operation("RETURN_TO_COLLECTING", { currentField: "OBJECTIVE" }),
     operation("CANCEL_DRAFT"),
     operation("EXPIRE_DRAFT"),

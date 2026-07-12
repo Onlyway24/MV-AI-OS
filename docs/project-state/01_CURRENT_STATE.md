@@ -174,6 +174,14 @@ and tests, not intended future behavior.
   a local process entrypoint. It does not grant access
   to Fabio's personal Telegram account or activity, and Telegram Developer Control
   Plane remains unstarted.
+- Phase 1B Checkpoint A is complete in the current change set: deterministic Mission
+  conversion uses exact versioned founder and brand profiles, a minimal versioned
+  conversion-policy profile, an explicit field-source map, profile-content
+  fingerprints, readiness findings, an expanded no-hidden-defaults review, and an
+  exact context fingerprint bound to `MARK_REVIEW_READY` and `CONFIRM_DRAFT`.
+  Mission-specific values remain explicitly structured draft values; no profile,
+  objective text, Telegram metadata, model, tool, Workflow, network, or external
+  action can supply or execute them.
 - The next milestone is Workflow Specification Admission Boundary.
 
 ## Current architecture

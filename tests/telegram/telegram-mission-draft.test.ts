@@ -20,9 +20,11 @@ describe("Telegram Mission Draft contract", () => {
     const reviewReady = validDraft({
       status: "REVIEW_READY",
       deliverables: [deliverable("brief")],
+      reviewContextFingerprint: hash,
     });
     const confirmed = validDraft({
       confirmedAt: "2026-07-12T10:01:00.000Z",
+      reviewContextFingerprint: hash,
       status: "CONFIRMED",
     });
     const cancelled = validDraft({

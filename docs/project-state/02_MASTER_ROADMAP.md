@@ -13,7 +13,12 @@ without personal-account access or autonomous execution.
 
 **Status:** In progress. The Telegram personal privacy boundary is authoritative;
 Developer Control Plane is Phase 2 and has not started. Workflow Specification
-Admission Boundary is paused, not deleted.
+Admission Boundary is paused, not deleted. Phase 1B Checkpoint A is complete: exact
+versioned Founder/Brand profiles and a narrow versioned policy profile are resolved
+through immutable registries, profile substitution fails closed, every
+`FounderMissionBrief` field has documented provenance, and a deterministic conversion
+context is reviewable and confirmation-bound. SQLite draft durability, atomic session
+integration, and the guided `/mission` UX remain subsequent checkpoints.
 
 ## Phase 0 — Architecture and engineering baseline
 
