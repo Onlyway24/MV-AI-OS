@@ -25,6 +25,7 @@ describe("Operator Workflow Report", () => {
       nextAction: "Record Fabio approval for step content-direction at Workflow version 0.",
     });
     expect(first.blockedSteps[0]?.reasons).toEqual(["Fabio approval required", "Guardian operator_safety decision required"]);
+    expect(first.risks).toEqual(["content-direction: Fabio approval required", "content-direction: Guardian operator_safety decision required"]);
     expect(Object.isFrozen(first)).toBe(true);
 
     await runner.transaction(async ({ workflows }) => {
@@ -58,6 +59,63 @@ describe("Operator Workflow Report", () => {
     const report = await createWorkflowOperatorReportService(runner).create(request());
     expect(report.nextAction).toBe(nextAction);
     expect(JSON.stringify(report)).not.toMatch(/percentage|%/iu);
+    if (status !== "PAUSED") {
+      expect(report.blockedSteps).toEqual([]);
+      expect(report.pendingSteps).toEqual([]);
+      expect(report.readySteps).toEqual([]);
+      expect(report.risks).toEqual([]);
+      expect(report.approvals).toEqual([{ status: "NOT_REQUIRED", stepId: "content-direction" }]);
+      expect(report.guardians).toEqual([{ remediationRequired: false, status: "NOT_REQUIRED", stepId: "content-direction" }]);
+    }
+  });
+
+  it("retains completed control evidence durably without presenting it as active remediation", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-operator-report-completed-"));
+    const path = join(directory, "runtime.sqlite");
+    try {
+      const first = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+      await seed(first, { status: "COMPLETED", steps: [{ blockers: [], status: "SUCCEEDED", stepId: "content-direction" }] });
+      await recordClearControls(first);
+      const before = await createWorkflowOperatorReportService(first).create(request());
+      expect(before).toMatchObject({
+        approvals: [{ status: "NOT_REQUIRED" }],
+        blockedSteps: [],
+        completedSteps: [{ reasons: [], status: "SUCCEEDED", stepId: "content-direction" }],
+        guardians: [{ remediationRequired: false, status: "NOT_REQUIRED" }],
+        nextAction: "No action required because the Workflow completed successfully.",
+        pendingSteps: [],
+        readySteps: [],
+        risks: [],
+      });
+      expect(Object.isFrozen(before)).toBe(true);
+      await first.close();
+
+      const reopened = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+      expect(await createWorkflowOperatorReportService(reopened).create(request())).toEqual(before);
+      const evidence = await reopened.transaction(async ({ workflows }) => ({
+        approvals: await workflows.approvals.listBySnapshot("workflow-42", 0, "content-direction"),
+        guardians: await workflows.guardians.listBySnapshot("workflow-42", 0, "content-direction"),
+      }));
+      expect(evidence).toMatchObject({ approvals: [{ status: "APPROVED" }], guardians: [{ status: "CLEAR" }, { status: "CLEAR" }] });
+      await reopened.close();
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it("does not surface stale control remediation for a terminal failed step", async () => {
+    const runner = new InMemoryRepositoryTransactionRunner();
+    await seed(runner, { status: "FAILED", steps: [{ blockers: [], status: "FAILED", stepId: "content-direction" }], stopReason: "FAILED_STEP" });
+    const report = await createWorkflowOperatorReportService(runner).create(request());
+    expect(report).toMatchObject({
+      approvals: [{ status: "NOT_REQUIRED" }],
+      blockedSteps: [],
+      failedSteps: [{ reasons: [], status: "FAILED", stepId: "content-direction" }],
+      guardians: [{ remediationRequired: false, status: "NOT_REQUIRED" }],
+      pendingSteps: [],
+      readySteps: [],
+      risks: ["content-direction: failed"],
+    });
   });
 
   it("fails closed for stale snapshots and redaction-unsafe reports", async () => {
@@ -89,6 +147,13 @@ async function seed(runner: RepositoryTransactionRunner, overrides: Partial<Work
   const definition: WorkflowDefinition = { contractVersion: "1", definitionId: "metodo@1.0.0", missionObjective: "Prepare Metodo Veloce content direction.", nonExecuting: true, steps: [{ approvalRequired: true, dependencies: [], guardianRequired: true, nonExecuting: true, stepId: "content-direction" }], workflowId: "metodo", workflowVersion: "1.0.0" };
   const instance: WorkflowInstance = { contractVersion: "1", createdAt: "2026-01-01T00:00:00.000Z", definitionId: definition.definitionId, instanceId: "workflow-42", nonExecuting: true, receipts: [], status: "ACTIVE", steps: [{ blockers: [], status: "READY", stepId: "content-direction" }], stopReason: "NONE", updatedAt: "2026-01-01T00:00:00.000Z", version: 0, ...overrides };
   await runner.transaction(async ({ workflows }) => { await workflows.definitions.insert(definition); await workflows.instances.insert(instance); });
+}
+async function recordClearControls(runner: RepositoryTransactionRunner) {
+  await runner.transaction(async ({ workflows }) => {
+    await workflows.approvals.insert({ authorityActorId: "fabio", contractVersion: "1", definitionId: "metodo@1.0.0", evidenceId: "approval-17", instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:01.000Z", scope: "STEP_CANDIDATE_PREPARATION", status: "APPROVED", stepId: "content-direction", workflowVersion: "1.0.0" });
+    await workflows.controlEvents.append({ checkpointId: "approval-17", checkpointKind: "APPROVAL", contractVersion: "1", eventId: "approval-event-17", instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, occurredAt: "2026-01-01T00:00:01.000Z", status: "APPROVED", stepId: "content-direction", summaryCode: "workflow_control_checkpoint_recorded" });
+    for (const domain of ["operator_safety", "quality"] as const) { const evidenceId = `guardian-${domain}-17`; await workflows.guardians.insert({ contractVersion: "1", definitionId: "metodo@1.0.0", domain, evidenceId, guardianId: `${domain}-guardian`, instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, recordedAt: "2026-01-01T00:00:02.000Z", status: "CLEAR", stepId: "content-direction", workflowVersion: "1.0.0" }); await workflows.controlEvents.append({ checkpointId: evidenceId, checkpointKind: "GUARDIAN", contractVersion: "1", eventId: `${evidenceId}-event`, instanceId: "workflow-42", instanceVersion: 0, nonExecuting: true, occurredAt: "2026-01-01T00:00:02.000Z", status: "CLEAR", stepId: "content-direction", summaryCode: "workflow_control_checkpoint_recorded" }); }
+  });
 }
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";

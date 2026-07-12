@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before Core V1 release closeout:
-  `172d2f2 docs: add Core V1 operator guide`.
+- Core V1 `v1.0.0-core` release baseline:
+  `08950d412ba249357064d42eb27a3d92587c1f32`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -162,6 +162,11 @@ and tests, not intended future behavior.
 - Core V1 Adversarial Release Review and closeout is complete. It confirmed no P0/P1
   findings remain, tightened validation of local command receipts and durable workflow
   records, and is documented in `docs/CORE_V1_RELEASE_REPORT.md`.
+- Core V1 Operator Report correctness hotfix is complete in the current change set.
+  Terminal Workflow and Step state has explicit precedence over stale readiness and
+  approval/Guardian remediation in the immutable report projection. Durable approval,
+  Guardian, event, invocation, outcome, and audit records are unchanged and remain
+  queryable. The next milestone remains Workflow Specification Admission Boundary.
 - The next milestone is Workflow Specification Admission Boundary.
 
 ## Current architecture
@@ -294,6 +299,7 @@ provider, n8n, or external SDK types.
 72. Complete Local Core V1 Vertical Slice.
 73. Core V1 Operator and Recovery Guide.
 74. Core V1 Adversarial Release Review and Closeout.
+75. Core V1 Operator Report Correctness Hotfix.
 
 ## Implemented modules
 
@@ -800,7 +806,8 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified release-closeout suite contains 87 test files and 790 tests
+The latest verified Core V1 Operator Report correctness-hotfix suite contains 87 test
+files and 792 tests
 covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
@@ -857,6 +864,10 @@ covering:
 - Core V1 local command receipt/ownership persistence, malformed-response rejection,
   column/JSON mismatch detection, strict durable workflow-record validation, and
   redaction-safe replay.
+- Terminal Workflow Report precedence: completed, cancelled, and failed terminal
+  states cannot surface stale approval/Guardian remediation as active blockers or
+  risks; completed durable control evidence survives SQLite restart and remains
+  queryable without becoming an active requirement.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - OpenAI provider configuration validation, credential handling, Responses API request

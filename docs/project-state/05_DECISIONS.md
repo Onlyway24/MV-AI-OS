@@ -1827,3 +1827,29 @@ non-JSON values are not retained.
 
 **Future impact:** Any new durable Core V1 record or index must use the same
 validate-on-write, validate-on-read, and indexed-column/JSON consistency discipline.
+
+## ADR-069 — Terminal Workflow state takes precedence in operator reports
+
+**Context:** Core V1 acceptance replay found a report projection contradiction: a
+durably completed Workflow correctly reported `COMPLETED` and no next action, while a
+succeeded Step was still listed as blocked by a static approval requirement. The
+durable Workflow, approval, Guardian, invocation, outcome, and audit records were
+correct; the error existed only in report derivation.
+
+**Decision:** Operator report derivation applies explicit terminal-state precedence
+before classifying actionable control state. Terminal Workflows and terminal Steps do
+not emit active approval, Guardian, readiness, blocked, pending, or ready remediation.
+Failed Workflows retain their bounded failure risk and recovery guidance, but terminal
+Step controls are not represented as active requirements. Historical durable evidence
+remains intact and independently queryable.
+
+**Reason:** An operator-facing report must never give contradictory instructions or
+turn historical governance evidence into a current action requirement.
+
+**Tradeoffs:** Terminal reports intentionally prioritize current actionable truth over
+displaying historical control requirements. Operators inspect durable evidence through
+the existing bounded evidence path when they need history.
+
+**Future impact:** Any later operator projection, dashboard, API, or workflow report
+must use the same terminal-state precedence rule and preserve the distinction between
+historical evidence and active remediation.

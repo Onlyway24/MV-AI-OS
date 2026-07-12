@@ -43,7 +43,7 @@ describe("MV-AI-OS Core V1 local vertical slice", () => {
       expect(await run(runtime, "INSPECT_AGENT_RESULT", { invocationId: "invocation-metodo-1" })).toMatchObject({ result: { status: "COMPLETED", result: { output: { preparationOnly: true, externalEffects: false } } } });
       expect(await run(runtime, "ACCEPT_OUTCOME", { contractVersion: "1", expectedInstanceVersion: 2, invocationId: "invocation-metodo-1", outcomeId: "outcome-metodo-1" })).toMatchObject({ result: { receipt: { decision: "ACCEPTED_FOR_COMPLETION", resultingInstanceVersion: 3 } } });
       const completed = await report(runtime, instance.instanceId, 3);
-      expect(completed).toMatchObject({ nextAction: "No action required because the Workflow completed successfully.", result: { approvals: [{ status: "NOT_REQUIRED" }], guardians: [{ status: "NOT_REQUIRED" }], overallStatus: "COMPLETED", progress: { completedSteps: 1, totalSteps: 1 }, externalActions: { unauthorizedActionOccurred: false } } });
+      expect(completed).toMatchObject({ nextAction: "No action required because the Workflow completed successfully.", result: { approvals: [{ status: "NOT_REQUIRED" }], blockedSteps: [], completedSteps: [{ reasons: [], status: "SUCCEEDED", stepId: "content-direction" }], guardians: [{ status: "NOT_REQUIRED" }], overallStatus: "COMPLETED", pendingSteps: [], progress: { completedSteps: 1, totalSteps: 1 }, readySteps: [], risks: [], externalActions: { unauthorizedActionOccurred: false } } });
       await runtime.close();
 
       const reopened = await createRuntime(path);

@@ -9,6 +9,11 @@ evidence, exact candidate selection, one deterministic local Content Director re
 explicit outcome review, lifecycle recovery controls, operator reporting, restart, and
 bounded audit inspection.
 
+The `v1.0.1-core` correctness hotfix preserves this scope and durable state. It fixes
+only the Operator Workflow Report projection: terminal Workflow and Step state now
+takes precedence over stale readiness and control findings, so completed or cancelled
+work is never presented as requiring approval or Guardian remediation.
+
 The path is version-bound, default-deny, durable, redaction-safe, and local-only. All
 mutations pass through existing validators, command/service boundaries, transaction
 repositories, and append-only evidence. The implementation uses no live model call,
@@ -35,6 +40,13 @@ worker, HTTP server, dashboard, publication, outreach, payment, or customer deli
 
 No P0 or unresolved P1 finding remains.
 
+- The Core V1 acceptance replay found that a completed Step could be listed as both
+  completed and blocked because report derivation re-applied static approval
+  requirements after terminal controls had become `NOT_REQUIRED`. The `v1.0.1-core`
+  hotfix gives terminal Workflow and Step state explicit precedence in the immutable
+  report projection. Historical approval, Guardian, invocation, outcome, event, and
+  audit evidence remains durable and queryable; no persistent record is changed.
+
 - Durable Guardian and approval evidence is considered only when its atomic control
   event exists and its exact Workflow version matches the current decision.
 - Retry/failure handling now binds the configured runtime actor and derives accepted
@@ -49,16 +61,18 @@ No P0 or unresolved P1 finding remains.
 
 ## Verification evidence
 
-At release closeout the deterministic local suite passes:
+At the Core V1 Operator Report correctness hotfix closeout the deterministic local
+suite passes:
 
 - `npm run lint`
 - `npm run typecheck`
-- `npm run test` — 87 test files, 790 tests
+- `npm run test` — 87 test files, 792 tests
 - `npm run build`
 - `git diff --check`
 
 Focused tests cover local command receipt validation, Core V1 restart slices,
-invocation/outcome/lifecycle state, checkpoints, persistence, and report behavior.
+invocation/outcome/lifecycle state, checkpoints, persistence, terminal-report
+precedence, and report behavior.
 
 ## Known limits and future admission criteria
 
