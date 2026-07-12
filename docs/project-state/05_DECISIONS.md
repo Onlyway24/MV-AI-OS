@@ -1863,3 +1863,29 @@ groups, channels, media, or social graph.
 
 **Future impact:** Every Telegram, H24, improvement, Developer Control Plane, and Web
 Console milestone must comply with `TELEGRAM_PERSONAL_PRIVACY_BOUNDARY.md`.
+
+## ADR-071 — Telegram Mission drafts are structured, progressive, and transport-neutral
+
+**Context:** A future guided Mission flow needs to collect intentional Mission data
+without retaining Telegram messages, profile material, transport diagnostics, or a
+premature copy of the complete FounderMissionBrief.
+
+**Decision:** The first Phase 1B Mission artifact is a strict, versioned,
+storage-neutral `TelegramMissionDraft` contract. Its validator accepts bounded,
+JSON-safe, deeply immutable progressive Mission fields using existing Founder Mission
+terminology; rejects unknown fields, personal Telegram/transport fields, sensitive
+material, invalid terminal combinations, malformed nested Mission records, duplicate
+IDs, and unstable ordering. It creates no state transitions, database records,
+receipts, UI command, Mission Brief conversion, plan, Workflow, or external action.
+
+**Reason:** The structured draft gives later guided interaction one privacy-safe
+boundary while preventing a Telegram transcript or partial input from becoming an
+execution path or an implicit FounderMissionBrief.
+
+**Tradeoffs:** The record can be structurally `REVIEW_READY` or `CONFIRMED` without
+proving full FounderMissionBrief readiness; that proof and legal transitions belong to
+later explicitly approved sub-milestones.
+
+**Future impact:** The next Telegram Mission sub-milestone may add only the pure
+in-memory state engine over this exact contract; persistence, conversion, `/mission`,
+and execution remain separate decisions.
