@@ -18,8 +18,9 @@ export class TelegramBotApiClient {
     if (!record(value) || !record(value.result) || value.result.is_bot !== true || sourceId(value.result.id) === undefined) throw new Error("Telegram identity response is invalid");
     return Object.freeze({ id: sourceId(value.result.id) ?? "0", isBot: true });
   }
-  public async bootstrap(): Promise<string> {
-    await this.#request("deleteWebhook", { drop_pending_updates: true });
+  public async bootstrap(existingOffset?: string): Promise<string> {
+    await this.#request("deleteWebhook", { drop_pending_updates: false });
+    if (existingOffset !== undefined) return existingOffset;
     const latest = await this.#request("getUpdates", { allowed_updates: ["message", "callback_query"], limit: 1, offset: -1, timeout: 0 });
     const updates = botResults(latest);
     const latestId = updates.map((entry) => record(entry) && sourceId(entry.update_id) !== undefined ? Number(sourceId(entry.update_id)) : -1).reduce((maximum, value) => Math.max(maximum, value), -1);

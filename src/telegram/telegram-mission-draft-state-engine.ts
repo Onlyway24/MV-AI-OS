@@ -239,12 +239,17 @@ export class TelegramMissionDraftStateEngine {
     const bindingFailure = bindingFailureFor(draft, request);
     if (bindingFailure !== undefined) return this.failure(bindingFailure, request.operationId);
     if (request.expectedVersion !== draft.version) return this.failure("STALE_DRAFT_VERSION", request.operationId);
+    if (draft.status === "PLANNING_AUTHORIZED") {
+      if (request.kind === "EXPIRE_DRAFT") return this.expire(draft, request.operationId, now);
+      return this.failure("TERMINAL_DRAFT", request.operationId);
+    }
     if (isTerminal(draft.status)) return this.failure("TERMINAL_DRAFT", request.operationId);
     if (request.kind !== "EXPIRE_DRAFT" && Date.parse(now) >= Date.parse(draft.expiresAt)) {
       return this.failure("EXPIRED_DRAFT", request.operationId);
     }
 
     if (draft.status === "CONFIRMED") {
+      if (request.kind === "EXPIRE_DRAFT") return this.expire(draft, request.operationId, now);
       if (request.kind === "AUTHORIZE_PLANNING") {
         return this.success(authorizePlanning(draft, request.payload.contextFingerprint, now), request.operationId, now);
       }
@@ -406,7 +411,7 @@ function bindingFailureFor(draft: TelegramMissionDraft, operation: TelegramMissi
 }
 
 function isTerminal(status: TelegramMissionDraft["status"]): boolean {
-  return status === "CANCELLED" || status === "EXPIRED" || status === "PLANNING_AUTHORIZED";
+  return status === "CANCELLED" || status === "EXPIRED";
 }
 
 function requiredIdentifier(record: Readonly<Record<string, unknown>>, key: string, issues: ValidationIssue[]): void {

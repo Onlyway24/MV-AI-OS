@@ -21,6 +21,7 @@ export {
 } from "./telegram/telegram-contracts.js";
 export { FetchTelegramBotApiTransport, TelegramBotApiClient, type TelegramBotApiTransport } from "./telegram/telegram-bot-api.js";
 export { ControlledTelegramOperatorConsole } from "./telegram/telegram-operator-console.js";
+export { TelegramOperatorProcessLock } from "./telegram/telegram-operator-lock.js";
 export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
 export { TelegramMissionDraftSessionCoordinator, telegramMissionCommandFingerprint, type TelegramMissionDraftCallback, type TelegramMissionDraftSessionCommand, type TelegramMissionDraftSessionSnapshot } from "./telegram/telegram-mission-draft-session-coordinator.js";
 export { TelegramMissionPlanningConsole } from "./telegram/telegram-mission-planning-console.js";
@@ -49,7 +50,7 @@ export {
   type TelegramMissionDraftOperationKind,
 } from "./telegram/telegram-mission-draft-state-engine.js";
 export { TelegramOperatorSessionValidator, TelegramSessionTransitionValidator, isTelegramSessionTransitionAllowed, type TelegramOperatorSessionRecord, type TelegramSessionAction, type TelegramSessionState, type TelegramSessionTransition } from "./telegram/telegram-operator-session.js";
-export { createTelegramOperatorConsole, TelegramApplicationConfigValidator, type TelegramApplicationConfig } from "./telegram/telegram-runtime.js";
+export { createTelegramOperatorConsole, preflightTelegramOperator, TelegramApplicationConfigValidator, type TelegramApplicationConfig, type TelegramOperatorPreflightReport } from "./telegram/telegram-runtime.js";
 export type {
   AgentCapability,
   AgentCapabilityType,

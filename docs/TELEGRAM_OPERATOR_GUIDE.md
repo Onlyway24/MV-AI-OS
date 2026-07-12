@@ -19,10 +19,23 @@ agent. Read `TELEGRAM_PERSONAL_PRIVACY_BOUNDARY.md` before setup.
 
 ## Operation
 
-`npm run telegram -- <untracked-local-config.json>` validates configuration before
-network access, resolves the token only in memory, removes the webhook while dropping
-pending historical updates, establishes a fresh polling position, and requests only
-`message` and `callback_query`. Every process stops cleanly on SIGINT/SIGTERM.
+Prepare an untracked local JSON configuration containing the existing local-runtime
+configuration plus the Telegram allowlist and one `SecretReference`; never put token
+values or real identities in Git. Run the deterministic, no-network preflight first:
+
+`npm run telegram -- preflight <untracked-local-config.json>`
+
+It resolves the token only in memory, checks a private writable database directory,
+validates and opens the SQLite schema, then closes it. Its output contains only a safe
+status and the opaque secret-reference name. Start the local console with:
+
+`npm run telegram -- <untracked-local-config.json>`
+
+The process keeps an exclusive local lock next to its SQLite database, preserves a
+durable polling offset across restart, removes any webhook without dropping pending
+updates, and requests only `message` and `callback_query`. Every process stops cleanly
+on SIGINT/SIGTERM. If startup fails, run preflight again; do not remove a lock file
+unless you have first confirmed no operator process is running.
 
 Phase 1 accepts `/start`, `/help`, `/status`, `/mission`, `/cancel_action`, `/stop`,
 and `/developer`; `/workflows` and `/report` remain hidden. `/mission` collects only
@@ -35,6 +48,12 @@ changes a Core V1 Workflow. The Developer response is inactive by design. It rep
 only in the configured private chat. Unknown, group, channel, forwarded, edited,
 business, media, contact, location, and unauthorized updates are discarded before the
 Local Runtime is reached.
+
+Live acceptance has not been performed from this repository environment because no
+Telegram secret reference is currently available to the local resolver. After a
+successful preflight with Fabio's existing untracked secret/configuration, the only
+human step is to run the start command above from the authorized private chat and
+follow the `/mission` flow; no token should be copied into chat or source code.
 
 Phase 1 creates no transcript and stores no raw Update, message text, names,
 usernames, language, profile, contact, location, media, response body, or token.

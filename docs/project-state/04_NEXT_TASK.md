@@ -2,22 +2,19 @@
 
 ## Milestone name
 
-Controlled Telegram Operator Console — Phase 1B Checkpoint D
+Telegram Live Acceptance, Operational Hardening and Release Readiness
 
 ## Goal
 
-Deliver the complete user-facing Telegram Mission Planning Console over the completed
-Checkpoint C coordination boundary: guided collection, review, separate draft and
-planning confirmations, deterministic Mission validation/planning/Quality Gate, and
-restart-safe Italian result presentation.
+Harden the completed Phase 1B Mission Planning Console for safe local operator use:
+preflight, private database handling, process ownership, restart/replay validation,
+offline acceptance, and live acceptance only when an existing local secret reference
+is available.
 
 ## Required scope
 
-- Reuse the atomic session/draft coordinator and preserve exact callback, identity,
-  version, context, expiry, privacy, and restart guarantees.
-- Invoke only the existing FounderMissionBrief validation, deterministic Mission
-  Planner, and Mission Quality Gate after explicit planning authorization.
-- Render a bounded Italian Mission result without duplicating commands on restart.
+- Keep Phase 1C Workflow controls unstarted.
+- Never expose tokens, configured identities, raw updates, or database records.
 
 ## Forbidden scope
 

@@ -6,16 +6,17 @@ import { TelegramBotApiClient } from "./telegram-bot-api.js";
 import { TelegramSqliteStateStore } from "./telegram-sqlite-state-store.js";
 import type { TelegramMissionDraftSessionCoordinator } from "./telegram-mission-draft-session-coordinator.js";
 import { TelegramMissionPlanningConsole } from "./telegram-mission-planning-console.js";
+import type { TelegramOperatorProcessLock } from "./telegram-operator-lock.js";
 
 export class ControlledTelegramOperatorConsole {
   #started = false;
   #stopped = false;
-  public constructor(private readonly input: { readonly actorId: string; readonly api: TelegramBotApiClient; readonly config: TelegramOperatorConfig; readonly clock: Clock; readonly missionDrafts?: TelegramMissionDraftSessionCoordinator; readonly runtime: LocalRuntime; readonly state: TelegramSqliteStateStore; readonly workspaceId: string }) {}
+  public constructor(private readonly input: { readonly actorId: string; readonly api: TelegramBotApiClient; readonly config: TelegramOperatorConfig; readonly clock: Clock; readonly lock?: TelegramOperatorProcessLock; readonly missionDrafts?: TelegramMissionDraftSessionCoordinator; readonly runtime: LocalRuntime; readonly state: TelegramSqliteStateStore; readonly workspaceId: string }) {}
 
   public async bootstrap(): Promise<void> {
     if (this.#started) return;
     await this.input.api.identify();
-    const offset = await this.input.api.bootstrap();
+    const offset = await this.input.api.bootstrap(this.input.state.offset()?.offset);
     this.input.state.saveOffset(offset);
     await this.input.api.setCommands();
     this.#started = true;
@@ -33,7 +34,7 @@ export class ControlledTelegramOperatorConsole {
       if (claim === "REPLAYED") continue;
       const binding = createHash("sha256").update(`${normalized.action.userId}:${normalized.action.chatId}`, "utf8").digest("hex");
       const mission = this.input.missionDrafts === undefined ? undefined : new TelegramMissionPlanningConsole({ actorId: this.input.actorId, chatId: this.input.config.allowedChatId, clock: this.input.clock, coordinator: this.input.missionDrafts, runtime: this.input.runtime, state: this.input.state, workspaceId: this.input.workspaceId });
-      if (normalized.action.payload?.startsWith("cb_") === true && mission !== undefined) {
+      if (isCallbackUpdate(raw) && normalized.action.payload?.startsWith("cb_") === true && mission !== undefined) {
         try { await this.input.api.deliver(await mission.handleCallback(binding, normalized.action.payload)); }
         catch { await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: "Conferma Missione non valida, scaduta o già utilizzata." }); }
         this.input.state.complete(normalized.action.updateId);
@@ -62,7 +63,7 @@ export class ControlledTelegramOperatorConsole {
   public async close(): Promise<void> {
     if (this.#stopped) return;
     this.#stopped = true;
-    await Promise.allSettled([this.input.runtime.close(), this.input.state.close()]);
+    await Promise.allSettled([this.input.runtime.close(), this.input.state.close(), this.input.lock?.close()]);
   }
 }
 
@@ -82,3 +83,4 @@ function response(kind: string, stopConfirmed = false): string {
   return values[kind] ?? "Comando non disponibile.";
 }
 function rawUpdateId(value: unknown): string | undefined { return typeof value === "object" && value !== null && "update_id" in value && (typeof value.update_id === "number" || typeof value.update_id === "string") && /^-?[1-9][0-9]{0,18}$/u.test(String(value.update_id)) ? String(value.update_id) : undefined; }
+function isCallbackUpdate(value: unknown): boolean { return typeof value === "object" && value !== null && "callback_query" in value; }
