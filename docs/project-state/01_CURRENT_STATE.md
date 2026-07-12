@@ -170,7 +170,8 @@ and tests, not intended future behavior.
 - Controlled Telegram Operator Console — Phase 1 is in progress. The repository now
   contains the authoritative personal-privacy boundary, strict Bot API-only transport
   contracts, exact private user/chat authorization, minimal SQLite replay metadata,
-  fresh long-poll bootstrap, and a local process entrypoint. It does not grant access
+  fresh long-poll bootstrap, a versioned durable Telegram operator-session engine, and
+  a local process entrypoint. It does not grant access
   to Fabio's personal Telegram account or activity, and Telegram Developer Control
   Plane remains unstarted.
 - The next milestone is Workflow Specification Admission Boundary.

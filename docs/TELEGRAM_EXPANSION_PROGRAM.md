@@ -4,6 +4,10 @@
 
 Dedicated Bot API transport, exact private user/chat authorization, bounded polling,
 data minimization, replay protection, local Runtime reuse, and operator-only commands.
+Phase 1A durable sessions are complete: a single exact user/chat binding has a
+versioned, restart-safe, expiring session with explicit cancellation and no Mission or
+Workflow mutation. Phase 1B Guided Mission Flow and Phase 1C Core V1 Workflow Flow
+have not started.
 
 ## Phase 2 — Developer Control Plane
 

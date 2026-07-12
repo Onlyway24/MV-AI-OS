@@ -22,6 +22,7 @@ export {
 export { FetchTelegramBotApiTransport, TelegramBotApiClient, type TelegramBotApiTransport } from "./telegram/telegram-bot-api.js";
 export { ControlledTelegramOperatorConsole } from "./telegram/telegram-operator-console.js";
 export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
+export { TelegramOperatorSessionValidator, TelegramSessionTransitionValidator, isTelegramSessionTransitionAllowed, type TelegramOperatorSessionRecord, type TelegramSessionAction, type TelegramSessionState, type TelegramSessionTransition } from "./telegram/telegram-operator-session.js";
 export { createTelegramOperatorConsole, TelegramApplicationConfigValidator, type TelegramApplicationConfig } from "./telegram/telegram-runtime.js";
 export type {
   AgentCapability,

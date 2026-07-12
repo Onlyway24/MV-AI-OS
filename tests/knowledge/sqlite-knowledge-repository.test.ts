@@ -174,8 +174,9 @@ describe("SQLite knowledge persistence", () => {
         DROP TABLE telegram_operator_sessions;
         DROP TABLE telegram_callback_tokens;
         DROP TABLE telegram_inbound_receipts;
+        DROP TABLE telegram_operator_drafts;
         DROP INDEX audit_events_workspace_correlation;
-        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
         PRAGMA user_version = 2;
       `);
       legacyDatabase.close();

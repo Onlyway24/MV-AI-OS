@@ -24,7 +24,7 @@ export async function createTelegramOperatorConsole(candidate: unknown, override
   const clock = overrides.clock ?? new TelegramSystemClock(); const resolver = overrides.secretResolver ?? new LocalSecretResolver({ environment: process.env });
   const resolved = await resolver.resolve(validated.value.telegram.botToken);
   const runtime = await createLocalRuntime(validated.value.runtime);
-  try { const state = new TelegramSqliteStateStore(validated.value.runtime.sqlite, clock); const api = new TelegramBotApiClient(validated.value.telegram, resolved.value.value, overrides.transport ?? new FetchTelegramBotApiTransport()); return new ControlledTelegramOperatorConsole({ api, clock, config: validated.value.telegram, runtime, state }); }
+  try { const state = new TelegramSqliteStateStore(validated.value.runtime.sqlite, clock); const api = new TelegramBotApiClient(validated.value.telegram, resolved.value.value, overrides.transport ?? new FetchTelegramBotApiTransport()); return new ControlledTelegramOperatorConsole({ actorId: validated.value.runtime.actorId, api, clock, config: validated.value.telegram, runtime, state, workspaceId: validated.value.runtime.workspaceId }); }
   catch (error) { await runtime.close(); throw error; }
 }
 export async function readTelegramApplicationConfig(path: string): Promise<unknown> { return JSON.parse(await readFile(path, "utf8")) as unknown; }

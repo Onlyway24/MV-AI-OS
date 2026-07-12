@@ -8,7 +8,7 @@ import { TelegramSqliteStateStore } from "./telegram-sqlite-state-store.js";
 export class ControlledTelegramOperatorConsole {
   #started = false;
   #stopped = false;
-  public constructor(private readonly input: { readonly api: TelegramBotApiClient; readonly config: TelegramOperatorConfig; readonly clock: Clock; readonly runtime: LocalRuntime; readonly state: TelegramSqliteStateStore }) {}
+  public constructor(private readonly input: { readonly actorId: string; readonly api: TelegramBotApiClient; readonly config: TelegramOperatorConfig; readonly clock: Clock; readonly runtime: LocalRuntime; readonly state: TelegramSqliteStateStore; readonly workspaceId: string }) {}
 
   public async bootstrap(): Promise<void> {
     if (this.#started) return;
@@ -33,8 +33,15 @@ export class ControlledTelegramOperatorConsole {
       }
       const claim = this.input.state.claim(normalized.action, this.input.config.polling.updateReceiptRetentionSeconds);
       if (claim === "REPLAYED") continue;
-      await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: response(normalized.action.kind) });
+      const binding = createHash("sha256").update(`${normalized.action.userId}:${normalized.action.chatId}`, "utf8").digest("hex");
+      const session = this.input.state.startSession(binding, this.input.actorId, this.input.workspaceId, this.input.config.polling.sessionRetentionSeconds);
+      if (normalized.action.kind === "CANCEL_ACTION" && session.state !== "CANCELLED") this.input.state.transitionSession(binding, { action: "CANCEL", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "CANCELLED", sessionId: session.sessionId });
+      const stopConfirmed = normalized.action.kind === "STOP" && session.state === "WAITING_CONFIRMATION";
+      if (normalized.action.kind === "STOP" && session.state === "IDLE") this.input.state.transitionSession(binding, { action: "STOP", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "WAITING_CONFIRMATION", sessionId: session.sessionId });
+      if (stopConfirmed) this.input.state.transitionSession(binding, { action: "CONFIRM", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "COMPLETED", sessionId: session.sessionId });
+      await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: response(normalized.action.kind, stopConfirmed) });
       this.input.state.complete(normalized.action.updateId);
+      if (stopConfirmed) await this.close();
     }
   }
   public async close(): Promise<void> {
@@ -44,17 +51,18 @@ export class ControlledTelegramOperatorConsole {
   }
 }
 
-function response(kind: string): string {
+function response(kind: string, stopConfirmed = false): string {
   const values: Readonly<Record<string, string>> = {
     CANCEL_ACTION: "Azione annullata.",
-    HELP: "Comandi: /start, /help, /status, /mission, /workflows, /report, /settings, /cancel_action, /stop.",
-    MISSION_DRAFT: "Bozza Missione ricevuta. Verrà mostrata per conferma prima di diventare dati MV-AI-OS.",
-    REPORT: "Per il report, seleziona un Workflow nella sessione guidata.",
+    HELP: "Comandi attivi: /start, /help, /status, /cancel_action, /stop, /developer.",
+    DEVELOPER: "Modalità sviluppatore non ancora attiva. La Fase 2 non è stata avviata.",
+    MISSION_DRAFT: "La creazione guidata delle missioni sarà attivata nella prossima fase. Nessuna azione è stata eseguita.",
+    REPORT: "Report Workflow non disponibile in Telegram Phase 1A.",
     SETTINGS: "Impostazioni locali protette. Nessun dato personale Telegram è disponibile.",
-    START: "MV-AI-OS è pronto. Uso solo questa chat privata autorizzata.",
+    START: "MV-AI-OS è pronto. Comandi attivi: /help, /status, /cancel_action, /stop.",
     STATUS: "MV-AI-OS locale è disponibile. Nessuna azione esterna è stata eseguita.",
-    STOP: "Interazione Telegram arrestata in modo sicuro.",
-    WORKFLOWS: "Seleziona una Missione o un Workflow nella sessione guidata.",
+    STOP: stopConfirmed ? "Processo Telegram arrestato in modo sicuro." : "Conferma l'arresto inviando di nuovo /stop. Nessuna azione Core V1 verrà modificata.",
+    WORKFLOWS: "Workflow non disponibili in Telegram Phase 1A.",
   };
   return values[kind] ?? "Comando non disponibile.";
 }
