@@ -125,9 +125,10 @@ export class TelegramMissionPlanningConsole {
   }
 
   async #plan(snapshot: TelegramMissionDraftSessionSnapshot): Promise<TelegramOutboundMessageIntent> {
-    const readiness = this.#converter.evaluateReadiness(snapshot.draft, snapshot.draft.updatedAt);
-    if (readiness.status !== "READY" || readiness.context === undefined) return this.#message("La Missione autorizzata non supera più la validazione. Nessun piano è stato generato.");
-    const conversion = this.#converter.convert(snapshot.draft, readiness.context);
+    const draft = planningSourceDraft(snapshot.draft);
+    const readiness = this.#converter.evaluateReadiness(draft, draft.updatedAt);
+    if (readiness.status !== "READY" || readiness.context === undefined || readiness.context.profileFingerprint !== snapshot.draft.planningContextFingerprint) return this.#message("La Missione autorizzata non supera più la validazione. Nessun piano è stato generato.");
+    const conversion = this.#converter.convert(draft, readiness.context);
     if (!conversion.ok || this.input.runtime.executeWorkflowCommand === undefined) return this.#message("La Missione non supera la validazione locale. Nessun piano è stato generato.");
     const commandId = `telegram-plan-${snapshot.draft.draftId}`;
     await this.input.runtime.executeWorkflowCommand({ actorId: this.input.actorId, commandId: `telegram-create-${snapshot.draft.draftId}`, contractVersion: "1", input: { brief: conversion.value.brief }, operation: "CREATE_MISSION", workspaceId: this.input.workspaceId });
@@ -199,5 +200,6 @@ function formatPlan(objective: string, missionType: string, raw: unknown): strin
 }
 
 function parseJson(value: string): unknown { if (value.length > 1_800) return undefined; try { return JSON.parse(value) as unknown; } catch { return undefined; } }
+function planningSourceDraft(draft: TelegramMissionDraft): TelegramMissionDraft { const confirmed = structuredClone(draft) as TelegramMissionDraft & { planningContextFingerprint?: string }; delete confirmed.planningContextFingerprint; return { ...confirmed, status: "CONFIRMED", updatedAt: draft.confirmedAt ?? draft.updatedAt, version: draft.version - 1 }; }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function string(value: unknown): string { return typeof value === "string" || typeof value === "number" ? String(value) : "—"; }
