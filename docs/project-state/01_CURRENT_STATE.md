@@ -9,8 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
-- Latest committed baseline before the Durable Workflow Approval and Guardian
-  Checkpoints milestone: `906a7f0 feat: add workflow step execution boundary`.
+- Latest committed baseline before Core V1 release closeout:
+  `172d2f2 docs: add Core V1 operator guide`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
@@ -159,7 +159,10 @@ and tests, not intended future behavior.
   all 22 allowlisted operations, exact versions and IDs, safe errors, lifecycle,
   shutdown, restart, SQLite recovery, Git verification, and intentionally absent
   capabilities without credentials or unsupported claims.
-- The next milestone is Core V1 Adversarial Release Review.
+- Core V1 Adversarial Release Review and closeout is complete. It confirmed no P0/P1
+  findings remain, tightened validation of local command receipts and durable workflow
+  records, and is documented in `docs/CORE_V1_RELEASE_REPORT.md`.
+- The next milestone is Workflow Specification Admission Boundary.
 
 ## Current architecture
 
@@ -290,6 +293,7 @@ provider, n8n, or external SDK types.
 71. Local Workflow Command Boundary.
 72. Complete Local Core V1 Vertical Slice.
 73. Core V1 Operator and Recovery Guide.
+74. Core V1 Adversarial Release Review and Closeout.
 
 ## Implemented modules
 
@@ -359,6 +363,10 @@ provider, n8n, or external SDK types.
 - Durable workflow definitions, instances, step states, processed command receipts,
   and ordered redaction-safe events with restart-safe idempotency, exact-version
   conflict rejection, and whole-transaction rollback.
+- SQLite schema version 12 local Workflow command receipts and instance-ownership
+  records. Stored response JSON is validated and cross-checked against indexed command
+  columns before replay; malformed, mismatched, oversized, non-JSON-safe, or
+  redaction-unsafe records fail closed.
 - A read-only workflow readiness evaluator that derives bounded, stable, immutable
   blocked, pending, ready, and terminal findings from durable workflow snapshots.
 - A repository-backed Workflow Step Execution Boundary that recomputes readiness in
@@ -775,6 +783,10 @@ provider, n8n, or external SDK types.
 - Workflow runtime definition, command, receipt, instance, command-application,
   event-draft, and event validators, including durable-state semantic, dependency,
   ordering, immutability, and redaction checks.
+- Local Workflow command and command-response validators, including strict operation,
+  identity, JSON-safety, response-size, and redaction checks.
+- Workflow Agent invocation, Step outcome, and lifecycle-record validators with strict
+  durable-field allowlists and bounded failure/result metadata.
 - Workflow readiness request, reason, finding, and result validators, including
   bounded output, exact snapshot version, control-evidence, ordering, immutability,
   and redaction checks.
@@ -788,7 +800,8 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified suite contains 78 test files and 735 tests covering:
+The latest verified release-closeout suite contains 87 test files and 790 tests
+covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
 - agent registry/runtime and deterministic Content Agent behavior.
@@ -841,6 +854,9 @@ The latest verified suite contains 78 test files and 735 tests covering:
   supersession, withdrawal/block precedence, durable-only candidate integration,
   atomic rollback, ordered audit events, corruption rejection, restart durability,
   and schema v4-to-v5 migration without workflow-state loss.
+- Core V1 local command receipt/ownership persistence, malformed-response rejection,
+  column/JSON mismatch detection, strict durable workflow-record validation, and
+  redaction-safe replay.
 - model validation, deterministic provider behavior, provider neutrality, and
   normalized failures.
 - OpenAI provider configuration validation, credential handling, Responses API request
@@ -1419,6 +1435,12 @@ chapter.
 - A caller can explicitly invoke and complete one exact local deterministic Content
   Director step with durable reservation, restart-safe replay, separate outcome
   acceptance, atomic completion, and no automatic dependent-step execution.
+- Fabio can operate the complete Core V1 path through 22 allowlisted local commands:
+  Mission validation and planning, durable Workflow creation and inspection, exact
+  approval/Guardian recording, readiness and candidate evaluation, deterministic
+  Content Director invocation, explicit outcome handling, retry/lifecycle controls,
+  timeout evaluation, report inspection, and bounded audit lookup. All mutations stay
+  local, validated, version-bound, durable, and non-external.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1431,14 +1453,14 @@ path.
 ## Not implemented yet
 
 - Universal runtime enforcement of Agent Specifications for all executors.
-- Workflow dependency scheduling loops, lifecycle retries, or n8n.
+- Automatic Workflow dependency scheduling, automatic retry, or n8n.
 - Real tool implementations or direct tool execution.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
 - Approval UI/transport and autonomous Guardian evaluation.
-- Workflow lifecycle failure policy, retry budgets, retry execution, pause/resume
-  coordination, and cancellation propagation.
+- General Workflow Specification admission into the durable Core V1 command path.
+- Workflow lifecycle cancellation propagation beyond durable local Workflow state.
 - Any model/provider/tool/network/browser/external execution from a workflow candidate.
 - Production secret management.
 - HTTP, webhook, schedule, dashboard, or other transport adapters.

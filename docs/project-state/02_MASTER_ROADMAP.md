@@ -347,13 +347,16 @@ with durable approvals and no hidden side effects.
 - Content generation remains separately successful when delivery fails.
 - Every transition and external boundary is audited.
 
-**Status:** In progress. The non-executing Workflow Runtime now has validated domain
-state, durable atomic persistence, read-only dependency/step-readiness evaluation,
-one exact policy/specification/evidence-gated candidate-preparation boundary, and
-durable exact-snapshot approval/Guardian checkpoints with atomic audit evidence.
-Lifecycle coordination, AgentRuntime step invocation, result completion, approval UI
-or transport, autonomous Guardian evaluation, retries, callbacks, n8n, and all
-external effects remain unimplemented.
+**Status:** In progress. Core V1 closes the local deterministic execution slice: it
+has validated domain state, durable atomic persistence, exact-version readiness and
+candidate selection, durable approval/Guardian checkpoints, one exact deterministic
+Content Director invocation, explicit outcome completion, bounded retry execution,
+pause/resume/cancellation, explicit timeout evaluation, operator reports, and a thin
+allowlisted CLI command boundary. It has no automatic scheduling or retry, workflow
+specification admission path, approval UI/transport, autonomous Guardian evaluation,
+callbacks, n8n, or external effects. The next milestone is Workflow Specification
+Admission Boundary, which will connect an exact validated Workflow Specification to
+the existing durable Core V1 Workflow path without adding execution autonomy.
 
 ## Phase 7 — Governed direct tools
 

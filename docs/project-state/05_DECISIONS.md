@@ -1802,3 +1802,28 @@ timeout decision itself still runs through the public command boundary.
 
 **Future impact:** The Operator Guide can document a path already proven by the same
 runtime and CLI contracts Fabio will use.
+
+## ADR-068 — Core V1 replays only validated durable command and workflow records
+
+**Context:** Core V1 adds a local command receipt repository in SQLite and combines
+stored command responses with durable invocation, outcome, and lifecycle records.
+Replaying malformed JSON, a response whose indexed identity differs from its JSON, or
+an extensible record with unreviewed fields would make the local operator surface and
+audit trail untrustworthy.
+
+**Decision:** Local command responses are a strict public contract: they must be
+JSON-safe, bounded, redaction-safe, and match their indexed command ID and operation
+on both write and read. Workflow Agent invocation, Step outcome, and lifecycle records
+also reject unknown durable fields and validate their status-specific result/failure
+shape before persistence or replay.
+
+**Reason:** Durable records are inputs to later commands, restart recovery, and
+operator reporting. Validation on both sides of storage preserves fail-closed replay
+and prevents persistence from becoming a bypass around the command boundary.
+
+**Tradeoffs:** Record contracts deliberately evolve only through explicit compatible
+changes. Diagnostic payloads, arbitrary extension fields, raw model material, and
+non-JSON values are not retained.
+
+**Future impact:** Any new durable Core V1 record or index must use the same
+validate-on-write, validate-on-read, and indexed-column/JSON consistency discipline.
