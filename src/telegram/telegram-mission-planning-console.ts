@@ -8,6 +8,7 @@ import { TelegramMissionDraftSessionCoordinator } from "./telegram-mission-draft
 import type { TelegramMissionDraft, TelegramMissionDraftField } from "./telegram-mission-draft.js";
 import type { TelegramMissionDraftOperation, TelegramMissionDraftOperationKind } from "./telegram-mission-draft-state-engine.js";
 import type { TelegramSqliteStateStore } from "./telegram-sqlite-state-store.js";
+import { isTelegramMissionTemplateIntact, telegramMissionTemplate, TELEGRAM_MISSION_TEMPLATE_REGISTRY } from "./telegram-mission-templates.js";
 
 const REQUIRED_FIELDS: readonly TelegramMissionDraftField[] = ["OBJECTIVE", "MISSION_TYPE", "AUDIENCE", "DELIVERABLES", "DEADLINE", "BUDGET", "SUCCESS_METRICS", "KNOWN_FACTS", "PROFILE_SELECTION"];
 const FIELD_NAMES: Readonly<Record<TelegramMissionDraftField, string>> = {
@@ -21,16 +22,61 @@ export class TelegramMissionPlanningConsole {
   public async handle(identity: string, updateId: string, text: string): Promise<TelegramOutboundMessageIntent> {
     const session = this.input.state.startSession(identity, this.input.actorId, this.input.workspaceId, 3_600);
     const command = text.trim();
-    if (command === "/mission" || command === "/mission start") return this.#open(identity, session, false);
+    if (command === "/mission" || command === "/mission home") return this.#home(identity);
+    if (command === "/mission start") return this.#open(identity, session, false);
     if (command === "/mission restart") return this.#open(identity, session, true);
+    if (command === "/mission quick" || command === "/mission templates") return this.#templates();
+    if (command.startsWith("/mission template ")) return this.#template(identity, updateId, command.slice("/mission template ".length).trim(), session);
+    if (command === "aiuto" || command === "/mission help") { const snapshot = this.#read(identity); return this.#message(helpFor(snapshot?.draft.currentField ?? "OBJECTIVE")); }
     if (command === "indietro" || command === "/mission back") return this.#back(identity, updateId);
     if (command.startsWith("/mission edit ")) return this.#edit(identity, command.slice("/mission edit ".length).trim(), updateId);
     const snapshot = this.#read(identity);
-    if (snapshot === undefined) return this.#open(identity, session, false);
+    if (snapshot === undefined && (/^[{[]/u.test(command))) {
+      await this.#open(identity, session, false);
+      const started = this.#read(identity);
+      return started === undefined ? this.#message("Non è stato possibile avviare la Missione.") : this.#applyField(started, updateId, command);
+    }
+    if (snapshot === undefined) return this.#message("Non c'è una Missione attiva. Apri /mission e scegli Nuova missione.");
     if (snapshot.draft.status === "CONFIRMED") return this.#planningPrompt(snapshot);
     if (snapshot.draft.status === "PLANNING_AUTHORIZED") return this.#plan(snapshot);
     if (snapshot.draft.status !== "COLLECTING") return this.#message("La Missione è in revisione. Usa /mission per proseguire o /mission edit <campo> per modificare.");
     return this.#applyField(snapshot, updateId, command);
+  }
+
+  #home(identity: string): TelegramOutboundMessageIntent {
+    const snapshot = this.#read(identity);
+    if (snapshot?.draft.status === "PLANNING_AUTHORIZED") {
+      const result = this.input.state.readMissionResult(snapshot.draft.draftId);
+      if (result !== undefined) return this.#message(formatPlan(snapshot.draft.objective ?? "—", snapshot.draft.missionType ?? "—", result.response.result));
+    }
+    const diagnostics = this.input.state.diagnostics();
+    const actions = ["Nuova missione: /mission start", "Avvio rapido: /mission quick", "Guida: /mission help", "Stato: /status"];
+    if (snapshot !== undefined && ["COLLECTING", "REVIEW_READY", "CONFIRMED"].includes(snapshot.draft.status)) actions.splice(2, 0, "Riprendi missione: /mission start");
+    if (diagnostics.completedResults > 0) actions.splice(actions.length - 1, 0, "Ultimo risultato: /mission start");
+    return this.#message(["Mission Console", "Pianificazione locale, non esecutiva.", "Per iniziare una Missione — obiettivo: scegli Nuova missione.", "", ...actions.map((action) => `• ${action}`), "", "Nessun valore predefinito nascosto è stato applicato.", "La pianificazione non creerà Workflow e non eseguirà azioni esterne."].join("\n"));
+  }
+
+  #templates(): TelegramOutboundMessageIntent {
+    return this.#message(["Avvio rapido — template espliciti", ...TELEGRAM_MISSION_TEMPLATE_REGISTRY.map((template) => `• ${template.label} (${template.id}@${template.version})`), "", "Usa /mission template <id> per applicare oppure /mission template <id> details per leggere i dettagli.", "Ogni template è un acceleratore versionato, non un valore predefinito nascosto."].join("\n"));
+  }
+
+  async #template(identity: string, updateId: string, requested: string, session: { readonly sessionId: string; readonly version: number; readonly expiresAt: string; readonly state: string }): Promise<TelegramOutboundMessageIntent> {
+    const details = requested.endsWith(" details"); const id = details ? requested.slice(0, -8).trim() : requested;
+    const template = telegramMissionTemplate(id);
+    if (template === undefined || !isTelegramMissionTemplateIntact(template)) return this.#message("Template non disponibile o non integro. Torna a /mission quick.");
+    if (details) return this.#message([`${template.label} — ${template.id}@${template.version}`, template.description, `Profili: ${template.founderProfile.founderProfileId}; ${template.founderProfile.brandProfileId}`, `Fornisce: ${template.suppliedFields.join(", ")}`, `Fabio deve ancora fornire: ${template.requiredOperatorFields.join(", ")}`, "Non è un valore predefinito nascosto."].join("\n"));
+    if (this.#read(identity) !== undefined) return this.#message("C'è già una Missione attiva. Usa /mission restart prima di cambiare template.");
+    await this.#open(identity, session, false);
+    let snapshot = this.#read(identity);
+    if (snapshot === undefined) return this.#message("Impossibile avviare la Missione dal template.");
+    const type = this.input.coordinator.apply(this.#command(snapshot, this.#operation(snapshot, `tg-template-type-${updateId}`, "UPDATE_MISSION_TYPE", { missionType: template.missionType })));
+    if (!type.ok) return this.#message("Il template non può essere applicato in questo stato.");
+    snapshot = this.#read(identity);
+    if (snapshot === undefined) return this.#message("Il template non può essere applicato in questo stato.");
+    const profile = this.input.coordinator.apply(this.#command(snapshot, this.#operation(snapshot, `tg-template-profile-${updateId}`, "UPDATE_PROFILE_SELECTION", { profileSelection: template.founderProfile })));
+    if (!profile.ok) return this.#message("Il template non può essere applicato in questo stato.");
+    snapshot = this.#read(identity);
+    return snapshot === undefined ? this.#message("Il template non può essere applicato in questo stato.") : this.#prompt(snapshot, `${template.label} applicato (${template.id}@${template.version}). Nessun valore materiale è stato inserito.`);
   }
 
   public async handleCallback(identity: string, token: string): Promise<TelegramOutboundMessageIntent> {
@@ -139,7 +185,7 @@ export class TelegramMissionPlanningConsole {
   #read(identity: string): TelegramMissionDraftSessionSnapshot | undefined { try { return this.input.coordinator.read(identity); } catch { return undefined; } }
   #operation(snapshot: TelegramMissionDraftSessionSnapshot, operationId: string, kind: TelegramMissionDraftOperationKind, payload?: Readonly<Record<string, unknown>>): TelegramMissionDraftOperation { return { actorId: snapshot.session.actorId, authorizedIdentityHash: snapshot.session.identityBinding, contractVersion: "1", draftId: snapshot.draft.draftId, expectedVersion: snapshot.draft.version, kind, operationId, sessionId: snapshot.session.sessionId, workspaceId: snapshot.session.workspaceId, ...(payload === undefined ? {} : { payload }) } as TelegramMissionDraftOperation; }
   #command(snapshot: TelegramMissionDraftSessionSnapshot, operation: TelegramMissionDraftOperation, coordinationKind: TelegramMissionDraftSessionCommand["coordinationKind"] = "APPLY_FIELD"): TelegramMissionDraftSessionCommand { return { actorId: snapshot.session.actorId, authorizedIdentityHash: snapshot.session.identityBinding, contractVersion: "1", coordinationKind, expectedDraftVersion: snapshot.draft.version, expectedSessionVersion: snapshot.session.version, operation, sessionId: snapshot.session.sessionId, workspaceId: snapshot.session.workspaceId }; }
-  #prompt(snapshot: TelegramMissionDraftSessionSnapshot, prefix?: string): TelegramOutboundMessageIntent { return this.#message(`${prefix === undefined ? "" : `${prefix}\n\n`}${fieldHelp(snapshot.draft.currentField)}\n\nUsa /cancel_action per annullare.`); }
+  #prompt(snapshot: TelegramMissionDraftSessionSnapshot, prefix?: string): TelegramOutboundMessageIntent { const step = REQUIRED_FIELDS.indexOf(snapshot.draft.currentField) + 1; return this.#message(`${prefix === undefined ? "" : `${prefix}\n\n`}Sezione ${section(snapshot.draft.currentField)} · Passo ${String(Math.max(1, step))}/${String(REQUIRED_FIELDS.length)}\n${fieldHelp(snapshot.draft.currentField)}\n\nScrivi “aiuto” per una spiegazione contestuale. Usa /cancel_action per annullare.`); }
   #message(text: string, buttons?: TelegramOutboundMessageIntent["buttons"]): TelegramOutboundMessageIntent { return { chatId: this.input.chatId, contractVersion: "1", text: text.slice(0, 3_900), ...(buttons === undefined ? {} : { buttons }) }; }
 }
 
@@ -186,6 +232,9 @@ function fieldHelp(field: TelegramMissionDraftField): string {
   };
   return `Missione — ${FIELD_NAMES[field]}.\n${examples[field] ?? "Invia un valore strutturato valido."}`;
 }
+
+function helpFor(field: TelegramMissionDraftField): string { return [`Aiuto — ${FIELD_NAMES[field]}`, "Perché serve: rende il piano verificabile e non introduce supposizioni nascoste.", fieldHelp(field), "Valori vuoti, duplicati, testo di comando e dati personali non sono accettati.", field === "PROFILE_SELECTION" ? "I profili sono versionati e dichiarati: non sono identità Telegram." : "Questo valore è fornito da Fabio; non viene ottenuto dalla cronologia Telegram."].join("\n"); }
+function section(field: TelegramMissionDraftField): string { if (["OBJECTIVE", "MISSION_TYPE"].includes(field)) return "Obiettivo e tipo"; if (["AUDIENCE", "DELIVERABLES"].includes(field)) return "Pubblico e deliverable"; if (["DEADLINE", "BUDGET"].includes(field)) return "Scadenza e budget"; if (["SUCCESS_METRICS", "KNOWN_FACTS"].includes(field)) return "Metriche ed evidenze"; return "Profili e regole"; }
 
 function review(draft: TelegramMissionDraft): string { return `Riepilogo Missione\nObiettivo: ${draft.objective ?? "—"}\nTipo: ${draft.missionType ?? "—"}\nPubblico: ${draft.audience?.description ?? "—"}\nOutput: ${draft.deliverables?.map((entry) => entry.title).join(", ") ?? "—"}\nScadenza: ${draft.deadline?.status ?? "—"}\nBudget: ${draft.budget?.status ?? "—"}\nProfili: ${draft.profileSelection?.founderProfileId ?? "—"} / ${draft.profileSelection?.brandProfileId ?? "—"}`; }
 

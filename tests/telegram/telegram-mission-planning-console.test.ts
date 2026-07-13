@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { createLocalRuntime, createTelegramOperatorConsole, LocalSecretResolver, TelegramMissionDraftSessionCoordinator, TelegramMissionPlanningConsole, TelegramSqliteStateStore, type LocalRuntimeConfig, type TelegramBotApiTransport } from "../../src/index.js";
+import { createLocalRuntime, createTelegramMissionReport, createTelegramOperatorConsole, LocalSecretResolver, serializeTelegramMissionReport, TelegramMissionDraftSessionCoordinator, TelegramMissionPlanningConsole, TelegramSqliteStateStore, type LocalRuntimeConfig, type TelegramBotApiTransport } from "../../src/index.js";
 import type { TelegramBotApiRequest } from "../../src/telegram/telegram-bot-api.js";
 import { FixedClock } from "../support/fixtures.js";
 
@@ -36,6 +36,20 @@ describe("Telegram Mission Planning Console", () => {
     await runtime.close(); await state.close();
   }));
 
+  it("shows explicit versioned quick-start templates without material hidden defaults", async () => withDatabase(async (path) => {
+    const runtime = await createLocalRuntime(config(path), { clock });
+    const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
+    const console = new TelegramMissionPlanningConsole({ actorId: "actor-local", chatId: "200", clock, coordinator: new TelegramMissionDraftSessionCoordinator(state), runtime, state, workspaceId: "workspace-local" });
+    expect((await console.handle(identity, "1", "/mission quick")).text).toContain("metodo-veloce-content-plan@1.0.0");
+    expect((await console.handle(identity, "2", "/mission template metodo-veloce-content-plan details")).text).toContain("Non è un valore predefinito nascosto");
+    const applied = await console.handle(identity, "3", "/mission template metodo-veloce-content-plan");
+    expect(applied.text).toContain("Nessun valore materiale è stato inserito");
+    const draft = state.getMissionDraft(state.getSession(identity)?.sessionId ?? "");
+    expect(draft).toMatchObject({ missionType: "content_strategy", profileSelection: { brandProfileId: "metodo-veloce@1.0.0" } });
+    expect(draft?.objective).toBeUndefined();
+    await runtime.close(); await state.close();
+  }));
+
   it("runs the complete two-confirmation Mission planning slice and replays the durable result", async () => withDatabase(async (path) => {
     const runtime = await createLocalRuntime(config(path), { clock });
     const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
@@ -58,6 +72,12 @@ describe("Telegram Mission Planning Console", () => {
     expect(planned.text).toContain("Mission status:");
     expect(planned.text).toContain("Quality Gate:");
     expect(planned.text).toContain("Nessun Workflow è stato creato e nessuna azione esterna è stata eseguita.");
+    const result = state.readMissionResult("mission-draft-1");
+    expect(result).toBeDefined();
+    if (result === undefined) throw new Error("Mission result was not persisted");
+    const exported = serializeTelegramMissionReport(createTelegramMissionReport(result.draft, result.response), "json");
+    expect(exported).toContain('"contractVersion": "1"');
+    expect(exported).not.toMatch(/telegram|identity|callback|token|database|transcript/iu);
     await expect(console.handleCallback(identity, confirmed.buttons?.[0]?.callbackData ?? "")).rejects.toThrow(/consumed|stale/iu);
     const reopened = await console.handle(identity, "11", "/mission");
     expect(reopened.text).toContain("Mission status:");

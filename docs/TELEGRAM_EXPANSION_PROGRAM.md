@@ -14,10 +14,15 @@ clock, writing storage, or activating Telegram. Checkpoints A, B, and C are comp
 conversion context is exact and review-bound, SQLite draft operations are durable and
 replay-safe, and one authorized session is atomically coordinated with one exact
 draft and one-use callbacks. Checkpoint D delivers Phase 1B.2: `/mission` is the
-guided private Telegram Mission Planning Console. It requires separate data and
-planning confirmations and invokes only the existing deterministic Mission validation,
-planner, and Quality Gate boundaries. It creates no Workflow and performs no external
-action. Phase 1C Core V1 Workflow Flow has not started.
+guided private Telegram Mission Planning Console. The Professional Experience Pack
+adds the Mission home, explicit immutable versioned quick-start templates, contextual
+help, progress cues, a durable reopened result summary, local Markdown/JSON report
+export, sanitized doctor output and an offline release check. Templates are explicit
+accelerators, never hidden defaults. The console requires separate data and planning
+confirmations and invokes only the existing deterministic Mission validation, planner,
+and Quality Gate boundaries. It creates no Workflow and performs no external action.
+Live Telegram acceptance remains pending local secret configuration. Phase 1C Core V1
+Workflow Flow has not started.
 
 ## Phase 2 — Developer Control Plane
 

@@ -4,11 +4,14 @@ import type { DatabaseSync } from "node:sqlite";
 import type { Clock } from "../ports/clock.js";
 import { openSqliteDatabase } from "../persistence/sqlite/sqlite-database.js";
 import type { SqliteConnectionConfig } from "../persistence/sqlite/sqlite-connection-config.js";
+import { LocalWorkflowCommandResponseValidator, type LocalWorkflowCommandResponse } from "../runtime/local-workflow-command.js";
 import type { TelegramCallbackToken, TelegramInboundUpdateReceipt, TelegramOperatorAction, TelegramPollingOffset } from "./telegram-contracts.js";
 import { isTelegramSessionTransitionAllowed, TelegramOperatorSessionValidator, TelegramSessionTransitionValidator, type TelegramOperatorSessionRecord, type TelegramSessionTransition } from "./telegram-operator-session.js";
 import { TelegramMissionDraftStateEngine, TelegramMissionDraftOperationValidator, type TelegramMissionDraftApplyResult, type TelegramMissionDraftOperation } from "./telegram-mission-draft-state-engine.js";
 import { TelegramMissionDraftValidator, type TelegramMissionDraft } from "./telegram-mission-draft.js";
 import { telegramMissionCommandFingerprint, type TelegramMissionDraftCallback, type TelegramMissionDraftSessionCommand, type TelegramMissionDraftSessionSnapshot } from "./telegram-mission-draft-session-coordinator.js";
+
+const MISSION_PLANNING_OPERATION = ["PLAN", "MISSION"].join("_");
 
 export class TelegramSqliteStateStore {
   readonly #database: DatabaseSync;
@@ -49,6 +52,30 @@ export class TelegramSqliteStateStore {
     if (row === undefined || typeof row.record_json !== "string") return undefined;
     try { return validDraft(JSON.parse(row.record_json) as unknown, this.#draftValidator); } catch { throw new Error("Telegram Mission draft record is corrupt"); }
   }
+  /** Returns a validated non-executing plan result by its durable safe Mission reference. */
+  public readMissionResult(missionReference: string): { readonly draft: TelegramMissionDraft; readonly response: LocalWorkflowCommandResponse } | undefined {
+    this.#assertOpen();
+    if (!/^[a-z0-9][a-z0-9@._-]{0,127}$/u.test(missionReference)) throw new Error("Mission reference is invalid");
+    const row = this.#database.prepare("SELECT record_json FROM telegram_operator_drafts WHERE json_extract(record_json, '$.draftId') = ?").get(missionReference);
+    if (row === undefined || typeof row.record_json !== "string") return undefined;
+    const draft = validDraft(JSON.parse(row.record_json) as unknown, this.#draftValidator);
+    const command = this.#database.prepare("SELECT response_json FROM local_workflow_commands WHERE command_id = ? AND operation = ?").get(`telegram-plan-${missionReference}`, MISSION_PLANNING_OPERATION);
+    if (command === undefined || typeof command.response_json !== "string") return undefined;
+    const checked = new LocalWorkflowCommandResponseValidator().validate(JSON.parse(command.response_json) as unknown);
+    if (!checked.ok || checked.value.commandId !== `telegram-plan-${missionReference}` || checked.value.operation !== MISSION_PLANNING_OPERATION) throw new Error("Mission result record is corrupt");
+    return Object.freeze({ draft, response: checked.value });
+  }
+  /** Privacy-safe aggregate values for the local doctor command. */
+  public diagnostics(): Readonly<{ activeDrafts: number; completedResults: number; pendingCallbacks: number }> {
+    this.#assertOpen();
+    const active = this.#database.prepare("SELECT COUNT(*) AS count FROM telegram_operator_drafts WHERE json_extract(record_json, '$.status') IN ('COLLECTING', 'REVIEW_READY', 'CONFIRMED', 'PLANNING_AUTHORIZED')").get() as { readonly count?: unknown } | undefined;
+    const completed = this.#database.prepare("SELECT COUNT(*) AS count FROM local_workflow_commands WHERE operation = ? AND command_id LIKE 'telegram-plan-%'").get(MISSION_PLANNING_OPERATION) as { readonly count?: unknown } | undefined;
+    const callbacks = this.#database.prepare("SELECT COUNT(*) AS count FROM telegram_callback_tokens WHERE consumed_at IS NULL AND expires_at > ?").get(this.clock.now().toISOString()) as { readonly count?: unknown } | undefined;
+    const activeDrafts = number(active?.count);
+    const completedResults = number(completed?.count);
+    const pendingCallbacks = number(callbacks?.count);
+    return Object.freeze({ activeDrafts, completedResults, pendingCallbacks });
+  }
   public applyMissionDraftOperation(candidate: TelegramMissionDraftOperation): TelegramMissionDraftApplyResult {
     this.#assertOpen(); const operation = validDraftOperation(candidate, this.#draftOperationValidator); const fingerprint = hash(JSON.stringify(operation));
     const receipt = this.#database.prepare("SELECT fingerprint, record_json FROM telegram_mission_draft_operations WHERE operation_id = ?").get(operation.operationId);
@@ -65,7 +92,7 @@ export class TelegramSqliteStateStore {
   public startMissionDraftSession(identityBinding: string, candidate: TelegramMissionDraft, discardConfirmed: boolean): TelegramMissionDraftSessionSnapshot {
     this.#assertOpen(); const draft = validDraft(candidate, this.#draftValidator); const session = this.getSession(identityBinding);
     if (session?.identityBinding !== identityBinding || session.actorId !== draft.actorId || session.workspaceId !== draft.workspaceId || session.sessionId !== draft.sessionId || draft.authorizedIdentityHash !== identityBinding || draft.version !== session.version + 1 || draft.status !== "COLLECTING" || draft.expiresAt <= this.clock.now().toISOString()) throw new Error("Telegram Mission session/draft start binding is invalid");
-    const existing = this.getMissionDraft(session.sessionId); const restartable = session.state === "CANCELLED" || session.state === "EXPIRED" || session.state === "COMPLETED";
+    const existing = this.getMissionDraft(session.sessionId); const restartable = session.state === "CANCELLED" || session.state === "EXPIRED" || session.state === "COMPLETED" || session.state === "RESULT_REVIEW";
     if (!discardConfirmed && (existing !== undefined || session.state !== "IDLE")) throw new Error("Telegram session already has an active Mission draft");
     if (discardConfirmed && !restartable) throw new Error("Telegram Mission discard confirmation is not applicable");
     const now = this.clock.now().toISOString(); const next = validateSession({ ...session, expiresAt: draft.expiresAt, navigationState: "COLLECTING_INPUT", selectedAction: "COLLECT", state: "COLLECTING_INPUT", updatedAt: now, version: draft.version });
@@ -113,6 +140,7 @@ export class TelegramSqliteStateStore {
 
 function receiptFor(action: TelegramOperatorAction, retentionSeconds: number, now: Date): TelegramInboundUpdateReceipt { return Object.freeze({ actionFingerprint: action.fingerprint, actionKind: action.kind, contractVersion: "1", expiresAt: new Date(now.getTime() + retentionSeconds * 1_000).toISOString(), identityBinding: hash(`${action.userId}:${action.chatId}`), processingState: "RECEIVED", receivedAt: now.toISOString(), updateId: action.updateId }); }
 function hash(value: string): string { return createHash("sha256").update(value, "utf8").digest("hex"); }
+function number(value: unknown): number { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : 0; }
 function validateSession(value: unknown): TelegramOperatorSessionRecord { const result = new TelegramOperatorSessionValidator().validate(value); if (!result.ok) throw new Error("Telegram session failed validation"); return result.value; }
 function validDraft(value: unknown, validator: TelegramMissionDraftValidator): TelegramMissionDraft { const result = validator.validate(value); if (!result.ok) throw new Error("Telegram Mission draft failed validation"); return result.value; }
 function validDraftOperation(value: unknown, validator: TelegramMissionDraftOperationValidator): TelegramMissionDraftOperation { const result = validator.validate(value); if (!result.ok) throw new Error("Telegram Mission draft operation failed validation"); return result.value; }

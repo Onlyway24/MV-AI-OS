@@ -38,10 +38,19 @@ on SIGINT/SIGTERM. If startup fails, run preflight again; do not remove a lock f
 unless you have first confirmed no operator process is running.
 
 Phase 1 accepts `/start`, `/help`, `/status`, `/mission`, `/cancel_action`, `/stop`,
-and `/developer`; `/workflows` and `/report` remain hidden. `/mission` collects only
-the structured FounderMissionBrief data, shows an Italian review, requires “Conferma
-dati Missione”, then requires the separately bound “Genera piano Missione” action
-before running the local deterministic Mission validation, planner, and Quality Gate.
+and `/developer`; `/workflows` and `/report` remain hidden. `/mission` opens the
+Mission Console home: `Nuova missione`, `Avvio rapido`, safe help and status are
+shown, while resume and last-result choices appear only when durable state exists.
+`/mission quick` lists the explicit immutable templates and `/mission template <id>`
+applies only its exact Mission type and versioned profile references. Templates never
+provide a deadline, budget, market fact, threshold, evidence, approval, or external
+authorization. `/mission help` is contextual, deterministic and non-persistent.
+
+The guided flow displays the current section and honest step count. `/mission` data
+collection remains based only on the structured FounderMissionBrief contract, shows an
+Italian review, requires “Conferma dati Missione”, then requires the separately bound
+“Genera piano Missione” action before running the local deterministic Mission
+validation, planner, and Quality Gate.
 It never creates a Workflow or runs an Agent Runtime, model, provider, tool, network,
 or external action. `/stop` requires a second explicit `/stop` confirmation and never
 changes a Core V1 Workflow. The Developer response is inactive by design. It replies
@@ -61,6 +70,32 @@ Update receipts, callback hashes, sessions, confirmations, and delivery metadata
 bounded retention. Delivery is best effort: a crash after the durable MV-AI-OS command
 but before Telegram acknowledgement can leave delivery uncertain; the underlying
 command remains replay-safe and is never repeated solely to retry delivery.
+
+## Local reports and diagnostics
+
+After a completed deterministic Mission, export its intentionally safe report with an
+explicit absolute output path:
+
+`npm run telegram -- export-mission <untracked-local-config.json> <safe-mission-reference> --format markdown --output <absolute-output-path>`
+
+Use `--format json` for the structured contract and `--overwrite` only when replacing
+an existing file deliberately. Files are created with private permissions. Reports
+contain Mission planning information, exact profile references, Quality Gate and
+non-execution statements; they never contain Telegram metadata, callbacks, tokens,
+database paths, transcripts or raw errors.
+
+Run sanitized readiness diagnostics with:
+
+`npm run telegram -- doctor <untracked-local-config.json>`
+
+Use `--json` for machine-readable PASS/WARN/FAIL reason codes. For a deterministic
+offline release gate, use:
+
+`npm run telegram -- release-check <untracked-local-config.json> --offline`
+
+Neither command performs Telegram polling, invokes an Agent Runtime, model, provider,
+tool, Workflow, or external action. A live acceptance remains pending until the
+untracked local secret reference is configured.
 
 ## Live acceptance checklist
 
