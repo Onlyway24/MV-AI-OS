@@ -598,6 +598,10 @@ export { PRODUCTION_RUNTIME_CONTRACT_VERSION, isProductionRuntimeJobTransitionAl
 export type { ProductionRuntimeJobCounts, ProductionRuntimeJobRepository, ProductionRuntimeJobUpdateExpectation } from "./production-runtime/production-runtime-job-repository.js";
 export { ProductionRuntimeService } from "./production-runtime/production-runtime-service.js";
 export { ProductionRuntimeEnqueueRequestValidator, ProductionRuntimeHealthReportValidator, ProductionRuntimeJobValidator, ProductionRuntimeRunResultValidator } from "./production-runtime/production-runtime-validator.js";
+export { OPERATIONAL_PLANE_CONTRACT_VERSION, isPublicationTransitionAllowed, type EvidenceClaimMapping, type EvidenceRecord, type EvidenceRecordRequest, type EvidenceStatus, type FeedbackAnalysis, type FeedbackMetricImportRequest, type FeedbackMetricSnapshot, type FeedbackMetrics, type PublicationAuthorizationRequest, type PublicationDryRunRequest, type PublicationKillSwitch, type PublicationKillSwitchRequest, type PublicationPlan, type PublicationPlatform, type PublicationReceiptRequest, type PublicationStatus, type ReliabilityLevel, type RiskDomain, type SourceCategory, type SourceRegistrationRequest, type SourceRegistryEntry } from "./operational-planes/operational-plane.js";
+export type { OperationalPlaneRepository } from "./operational-planes/operational-plane-repository.js";
+export { OperationalPlaneService } from "./operational-planes/operational-plane-service.js";
+export { EvidenceRecordRequestValidator, EvidenceRecordValidator, FeedbackMetricImportRequestValidator, FeedbackMetricSnapshotValidator, PublicationAuthorizationRequestValidator, PublicationDryRunRequestValidator, PublicationKillSwitchRequestValidator, PublicationKillSwitchValidator, PublicationPlanValidator, PublicationReceiptRequestValidator, SourceRegistrationRequestValidator, SourceRegistryEntryValidator } from "./operational-planes/operational-plane-validator.js";
 export type {
   AgentInvocation,
   AgentInvocationLimits,
@@ -1119,6 +1123,7 @@ export {
 export {
   SqliteRepositoryTransactionRunner,
 } from "./persistence/sqlite/sqlite-repository-transaction-runner.js";
+export { SqliteOperationalPlaneRepository } from "./persistence/sqlite/sqlite-operational-plane-repository.js";
 export {
   SqliteMemoryRepository,
 } from "./persistence/sqlite/sqlite-memory-repository.js";

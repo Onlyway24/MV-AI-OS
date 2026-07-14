@@ -66,6 +66,10 @@ import { isMetodoVeloceContentProductionTransitionAllowed } from "../../src/cont
 import { MetodoVeloceContentProductionRecordValidator } from "../../src/content-production/metodo-veloce-content-production-validator.js";
 import { isProductionRuntimeJobTransitionAllowed, type ProductionRuntimeJob } from "../../src/production-runtime/production-runtime-job.js";
 import { ProductionRuntimeJobValidator } from "../../src/production-runtime/production-runtime-validator.js";
+import type { Validator } from "../../src/validation/validation.js";
+import type { EvidenceRecord, FeedbackMetricSnapshot, PublicationKillSwitch, PublicationPlan, SourceRegistryEntry } from "../../src/operational-planes/operational-plane.js";
+import { isPublicationTransitionAllowed } from "../../src/operational-planes/operational-plane.js";
+import { EvidenceRecordValidator, FeedbackMetricSnapshotValidator, PublicationKillSwitchValidator, PublicationPlanValidator, SourceRegistryEntryValidator } from "../../src/operational-planes/operational-plane-validator.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -89,6 +93,11 @@ interface RepositoryState {
   readonly localWorkflowOwnership: Map<string, LocalWorkflowOwnership>;
   readonly metodoVeloceContentProductions: Map<string, MetodoVeloceContentProductionRecord>;
   readonly productionRuntimeJobs: Map<string, ProductionRuntimeJob>;
+  readonly sources: Map<string, SourceRegistryEntry>;
+  readonly evidenceRecords: Map<string, EvidenceRecord>;
+  readonly publicationPlans: Map<string, PublicationPlan>;
+  readonly publicationKillSwitches: Map<string, PublicationKillSwitch>;
+  readonly feedbackMetricSnapshots: Map<string, FeedbackMetricSnapshot>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -124,6 +133,7 @@ function createRepositories(
     audits: new InMemoryAuditRepository(state),
     contentProductions: new InMemoryMetodoVeloceContentProductionRepository(state),
     productionRuntimeJobs: new InMemoryProductionRuntimeJobRepository(state),
+    operationalPlanes: new InMemoryOperationalPlaneRepository(state),
     requests: new InMemoryRequestRepository(state),
     tasks: new InMemoryTaskRepository(state),
     workflowCommands: new InMemoryLocalWorkflowCommandRepository(state),
@@ -176,6 +186,26 @@ class InMemoryProductionRuntimeJobRepository {
   public update(job: ProductionRuntimeJob, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(job); const current = this.state.productionRuntimeJobs.get(checked.jobId); if (current?.version !== expectation.version || checked.version !== expectation.version + 1 || !sameRuntimeJobIdentity(current, checked) || !runtimeJobTransition(current, checked)) throw new RepositoryConflictError("Production Runtime job transition is invalid"); this.state.productionRuntimeJobs.set(checked.jobId, cloneFrozen(checked)); return Promise.resolve(); }
   #valid(value: unknown): ProductionRuntimeJob { const checked = this.#validator.validate(value); if (!checked.ok) throw new RepositoryValidationError("Production Runtime job is invalid"); return checked.value; }
 }
+
+class InMemoryOperationalPlaneRepository {
+  readonly #evidence = new EvidenceRecordValidator(); readonly #feedback = new FeedbackMetricSnapshotValidator(); readonly #kill = new PublicationKillSwitchValidator(); readonly #publication = new PublicationPlanValidator(); readonly #source = new SourceRegistryEntryValidator();
+  public constructor(private readonly state: RepositoryState) {}
+  public getSourceById(sourceId: string): Promise<SourceRegistryEntry | undefined> { return Promise.resolve(cloneOptional(this.state.sources.get(sourceId))); }
+  public getEvidenceById(evidenceId: string): Promise<EvidenceRecord | undefined> { return Promise.resolve(cloneOptional(this.state.evidenceRecords.get(evidenceId))); }
+  public getPublicationById(publicationId: string): Promise<PublicationPlan | undefined> { return Promise.resolve(cloneOptional(this.state.publicationPlans.get(publicationId))); }
+  public getPublicationKillSwitch(workspaceId: string): Promise<PublicationKillSwitch | undefined> { return Promise.resolve(cloneOptional(this.state.publicationKillSwitches.get(workspaceId))); }
+  public getFeedbackSnapshotById(snapshotId: string): Promise<FeedbackMetricSnapshot | undefined> { return Promise.resolve(cloneOptional(this.state.feedbackMetricSnapshots.get(snapshotId))); }
+  public insertSource(record: SourceRegistryEntry): Promise<void> { const checked = this.#valid(record, this.#source, "Evidence source"); if (this.state.sources.has(checked.sourceId)) throw new RepositoryConflictError("Evidence source already exists"); this.state.sources.set(checked.sourceId, cloneFrozen(checked)); return Promise.resolve(); }
+  public insertEvidence(record: EvidenceRecord): Promise<void> { const checked = this.#valid(record, this.#evidence, "Evidence record"); if (this.state.evidenceRecords.has(checked.evidenceId)) throw new RepositoryConflictError("Evidence record already exists"); this.state.evidenceRecords.set(checked.evidenceId, cloneFrozen(checked)); return Promise.resolve(); }
+  public insertPublication(record: PublicationPlan): Promise<void> { const checked = this.#valid(record, this.#publication, "Publication plan"); if (checked.version !== 0 || checked.status !== "DRY_RUN" || this.state.publicationPlans.has(checked.publicationId) || [...this.state.publicationPlans.values()].some((item) => item.workspaceId === checked.workspaceId && item.idempotencyKey === checked.idempotencyKey)) throw new RepositoryConflictError("Publication plan already exists"); this.state.publicationPlans.set(checked.publicationId, cloneFrozen(checked)); return Promise.resolve(); }
+  public insertFeedbackSnapshot(record: FeedbackMetricSnapshot): Promise<void> { const checked = this.#valid(record, this.#feedback, "Feedback metric snapshot"); if (this.state.feedbackMetricSnapshots.has(checked.snapshotId)) throw new RepositoryConflictError("Feedback metric snapshot already exists"); this.state.feedbackMetricSnapshots.set(checked.snapshotId, cloneFrozen(checked)); return Promise.resolve(); }
+  public updatePublication(record: PublicationPlan, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(record, this.#publication, "Publication plan"); const current = this.state.publicationPlans.get(checked.publicationId); if (current === undefined) throw new RepositoryConflictError("Publication plan transition is invalid"); if (current.version !== expectation.version || checked.version !== expectation.version + 1 || !isPublicationTransitionAllowed(current.status, checked.status) || !samePublicationIdentity(current, checked)) throw new RepositoryConflictError("Publication plan transition is invalid"); this.state.publicationPlans.set(checked.publicationId, cloneFrozen(checked)); return Promise.resolve(); }
+  public upsertPublicationKillSwitch(record: PublicationKillSwitch, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(record, this.#kill, "Publication kill switch"); const current = this.state.publicationKillSwitches.get(checked.workspaceId); if ((current?.version ?? 0) !== expectation.version || checked.version !== expectation.version + 1) throw new RepositoryConflictError("Publication kill switch changed during update"); this.state.publicationKillSwitches.set(checked.workspaceId, cloneFrozen(checked)); return Promise.resolve(); }
+  public listFeedbackSnapshots(publicationId: string): Promise<readonly FeedbackMetricSnapshot[]> { return Promise.resolve(Object.freeze([...this.state.feedbackMetricSnapshots.values()].filter((item) => item.publicationId === publicationId).sort((left, right) => left.capturedAt.localeCompare(right.capturedAt) || left.snapshotId.localeCompare(right.snapshotId)).map(cloneFrozen))); }
+  #valid<T>(value: unknown, validator: Validator<T>, label: string): T { const checked = validator.validate(value); if (!checked.ok) throw new RepositoryValidationError(`${label} is invalid`); return checked.value; }
+}
+
+function samePublicationIdentity(left: PublicationPlan, right: PublicationPlan): boolean { return left.accountRef === right.accountRef && left.actorId === right.actorId && left.contentPackageFingerprint === right.contentPackageFingerprint && left.contentVersion === right.contentVersion && left.createdAt === right.createdAt && left.idempotencyKey === right.idempotencyKey && left.platform === right.platform && left.productionId === right.productionId && left.publicationId === right.publicationId && left.scheduledFor === right.scheduledFor && left.workspaceId === right.workspaceId; }
 
 function runtimeJobTransition(previous: ProductionRuntimeJob, next: ProductionRuntimeJob): boolean { return isProductionRuntimeJobTransitionAllowed(previous.status, next.status) && (next.status === "RUNNING" ? next.attempt === previous.attempt + 1 : next.attempt === previous.attempt); }
 function sameRuntimeJobIdentity(previous: ProductionRuntimeJob, next: ProductionRuntimeJob): boolean { return previous.actorId === next.actorId && previous.createdAt === next.createdAt && previous.jobId === next.jobId && previous.maxAttempts === next.maxAttempts && previous.workspaceId === next.workspaceId && JSON.stringify(previous.brief) === JSON.stringify(next.brief); }
@@ -1052,6 +1082,11 @@ function createState(): RepositoryState {
     localWorkflowOwnership: new Map(),
     metodoVeloceContentProductions: new Map(),
     productionRuntimeJobs: new Map(),
+    sources: new Map(),
+    evidenceRecords: new Map(),
+    publicationPlans: new Map(),
+    publicationKillSwitches: new Map(),
+    feedbackMetricSnapshots: new Map(),
   };
 }
 
@@ -1113,6 +1148,11 @@ function cloneState(state: RepositoryState): RepositoryState {
     localWorkflowOwnership: new Map([...state.localWorkflowOwnership].map(([key, value]) => [key, cloneFrozen(value)])),
     metodoVeloceContentProductions: new Map([...state.metodoVeloceContentProductions].map(([key, value]) => [key, cloneFrozen(value)])),
     productionRuntimeJobs: new Map([...state.productionRuntimeJobs].map(([key, value]) => [key, cloneFrozen(value)])),
+    sources: new Map([...state.sources].map(([key, value]) => [key, cloneFrozen(value)])),
+    evidenceRecords: new Map([...state.evidenceRecords].map(([key, value]) => [key, cloneFrozen(value)])),
+    publicationPlans: new Map([...state.publicationPlans].map(([key, value]) => [key, cloneFrozen(value)])),
+    publicationKillSwitches: new Map([...state.publicationKillSwitches].map(([key, value]) => [key, cloneFrozen(value)])),
+    feedbackMetricSnapshots: new Map([...state.feedbackMetricSnapshots].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

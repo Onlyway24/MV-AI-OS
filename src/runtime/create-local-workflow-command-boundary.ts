@@ -13,6 +13,7 @@ import { DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX } from "../assistants/inter-a
 import { DeterministicLocalMissionPlanningDryRun } from "../missions/local-mission-planning-dry-run-service.js";
 import { DeterministicMetodoVeloceContentProductionLine } from "../content-production/deterministic-metodo-veloce-content-production-line.js";
 import { ProductionRuntimeService } from "../production-runtime/production-runtime-service.js";
+import { OperationalPlaneService } from "../operational-planes/operational-plane-service.js";
 import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { Clock } from "../ports/clock.js";
 import { AgentInvocationValidator } from "../validation/agent-invocation-validator.js";
@@ -44,6 +45,7 @@ export function createLocalWorkflowCommandBoundary(input: { readonly actorId: st
     lifecycle: createWorkflowLifecycleService({ clock: input.clock, maxAttempts: 3, operatorActorId: input.actorId, repositories: input.repositories, timeoutMs: 60_000 }),
     missionPlanning: new DeterministicLocalMissionPlanningDryRun(),
     outcomes: createWorkflowStepOutcomeService({ clock: input.clock, operatorActorId: input.actorId, repositories: input.repositories, resolver }),
+    operationalPlanes: new OperationalPlaneService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId }),
     productionRuntime: new ProductionRuntimeService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId }),
     readiness: createWorkflowReadinessService({ repositories: input.repositories }),
     report: createWorkflowOperatorReportService(input.repositories),

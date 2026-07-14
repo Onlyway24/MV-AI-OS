@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 18;
+export const SQLITE_SCHEMA_VERSION = 19;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -58,6 +58,7 @@ const VERSION_FIFTEEN_TABLES = Object.freeze([...VERSION_FOURTEEN_TABLES, "teleg
 const VERSION_SIXTEEN_TABLES = VERSION_FIFTEEN_TABLES;
 const VERSION_SEVENTEEN_TABLES = Object.freeze([...VERSION_SIXTEEN_TABLES, "metodo_veloce_content_productions"]);
 const VERSION_EIGHTEEN_TABLES = Object.freeze([...VERSION_SEVENTEEN_TABLES, "production_runtime_jobs"]);
+const VERSION_NINETEEN_TABLES = Object.freeze([...VERSION_EIGHTEEN_TABLES, "evidence_records", "feedback_metric_snapshots", "publication_kill_switches", "publication_plans", "source_registry_entries"]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -207,6 +208,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 17, "durable_metodo_veloce_content_productions");
     applyProductionRuntimeMigration(database);
   }
+  const operationalPlaneVersion = readPragmaInteger(database, "user_version");
+  if (operationalPlaneVersion === 18) {
+    verifyDatabaseIdentity(database, 18);
+    verifyExpectedTables(database, VERSION_EIGHTEEN_TABLES);
+    verifyMigration(database, 18, "durable_production_runtime_jobs");
+    applyOperationalPlaneMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -229,7 +237,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_EIGHTEEN_TABLES);
+  verifyExpectedTables(database, VERSION_NINETEEN_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -248,6 +256,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 16, "atomic_telegram_mission_sessions");
   verifyMigration(database, 17, "durable_metodo_veloce_content_productions");
   verifyMigration(database, 18, "durable_production_runtime_jobs");
+  verifyMigration(database, 19, "controlled_evidence_publication_feedback_planes");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -975,6 +984,49 @@ function applyProductionRuntimeMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Production Runtime migration failed");
+  }
+}
+
+function applyOperationalPlaneMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE source_registry_entries (
+        source_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('AUTHORIZED', 'FORBIDDEN')), category TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX source_registry_entries_workspace_status ON source_registry_entries (workspace_id, status, source_id);
+      CREATE TABLE evidence_records (
+        evidence_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, actor_id TEXT NOT NULL, source_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('CONTESTED', 'INSUFFICIENT', 'STALE', 'VERIFIED')),
+        freshness_expires_at TEXT NOT NULL, record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX evidence_records_workspace_freshness ON evidence_records (workspace_id, status, freshness_expires_at, evidence_id);
+      CREATE TABLE publication_plans (
+        publication_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, actor_id TEXT NOT NULL, production_id TEXT NOT NULL,
+        idempotency_key TEXT NOT NULL, status TEXT NOT NULL CHECK (status IN ('AUTHORIZED', 'CANCELLED', 'DRY_RUN', 'FAILED', 'SUCCEEDED', 'UNCERTAIN')),
+        version INTEGER NOT NULL CHECK (version >= 0), scheduled_for TEXT NOT NULL, updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)), UNIQUE (workspace_id, idempotency_key)
+      ) STRICT;
+      CREATE INDEX publication_plans_workspace_status ON publication_plans (workspace_id, status, scheduled_for, publication_id);
+      CREATE TABLE publication_kill_switches (
+        workspace_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
+        version INTEGER NOT NULL CHECK (version >= 1), updated_at TEXT NOT NULL, record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE TABLE feedback_metric_snapshots (
+        snapshot_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, actor_id TEXT NOT NULL, publication_id TEXT NOT NULL,
+        production_id TEXT NOT NULL, platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok')), captured_at TEXT NOT NULL,
+        correction_of_snapshot_id TEXT, record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX feedback_metric_snapshots_publication ON feedback_metric_snapshots (publication_id, captured_at, snapshot_id);
+      INSERT INTO schema_migrations (version, name) VALUES (19, 'controlled_evidence_publication_feedback_planes');
+      PRAGMA user_version = 19;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite operational plane migration failed");
   }
 }
 

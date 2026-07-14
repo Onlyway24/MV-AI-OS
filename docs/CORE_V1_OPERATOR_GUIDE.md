@@ -45,6 +45,7 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `CREATE_WORKFLOW` | Atomically create or replay a definition and instance. |
 | `INSPECT_WORKFLOW` | Read `{ "instanceId": ... }`. |
 | `PRODUCE_METODO_VELOCE_CONTENT` | Create one durable, preparation-only TikTok/Instagram/carousel production from an evidence-bound brief. |
+| `PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE` | Create the same preparation-only package only when every supplied evidence ID is verified, current, claim-bound, and publicly citable. |
 | `INSPECT_METODO_VELOCE_CONTENT` | Read one production by `{ "productionId": ... }`. |
 | `REVIEW_METODO_VELOCE_CONTENT` | Fabio records an exact-version `APPROVED` or `REJECTED` review. |
 | `SCHEDULE_METODO_VELOCE_CONTENT` | Put one Fabio-approved production on the internal calendar; this never publishes it. |
@@ -54,6 +55,14 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION` | Validate and durably queue one Metodo Veloce production brief for a controlled worker. |
 | `RUN_PRODUCTION_RUNTIME_ONCE` | Recover expired work, then claim and prepare at most one due production job. |
 | `GET_PRODUCTION_RUNTIME_HEALTH` | Read queue, running, retry, completed, and dead-letter counts without changing state. |
+| `REGISTER_EVIDENCE_SOURCE` | Register one authorized or forbidden source policy before evidence intake. |
+| `RECORD_EVIDENCE` | Store one attributed, fingerprinted, freshness-bound claim record; this never fetches a URL. |
+| `CREATE_PUBLICATION_DRY_RUN` | Bind exact scheduled content, platform/account, time, package fingerprint, and idempotency key; never publish. |
+| `AUTHORIZE_PUBLICATION_DRY_RUN` | Record final exact-version authorization only if the global kill switch is off. |
+| `RECORD_PUBLICATION_RECEIPT` | Record a separately observed `SUCCEEDED`, `UNCERTAIN`, or `FAILED` outcome; never retry. |
+| `SET_PUBLICATION_KILL_SWITCH` | Enable or disable the durable workspace-global authorization stop. |
+| `IMPORT_FEEDBACK_METRICS` | Append fingerprinted external metrics after a confirmed publication receipt. |
+| `ANALYZE_PUBLICATION_FEEDBACK` | Read the latest uncorrected snapshot plus correction history. |
 | `GET_OPERATOR_REPORT` | Get status, blockers, retry state, evidence, and one action. |
 | `EVALUATE_READINESS` | Evaluate exact-version Step readiness without invocation. |
 | `GET_NEXT_CANDIDATE` | Select exactly one controlled Step candidate. |
@@ -89,14 +98,17 @@ Authoritative request shapes are exported TypeScript contracts and exercised in 
    inspect the queue, or archive the production. None of those commands publish,
    contact, spend, deploy, or invoke a provider.
 5. For controlled queue processing, submit `ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION`, inspect `GET_PRODUCTION_RUNTIME_HEALTH`, then explicitly submit `RUN_PRODUCTION_RUNTIME_ONCE`. One tick can prepare at most one due job. It has three bounded attempts, an expiring lease for restart recovery, bounded backoff, and a dead-letter queue. It never schedules itself, publishes, or invokes a provider.
-6. Create the reviewed Workflow with `CREATE_WORKFLOW`.
-7. Call `GET_OPERATOR_REPORT` and follow its one `nextAction`.
-8. Call `EVALUATE_READINESS`.
-9. Record required Fabio approval and each Guardian decision independently.
-10. Call `GET_NEXT_CANDIDATE`, then `INVOKE_AGENT`.
-11. Inspect the result with `INSPECT_AGENT_RESULT`.
-12. Use `ACCEPT_OUTCOME` only when evidence is acceptable; otherwise use `REJECT_OUTCOME`, then explicitly classify failure or revise through a later command.
-13. Request a fresh Operator Report after every state change.
+6. Before relying on a factual content claim, register its source policy with `REGISTER_EVIDENCE_SOURCE`, then use `RECORD_EVIDENCE`. Current/verified evidence is imported with source identity, reference, source date, capture date, fingerprint, mapping, limitation and expiry; it is never fetched freely by the runtime.
+7. For a separately scheduled content record, use `CREATE_PUBLICATION_DRY_RUN` and inspect the exact account, platform, time, fingerprint and idempotency key. `AUTHORIZE_PUBLICATION_DRY_RUN` is still not publication. The global kill switch blocks authorization and `UNCERTAIN` receipts must be investigated, never blindly retried.
+8. Import actual platform snapshots only after a recorded `SUCCEEDED` receipt. A correction is a new append-only record tied to the earlier snapshot; conversions require explicit verified attribution. See `CONTENT_GOVERNANCE_PLANES.md`.
+9. Create the reviewed Workflow with `CREATE_WORKFLOW`.
+10. Call `GET_OPERATOR_REPORT` and follow its one `nextAction`.
+11. Call `EVALUATE_READINESS`.
+12. Record required Fabio approval and each Guardian decision independently.
+13. Call `GET_NEXT_CANDIDATE`, then `INVOKE_AGENT`.
+14. Inspect the result with `INSPECT_AGENT_RESULT`.
+15. Use `ACCEPT_OUTCOME` only when evidence is acceptable; otherwise use `REJECT_OUTCOME`, then explicitly classify failure or revise through a later command.
+16. Request a fresh Operator Report after every state change.
 
 The Content Director prepares direction only. It never publishes, contacts anyone, changes external assets, modifies a logo, pays, deploys, or delivers.
 

@@ -267,6 +267,11 @@ describe("Durable Workflow Approval and Guardian Checkpoints", () => {
         DROP TABLE telegram_mission_draft_operations;
         DROP TABLE metodo_veloce_content_productions;
         DROP TABLE production_runtime_jobs;
+        DROP TABLE feedback_metric_snapshots;
+        DROP TABLE publication_kill_switches;
+        DROP TABLE publication_plans;
+        DROP TABLE evidence_records;
+        DROP TABLE source_registry_entries;
         DROP INDEX audit_events_workspace_correlation;
         DELETE FROM schema_migrations WHERE version = 14;
         DELETE FROM schema_migrations WHERE version = 13;
@@ -278,7 +283,7 @@ describe("Durable Workflow Approval and Guardian Checkpoints", () => {
         DELETE FROM schema_migrations WHERE version = 7;
         DELETE FROM schema_migrations WHERE version = 6;
         DELETE FROM schema_migrations WHERE version = 5;
-        DELETE FROM schema_migrations WHERE version IN (15, 16, 17, 18);
+        DELETE FROM schema_migrations WHERE version IN (15, 16, 17, 18, 19);
         PRAGMA user_version = 4;
       `);
       database.close();

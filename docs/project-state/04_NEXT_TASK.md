@@ -30,20 +30,32 @@ external effect separately authorized and observable before introducing it.
 - Telegram now exposes `/productions` and `/production <id>` in the configured private
   chat. A waiting production can receive exactly one Fabio approval for the internal
   calendar through a bound, one-use confirmation; it is never published from Telegram.
+- The Evidence Plane now has a durable Source Registry and immutable evidence records
+  with attribution, source/content/acquisition dates, SHA-256 fingerprint, bounded
+  excerpt, claim mapping, limits, freshness, risk domain, and status. Unauthorized and
+  stale evidence fails closed; high-risk verified claims require independent support.
+- The External Action Plane now creates exact-version publication dry-runs only. It
+  persists account/platform/time/package fingerprint/idempotency key, separate final
+  authorization, terminal receipt including `UNCERTAIN`, and a workspace-global kill
+  switch. It has no platform connector and no retry operation.
+- The Feedback Plane now accepts append-only, fingerprinted external snapshots only
+  after a confirmed publication receipt. Corrections are linked rather than overwritten;
+  conversions require verified attribution.
 
 ## Required next scope
 
 - Complete the private-phone continuity test: `/mission`, `/mission quick`, then a
   repeated `/mission quick` or `/status` while the same operator remains running.
-- Add a Research Agent adapter that accepts only attributable, timestamped evidence and
-  fails closed when no authorized source is available. It must not depend on an OpenAI
-  key or browse the web until those credentials and scopes are deliberately enabled.
-- Design publication adapters as separate, least-privilege integrations: selected
-  channel, asset, planned time, final human confirmation, idempotency key, audit result,
-  and an immediate disable switch. No adapter is authorized yet.
-- Design the external-metrics import boundary with source attribution, time window,
-  deduplication, declared currency, and correction history before continuous
-  improvement is calculated.
+- Add a least-privilege Research Agent adapter that can use only Source Registry
+  entries explicitly authorized for its task. It must preserve the current evidence
+  contract and fail closed on unavailable, stale or conflicting support. No web access
+  or OpenAI key is authorized yet.
+- Design and separately authorize a platform connector. It must recheck the kill
+  switch, exact authorization and idempotency key immediately before a call, then write
+  the returned receipt without treating delivery uncertainty as success.
+- Design and separately authorize provider-specific metric import connectors. They must
+  produce the existing snapshot fingerprints and attribution data; they may not create
+  synthetic metrics or update history in place.
 - Keep all Telegram data minimization, replay protection, durable state, private
   allowlisting, safe diagnostics, and cost limits intact.
 
