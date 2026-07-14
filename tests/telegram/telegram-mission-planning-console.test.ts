@@ -22,6 +22,16 @@ describe("Telegram Mission Planning Console", () => {
     await app.close();
   }));
 
+  it("routes the private Workflow guide through the real Telegram composition without creating a Workflow", async () => withDatabase(async (path) => {
+    const transport = new FakeTelegramTransport([message(1, "/workflows"), message(2, "/workflow unknown-mission")]);
+    const app = await createTelegramOperatorConsole({ contractVersion: "1", runtime: config(path), telegram: { allowedChatId: "200", allowedUserId: "100", botToken: { contractVersion: "1", secretId: "telegram-bot", source: "environment", variableName: "BOT_TOKEN" }, contractVersion: "1", polling: { confirmationRetentionSeconds: 600, limit: 10, sessionRetentionSeconds: 3_600, timeoutSeconds: 10, updateReceiptRetentionSeconds: 3_600 } } }, { clock, secretResolver: new LocalSecretResolver({ environment: { BOT_TOKEN: "test-token" } }), transport });
+    await app.bootstrap(); await app.pollOnce();
+    const delivered = transport.calls.filter((request) => request.method === "sendMessage").map((request) => String(request.body.text));
+    expect(delivered.some((text) => text.includes("Workflow Operator"))).toBe(true);
+    expect(delivered.some((text) => text.includes("Nessun Workflow è stato creato"))).toBe(true);
+    await app.close();
+  }));
+
   it("supports back, cancellation with minimization, and explicit restart", async () => withDatabase(async (path) => {
     const runtime = await createLocalRuntime(config(path), { clock });
     const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");

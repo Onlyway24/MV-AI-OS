@@ -42,8 +42,8 @@ If startup reports `OPERATOR_LOCK_HELD`, treat the lock as owned until you have 
 that no operator process is active. Only then may you remove the stale lock manually;
 the operator never steals or deletes an existing lock automatically.
 
-Phase 1 accepts `/start`, `/help`, `/status`, `/mission`, `/cancel_action`, `/stop`,
-and `/developer`; `/workflows` and `/report` remain hidden. `/mission` opens the
+Phase 1 accepts `/start`, `/help`, `/status`, `/mission`, `/workflow`, `/workflows`,
+`/report`, `/cancel_action`, `/stop`, and `/developer`. `/mission` opens the
 Mission Console home: `Nuova missione`, `Avvio rapido`, safe help and status are
 shown, while resume and last-result choices appear only when durable state exists.
 `/mission quick` lists the explicit immutable templates and `/mission template <id>`
@@ -64,6 +64,17 @@ changes a Core V1 Workflow. The Developer response is inactive by design. It rep
 only in the configured private chat. Unknown, group, channel, forwarded, edited,
 business, media, contact, location, and unauthorized updates are discarded before the
 Local Runtime is reached.
+
+The first Workflow Operator slice is deliberately separate from Mission planning. Only
+an `APPROVAL_READY` plan can be proposed with `/workflow <riferimento-missione>` and a
+one-use confirmation button. The result is one durable, preparation-only Workflow with
+one `content-direction` step. It cannot invoke the Agent Runtime until Fabio approval,
+Quality Guardian, and Operator-Safety/Risk Guardian evidence has been recorded through
+the controlled Core V1 boundaries. `/report <riferimento-missione>` returns the durable
+status, next checkpoint, bounded risks, and external-action statement; `/workflows`
+shows the available flow. These commands do not publish, send email, contact clients,
+spend money, change a CRM, deploy, merge, browse, call a model/provider, or activate a
+scheduler/worker.
 
 The private-phone acceptance remains incomplete until Fabio observes the corrected
 flow. After a successful preflight with the existing untracked local configuration,
@@ -132,5 +143,6 @@ phone `/mission` then `/mission quick` continuity check described above.
 
 Verify BotFather settings above, exact user/chat allowlisting, `/start`, a rejected
 unknown sender, a rejected forwarded message, restart behavior, and graceful stop.
-Do not enable Developer Mode, H24, tools, external models, Workflow controls, n8n,
-Web Console, or any Phase 2 capability.
+Do not enable Developer Mode, H24, tools, external models, n8n, Web Console, or any
+Phase 2 capability. The one preparation-only Workflow promotion described above is the
+sole Phase 1C exception and remains behind its explicit confirmation and checkpoints.

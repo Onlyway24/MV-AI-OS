@@ -21,8 +21,21 @@ export, sanitized doctor output and an offline release check. Templates are expl
 accelerators, never hidden defaults. The console requires separate data and planning
 confirmations and invokes only the existing deterministic Mission validation, planner,
 and Quality Gate boundaries. It creates no Workflow and performs no external action.
-Live Telegram acceptance remains pending local secret configuration. Phase 1C Core V1
-Workflow Flow has not started.
+
+Phase 1C has now started with its first controlled vertical slice: an
+`APPROVAL_READY` Mission may be promoted, after a separate one-use Telegram
+confirmation, into one durable preparation-only Core V1 Workflow. The initial
+Workflow has one Content Direction step and stops at the Fabio approval, Quality
+Guardian, and Risk/Operator-Safety Guardian checkpoints. `/workflows` explains the
+flow, `/workflow <mission-reference>` asks for the separate confirmation, and
+`/report <mission-reference>` reads the durable Workflow report. This slice cannot
+invoke an Agent Runtime or make an external action. It does not yet provide scheduling,
+background workers, automatic retry, publication, CRM/email, payments, deployment, or
+autonomous execution.
+
+The private-phone continuity acceptance remains a gate before continuous operation;
+the existing private configuration must still be observed directly with the documented
+Mission flow.
 
 ## Phase 2 — Developer Control Plane
 

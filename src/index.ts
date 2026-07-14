@@ -27,6 +27,7 @@ export { TELEGRAM_OPERATOR_ERROR_CODES, TelegramOperatorError, isRetryablePollin
 export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
 export { TelegramMissionDraftSessionCoordinator, telegramMissionCommandFingerprint, type TelegramMissionDraftCallback, type TelegramMissionDraftSessionCommand, type TelegramMissionDraftSessionSnapshot } from "./telegram/telegram-mission-draft-session-coordinator.js";
 export { TelegramMissionPlanningConsole } from "./telegram/telegram-mission-planning-console.js";
+export { TelegramWorkflowOperatorConsole } from "./telegram/telegram-workflow-operator-console.js";
 export { TELEGRAM_MISSION_TEMPLATE_REGISTRY, isTelegramMissionTemplateIntact, telegramMissionTemplate, type TelegramMissionTemplate } from "./telegram/telegram-mission-templates.js";
 export { TELEGRAM_MISSION_REPORT_EXPORT_CONTRACT_VERSION, createTelegramMissionReport, serializeTelegramMissionReport, type TelegramMissionReport, type TelegramMissionReportFormat } from "./telegram/telegram-mission-report-export.js";
 export {
