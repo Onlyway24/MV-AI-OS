@@ -30,6 +30,13 @@ export class TelegramSqliteStateStore {
     return "CLAIMED";
   }
   public complete(updateId: string, commandId?: string): void { this.#assertOpen(); this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = 'COMPLETED', command_id = ? WHERE update_id = ?").run(commandId ?? null, updateId); }
+  /** Retains only a bounded failure state; it never stores raw updates or messages. */
+  public reject(updateId: string): void { this.#assertOpen(); this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = 'REJECTED' WHERE update_id = ?").run(updateId); }
+  /** Privacy-safe receipt state for reliability checks; no update content is returned. */
+  public receiptState(updateId: string): TelegramInboundUpdateReceipt["processingState"] | undefined {
+    this.#assertOpen(); const row = this.#database.prepare("SELECT processing_state FROM telegram_inbound_receipts WHERE update_id = ?").get(updateId);
+    return row?.processing_state === "COMPLETED" || row?.processing_state === "RECEIVED" || row?.processing_state === "REJECTED" ? row.processing_state : undefined;
+  }
   public startSession(identityBinding: string, actorId: string, workspaceId: string, retentionSeconds: number): TelegramOperatorSessionRecord {
     this.#assertOpen(); const existing = this.getSession(identityBinding); if (existing !== undefined) { if (existing.actorId !== actorId || existing.workspaceId !== workspaceId || existing.identityBinding !== identityBinding) throw new Error("Telegram session ownership conflicts with durable state"); return existing; }
     const now = this.clock.now().toISOString(); const record = validateSession({ actorId, contractVersion: "1", createdAt: now, expiresAt: new Date(this.clock.now().getTime() + retentionSeconds * 1_000).toISOString(), identityBinding, navigationState: "IDLE", sessionId: `telegram-session-${identityBinding.slice(0, 32)}`, state: "IDLE", updatedAt: now, version: 0, workspaceId: workspaceId });

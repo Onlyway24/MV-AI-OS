@@ -70,6 +70,6 @@ function numeric(value: unknown): value is string { return typeof value === "str
 function safeId(value: unknown): value is string { return typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/u.test(value); }
 function hash(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value); }
 function positive(value: unknown, min: number, max: number): boolean { return Number.isSafeInteger(value) && (value as number) >= min && (value as number) <= max; }
-function prohibited(value: string): boolean { return /(?:sk-[a-z0-9]|https?:\/\/|secret|token|raw update|transcript|stack trace)/iu.test(value); }
+function prohibited(value: string): boolean { return /(?:\bsk-[A-Za-z0-9_-]{8,}(?![A-Za-z0-9_-])|https?:\/\/|secret|token|raw update|transcript|stack trace)/iu.test(value); }
 function invalid<T>(message: string): ValidationResult<T> { return validationFailure([{ code: "invalid_value", message, path: "$" }]); }
 function freeze<T>(value: T): T { if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value; Object.freeze(value); for (const child of Object.values(value)) freeze(child); return value; }

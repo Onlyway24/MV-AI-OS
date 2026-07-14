@@ -7,11 +7,15 @@ import { TelegramSqliteStateStore } from "./telegram-sqlite-state-store.js";
 import type { TelegramMissionDraftSessionCoordinator } from "./telegram-mission-draft-session-coordinator.js";
 import { TelegramMissionPlanningConsole } from "./telegram-mission-planning-console.js";
 import type { TelegramOperatorProcessLock } from "./telegram-operator-lock.js";
+import { isTelegramDatabaseFailure, TelegramOperatorError } from "./telegram-operator-errors.js";
 
 export class ControlledTelegramOperatorConsole {
   #started = false;
   #stopped = false;
+  #closePromise: Promise<void> | undefined;
   public constructor(private readonly input: { readonly actorId: string; readonly api: TelegramBotApiClient; readonly config: TelegramOperatorConfig; readonly clock: Clock; readonly lock?: TelegramOperatorProcessLock; readonly missionDrafts?: TelegramMissionDraftSessionCoordinator; readonly runtime: LocalRuntime; readonly state: TelegramSqliteStateStore; readonly workspaceId: string }) {}
+
+  public get isStopped(): boolean { return this.#stopped; }
 
   public async bootstrap(): Promise<void> {
     if (this.#started) return;
@@ -23,47 +27,69 @@ export class ControlledTelegramOperatorConsole {
   }
   public async pollOnce(): Promise<void> {
     if (!this.#started || this.#stopped) throw new Error("Telegram console is not polling");
-    this.input.state.purgeExpired();
-    const offset = this.input.state.offset()?.offset ?? "0";
+    this.#databaseState(() => { this.input.state.purgeExpired(); });
+    const offset = this.#databaseState(() => this.input.state.offset()?.offset ?? "0");
     for (const raw of await this.input.api.poll(offset)) {
-      const normalized = this.input.api.normalize(raw);
-      const updateId = rawUpdateId(raw);
-      if (updateId !== undefined) this.input.state.saveOffset(String(Number(updateId) + 1));
-      if (normalized.action === undefined) continue;
-      const claim = this.input.state.claim(normalized.action, this.input.config.polling.updateReceiptRetentionSeconds);
-      if (claim === "REPLAYED") continue;
-      const binding = createHash("sha256").update(`${normalized.action.userId}:${normalized.action.chatId}`, "utf8").digest("hex");
-      const mission = this.input.missionDrafts === undefined ? undefined : new TelegramMissionPlanningConsole({ actorId: this.input.actorId, chatId: this.input.config.allowedChatId, clock: this.input.clock, coordinator: this.input.missionDrafts, runtime: this.input.runtime, state: this.input.state, workspaceId: this.input.workspaceId });
-      if (isCallbackUpdate(raw) && normalized.action.payload?.startsWith("cb_") === true && mission !== undefined) {
-        try { await this.input.api.deliver(await mission.handleCallback(binding, normalized.action.payload)); }
-        catch { await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: "Conferma Missione non valida, scaduta o già utilizzata." }); }
-        this.input.state.complete(normalized.action.updateId);
-        continue;
-      }
-      const session = this.input.state.startSession(binding, this.input.actorId, this.input.workspaceId, this.input.config.polling.sessionRetentionSeconds);
-      if (normalized.action.kind === "MISSION_DRAFT" && mission !== undefined) {
-        await this.input.api.deliver(await mission.handle(binding, normalized.action.updateId, normalized.action.payload ?? "/mission"));
-        this.input.state.complete(normalized.action.updateId);
-        continue;
-      }
-      if (normalized.action.kind === "CANCEL_ACTION" && mission !== undefined) {
-        await this.input.api.deliver(mission.cancel(binding, normalized.action.updateId));
-        this.input.state.complete(normalized.action.updateId);
-        continue;
-      }
-      if (normalized.action.kind === "CANCEL_ACTION" && session.state !== "CANCELLED") this.input.state.transitionSession(binding, { action: "CANCEL", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "CANCELLED", sessionId: session.sessionId });
-      const stopConfirmed = normalized.action.kind === "STOP" && session.state === "WAITING_CONFIRMATION";
-      if (normalized.action.kind === "STOP" && session.state === "IDLE") this.input.state.transitionSession(binding, { action: "STOP", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "WAITING_CONFIRMATION", sessionId: session.sessionId });
-      if (stopConfirmed) this.input.state.transitionSession(binding, { action: "CONFIRM", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "COMPLETED", sessionId: session.sessionId });
-      await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: response(normalized.action.kind, stopConfirmed) });
-      this.input.state.complete(normalized.action.updateId);
-      if (stopConfirmed) await this.close();
+      await this.#processUpdate(raw);
+      if (this.isStopped) break;
     }
   }
-  public async close(): Promise<void> {
-    if (this.#stopped) return;
+  public close(): Promise<void> {
+    if (this.#closePromise !== undefined) return this.#closePromise;
+    this.#closePromise = this.#close();
+    return this.#closePromise;
+  }
+
+  async #close(): Promise<void> {
     this.#stopped = true;
-    await Promise.allSettled([this.input.runtime.close(), this.input.state.close(), this.input.lock?.close()]);
+    const results = await Promise.allSettled([this.input.runtime.close(), this.input.state.close(), this.input.lock?.close()]);
+    if (results.some((result) => result.status === "rejected")) throw new TelegramOperatorError("OPERATOR_SHUTDOWN_FAILED", "SHUTDOWN", false);
+  }
+
+  async #processUpdate(raw: unknown): Promise<void> {
+    const normalized = this.input.api.normalize(raw);
+    const updateId = rawUpdateId(raw);
+    if (updateId !== undefined) this.#databaseState(() => { this.input.state.saveOffset(String(Number(updateId) + 1)); });
+    if (normalized.action === undefined) return;
+    const action = normalized.action;
+    try {
+      if (this.#state(() => this.input.state.claim(action, this.input.config.polling.updateReceiptRetentionSeconds)) === "REPLAYED") return;
+      const binding = createHash("sha256").update(`${action.userId}:${action.chatId}`, "utf8").digest("hex");
+      const mission = this.input.missionDrafts === undefined ? undefined : new TelegramMissionPlanningConsole({ actorId: this.input.actorId, chatId: this.input.config.allowedChatId, clock: this.input.clock, coordinator: this.input.missionDrafts, runtime: this.input.runtime, state: this.input.state, workspaceId: this.input.workspaceId });
+      if (isCallbackUpdate(raw) && action.payload?.startsWith("cb_") === true && mission !== undefined) await this.input.api.deliver(await mission.handleCallback(binding, action.payload));
+      else if (action.kind === "MISSION_DRAFT" && mission !== undefined) await this.input.api.deliver(await mission.handle(binding, action.updateId, action.payload ?? "/mission"));
+      else if (action.kind === "CANCEL_ACTION" && mission !== undefined) await this.input.api.deliver(mission.cancel(binding, action.updateId));
+      else await this.#processStandardAction(binding, action.kind);
+      this.#state(() => { this.input.state.complete(action.updateId); });
+    } catch (error) {
+      if (isTelegramDatabaseFailure(error)) throw new TelegramOperatorError("DATABASE_UNAVAILABLE", "UPDATE", false);
+      this.#databaseState(() => { this.input.state.reject(action.updateId); });
+      try { await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: "Aggiornamento non elaborato. Invia un nuovo comando supportato." }); }
+      catch { /* The failed update remains durably rejected; polling continues. */ }
+    }
+  }
+
+  async #processStandardAction(binding: string, kind: string): Promise<void> {
+    const session = this.#state(() => this.input.state.startSession(binding, this.input.actorId, this.input.workspaceId, this.input.config.polling.sessionRetentionSeconds));
+    if (kind === "CANCEL_ACTION" && session.state !== "CANCELLED") this.#state(() => this.input.state.transitionSession(binding, { action: "CANCEL", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "CANCELLED", sessionId: session.sessionId }));
+    const stopConfirmed = kind === "STOP" && session.state === "WAITING_CONFIRMATION";
+    if (kind === "STOP" && session.state === "IDLE") this.#state(() => this.input.state.transitionSession(binding, { action: "STOP", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "WAITING_CONFIRMATION", sessionId: session.sessionId }));
+    if (stopConfirmed) this.#state(() => this.input.state.transitionSession(binding, { action: "CONFIRM", contractVersion: "1", expectedVersion: session.version, expiresAt: session.expiresAt, nextState: "COMPLETED", sessionId: session.sessionId }));
+    await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: response(kind, stopConfirmed) });
+    if (stopConfirmed) await this.close();
+  }
+
+  #state<T>(operation: () => T): T {
+    try { return operation(); }
+    catch (error) {
+      if (isTelegramDatabaseFailure(error)) throw new TelegramOperatorError("DATABASE_UNAVAILABLE", "UPDATE", false);
+      throw new TelegramOperatorError("UPDATE_PROCESSING_FAILED", "UPDATE", false);
+    }
+  }
+
+  #databaseState<T>(operation: () => T): T {
+    try { return operation(); }
+    catch { throw new TelegramOperatorError("DATABASE_UNAVAILABLE", "UPDATE", false); }
   }
 }
 

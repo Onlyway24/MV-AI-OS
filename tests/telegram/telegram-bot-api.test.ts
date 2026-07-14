@@ -26,8 +26,14 @@ describe("Telegram Bot API authorization", () => {
     const calls: string[] = [];
     const client = new TelegramBotApiClient(config, "token-not-logged", { request: ({ method, body }) => { calls.push(method); if (method === "getUpdates") expect(body.allowed_updates).toEqual(["message", "callback_query"]); return Promise.resolve({ ok: true, result: [] }); } });
     await client.bootstrap(); await client.poll("0");
-    await expect(client.deliver({ chatId: "201", contractVersion: "1", text: "no" })).rejects.toThrow(/unauthorized/iu);
+    await expect(client.deliver({ chatId: "201", contractVersion: "1", text: "no" })).rejects.toThrow(/OUTBOUND_DELIVERY_FAILED/u);
     expect(calls).toEqual(["deleteWebhook", "getUpdates", "getUpdates"]);
+  });
+  it("accepts the public risk-review template identifier while rejecting token-shaped output", async () => {
+    const client = new TelegramBotApiClient(config, "token-not-logged", transport);
+    await expect(client.deliver({ chatId: "200", contractVersion: "1", text: "mv-ai-os-risk-review" })).resolves.toBeUndefined();
+    await expect(client.deliver({ chatId: "200", contractVersion: "1", text: "sk-abcdefghijklmnop" })).rejects.toThrow(/OUTBOUND_DELIVERY_FAILED/u);
+    await expect(client.deliver({ chatId: "200", contractVersion: "1", text: "sk-abcdefghijk_" })).rejects.toThrow(/OUTBOUND_DELIVERY_FAILED/u);
   });
 });
 

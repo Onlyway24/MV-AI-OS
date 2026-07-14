@@ -195,6 +195,17 @@ and tests, not intended future behavior.
   restart-safe result. The console creates no Workflow and invokes no Agent Runtime,
   model, provider, tool, network, or external action. The private Bot API transport
   remains the only Telegram access path.
+- Telegram live reliability hardening is complete in the current change set. The live
+  acceptance investigation identified an outbound-validator false positive: the
+  short `sk-` fragment inside the public `risk-review` template identifier was treated
+  as a token-shaped value. `/mission quick` therefore failed delivery, and the former
+  polling loop allowed that update-local error to terminate the process without closing
+  its lock. The validator now recognizes only realistically token-shaped `sk-` values;
+  polling has finite sequential retry, update-local isolation, awaited idempotent
+  cleanup, safe reason codes, and validated list-only templates. No secret, identity,
+  raw update, message, callback or database record is retained for diagnostics. The
+  remaining acceptance is Fabio's private-phone `/mission` then `/mission quick`
+  continuity observation; it is not claimed complete here.
 - Phase 1C Workflow controls remain unstarted.
 
 ## Current architecture

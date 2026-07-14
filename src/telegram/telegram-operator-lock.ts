@@ -1,5 +1,7 @@
 import { open, unlink } from "node:fs/promises";
 
+import { TelegramOperatorError } from "./telegram-operator-errors.js";
+
 export class TelegramOperatorProcessLock {
   #closed = false;
   private constructor(private readonly path: string) {}
@@ -11,8 +13,8 @@ export class TelegramOperatorProcessLock {
       await handle.close();
       return new TelegramOperatorProcessLock(path);
     } catch (error) {
-      if (isAlreadyExists(error)) throw new Error("Telegram operator is already running for this local database");
-      throw new Error("Telegram operator lock cannot be created");
+      if (isAlreadyExists(error)) throw new TelegramOperatorError("OPERATOR_LOCK_HELD", "CONFIGURATION", false);
+      throw new TelegramOperatorError("DATABASE_UNAVAILABLE", "CONFIGURATION", false);
     }
   }
 
@@ -20,7 +22,7 @@ export class TelegramOperatorProcessLock {
     if (this.#closed) return;
     this.#closed = true;
     try { await unlink(this.path); }
-    catch (error) { if (!isMissing(error)) throw new Error("Telegram operator lock cannot be released"); }
+    catch (error) { if (!isMissing(error)) throw new TelegramOperatorError("OPERATOR_SHUTDOWN_FAILED", "SHUTDOWN", false); }
   }
 }
 

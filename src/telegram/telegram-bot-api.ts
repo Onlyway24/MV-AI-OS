@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { TelegramInboundUpdateValidator, TelegramOperatorActionValidator, type TelegramInboundUpdate, type TelegramOperatorAction, type TelegramOperatorConfig, type TelegramOutboundMessageIntent, TelegramOutboundMessageIntentValidator } from "./telegram-contracts.js";
+import { TelegramOperatorError } from "./telegram-operator-errors.js";
 
 export interface TelegramBotApiRequest { readonly method: "answerCallbackQuery" | "deleteWebhook" | "editMessageText" | "getMe" | "getUpdates" | "sendMessage" | "setMyCommands"; readonly token: string; readonly body: Readonly<Record<string, unknown>>; }
 export interface TelegramBotApiTransport { request(request: TelegramBotApiRequest): Promise<unknown>; }
@@ -14,27 +15,27 @@ export class TelegramBotApiClient {
   public constructor(private readonly config: TelegramOperatorConfig, private readonly token: string, private readonly transport: TelegramBotApiTransport) {}
 
   public async identify(): Promise<TelegramBotIdentity> {
-    const value = await this.#request("getMe", {});
-    if (!record(value) || !record(value.result) || value.result.is_bot !== true || sourceId(value.result.id) === undefined) throw new Error("Telegram identity response is invalid");
+    const value = await this.#request("getMe", {}, "IDENTITY");
+    if (!record(value) || !record(value.result) || value.result.is_bot !== true || sourceId(value.result.id) === undefined) throw new TelegramOperatorError("TELEGRAM_IDENTITY_FAILED", "BOOTSTRAP", false);
     return Object.freeze({ id: sourceId(value.result.id) ?? "0", isBot: true });
   }
   public async bootstrap(existingOffset?: string): Promise<string> {
-    await this.#request("deleteWebhook", { drop_pending_updates: false });
+    await this.#request("deleteWebhook", { drop_pending_updates: false }, "BOOTSTRAP");
     if (existingOffset !== undefined) return existingOffset;
-    const latest = await this.#request("getUpdates", { allowed_updates: ["message", "callback_query"], limit: 1, offset: -1, timeout: 0 });
+    const latest = await this.#request("getUpdates", { allowed_updates: ["message", "callback_query"], limit: 1, offset: -1, timeout: 0 }, "BOOTSTRAP");
     const updates = botResults(latest);
     const latestId = updates.map((entry) => record(entry) && sourceId(entry.update_id) !== undefined ? Number(sourceId(entry.update_id)) : -1).reduce((maximum, value) => Math.max(maximum, value), -1);
     return String(latestId + 1);
   }
-  public async poll(offset: string): Promise<readonly unknown[]> { const response = await this.#request("getUpdates", { allowed_updates: ["message", "callback_query"], limit: this.config.polling.limit, offset: Number(offset), timeout: this.config.polling.timeoutSeconds }); return Object.freeze(botResults(response)); }
+  public async poll(offset: string): Promise<readonly unknown[]> { const response = await this.#request("getUpdates", { allowed_updates: ["message", "callback_query"], limit: this.config.polling.limit, offset: Number(offset), timeout: this.config.polling.timeoutSeconds }, "POLLING"); return Object.freeze(botResults(response)); }
   public async deliver(intent: TelegramOutboundMessageIntent): Promise<void> {
     const valid = this.#outboundValidator.validate(intent);
-    if (!valid.ok || valid.value.chatId !== this.config.allowedChatId) throw new Error("Telegram outbound delivery is unauthorized");
-    if (valid.value.callbackId !== undefined) { await this.#request("answerCallbackQuery", { callback_query_id: valid.value.callbackId, text: valid.value.text }); return; }
-    if (valid.value.editMessageId !== undefined) { await this.#request("editMessageText", { chat_id: valid.value.chatId, message_id: Number(valid.value.editMessageId), text: valid.value.text }); return; }
-    await this.#request("sendMessage", { chat_id: valid.value.chatId, text: valid.value.text, ...(valid.value.buttons === undefined ? {} : { reply_markup: { inline_keyboard: [valid.value.buttons.map((button) => ({ callback_data: button.callbackData, text: button.text }))] } }) });
+    if (!valid.ok || valid.value.chatId !== this.config.allowedChatId) throw new TelegramOperatorError("OUTBOUND_DELIVERY_FAILED", "UPDATE", false);
+    if (valid.value.callbackId !== undefined) { await this.#request("answerCallbackQuery", { callback_query_id: valid.value.callbackId, text: valid.value.text }, "OUTBOUND"); return; }
+    if (valid.value.editMessageId !== undefined) { await this.#request("editMessageText", { chat_id: valid.value.chatId, message_id: Number(valid.value.editMessageId), text: valid.value.text }, "OUTBOUND"); return; }
+    await this.#request("sendMessage", { chat_id: valid.value.chatId, text: valid.value.text, ...(valid.value.buttons === undefined ? {} : { reply_markup: { inline_keyboard: [valid.value.buttons.map((button) => ({ callback_data: button.callbackData, text: button.text }))] } }) }, "OUTBOUND");
   }
-  public async setCommands(): Promise<void> { await this.#request("setMyCommands", { commands: ["start", "help", "status", "mission", "cancel_action", "stop", "developer"].map((command) => ({ command, description: commandDescription(command) })) }); }
+  public async setCommands(): Promise<void> { await this.#request("setMyCommands", { commands: ["start", "help", "status", "mission", "cancel_action", "stop", "developer"].map((command) => ({ command, description: commandDescription(command) })) }, "BOOTSTRAP"); }
   public normalize(raw: unknown): TelegramUpdateAuthorization {
     const inbound = normalizeInbound(raw);
     if (inbound === undefined) return Object.freeze({ rejection: "UNSUPPORTED" });
@@ -51,9 +52,15 @@ export class TelegramBotApiClient {
     const actionValidation = this.#actionValidator.validate(action);
     return actionValidation.ok ? Object.freeze({ action: actionValidation.value }) : Object.freeze({ rejection: "UNSUPPORTED" });
   }
-  async #request(method: TelegramBotApiRequest["method"], body: Readonly<Record<string, unknown>>): Promise<unknown> {
-    try { const response = await this.transport.request({ body, method, token: this.token }); if (!record(response) || response.ok !== true) throw new Error("Telegram transport failed"); return response; }
-    catch { throw new Error("Telegram transport failed"); }
+  async #request(method: TelegramBotApiRequest["method"], body: Readonly<Record<string, unknown>>, operation: "BOOTSTRAP" | "IDENTITY" | "OUTBOUND" | "POLLING"): Promise<unknown> {
+    try {
+      const response = await this.transport.request({ body, method, token: this.token });
+      if (!record(response) || response.ok !== true) throw new TelegramOperatorError(operation === "IDENTITY" ? "TELEGRAM_IDENTITY_FAILED" : operation === "BOOTSTRAP" ? "TELEGRAM_BOOTSTRAP_FAILED" : operation === "OUTBOUND" ? "OUTBOUND_DELIVERY_FAILED" : "POLLING_TRANSIENT_FAILURE", operation === "OUTBOUND" ? "UPDATE" : operation === "POLLING" ? "POLLING" : "BOOTSTRAP", operation === "POLLING" && retryableResponse(response));
+      return response;
+    } catch (error) {
+      if (error instanceof TelegramOperatorError) throw error;
+      throw new TelegramOperatorError(operation === "IDENTITY" ? "TELEGRAM_IDENTITY_FAILED" : operation === "BOOTSTRAP" ? "TELEGRAM_BOOTSTRAP_FAILED" : operation === "OUTBOUND" ? "OUTBOUND_DELIVERY_FAILED" : "POLLING_TRANSIENT_FAILURE", operation === "OUTBOUND" ? "UPDATE" : operation === "POLLING" ? "POLLING" : "BOOTSTRAP", operation === "POLLING");
+    }
   }
 }
 
@@ -78,3 +85,4 @@ function commandDescription(command: string): string { return ({ cancel_action: 
 function fingerprint(updateId: string, kind: string, payload: string | undefined): string { return createHash("sha256").update(`${updateId}:${kind}:${payload ?? ""}`, "utf8").digest("hex"); }
 function sourceId(value: unknown): string | undefined { const normalized = typeof value === "number" && Number.isSafeInteger(value) ? String(value) : typeof value === "string" ? value : undefined; return normalized !== undefined && /^-?[1-9][0-9]{0,18}$/u.test(normalized) ? normalized : undefined; }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
+function retryableResponse(value: unknown): boolean { return !record(value) || typeof value.error_code !== "number" || value.error_code === 429 || value.error_code >= 500; }

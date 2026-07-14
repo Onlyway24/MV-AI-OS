@@ -33,18 +33,25 @@ status and the opaque secret-reference name. Start the local console with:
 
 The process keeps an exclusive local lock next to its SQLite database, preserves a
 durable polling offset across restart, removes any webhook without dropping pending
-updates, and requests only `message` and `callback_query`. Every process stops cleanly
-on SIGINT/SIGTERM. If startup fails, run preflight again; do not remove a lock file
-unless you have first confirmed no operator process is running.
+updates, and requests only `message` and `callback_query`. Bootstrap, polling, signal
+shutdown, unexpected terminal failure, and cleanup all use one awaited shutdown path:
+the runtime, SQLite state and process lock are each closed once. SIGINT/SIGTERM request
+a graceful stop; they do not abandon asynchronous cleanup with `process.exit`.
+
+If startup reports `OPERATOR_LOCK_HELD`, treat the lock as owned until you have proved
+that no operator process is active. Only then may you remove the stale lock manually;
+the operator never steals or deletes an existing lock automatically.
 
 Phase 1 accepts `/start`, `/help`, `/status`, `/mission`, `/cancel_action`, `/stop`,
 and `/developer`; `/workflows` and `/report` remain hidden. `/mission` opens the
 Mission Console home: `Nuova missione`, `Avvio rapido`, safe help and status are
 shown, while resume and last-result choices appear only when durable state exists.
 `/mission quick` lists the explicit immutable templates and `/mission template <id>`
-applies only its exact Mission type and versioned profile references. Templates never
-provide a deadline, budget, market fact, threshold, evidence, approval, or external
-authorization. `/mission help` is contextual, deterministic and non-persistent.
+applies only its exact Mission type and versioned profile references. The list validates
+the complete registry before rendering, fails closed on an altered entry, and does not
+create a session or draft merely by listing. Templates never provide a deadline,
+budget, market fact, threshold, evidence, approval, or external authorization.
+`/mission help` is contextual, deterministic and non-persistent.
 
 The guided flow displays the current section and honest step count. `/mission` data
 collection remains based only on the structured FounderMissionBrief contract, shows an
@@ -58,11 +65,12 @@ only in the configured private chat. Unknown, group, channel, forwarded, edited,
 business, media, contact, location, and unauthorized updates are discarded before the
 Local Runtime is reached.
 
-Live acceptance has not been performed from this repository environment because no
-Telegram secret reference is currently available to the local resolver. After a
-successful preflight with Fabio's existing untracked secret/configuration, the only
-human step is to run the start command above from the authorized private chat and
-follow the `/mission` flow; no token should be copied into chat or source code.
+The private-phone acceptance remains incomplete until Fabio observes the corrected
+flow. After a successful preflight with the existing untracked local configuration,
+start the operator, send `/mission`, then send `/mission quick`; confirm the bounded
+Italian template list arrives and that the operator remains running for a subsequent
+`/status` or repeated `/mission quick`. No token should be copied into chat or source
+code.
 
 Phase 1 creates no transcript and stores no raw Update, message text, names,
 usernames, language, profile, contact, location, media, response body, or token.
@@ -72,6 +80,29 @@ but before Telegram acknowledgement can leave delivery uncertain; the underlying
 command remains replay-safe and is never repeated solely to retry delivery.
 
 ## Local reports and diagnostics
+
+### Safe operator errors
+
+Normal operator failures contain only one stable reason code. The supported codes are
+`CONFIGURATION_UNAVAILABLE`, `SECRET_REFERENCE_UNAVAILABLE`, `DATABASE_UNAVAILABLE`,
+`OPERATOR_LOCK_HELD`, `TELEGRAM_IDENTITY_FAILED`, `TELEGRAM_BOOTSTRAP_FAILED`,
+`POLLING_TRANSIENT_FAILURE`, `UPDATE_PROCESSING_FAILED`,
+`OUTBOUND_DELIVERY_FAILED`, `OPERATOR_SHUTDOWN_FAILED`, and
+`INTERNAL_OPERATOR_FAILURE`.
+
+For a bounded local diagnostic, add `--diagnostics` to the start command. It adds only
+the lifecycle stage, retryability and a safe remediation. It never prints exception
+messages, stack traces, tokens, identities, URLs, update/message/callback content, SQL
+or database records.
+
+Long-poll transport failures are retried sequentially with a finite 100 ms, 250 ms,
+then 500 ms backoff. A successful poll resets the retry budget. A non-retryable failure
+or exhausted budget stops through the same cleanup path and reports its stable code;
+there is no parallel poller, tight loop, background scheduler or automatic restart.
+An invalid supported update, Mission rendering failure or outbound-delivery failure is
+isolated to that update. Its bounded receipt is retained as rejected, no completed
+domain command is repeated, and later updates continue when the local state store is
+healthy.
 
 After a completed deterministic Mission, export its intentionally safe report with an
 explicit absolute output path:
@@ -94,8 +125,8 @@ offline release gate, use:
 `npm run telegram -- release-check <untracked-local-config.json> --offline`
 
 Neither command performs Telegram polling, invokes an Agent Runtime, model, provider,
-tool, Workflow, or external action. A live acceptance remains pending until the
-untracked local secret reference is configured.
+tool, Workflow, or external action. The remaining live acceptance is the exact private
+phone `/mission` then `/mission quick` continuity check described above.
 
 ## Live acceptance checklist
 

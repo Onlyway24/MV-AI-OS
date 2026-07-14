@@ -4,6 +4,8 @@ import { chmod, open } from "node:fs/promises";
 import { createTelegramOperatorConsole, preflightTelegramOperator, readTelegramApplicationConfig } from "./telegram-runtime.js";
 import { createTelegramMissionReport, serializeTelegramMissionReport } from "./telegram-mission-report-export.js";
 import { TelegramSqliteStateStore } from "./telegram-sqlite-state-store.js";
+import { TelegramOperatorLifecycle } from "./telegram-operator-lifecycle.js";
+import { safeTelegramOperatorDiagnostic } from "./telegram-operator-errors.js";
 
 async function main(): Promise<void> {
   const [action, path, ...arguments_] = process.argv.slice(2);
@@ -11,15 +13,15 @@ async function main(): Promise<void> {
   if (action === "doctor" && path !== undefined) { await doctor(path, arguments_); return; }
   if (action === "release-check" && path !== undefined && arguments_.length === 1 && arguments_[0] === "--offline") { await releaseCheck(path); return; }
   if (action === "export-mission" && path !== undefined) { await exportMission(path, arguments_); return; }
-  if (action === undefined || path !== undefined || process.argv.length !== 3) throw new Error("Usage: mv-ai-os-telegram [preflight] <local-config.json>");
+  if (action === undefined || arguments_.length > 0 || (path !== undefined && path !== "--diagnostics")) throw new Error("Usage: mv-ai-os-telegram <local-config.json> [--diagnostics]");
   const console_ = await createTelegramOperatorConsole(await readTelegramApplicationConfig(action));
-  let stopping = false;
-  const stop = (): void => { stopping = true; void console_.close().finally(() => process.exit(0)); };
-  process.on("SIGINT", stop); process.on("SIGTERM", stop);
-  await console_.bootstrap();
-  await pollUntilStopped(console_, () => stopping);
+  const lifecycle = new TelegramOperatorLifecycle(console_);
+  const stop = (): void => { lifecycle.requestStop(); };
+  process.once("SIGINT", stop); process.once("SIGTERM", stop);
+  try { await lifecycle.run(); }
+  finally { process.off("SIGINT", stop); process.off("SIGTERM", stop); }
 }
-void main().catch(() => { process.stderr.write("Telegram operator could not start. Run the documented preflight and verify the local secret reference and private database directory.\n"); process.exitCode = 1; });
+void main().catch((error: unknown) => { const diagnostics = process.argv.includes("--diagnostics"); process.stderr.write(safeTelegramOperatorDiagnostic(error, diagnostics)); process.exitCode = 1; });
 
 async function exportMission(configPath: string, arguments_: readonly string[]): Promise<void> {
   const [reference, formatFlag, formatValue, outputFlag, outputPath, overwrite] = arguments_;
@@ -68,10 +70,3 @@ function sqliteConfig(value: unknown): { readonly path: string; readonly timeout
 }
 function validReference(value: unknown): value is string { return typeof value === "string" && /^[a-z0-9][a-z0-9@._-]{0,127}$/u.test(value); }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
-
-async function pollUntilStopped(
-  console_: { readonly pollOnce: () => Promise<void> },
-  stopping: () => boolean,
-): Promise<void> {
-  while (!stopping()) await console_.pollOnce();
-}
