@@ -5,7 +5,7 @@ import type { MetodoVeloceContentProductionRecord } from "../content-production/
 import { RepositoryConflictError, RepositoryValidationError } from "../errors/core-error.js";
 import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { Clock } from "../ports/clock.js";
-import type { EvidenceRecord, EvidenceRecordRequest, FeedbackAnalysis, FeedbackMetricImportRequest, FeedbackMetricSnapshot, PublicationAuthorizationRequest, PublicationDryRunRequest, PublicationKillSwitch, PublicationKillSwitchRequest, PublicationPlan, PublicationReceiptRequest, SourceRegistrationRequest, SourceRegistryEntry } from "./operational-plane.js";
+import type { EvidencePack, EvidencePackItem, EvidencePackRequest, EvidenceRecord, EvidenceRecordRequest, FeedbackAnalysis, FeedbackMetricImportRequest, FeedbackMetricSnapshot, PublicationAuthorizationRequest, PublicationDryRunRequest, PublicationKillSwitch, PublicationKillSwitchRequest, PublicationPlan, PublicationReceiptRequest, SourceRegistrationRequest, SourceRegistryEntry } from "./operational-plane.js";
 import type { OperationalPlaneRepository } from "./operational-plane-repository.js";
 
 export interface OperationalPlaneServiceDependencies { readonly actorId: string; readonly clock: Clock; readonly repositories: RepositoryTransactionRunner; readonly workspaceId: string; }
@@ -32,6 +32,44 @@ export class OperationalPlaneService {
       if (candidate.status === "VERIFIED") await this.#assertCorroboration(candidate, source, operationalPlanes);
       await operationalPlanes.insertEvidence(candidate); return candidate;
     });
+  }
+
+  public async createEvidencePack(input: EvidencePackRequest): Promise<EvidencePack> {
+    const createdAt = this.#now();
+    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      if (await operationalPlanes.getEvidencePackById(input.packId) !== undefined) throw new RepositoryConflictError("Evidence Pack already exists");
+      const evidence = await this.#currentPackEvidence(operationalPlanes, input.evidenceIds);
+      const pack: EvidencePack = {
+        actorId: this.dependencies.actorId,
+        createdAt,
+        evidence,
+        evidenceIds: [...input.evidenceIds],
+        fingerprint: fingerprint({ evidence, evidenceIds: input.evidenceIds, packId: input.packId }),
+        minFreshnessExpiresAt: evidence.map((item) => item.freshnessExpiresAt).sort()[0] ?? createdAt,
+        packId: input.packId,
+        status: "READY",
+        version: 0,
+        workspaceId: this.dependencies.workspaceId,
+      };
+      await operationalPlanes.insertEvidencePack(pack);
+      return pack;
+    });
+  }
+
+  public async inspectEvidencePack(packId: string): Promise<EvidencePack> {
+    return this.dependencies.repositories.transaction(({ operationalPlanes }) => this.#ownedEvidencePack(operationalPlanes, packId));
+  }
+
+  /**
+   * This deliberately receives the current transaction repository. The caller
+   * can validate a pack and persist the resulting content atomically, so a pack
+   * cannot become stale in the gap between validation and creation.
+   */
+  public async assertEvidencePackForContentInTransaction(operationalPlanes: OperationalPlaneRepository, packId: string, evidence: readonly ContentEvidence[]): Promise<EvidencePack> {
+    const pack = await this.#ownedEvidencePack(operationalPlanes, packId);
+    if (evidence.length !== pack.evidence.length || !evidence.every((item, index) => { const packed = pack.evidence[index]; if (packed === undefined) return false; return item.evidenceId === packed.evidenceId && item.sourceRef === packed.source.sourceId && packed.claimMappings.some(({ statement }) => statement === item.statement); })) throw new RepositoryConflictError("Content evidence does not exactly match its Evidence Pack");
+    await this.#currentPackEvidence(operationalPlanes, pack.evidenceIds);
+    return pack;
   }
 
   public async assertEvidenceForContent(evidence: readonly ContentEvidence[], evidenceIds: readonly string[]): Promise<void> {
@@ -112,6 +150,7 @@ export class OperationalPlaneService {
   }
 
   async #ownedSource(repository: OperationalPlaneRepository, sourceId: string): Promise<SourceRegistryEntry> { const source = await repository.getSourceById(sourceId); if (source?.workspaceId !== this.dependencies.workspaceId || source.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Evidence source is unavailable"); return source; }
+  async #ownedEvidencePack(repository: OperationalPlaneRepository, packId: string): Promise<EvidencePack> { const pack = await repository.getEvidencePackById(packId); if (pack?.workspaceId !== this.dependencies.workspaceId || pack.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Evidence Pack is unavailable"); return pack; }
   async #ownedPublication(repository: OperationalPlaneRepository, publicationId: string): Promise<PublicationPlan> { const publication = await repository.getPublicationById(publicationId); if (publication?.workspaceId !== this.dependencies.workspaceId || publication.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Publication plan is unavailable"); return publication; }
   async #ownedContent(repository: { getById(id: string): Promise<MetodoVeloceContentProductionRecord | undefined> }, productionId: string): Promise<MetodoVeloceContentProductionRecord> { const content = await repository.getById(productionId); if (content?.workspaceId !== this.dependencies.workspaceId || content.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Content production is unavailable"); return content; }
   #assertEvidencePolicy(evidence: EvidenceRecord, source: SourceRegistryEntry): void {
@@ -122,6 +161,18 @@ export class OperationalPlaneService {
     const now = this.dependencies.clock.now().getTime();
     if ((Date.parse(evidence.freshnessExpiresAt) <= now) !== (evidence.status === "STALE")) throw new RepositoryValidationError("Evidence freshness status is inconsistent");
     if (evidence.status === "VERIFIED" && source.reliability === "LOW") throw new RepositoryValidationError("Low-reliability source evidence cannot be marked verified");
+  }
+  async #currentPackEvidence(repository: OperationalPlaneRepository, evidenceIds: readonly string[]): Promise<readonly EvidencePackItem[]> {
+    if (evidenceIds.length < 1 || evidenceIds.length > 8 || new Set(evidenceIds).size !== evidenceIds.length) throw new RepositoryValidationError("Evidence Pack must contain exact, unique evidence IDs");
+    const records = await Promise.all(evidenceIds.map((evidenceId) => repository.getEvidenceById(evidenceId)));
+    const items: EvidencePackItem[] = [];
+    for (const record of records) {
+      if (record?.workspaceId !== this.dependencies.workspaceId || record.actorId !== this.dependencies.actorId || record.status !== "VERIFIED" || Date.parse(record.freshnessExpiresAt) <= this.dependencies.clock.now().getTime()) throw new RepositoryConflictError("Evidence Pack contains evidence that is not verified and current");
+      const source = await this.#ownedSource(repository, record.sourceId);
+      if (source.status !== "AUTHORIZED" || source.category === "FORBIDDEN" || !source.publicCitationAllowed) throw new RepositoryConflictError("Evidence Pack contains a source that is not eligible for public citation");
+      items.push({ acquiredAt: record.acquiredAt, claimMappings: record.claimMappings, contentPublishedAt: record.contentPublishedAt, evidenceFingerprint: record.fingerprint, evidenceId: record.evidenceId, excerpt: record.excerpt, freshnessExpiresAt: record.freshnessExpiresAt, limitations: record.limitations, riskDomain: record.riskDomain, source: { canonicalReference: source.canonicalReference, name: source.name, reliability: source.reliability, sourceId: source.sourceId }, sourceReference: record.sourceReference });
+    }
+    return Object.freeze(items);
   }
   async #assertCorroboration(evidence: EvidenceRecord, source: SourceRegistryEntry, repository: OperationalPlaneRepository): Promise<void> {
     const needsSecondSource = source.requiresSecondSource || evidence.riskDomain !== "GENERAL";

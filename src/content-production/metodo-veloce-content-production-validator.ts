@@ -43,8 +43,8 @@ const PACKAGE = new MetodoVeloceContentProductionPackageValidator();
 export class MetodoVeloceContentProductionRecordValidator implements Validator<MetodoVeloceContentProductionRecord> {
   public validate(value: unknown): ValidationResult<MetodoVeloceContentProductionRecord> {
     if (!record(value)) return invalid("Metodo Veloce content production record is invalid");
-    const fields = ["actorId", "contractVersion", "createdAt", "package", "productionId", "status", "updatedAt", "version", "workspaceId", ...(value.archive === undefined ? [] : ["archive"]), ...(value.metrics === undefined ? [] : ["metrics"]), ...(value.review === undefined ? [] : ["review"]), ...(value.schedule === undefined ? [] : ["schedule"])];
-    if (!keys(value, fields) || !identifier(value.actorId) || !identifier(value.workspaceId) || !identifier(value.productionId) || value.contractVersion !== METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION || !timestamp(value.createdAt) || !timestamp(value.updatedAt) || !version(value.version) || !PACKAGE.validate(value.package).ok || !recordStatus(value)) return invalid("Metodo Veloce content production record is invalid");
+    const fields = ["actorId", "contractVersion", "createdAt", "package", "productionId", "status", "updatedAt", "version", "workspaceId", ...(value.archive === undefined ? [] : ["archive"]), ...(value.evidencePack === undefined ? [] : ["evidencePack"]), ...(value.metrics === undefined ? [] : ["metrics"]), ...(value.review === undefined ? [] : ["review"]), ...(value.schedule === undefined ? [] : ["schedule"])];
+    if (!keys(value, fields) || !identifier(value.actorId) || !identifier(value.workspaceId) || !identifier(value.productionId) || value.contractVersion !== METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION || !timestamp(value.createdAt) || !timestamp(value.updatedAt) || !version(value.version) || !evidencePack(value.evidencePack) || !PACKAGE.validate(value.package).ok || !recordStatus(value)) return invalid("Metodo Veloce content production record is invalid");
     return validationSuccess(freeze(structuredClone(value as unknown as MetodoVeloceContentProductionRecord)));
   }
 }
@@ -66,6 +66,7 @@ export class MetodoVeloceContentProductionArchiveRequestValidator implements Val
 }
 
 function evidence(value: unknown): value is readonly ContentEvidence[] { return Array.isArray(value) && value.length >= 1 && value.length <= 8 && value.every((entry) => record(entry) && keys(entry, ["evidenceId", "sourceRef", "statement"]) && identifier(entry.evidenceId) && identifier(entry.sourceRef) && text(entry.statement, 8, 500)); }
+function evidencePack(value: unknown): boolean { return value === undefined || (record(value) && keys(value, ["fingerprint", "minFreshnessExpiresAt", "packId", "verifiedAt"]) && identifier(value.packId) && typeof value.fingerprint === "string" && /^[a-f0-9]{64}$/u.test(value.fingerprint) && timestamp(value.minFreshnessExpiresAt) && timestamp(value.verifiedAt) && Date.parse(value.verifiedAt) < Date.parse(value.minFreshnessExpiresAt)); }
 function evidenceSummary(value: unknown): boolean { return record(value) && keys(value, ["items", "limitations"]) && evidence(value.items) && strings(value.limitations, 1, 4, 300); }
 function approval(value: unknown): boolean { return record(value) && keys(value, ["required", "status"]) && value.required === true && ["NOT_ELIGIBLE", "PENDING_FABIO"].includes(value.status as string); }
 function editorial(value: unknown): boolean { return record(value) && keys(value, ["angle", "audience", "objective", "selectedIdea"]) && text(value.angle, 8, 500) && text(value.audience, 4, 240) && ["educate", "engage", "lead_generation", "soft_sell"].includes(value.objective as string) && text(value.selectedIdea, 8, 500); }
@@ -81,7 +82,7 @@ function strings(value: unknown, min: number, max: number, length: number): bool
 function score(value: unknown): boolean { return Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= 100; }
 function identifier(value: unknown): value is string { return typeof value === "string" && ID.test(value); }
 function text(value: unknown, min: number, max: number): value is string { return typeof value === "string" && value.trim().length >= min && value.trim().length <= max && !UNSAFE.test(value); }
-function timestamp(value: unknown): boolean { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value); }
+function timestamp(value: unknown): value is string { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value); }
 function version(value: unknown): boolean { return Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= 1_000_000; }
 function nonNegative(value: unknown): boolean { return Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= 1_000_000_000; }
 function request<T>(value: unknown, expected: readonly string[], valid: (candidate: Record<string, unknown>) => boolean, message: string): ValidationResult<T> { if (!record(value) || !keys(value, expected) || !valid(value)) return invalid(message); return validationSuccess(freeze(structuredClone(value as unknown as T))); }

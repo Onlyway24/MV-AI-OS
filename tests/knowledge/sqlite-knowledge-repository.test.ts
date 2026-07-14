@@ -178,13 +178,14 @@ describe("SQLite knowledge persistence", () => {
         DROP TABLE telegram_mission_draft_operations;
         DROP TABLE metodo_veloce_content_productions;
         DROP TABLE production_runtime_jobs;
+        DROP TABLE evidence_packs;
         DROP TABLE feedback_metric_snapshots;
         DROP TABLE publication_kill_switches;
         DROP TABLE publication_plans;
         DROP TABLE evidence_records;
         DROP TABLE source_registry_entries;
         DROP INDEX audit_events_workspace_correlation;
-        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
+        DELETE FROM schema_migrations WHERE version IN (3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
         PRAGMA user_version = 2;
       `);
       legacyDatabase.close();

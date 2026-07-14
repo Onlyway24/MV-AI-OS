@@ -45,6 +45,43 @@ export interface EvidenceRecord {
   readonly workspaceId: string;
 }
 
+/**
+ * Immutable, reviewable snapshot of the evidence that is allowed to support one
+ * content package. Source and evidence records remain the system of record; the
+ * pack makes the exact review set visible and fingerprinted for the operator.
+ */
+export interface EvidencePackItem {
+  readonly acquiredAt: string;
+  readonly claimMappings: readonly EvidenceClaimMapping[];
+  readonly contentPublishedAt: string;
+  readonly evidenceFingerprint: string;
+  readonly evidenceId: string;
+  readonly excerpt: string;
+  readonly freshnessExpiresAt: string;
+  readonly limitations: readonly string[];
+  readonly riskDomain: RiskDomain;
+  readonly source: {
+    readonly canonicalReference: string;
+    readonly name: string;
+    readonly reliability: ReliabilityLevel;
+    readonly sourceId: string;
+  };
+  readonly sourceReference: string;
+}
+
+export interface EvidencePack {
+  readonly actorId: string;
+  readonly createdAt: string;
+  readonly evidence: readonly EvidencePackItem[];
+  readonly evidenceIds: readonly string[];
+  readonly fingerprint: string;
+  readonly minFreshnessExpiresAt: string;
+  readonly packId: string;
+  readonly status: "READY";
+  readonly version: 0;
+  readonly workspaceId: string;
+}
+
 export type PublicationPlatform = "instagram" | "tiktok";
 export type PublicationStatus = "AUTHORIZED" | "CANCELLED" | "DRY_RUN" | "FAILED" | "SUCCEEDED" | "UNCERTAIN";
 
@@ -114,6 +151,7 @@ export interface SourceRegistrationRequest {
 export interface EvidenceRecordRequest {
   readonly claimMappings: readonly EvidenceClaimMapping[]; readonly contentPublishedAt: string; readonly corroboratingEvidenceIds: readonly string[]; readonly evidenceId: string; readonly excerpt: string; readonly fingerprint: string; readonly freshnessExpiresAt: string; readonly limitations: readonly string[]; readonly riskDomain: RiskDomain; readonly sourceId: string; readonly sourceReference: string; readonly status: EvidenceStatus;
 }
+export interface EvidencePackRequest { readonly evidenceIds: readonly string[]; readonly packId: string; }
 export interface PublicationDryRunRequest { readonly accountRef: string; readonly contentVersion: number; readonly idempotencyKey: string; readonly platform: PublicationPlatform; readonly productionId: string; readonly publicationId: string; readonly scheduledFor: string; }
 export interface PublicationAuthorizationRequest { readonly expectedVersion: number; readonly publicationId: string; }
 export interface PublicationReceiptRequest { readonly expectedVersion: number; readonly outcome: "FAILED" | "SUCCEEDED" | "UNCERTAIN"; readonly platformContentRef?: string; readonly publicationId: string; readonly receiptFingerprint: string; }

@@ -12,7 +12,7 @@ import type { Clock } from "../ports/clock.js";
 import { ProductionRuntimeService } from "../production-runtime/production-runtime-service.js";
 import { ProductionRuntimeEnqueueRequestValidator } from "../production-runtime/production-runtime-validator.js";
 import { OperationalPlaneService } from "../operational-planes/operational-plane-service.js";
-import { EvidenceRecordRequestValidator, FeedbackMetricImportRequestValidator, PublicationAuthorizationRequestValidator, PublicationDryRunRequestValidator, PublicationKillSwitchRequestValidator, PublicationReceiptRequestValidator, SourceRegistrationRequestValidator } from "../operational-planes/operational-plane-validator.js";
+import { EvidencePackRequestValidator, EvidenceRecordRequestValidator, FeedbackMetricImportRequestValidator, PublicationAuthorizationRequestValidator, PublicationDryRunRequestValidator, PublicationKillSwitchRequestValidator, PublicationReceiptRequestValidator, SourceRegistrationRequestValidator } from "../operational-planes/operational-plane-validator.js";
 import type { Validator, ValidationResult } from "../validation/validation.js";
 import { validationFailure, validationSuccess } from "../validation/validation.js";
 import type { WorkflowControlCheckpointService } from "../workflows/runtime/workflow-control-checkpoint.js";
@@ -25,7 +25,7 @@ import type { WorkflowStepOutcomeService } from "../workflows/runtime/workflow-s
 import { WorkflowDefinitionValidator, WorkflowInstanceValidator } from "../workflows/runtime/workflow-runtime-validator.js";
 
 export const LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION = "1" as const;
-export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
+export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
 export type LocalWorkflowOperation = typeof LOCAL_WORKFLOW_OPERATIONS[number];
 export interface LocalWorkflowCommand { readonly contractVersion: "1"; readonly commandId: string; readonly actorId: string; readonly workspaceId: string; readonly operation: LocalWorkflowOperation; readonly input: Readonly<Record<string, unknown>>; }
 export interface LocalWorkflowCommandResponse { readonly contractVersion: "1"; readonly status: "ok"; readonly operation: LocalWorkflowOperation; readonly commandId: string; readonly result: unknown; readonly nextAction: string; readonly replayed: boolean; readonly unauthorizedExternalEffectOccurred: false; }
@@ -91,6 +91,7 @@ export class LocalWorkflowCommandBoundary {
   readonly #productionRuntimeEnqueueValidator = new ProductionRuntimeEnqueueRequestValidator();
   readonly #sourceRegistrationValidator = new SourceRegistrationRequestValidator();
   readonly #evidenceRecordValidator = new EvidenceRecordRequestValidator();
+  readonly #evidencePackValidator = new EvidencePackRequestValidator();
   readonly #publicationDryRunValidator = new PublicationDryRunRequestValidator();
   readonly #publicationAuthorizationValidator = new PublicationAuthorizationRequestValidator();
   readonly #publicationReceiptValidator = new PublicationReceiptRequestValidator();
@@ -126,6 +127,7 @@ export class LocalWorkflowCommandBoundary {
       case "INSPECT_WORKFLOW": return this.dependencies.repositories.transaction(async ({ workflows }) => { const instance = await workflows.instances.getById(requiredId(input, "instanceId")); if (instance === undefined) throw new RepositoryConflictError("Inspected Workflow does not exist"); return instance; });
       case "PRODUCE_METODO_VELOCE_CONTENT": return this.#produceContentProduction(input.brief);
       case "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE": return this.#produceContentProductionFromEvidence(input);
+      case "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK": return this.#produceContentProductionFromEvidencePack(input);
       case "INSPECT_METODO_VELOCE_CONTENT": return this.#inspectContentProduction(requiredId(input, "productionId"));
       case "REVIEW_METODO_VELOCE_CONTENT": return this.#reviewContentProduction(input);
       case "SCHEDULE_METODO_VELOCE_CONTENT": return this.#scheduleContentProduction(input);
@@ -137,6 +139,8 @@ export class LocalWorkflowCommandBoundary {
       case "GET_PRODUCTION_RUNTIME_HEALTH": return this.#productionRuntimeHealth(input);
       case "REGISTER_EVIDENCE_SOURCE": return this.dependencies.operationalPlanes.registerSource(validate(input, this.#sourceRegistrationValidator, "Evidence source registration request"));
       case "RECORD_EVIDENCE": return this.dependencies.operationalPlanes.recordEvidence(validate(input, this.#evidenceRecordValidator, "Evidence record request"));
+      case "CREATE_EVIDENCE_PACK": return this.dependencies.operationalPlanes.createEvidencePack(validate(input, this.#evidencePackValidator, "Evidence Pack request"));
+      case "INSPECT_EVIDENCE_PACK": if (!keys(input, ["packId"])) throw new RepositoryValidationError("Evidence Pack inspection request is invalid"); return this.dependencies.operationalPlanes.inspectEvidencePack(requiredId(input, "packId"));
       case "CREATE_PUBLICATION_DRY_RUN": return this.dependencies.operationalPlanes.createPublicationDryRun(validate(input, this.#publicationDryRunValidator, "Publication dry-run request"));
       case "AUTHORIZE_PUBLICATION_DRY_RUN": return this.dependencies.operationalPlanes.authorizePublication(validate(input, this.#publicationAuthorizationValidator, "Publication authorization request"));
       case "RECORD_PUBLICATION_RECEIPT": return this.dependencies.operationalPlanes.recordPublicationReceipt(validate(input, this.#publicationReceiptValidator, "Publication receipt request"));
@@ -185,11 +189,17 @@ export class LocalWorkflowCommandBoundary {
 
   async #produceContentProduction(input: unknown): Promise<MetodoVeloceContentProductionRecord> {
     const brief = validate(input, this.#contentBriefValidator, "Metodo Veloce content production brief");
+    const record = this.#contentProductionRecord(brief);
+    return this.#insertContentProduction(record);
+  }
+
+  #contentProductionRecord(brief: MetodoVeloceContentProductionBrief, evidencePack?: MetodoVeloceContentProductionRecord["evidencePack"]): MetodoVeloceContentProductionRecord {
     const contentPackage = this.dependencies.contentProduction.produce(brief);
-    const record: MetodoVeloceContentProductionRecord = {
+    return {
       actorId: this.dependencies.actorId,
       contractVersion: "1",
       createdAt: contentPackage.generatedAt,
+      ...(evidencePack === undefined ? {} : { evidencePack }),
       package: contentPackage,
       productionId: brief.productionId,
       status: contentPackage.status === "BLOCKED" ? "BLOCKED" : "PENDING_FABIO_APPROVAL",
@@ -197,6 +207,9 @@ export class LocalWorkflowCommandBoundary {
       version: 0,
       workspaceId: this.dependencies.workspaceId,
     };
+  }
+
+  async #insertContentProduction(record: MetodoVeloceContentProductionRecord): Promise<MetodoVeloceContentProductionRecord> {
     return this.dependencies.repositories.transaction(async ({ contentProductions }) => {
       if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
       await contentProductions.insert(record);
@@ -209,6 +222,19 @@ export class LocalWorkflowCommandBoundary {
     const brief = validate(input.brief, this.#contentBriefValidator, "Metodo Veloce evidence-bound content production brief");
     await this.dependencies.operationalPlanes.assertEvidenceForContent(brief.evidence, input.evidenceIds);
     return this.#produceContentProduction(brief);
+  }
+
+  async #produceContentProductionFromEvidencePack(input: Readonly<Record<string, unknown>>): Promise<MetodoVeloceContentProductionRecord> {
+    const evidencePackId = input.evidencePackId;
+    if (!keys(input, ["brief", "evidencePackId"]) || !safeId(evidencePackId)) throw new RepositoryValidationError("Evidence Pack content production request is invalid");
+    const brief = validate(input.brief, this.#contentBriefValidator, "Metodo Veloce Evidence Pack content production brief");
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes }) => {
+      const pack = await this.dependencies.operationalPlanes.assertEvidencePackForContentInTransaction(operationalPlanes, evidencePackId, brief.evidence);
+      const record = this.#contentProductionRecord(brief, { fingerprint: pack.fingerprint, minFreshnessExpiresAt: pack.minFreshnessExpiresAt, packId: pack.packId, verifiedAt: this.dependencies.clock.now().toISOString() });
+      if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
+      await contentProductions.insert(record);
+      return record;
+    });
   }
 
   async #inspectContentProduction(productionId: string): Promise<MetodoVeloceContentProductionRecord> { return this.dependencies.repositories.transaction(({ contentProductions }) => this.#ownedContentProduction(contentProductions, productionId)); }
@@ -279,7 +305,7 @@ export class LocalWorkflowCommandBoundary {
 
   async #resourceInstanceId(command: LocalWorkflowCommand): Promise<string | undefined> {
     const input = command.input;
-    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
+    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
     if (typeof input.instanceId === "string") return input.instanceId;
     if (record(input.checkpoint) && typeof input.checkpoint.instanceId === "string") return input.checkpoint.instanceId;
     if (record(input.boundaryRequest) && typeof input.boundaryRequest.instanceId === "string") return input.boundaryRequest.instanceId;
@@ -297,6 +323,7 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   if (operation === "CREATE_WORKFLOW") return `Request the Operator Workflow Report for Workflow ${nestedId(input, "instance", "instanceId") ?? "unknown"}.`;
   if (operation === "PRODUCE_METODO_VELOCE_CONTENT" || operation === "INSPECT_METODO_VELOCE_CONTENT") return `Request Fabio review for Metodo Veloce content package ${operation === "PRODUCE_METODO_VELOCE_CONTENT" ? nestedId(input, "brief", "productionId") ?? "unknown" : id(input.productionId)}.`;
   if (operation === "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE") return `Request Fabio review for evidence-bound Metodo Veloce content package ${nestedId(input, "brief", "productionId") ?? "unknown"}.`;
+  if (operation === "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK") return `Open the evidence-led Metodo Veloce content package ${nestedId(input, "brief", "productionId") ?? "unknown"} in Telegram for Fabio review.`;
   if (operation === "REVIEW_METODO_VELOCE_CONTENT") return record(result) && result.status === "APPROVED_FOR_SCHEDULING" ? `Schedule Metodo Veloce content package ${id(input.productionId)}.` : `Keep archived Metodo Veloce content package ${id(input.productionId)} out of the publication queue.`;
   if (operation === "SCHEDULE_METODO_VELOCE_CONTENT") return `Await Fabio's separate publication decision for scheduled Metodo Veloce content package ${id(input.productionId)}.`;
   if (operation === "RECORD_METODO_VELOCE_CONTENT_METRICS") return `Review declared metrics for Metodo Veloce content package ${id(input.productionId)}; this did not publish anything.`;
@@ -307,6 +334,8 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   if (operation === "GET_PRODUCTION_RUNTIME_HEALTH") return record(result) && result.status === "ATTENTION_REQUIRED" ? "Inspect the Production Runtime dead-letter queue before scheduling additional work." : "Production Runtime is healthy; run one controlled worker tick when due work exists.";
   if (operation === "REGISTER_EVIDENCE_SOURCE") return "Record attributable evidence only from this registered source; no browsing was enabled.";
   if (operation === "RECORD_EVIDENCE") return "Use only verified, current evidence mapped to the supported claim; no source was fetched by the runtime.";
+  if (operation === "CREATE_EVIDENCE_PACK") return `Review the immutable Evidence Pack ${id(input.packId)} before creating a content package.`;
+  if (operation === "INSPECT_EVIDENCE_PACK") return `Inspect the sources, claims, limits, and freshness of Evidence Pack ${id(input.packId)}.`;
   if (operation === "CREATE_PUBLICATION_DRY_RUN") return "Review the exact account, platform, content fingerprint, time, and idempotency key before final authorization; nothing was published.";
   if (operation === "AUTHORIZE_PUBLICATION_DRY_RUN") return "A final authorization record exists, but no publication connector was invoked. Record a confirmed or uncertain receipt separately.";
   if (operation === "RECORD_PUBLICATION_RECEIPT") return "Do not retry publication blindly. Treat an uncertain receipt as unresolved until the platform is checked separately.";

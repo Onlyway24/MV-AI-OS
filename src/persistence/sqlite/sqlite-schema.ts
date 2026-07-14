@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 19;
+export const SQLITE_SCHEMA_VERSION = 20;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -59,6 +59,7 @@ const VERSION_SIXTEEN_TABLES = VERSION_FIFTEEN_TABLES;
 const VERSION_SEVENTEEN_TABLES = Object.freeze([...VERSION_SIXTEEN_TABLES, "metodo_veloce_content_productions"]);
 const VERSION_EIGHTEEN_TABLES = Object.freeze([...VERSION_SEVENTEEN_TABLES, "production_runtime_jobs"]);
 const VERSION_NINETEEN_TABLES = Object.freeze([...VERSION_EIGHTEEN_TABLES, "evidence_records", "feedback_metric_snapshots", "publication_kill_switches", "publication_plans", "source_registry_entries"]);
+const VERSION_TWENTY_TABLES = Object.freeze([...VERSION_NINETEEN_TABLES, "evidence_packs"]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -215,6 +216,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 18, "durable_production_runtime_jobs");
     applyOperationalPlaneMigration(database);
   }
+  const evidencePackVersion = readPragmaInteger(database, "user_version");
+  if (evidencePackVersion === 19) {
+    verifyDatabaseIdentity(database, 19);
+    verifyExpectedTables(database, VERSION_NINETEEN_TABLES);
+    verifyMigration(database, 19, "controlled_evidence_publication_feedback_planes");
+    applyEvidencePackMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -237,7 +245,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_NINETEEN_TABLES);
+  verifyExpectedTables(database, VERSION_TWENTY_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -257,6 +265,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 17, "durable_metodo_veloce_content_productions");
   verifyMigration(database, 18, "durable_production_runtime_jobs");
   verifyMigration(database, 19, "controlled_evidence_publication_feedback_planes");
+  verifyMigration(database, 20, "durable_evidence_packs");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -1027,6 +1036,27 @@ function applyOperationalPlaneMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite operational plane migration failed");
+  }
+}
+
+function applyEvidencePackMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE evidence_packs (
+        pack_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, actor_id TEXT NOT NULL,
+        min_freshness_expires_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX evidence_packs_workspace_freshness
+        ON evidence_packs (workspace_id, min_freshness_expires_at, pack_id);
+      INSERT INTO schema_migrations (version, name) VALUES (20, 'durable_evidence_packs');
+      PRAGMA user_version = 20;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Evidence Pack migration failed");
   }
 }
 

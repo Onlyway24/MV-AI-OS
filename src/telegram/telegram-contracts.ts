@@ -5,7 +5,7 @@ import { validationFailure, validationSuccess } from "../validation/validation.j
 export const TELEGRAM_OPERATOR_CONTRACT_VERSION = "1" as const;
 export const TELEGRAM_ALLOWED_UPDATE_TYPES = Object.freeze(["callback_query", "message"] as const);
 export type TelegramAllowedUpdateType = (typeof TELEGRAM_ALLOWED_UPDATE_TYPES)[number];
-export type TelegramActionKind = "CANCEL_ACTION" | "CONTENT_PRODUCTION" | "CONTENT_QUEUE" | "CONTENT_REVIEW_APPROVE" | "DEVELOPER" | "HELP" | "MISSION_DRAFT" | "REPORT" | "SETTINGS" | "START" | "STATUS" | "STOP" | "WORKFLOW" | "WORKFLOW_CREATE" | "WORKFLOWS";
+export type TelegramActionKind = "CANCEL_ACTION" | "CONTENT_PRODUCTION" | "CONTENT_QUEUE" | "CONTENT_REVIEW_APPROVE" | "EVIDENCE_PACK" | "DEVELOPER" | "HELP" | "MISSION_DRAFT" | "REPORT" | "SETTINGS" | "START" | "STATUS" | "STOP" | "WORKFLOW" | "WORKFLOW_CREATE" | "WORKFLOWS";
 
 export interface TelegramOperatorConfig {
   readonly contractVersion: "1";
@@ -48,7 +48,7 @@ export class TelegramInboundUpdateValidator implements Validator<TelegramInbound
 
 export class TelegramOperatorActionValidator implements Validator<TelegramOperatorAction> {
   public validate(value: unknown): ValidationResult<TelegramOperatorAction> {
-    if (!record(value) || !exactKeys(value, value.payload === undefined ? ["chatId", "contractVersion", "fingerprint", "kind", "updateId", "userId"] : ["chatId", "contractVersion", "fingerprint", "kind", "payload", "updateId", "userId"]) || value.contractVersion !== "1" || !safeId(value.updateId) || !numeric(value.userId) || !numeric(value.chatId) || !["CANCEL_ACTION", "CONTENT_PRODUCTION", "CONTENT_QUEUE", "CONTENT_REVIEW_APPROVE", "DEVELOPER", "HELP", "MISSION_DRAFT", "REPORT", "SETTINGS", "START", "STATUS", "STOP", "WORKFLOW", "WORKFLOW_CREATE", "WORKFLOWS"].includes(value.kind as string) || !hash(value.fingerprint) || (value.payload !== undefined && (typeof value.payload !== "string" || value.payload.length > 2_000 || prohibited(value.payload)))) return invalid("Telegram operator action is invalid");
+    if (!record(value) || !exactKeys(value, value.payload === undefined ? ["chatId", "contractVersion", "fingerprint", "kind", "updateId", "userId"] : ["chatId", "contractVersion", "fingerprint", "kind", "payload", "updateId", "userId"]) || value.contractVersion !== "1" || !safeId(value.updateId) || !numeric(value.userId) || !numeric(value.chatId) || !["CANCEL_ACTION", "CONTENT_PRODUCTION", "CONTENT_QUEUE", "CONTENT_REVIEW_APPROVE", "EVIDENCE_PACK", "DEVELOPER", "HELP", "MISSION_DRAFT", "REPORT", "SETTINGS", "START", "STATUS", "STOP", "WORKFLOW", "WORKFLOW_CREATE", "WORKFLOWS"].includes(value.kind as string) || !hash(value.fingerprint) || (value.payload !== undefined && (typeof value.payload !== "string" || value.payload.length > 2_000 || prohibited(value.payload)))) return invalid("Telegram operator action is invalid");
     return validationSuccess(freeze(structuredClone(value as unknown as TelegramOperatorAction)));
   }
 }

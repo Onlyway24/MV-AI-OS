@@ -27,10 +27,10 @@ The runtime rejects an expired record marked current, an expiry beyond the sourc
 an unregistered URL family, or a verified claim without required corroboration. It does
 not fetch a URL: source intake is an explicit controlled import.
 
-`PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE` binds a new content package to the exact
-evidence IDs. The IDs, safe source references and claim statements must match immutable,
-current `VERIFIED` evidence records whose sources permit public citation. This is the
-production route for evidence-backed factual content.
+`PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE` remains available for local compatibility,
+but it creates no Evidence Pack attestation and cannot be approved from Telegram.
+Evidence-led production for Fabio approval uses
+`PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK`.
 
 ## External Action Plane
 
@@ -74,3 +74,19 @@ All commands are private local-runtime operations, replay-safe through the exist
 command receipt boundary, and return
 `unauthorizedExternalEffectOccurred: false`. Telegram does not expose any publication
 or feedback command in this version.
+
+## Evidence-led content flow
+
+The production route used for Fabio approval is now:
+
+```text
+authorized source -> immutable Evidence Record -> Evidence Pack -> Metodo Veloce package -> Fabio approval in Telegram
+```
+
+An Evidence Pack is an immutable, SHA-256-fingerprinted snapshot of the exact
+verified records, source identity, claim mappings, excerpt, limitations, and
+earliest freshness expiry. `PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK`
+checks that the package matches every packed claim and persists the content in
+the same database transaction. Telegram shows the pack and offers approval only
+to content carrying that attestation; legacy content remains visible but cannot
+be approved there.

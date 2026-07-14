@@ -62,12 +62,14 @@ describe("Telegram Workflow Operator Console", () => {
     const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
     const workflow = new TelegramWorkflowOperatorConsole({ actorId: "actor-local", chatId: "200", clock, confirmationRetentionSeconds: 600, runtime, state, workspaceId: "workspace-local" });
     if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow command boundary unavailable");
-    await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "telegram-content-produce-001", contractVersion: "1", input: { brief: contentBrief("mv-content-telegram-001") }, operation: "PRODUCE_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
+    await createEvidenceBoundTelegramContent(runtime, "mv-content-telegram-001");
 
     expect((await workflow.handle(identity, "/productions")).text).toContain("mv-content-telegram-001");
     const preview = await workflow.handle(identity, "/production mv-content-telegram-001");
     expect(preview.text).toContain("PENDING_FABIO_APPROVAL");
+    expect(preview.text).toContain("Evidence Pack: telegram-pack-001");
     expect(preview.buttons?.[0]?.text).toBe("Approva per calendario");
+    expect((await workflow.handle(identity, "/evidencepack telegram-pack-001")).text).toContain("Fonte Telegram");
     const approved = await workflow.handleCallback(identity, preview.buttons?.[0]?.callbackData ?? "");
     expect(approved?.text).toContain("approvato per il calendario interno");
     expect(approved?.text).toContain("Non è stato pubblicato");
@@ -75,7 +77,30 @@ describe("Telegram Workflow Operator Console", () => {
     await runtime.close();
     await state.close();
   }));
+
+  it("shows legacy content but never offers Fabio approval without an Evidence Pack", async () => withDatabase(async (path) => {
+    const runtime = await createLocalRuntime(config(path), { clock });
+    const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
+    const workflow = new TelegramWorkflowOperatorConsole({ actorId: "actor-local", chatId: "200", clock, confirmationRetentionSeconds: 600, runtime, state, workspaceId: "workspace-local" });
+    if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow command boundary unavailable");
+    await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "telegram-content-legacy-001", contractVersion: "1", input: { brief: contentBrief("mv-content-legacy-001") }, operation: "PRODUCE_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
+
+    const preview = await workflow.handle(identity, "/production mv-content-legacy-001");
+    expect(preview.text).toContain("senza Evidence Pack");
+    expect(preview.buttons).toBeUndefined();
+
+    await runtime.close();
+    await state.close();
+  }));
 });
+
+async function createEvidenceBoundTelegramContent(runtime: Awaited<ReturnType<typeof createLocalRuntime>>, productionId: string): Promise<void> {
+  if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow command boundary unavailable");
+  await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "telegram-source-001", contractVersion: "1", input: { canonicalReference: "https://example.org/official/", category: "OFFICIAL_SITE", maxFreshnessDays: 30, name: "Fonte Telegram", permittedRiskDomains: ["GENERAL"], publicCitationAllowed: true, reliability: "HIGH", requiresSecondSource: false, sourceId: "telegram-source", status: "AUTHORIZED" }, operation: "REGISTER_EVIDENCE_SOURCE", workspaceId: "workspace-local" });
+  await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "telegram-evidence-001", contractVersion: "1", input: { claimMappings: [{ claimId: "telegram-claim", statement: "Le persone chiedono esempi concreti prima di valutare l'offerta." }], contentPublishedAt: "2026-07-10T00:00:00.000Z", corroboratingEvidenceIds: [], evidenceId: "telegram-evidence", excerpt: "Estratto strutturato della fonte autorizzata per il contenuto Telegram.", fingerprint: "a".repeat(64), freshnessExpiresAt: "2026-07-20T10:05:00.000Z", limitations: ["Non generalizzare oltre il campione osservato."], riskDomain: "GENERAL", sourceId: "telegram-source", sourceReference: "https://example.org/official/telegram", status: "VERIFIED" }, operation: "RECORD_EVIDENCE", workspaceId: "workspace-local" });
+  await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "telegram-pack-001", contractVersion: "1", input: { evidenceIds: ["telegram-evidence"], packId: "telegram-pack-001" }, operation: "CREATE_EVIDENCE_PACK", workspaceId: "workspace-local" });
+  await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "telegram-content-produce-001", contractVersion: "1", input: { brief: contentBrief(productionId), evidencePackId: "telegram-pack-001" }, operation: "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", workspaceId: "workspace-local" });
+}
 
 async function approvalReadyMission(console: TelegramMissionPlanningConsole): Promise<void> {
   await console.handle(identity, "1", "/mission");
@@ -93,5 +118,5 @@ async function approvalReadyMission(console: TelegramMissionPlanningConsole): Pr
 }
 
 function config(path: string): LocalRuntimeConfig { return { actorId: "actor-local", contentAgentMode: "deterministic", contractVersion: "1", permissions: { actorGrants: [], policyGrants: [], taskGrants: [] }, sqlite: { path, timeoutMs: 1_000 }, workspaceId: "workspace-local" }; }
-function contentBrief(productionId: string) { return { audience: "Persone che vogliono testare un'offerta prima di investire budget.", callToAction: "Salva il post e scegli un test piccolo per questa settimana.", contractVersion: "1", evidence: [{ evidenceId: "customer-note-1", sourceRef: "interview-2026-07", statement: "Le persone chiedono esempi concreti prima di valutare l'offerta." }], language: "it", missionReference: "mission-draft-1", objective: "educate", offer: "un percorso per validare offerte digitali", productionId, topic: "come validare un'offerta prima di promuoverla" } as const; }
+function contentBrief(productionId: string) { return { audience: "Persone che vogliono testare un'offerta prima di investire budget.", callToAction: "Salva il post e scegli un test piccolo per questa settimana.", contractVersion: "1", evidence: [{ evidenceId: "telegram-evidence", sourceRef: "telegram-source", statement: "Le persone chiedono esempi concreti prima di valutare l'offerta." }], language: "it", missionReference: "mission-draft-1", objective: "educate", offer: "un percorso per validare offerte digitali", productionId, topic: "come validare un'offerta prima di promuoverla" } as const; }
 async function withDatabase(test: (path: string) => Promise<void>): Promise<void> { const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-telegram-workflow-")); try { await test(join(directory, "runtime.sqlite")); } finally { await rm(directory, { force: true, recursive: true }); } }

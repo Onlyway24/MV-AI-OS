@@ -55,7 +55,7 @@ describe("OperationalPlaneService", () => {
   it("migrates an existing version 18 database without losing the runtime tables", async () => withDatabase(async (path) => {
     const initial = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 }); await initial.close();
     const legacy = openSqliteDatabase({ path, timeoutMs: 1_000 }).database;
-    legacy.exec("DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DELETE FROM schema_migrations WHERE version = 19; PRAGMA user_version = 18;"); legacy.close();
+    legacy.exec("DROP TABLE evidence_packs; DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DELETE FROM schema_migrations WHERE version IN (19, 20); PRAGMA user_version = 18;"); legacy.close();
     const migrated = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
     await migrated.transaction(async ({ operationalPlanes, productionRuntimeJobs }) => { expect(await operationalPlanes.getSourceById("missing-source")).toBeUndefined(); expect(await productionRuntimeJobs.getById("missing-job")).toBeUndefined(); });
     await migrated.close();
@@ -63,16 +63,18 @@ describe("OperationalPlaneService", () => {
     const versionRow = verified.prepare("PRAGMA user_version").get(); expect(versionRow?.user_version).toBe(SQLITE_SCHEMA_VERSION); verified.close();
   }));
 
-  it("exposes evidence intake through the replay-safe local command boundary without external action", async () => withDatabase(async (path) => {
+  it("connects the replay-safe source-to-Evidence-Pack-to-content flow without external action", async () => withDatabase(async (path) => {
     const clock = new MutableClock("2026-07-14T12:00:00.000Z");
     const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
     const boundary = createLocalWorkflowCommandBoundary({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
     const source = await boundary.execute({ actorId: "actor-local", commandId: "source-command-001", contractVersion: "1", input: { canonicalReference: "https://example.org/official/", category: "OFFICIAL_SITE", maxFreshnessDays: 30, name: "Fonte comando", permittedRiskDomains: ["GENERAL"], publicCitationAllowed: true, reliability: "HIGH", requiresSecondSource: false, sourceId: "command-source", status: "AUTHORIZED" }, operation: "REGISTER_EVIDENCE_SOURCE", workspaceId: "workspace-local" });
     const evidence = await boundary.execute({ actorId: "actor-local", commandId: "evidence-command-001", contractVersion: "1", input: { claimMappings: [{ claimId: "command-claim", statement: "Il claim ha un riferimento registrato." }], contentPublishedAt: "2026-07-10T00:00:00.000Z", corroboratingEvidenceIds: [], evidenceId: "command-evidence", excerpt: "Estratto strutturato ricevuto dalla fonte autorizzata.", fingerprint: "2".repeat(64), freshnessExpiresAt: "2026-07-20T12:00:00.000Z", limitations: ["Nessuna generalizzazione oltre la fonte."], riskDomain: "GENERAL", sourceId: "command-source", sourceReference: "https://example.org/official/page", status: "VERIFIED" }, operation: "RECORD_EVIDENCE", workspaceId: "workspace-local" });
-    const content = await boundary.execute({ actorId: "actor-local", commandId: "evidence-content-command-001", contractVersion: "1", input: { brief: { audience: "imprenditori", callToAction: "Salva questo controllo.", contractVersion: "1", evidence: [{ evidenceId: "command-evidence", sourceRef: "command-source", statement: "Il claim ha un riferimento registrato." }], language: "it", missionReference: "mission-evidence-001", objective: "educate", offer: "Metodo Veloce", productionId: "production-evidence-001", topic: "controllo editoriale" }, evidenceIds: ["command-evidence"] }, operation: "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", workspaceId: "workspace-local" });
+    const pack = await boundary.execute({ actorId: "actor-local", commandId: "evidence-pack-command-001", contractVersion: "1", input: { evidenceIds: ["command-evidence"], packId: "command-pack-001" }, operation: "CREATE_EVIDENCE_PACK", workspaceId: "workspace-local" });
+    const content = await boundary.execute({ actorId: "actor-local", commandId: "evidence-content-command-001", contractVersion: "1", input: { brief: { audience: "imprenditori", callToAction: "Salva questo controllo.", contractVersion: "1", evidence: [{ evidenceId: "command-evidence", sourceRef: "command-source", statement: "Il claim ha un riferimento registrato." }], language: "it", missionReference: "mission-evidence-001", objective: "educate", offer: "Metodo Veloce", productionId: "production-evidence-001", topic: "controllo editoriale" }, evidencePackId: "command-pack-001" }, operation: "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", workspaceId: "workspace-local" });
     expect(source.unauthorizedExternalEffectOccurred).toBe(false);
     expect(evidence).toMatchObject({ result: { evidenceId: "command-evidence", status: "VERIFIED" }, unauthorizedExternalEffectOccurred: false });
-    expect(content).toMatchObject({ result: { productionId: "production-evidence-001", status: "PENDING_FABIO_APPROVAL" }, unauthorizedExternalEffectOccurred: false });
+    expect(pack).toMatchObject({ result: { packId: "command-pack-001", status: "READY", evidence: [{ evidenceId: "command-evidence", source: { sourceId: "command-source" } }] }, unauthorizedExternalEffectOccurred: false });
+    expect(content).toMatchObject({ result: { productionId: "production-evidence-001", evidencePack: { packId: "command-pack-001" }, status: "PENDING_FABIO_APPROVAL" }, unauthorizedExternalEffectOccurred: false });
     await repositories.close();
   }));
 });

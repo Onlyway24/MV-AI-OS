@@ -65,7 +65,7 @@ export class ControlledTelegramOperatorConsole {
         else await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: "Conferma non valida o non più attuale." });
       }
       else if (action.kind === "MISSION_DRAFT" && mission !== undefined) await this.input.api.deliver(await mission.handle(binding, action.updateId, action.payload ?? "/mission"));
-      else if (["CONTENT_PRODUCTION", "CONTENT_QUEUE", "REPORT", "WORKFLOW", "WORKFLOWS"].includes(action.kind)) await this.input.api.deliver(await workflow.handle(binding, action.payload ?? workflowCommand(action.kind)));
+      else if (["CONTENT_PRODUCTION", "CONTENT_QUEUE", "EVIDENCE_PACK", "REPORT", "WORKFLOW", "WORKFLOWS"].includes(action.kind)) await this.input.api.deliver(await workflow.handle(binding, action.payload ?? workflowCommand(action.kind)));
       else if (action.kind === "CANCEL_ACTION" && mission !== undefined) await this.input.api.deliver(mission.cancel(binding, action.updateId));
       else await this.#processStandardAction(binding, action.kind);
       this.#state(() => { this.input.state.complete(action.updateId); });
@@ -114,6 +114,6 @@ function response(kind: string, stopConfirmed = false): string {
   };
   return values[kind] ?? "Comando non disponibile.";
 }
-function workflowCommand(kind: string): string { return kind === "CONTENT_QUEUE" ? "/productions" : `/${kind.toLowerCase()}`; }
+function workflowCommand(kind: string): string { return kind === "CONTENT_QUEUE" ? "/productions" : kind === "EVIDENCE_PACK" ? "/evidencepack" : `/${kind.toLowerCase()}`; }
 function rawUpdateId(value: unknown): string | undefined { return typeof value === "object" && value !== null && "update_id" in value && (typeof value.update_id === "number" || typeof value.update_id === "string") && /^-?[1-9][0-9]{0,18}$/u.test(String(value.update_id)) ? String(value.update_id) : undefined; }
 function isCallbackUpdate(value: unknown): boolean { return typeof value === "object" && value !== null && "callback_query" in value; }

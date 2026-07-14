@@ -67,9 +67,9 @@ import { MetodoVeloceContentProductionRecordValidator } from "../../src/content-
 import { isProductionRuntimeJobTransitionAllowed, type ProductionRuntimeJob } from "../../src/production-runtime/production-runtime-job.js";
 import { ProductionRuntimeJobValidator } from "../../src/production-runtime/production-runtime-validator.js";
 import type { Validator } from "../../src/validation/validation.js";
-import type { EvidenceRecord, FeedbackMetricSnapshot, PublicationKillSwitch, PublicationPlan, SourceRegistryEntry } from "../../src/operational-planes/operational-plane.js";
+import type { EvidencePack, EvidenceRecord, FeedbackMetricSnapshot, PublicationKillSwitch, PublicationPlan, SourceRegistryEntry } from "../../src/operational-planes/operational-plane.js";
 import { isPublicationTransitionAllowed } from "../../src/operational-planes/operational-plane.js";
-import { EvidenceRecordValidator, FeedbackMetricSnapshotValidator, PublicationKillSwitchValidator, PublicationPlanValidator, SourceRegistryEntryValidator } from "../../src/operational-planes/operational-plane-validator.js";
+import { EvidencePackValidator, EvidenceRecordValidator, FeedbackMetricSnapshotValidator, PublicationKillSwitchValidator, PublicationPlanValidator, SourceRegistryEntryValidator } from "../../src/operational-planes/operational-plane-validator.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -95,6 +95,7 @@ interface RepositoryState {
   readonly productionRuntimeJobs: Map<string, ProductionRuntimeJob>;
   readonly sources: Map<string, SourceRegistryEntry>;
   readonly evidenceRecords: Map<string, EvidenceRecord>;
+  readonly evidencePacks: Map<string, EvidencePack>;
   readonly publicationPlans: Map<string, PublicationPlan>;
   readonly publicationKillSwitches: Map<string, PublicationKillSwitch>;
   readonly feedbackMetricSnapshots: Map<string, FeedbackMetricSnapshot>;
@@ -188,15 +189,17 @@ class InMemoryProductionRuntimeJobRepository {
 }
 
 class InMemoryOperationalPlaneRepository {
-  readonly #evidence = new EvidenceRecordValidator(); readonly #feedback = new FeedbackMetricSnapshotValidator(); readonly #kill = new PublicationKillSwitchValidator(); readonly #publication = new PublicationPlanValidator(); readonly #source = new SourceRegistryEntryValidator();
+  readonly #evidence = new EvidenceRecordValidator(); readonly #evidencePack = new EvidencePackValidator(); readonly #feedback = new FeedbackMetricSnapshotValidator(); readonly #kill = new PublicationKillSwitchValidator(); readonly #publication = new PublicationPlanValidator(); readonly #source = new SourceRegistryEntryValidator();
   public constructor(private readonly state: RepositoryState) {}
   public getSourceById(sourceId: string): Promise<SourceRegistryEntry | undefined> { return Promise.resolve(cloneOptional(this.state.sources.get(sourceId))); }
   public getEvidenceById(evidenceId: string): Promise<EvidenceRecord | undefined> { return Promise.resolve(cloneOptional(this.state.evidenceRecords.get(evidenceId))); }
+  public getEvidencePackById(packId: string): Promise<EvidencePack | undefined> { return Promise.resolve(cloneOptional(this.state.evidencePacks.get(packId))); }
   public getPublicationById(publicationId: string): Promise<PublicationPlan | undefined> { return Promise.resolve(cloneOptional(this.state.publicationPlans.get(publicationId))); }
   public getPublicationKillSwitch(workspaceId: string): Promise<PublicationKillSwitch | undefined> { return Promise.resolve(cloneOptional(this.state.publicationKillSwitches.get(workspaceId))); }
   public getFeedbackSnapshotById(snapshotId: string): Promise<FeedbackMetricSnapshot | undefined> { return Promise.resolve(cloneOptional(this.state.feedbackMetricSnapshots.get(snapshotId))); }
   public insertSource(record: SourceRegistryEntry): Promise<void> { const checked = this.#valid(record, this.#source, "Evidence source"); if (this.state.sources.has(checked.sourceId)) throw new RepositoryConflictError("Evidence source already exists"); this.state.sources.set(checked.sourceId, cloneFrozen(checked)); return Promise.resolve(); }
   public insertEvidence(record: EvidenceRecord): Promise<void> { const checked = this.#valid(record, this.#evidence, "Evidence record"); if (this.state.evidenceRecords.has(checked.evidenceId)) throw new RepositoryConflictError("Evidence record already exists"); this.state.evidenceRecords.set(checked.evidenceId, cloneFrozen(checked)); return Promise.resolve(); }
+  public insertEvidencePack(record: EvidencePack): Promise<void> { const checked = this.#valid(record, this.#evidencePack, "Evidence Pack"); if (this.state.evidencePacks.has(checked.packId)) throw new RepositoryConflictError("Evidence Pack already exists"); this.state.evidencePacks.set(checked.packId, cloneFrozen(checked)); return Promise.resolve(); }
   public insertPublication(record: PublicationPlan): Promise<void> { const checked = this.#valid(record, this.#publication, "Publication plan"); if (checked.version !== 0 || checked.status !== "DRY_RUN" || this.state.publicationPlans.has(checked.publicationId) || [...this.state.publicationPlans.values()].some((item) => item.workspaceId === checked.workspaceId && item.idempotencyKey === checked.idempotencyKey)) throw new RepositoryConflictError("Publication plan already exists"); this.state.publicationPlans.set(checked.publicationId, cloneFrozen(checked)); return Promise.resolve(); }
   public insertFeedbackSnapshot(record: FeedbackMetricSnapshot): Promise<void> { const checked = this.#valid(record, this.#feedback, "Feedback metric snapshot"); if (this.state.feedbackMetricSnapshots.has(checked.snapshotId)) throw new RepositoryConflictError("Feedback metric snapshot already exists"); this.state.feedbackMetricSnapshots.set(checked.snapshotId, cloneFrozen(checked)); return Promise.resolve(); }
   public updatePublication(record: PublicationPlan, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(record, this.#publication, "Publication plan"); const current = this.state.publicationPlans.get(checked.publicationId); if (current === undefined) throw new RepositoryConflictError("Publication plan transition is invalid"); if (current.version !== expectation.version || checked.version !== expectation.version + 1 || !isPublicationTransitionAllowed(current.status, checked.status) || !samePublicationIdentity(current, checked)) throw new RepositoryConflictError("Publication plan transition is invalid"); this.state.publicationPlans.set(checked.publicationId, cloneFrozen(checked)); return Promise.resolve(); }
@@ -1084,6 +1087,7 @@ function createState(): RepositoryState {
     productionRuntimeJobs: new Map(),
     sources: new Map(),
     evidenceRecords: new Map(),
+    evidencePacks: new Map(),
     publicationPlans: new Map(),
     publicationKillSwitches: new Map(),
     feedbackMetricSnapshots: new Map(),
@@ -1150,6 +1154,7 @@ function cloneState(state: RepositoryState): RepositoryState {
     productionRuntimeJobs: new Map([...state.productionRuntimeJobs].map(([key, value]) => [key, cloneFrozen(value)])),
     sources: new Map([...state.sources].map(([key, value]) => [key, cloneFrozen(value)])),
     evidenceRecords: new Map([...state.evidenceRecords].map(([key, value]) => [key, cloneFrozen(value)])),
+    evidencePacks: new Map([...state.evidencePacks].map(([key, value]) => [key, cloneFrozen(value)])),
     publicationPlans: new Map([...state.publicationPlans].map(([key, value]) => [key, cloneFrozen(value)])),
     publicationKillSwitches: new Map([...state.publicationKillSwitches].map(([key, value]) => [key, cloneFrozen(value)])),
     feedbackMetricSnapshots: new Map([...state.feedbackMetricSnapshots].map(([key, value]) => [key, cloneFrozen(value)])),

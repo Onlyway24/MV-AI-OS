@@ -30,11 +30,20 @@ export interface MetodoVeloceContentArchive {
   readonly reason: "MANUAL" | "REJECTED_BY_FABIO";
 }
 
+/** Immutable provenance receipt required for Telegram approval of evidence-led content. */
+export interface MetodoVeloceEvidencePackAttestation {
+  readonly fingerprint: string;
+  readonly minFreshnessExpiresAt: string;
+  readonly packId: string;
+  readonly verifiedAt: string;
+}
+
 export interface MetodoVeloceContentProductionRecord {
   readonly actorId: string;
   readonly archive?: MetodoVeloceContentArchive;
   readonly contractVersion: RequestContractVersion;
   readonly createdAt: string;
+  readonly evidencePack?: MetodoVeloceEvidencePackAttestation;
   readonly metrics?: MetodoVeloceContentPerformanceMetrics;
   readonly package: MetodoVeloceContentProductionPackage;
   readonly productionId: string;

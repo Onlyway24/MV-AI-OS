@@ -1,9 +1,9 @@
 import type { DatabaseSync } from "node:sqlite";
 
 import { RepositoryConflictError, RepositoryValidationError } from "../../errors/core-error.js";
-import type { EvidenceRecord, FeedbackMetricSnapshot, PublicationKillSwitch, PublicationPlan, SourceRegistryEntry } from "../../operational-planes/operational-plane.js";
+import type { EvidencePack, EvidenceRecord, FeedbackMetricSnapshot, PublicationKillSwitch, PublicationPlan, SourceRegistryEntry } from "../../operational-planes/operational-plane.js";
 import type { OperationalPlaneRepository } from "../../operational-planes/operational-plane-repository.js";
-import { EvidenceRecordValidator, FeedbackMetricSnapshotValidator, PublicationKillSwitchValidator, PublicationPlanValidator, SourceRegistryEntryValidator } from "../../operational-planes/operational-plane-validator.js";
+import { EvidencePackValidator, EvidenceRecordValidator, FeedbackMetricSnapshotValidator, PublicationKillSwitchValidator, PublicationPlanValidator, SourceRegistryEntryValidator } from "../../operational-planes/operational-plane-validator.js";
 import { isPublicationTransitionAllowed } from "../../operational-planes/operational-plane.js";
 import { isSqliteConstraintError, SqliteRepositoryError } from "./sqlite-error.js";
 import { assertActiveTransaction, type SqliteTransactionScope } from "./sqlite-transaction-scope.js";
@@ -11,6 +11,7 @@ import type { ValidationResult, Validator } from "../../validation/validation.js
 
 export class SqliteOperationalPlaneRepository implements OperationalPlaneRepository {
   readonly #evidence = new EvidenceRecordValidator();
+  readonly #evidencePack = new EvidencePackValidator();
   readonly #feedback = new FeedbackMetricSnapshotValidator();
   readonly #killSwitch = new PublicationKillSwitchValidator();
   readonly #publication = new PublicationPlanValidator();
@@ -19,12 +20,14 @@ export class SqliteOperationalPlaneRepository implements OperationalPlaneReposit
 
   public getSourceById(sourceId: string): Promise<SourceRegistryEntry | undefined> { return Promise.resolve(this.#get("source_registry_entries", "source_id", sourceId, (value) => validationValue(this.#source.validate(value)), "Evidence source")); }
   public getEvidenceById(evidenceId: string): Promise<EvidenceRecord | undefined> { return Promise.resolve(this.#get("evidence_records", "evidence_id", evidenceId, (value) => validationValue(this.#evidence.validate(value)), "Evidence record")); }
+  public getEvidencePackById(packId: string): Promise<EvidencePack | undefined> { return Promise.resolve(this.#get("evidence_packs", "pack_id", packId, (value) => validationValue(this.#evidencePack.validate(value)), "Evidence Pack")); }
   public getPublicationById(publicationId: string): Promise<PublicationPlan | undefined> { return Promise.resolve(this.#get("publication_plans", "publication_id", publicationId, (value) => validationValue(this.#publication.validate(value)), "Publication plan")); }
   public getPublicationKillSwitch(workspaceId: string): Promise<PublicationKillSwitch | undefined> { return Promise.resolve(this.#get("publication_kill_switches", "workspace_id", workspaceId, (value) => validationValue(this.#killSwitch.validate(value)), "Publication kill switch")); }
   public getFeedbackSnapshotById(snapshotId: string): Promise<FeedbackMetricSnapshot | undefined> { return Promise.resolve(this.#get("feedback_metric_snapshots", "snapshot_id", snapshotId, (value) => validationValue(this.#feedback.validate(value)), "Feedback metric snapshot")); }
 
   public insertSource(record: SourceRegistryEntry): Promise<void> { const checked = this.#checked(record, this.#source, "Evidence source"); return this.#insert("INSERT INTO source_registry_entries (source_id, workspace_id, actor_id, status, category, record_json) VALUES (?, ?, ?, ?, ?, ?)", [checked.sourceId, checked.workspaceId, checked.actorId, checked.status, checked.category, JSON.stringify(checked)], "Evidence source", checked.sourceId); }
   public insertEvidence(record: EvidenceRecord): Promise<void> { const checked = this.#checked(record, this.#evidence, "Evidence record"); return this.#insert("INSERT INTO evidence_records (evidence_id, workspace_id, actor_id, source_id, status, freshness_expires_at, record_json) VALUES (?, ?, ?, ?, ?, ?, ?)", [checked.evidenceId, checked.workspaceId, checked.actorId, checked.sourceId, checked.status, checked.freshnessExpiresAt, JSON.stringify(checked)], "Evidence record", checked.evidenceId); }
+  public insertEvidencePack(record: EvidencePack): Promise<void> { const checked = this.#checked(record, this.#evidencePack, "Evidence Pack"); return this.#insert("INSERT INTO evidence_packs (pack_id, workspace_id, actor_id, min_freshness_expires_at, record_json) VALUES (?, ?, ?, ?, ?)", [checked.packId, checked.workspaceId, checked.actorId, checked.minFreshnessExpiresAt, JSON.stringify(checked)], "Evidence Pack", checked.packId); }
   public insertPublication(record: PublicationPlan): Promise<void> { const checked = this.#checked(record, this.#publication, "Publication plan"); if (checked.version !== 0 || checked.status !== "DRY_RUN") throw new RepositoryValidationError("A new publication plan must be a dry-run at version zero"); return this.#insert("INSERT INTO publication_plans (publication_id, workspace_id, actor_id, production_id, idempotency_key, status, version, scheduled_for, updated_at, record_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [checked.publicationId, checked.workspaceId, checked.actorId, checked.productionId, checked.idempotencyKey, checked.status, checked.version, checked.scheduledFor, checked.updatedAt, JSON.stringify(checked)], "Publication plan", checked.publicationId); }
   public insertFeedbackSnapshot(record: FeedbackMetricSnapshot): Promise<void> { const checked = this.#checked(record, this.#feedback, "Feedback metric snapshot"); return this.#insert("INSERT INTO feedback_metric_snapshots (snapshot_id, workspace_id, actor_id, publication_id, production_id, platform, captured_at, correction_of_snapshot_id, record_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [checked.snapshotId, checked.workspaceId, checked.actorId, checked.publicationId, checked.productionId, checked.platform, checked.capturedAt, checked.correctionOfSnapshotId ?? null, JSON.stringify(checked)], "Feedback metric snapshot", checked.snapshotId); }
 
