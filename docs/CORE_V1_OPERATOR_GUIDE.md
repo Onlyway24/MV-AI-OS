@@ -23,6 +23,7 @@ The safe deterministic configuration is `examples/core-v1/local-config.json`. It
 ```sh
 npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/create-workflow.json
 npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/get-operator-report.json
+npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/produce-metodo-veloce-content.json
 ```
 
 The response contains `status`, `result`, `unauthorizedExternalEffectOccurred`, and exactly one `nextAction`. Use the returned Workflow version in the next command.
@@ -43,6 +44,13 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `PLAN_MISSION` | Generate the deterministic Mission Plan and Quality Gate report. |
 | `CREATE_WORKFLOW` | Atomically create or replay a definition and instance. |
 | `INSPECT_WORKFLOW` | Read `{ "instanceId": ... }`. |
+| `PRODUCE_METODO_VELOCE_CONTENT` | Create one durable, preparation-only TikTok/Instagram/carousel production from an evidence-bound brief. |
+| `INSPECT_METODO_VELOCE_CONTENT` | Read one production by `{ "productionId": ... }`. |
+| `REVIEW_METODO_VELOCE_CONTENT` | Fabio records an exact-version `APPROVED` or `REJECTED` review. |
+| `SCHEDULE_METODO_VELOCE_CONTENT` | Put one Fabio-approved production on the internal calendar; this never publishes it. |
+| `RECORD_METODO_VELOCE_CONTENT_METRICS` | Record declared views, saves, leads, conversions, and cost after separate human confirmation. |
+| `ARCHIVE_METODO_VELOCE_CONTENT` | Remove one active production from the queue without deleting its history. |
+| `LIST_METODO_VELOCE_CONTENT_QUEUE` | Read up to 25 durable content records ordered for operational review. |
 | `GET_OPERATOR_REPORT` | Get status, blockers, retry state, evidence, and one action. |
 | `EVALUATE_READINESS` | Evaluate exact-version Step readiness without invocation. |
 | `GET_NEXT_CANDIDATE` | Select exactly one controlled Step candidate. |
@@ -67,14 +75,24 @@ Authoritative request shapes are exported TypeScript contracts and exercised in 
 ## Normal operating sequence
 
 1. Submit `CREATE_MISSION`, then `PLAN_MISSION`.
-2. Create the reviewed Workflow with `CREATE_WORKFLOW`.
-3. Call `GET_OPERATOR_REPORT` and follow its one `nextAction`.
-4. Call `EVALUATE_READINESS`.
-5. Record required Fabio approval and each Guardian decision independently.
-6. Call `GET_NEXT_CANDIDATE`, then `INVOKE_AGENT`.
-7. Inspect the result with `INSPECT_AGENT_RESULT`.
-8. Use `ACCEPT_OUTCOME` only when evidence is acceptable; otherwise use `REJECT_OUTCOME`, then explicitly classify failure or revise through a later command.
-9. Request a fresh Operator Report after every state change.
+2. For a reviewed Metodo Veloce content brief, submit `PRODUCE_METODO_VELOCE_CONTENT`.
+   The resulting durable production contains only declared evidence, carousel copy,
+   TikTok script, Instagram copy, variants, risk findings, quality state, approval
+   status, and metrics to measure later. It is never published automatically.
+3. Fabio records `REVIEW_METODO_VELOCE_CONTENT` on the exact returned version. Only an
+   approved production may be scheduled; rejection archives it. A schedule remains an
+   internal calendar entry and needs a separate future publication decision.
+4. After the separate human confirmation of external performance, record metrics,
+   inspect the queue, or archive the production. None of those commands publish,
+   contact, spend, deploy, or invoke a provider.
+5. Create the reviewed Workflow with `CREATE_WORKFLOW`.
+6. Call `GET_OPERATOR_REPORT` and follow its one `nextAction`.
+7. Call `EVALUATE_READINESS`.
+8. Record required Fabio approval and each Guardian decision independently.
+9. Call `GET_NEXT_CANDIDATE`, then `INVOKE_AGENT`.
+10. Inspect the result with `INSPECT_AGENT_RESULT`.
+11. Use `ACCEPT_OUTCOME` only when evidence is acceptable; otherwise use `REJECT_OUTCOME`, then explicitly classify failure or revise through a later command.
+12. Request a fresh Operator Report after every state change.
 
 The Content Director prepares direction only. It never publishes, contacts anyone, changes external assets, modifies a logo, pays, deploys, or delivers.
 

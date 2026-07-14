@@ -567,6 +567,33 @@ export {
 } from "./agents/content/model-backed-content-agent.js";
 export type { ContentOutput } from "./agents/content/content-output.js";
 export { ContentOutputValidator } from "./agents/content/content-output-validator.js";
+export {
+  METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION,
+  type ContentEvidence,
+  type ContentProductionObjective,
+  type ContentProductionRiskStatus,
+  type ContentProductionStatus,
+  type MetodoVeloceContentAssets,
+  type MetodoVeloceContentProductionBrief,
+  type MetodoVeloceContentProductionPackage,
+} from "./content-production/metodo-veloce-content-production.js";
+export {
+  isMetodoVeloceContentProductionTransitionAllowed,
+  type MetodoVeloceContentArchive,
+  type MetodoVeloceContentPerformanceMetrics,
+  type MetodoVeloceContentProductionArchiveRequest,
+  type MetodoVeloceContentProductionMetricsRequest,
+  type MetodoVeloceContentProductionRecord,
+  type MetodoVeloceContentProductionRecordStatus,
+  type MetodoVeloceContentProductionReview,
+  type MetodoVeloceContentProductionReviewRequest,
+  type MetodoVeloceContentProductionSchedule,
+  type MetodoVeloceContentProductionScheduleRequest,
+  type MetodoVeloceContentReviewDecision,
+} from "./content-production/metodo-veloce-content-production-record.js";
+export type { MetodoVeloceContentProductionRepository, MetodoVeloceContentProductionUpdateExpectation } from "./content-production/metodo-veloce-content-production-repository.js";
+export { DeterministicMetodoVeloceContentProductionLine } from "./content-production/deterministic-metodo-veloce-content-production-line.js";
+export { contentClaimRisk, MetodoVeloceContentProductionArchiveRequestValidator, MetodoVeloceContentProductionBriefValidator, MetodoVeloceContentProductionMetricsRequestValidator, MetodoVeloceContentProductionPackageValidator, MetodoVeloceContentProductionRecordValidator, MetodoVeloceContentProductionReviewRequestValidator, MetodoVeloceContentProductionScheduleRequestValidator } from "./content-production/metodo-veloce-content-production-validator.js";
 export type {
   AgentInvocation,
   AgentInvocationLimits,

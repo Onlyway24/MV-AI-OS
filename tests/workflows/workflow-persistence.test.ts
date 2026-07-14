@@ -662,6 +662,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
         DROP TABLE telegram_inbound_receipts;
         DROP TABLE telegram_operator_drafts;
         DROP TABLE telegram_mission_draft_operations;
+        DROP TABLE metodo_veloce_content_productions;
         DROP INDEX audit_events_workspace_correlation;
         DELETE FROM schema_migrations WHERE version = 14;
         DELETE FROM schema_migrations WHERE version = 13;
@@ -674,6 +675,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
         DELETE FROM schema_migrations WHERE version = 6;
         DELETE FROM schema_migrations WHERE version = 5;
         DELETE FROM schema_migrations WHERE version = 4;
+        DELETE FROM schema_migrations WHERE version IN (15, 16, 17);
         PRAGMA user_version = 3;
       `);
       legacy.close();
@@ -711,7 +713,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
       await reopenedKnowledge.close();
 
       const verification = new DatabaseSync(path);
-      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(16);
+      expect(verification.prepare("PRAGMA user_version").get()?.user_version).toBe(17);
       expect(
         verification
           .prepare("SELECT name FROM schema_migrations WHERE version = 5")

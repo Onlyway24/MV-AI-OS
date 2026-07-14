@@ -26,6 +26,7 @@ import { SqliteWorkflowAgentInvocationEventRepository, SqliteWorkflowAgentInvoca
 import { SqliteWorkflowStepOutcomeRepository } from "./sqlite-workflow-step-outcome-repository.js";
 import { SqliteWorkflowLifecycleEventRepository, SqliteWorkflowLifecycleRecordRepository } from "./sqlite-workflow-lifecycle-repository.js";
 import { SqliteLocalWorkflowCommandRepository } from "./sqlite-local-workflow-command-repository.js";
+import { SqliteMetodoVeloceContentProductionRepository } from "./sqlite-metodo-veloce-content-production-repository.js";
 
 export class SqliteRepositoryTransactionRunner
   implements RepositoryTransactionRunner
@@ -68,6 +69,7 @@ export class SqliteRepositoryTransactionRunner
           scope,
           this.#codec,
         ),
+        contentProductions: new SqliteMetodoVeloceContentProductionRepository(this.#database, scope),
         requests: new SqliteRequestRepository(
           this.#database,
           scope,

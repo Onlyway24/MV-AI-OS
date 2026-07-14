@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 16;
+export const SQLITE_SCHEMA_VERSION = 17;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -56,6 +56,7 @@ const VERSION_THIRTEEN_TABLES = Object.freeze([...VERSION_TWELVE_TABLES, "telegr
 const VERSION_FOURTEEN_TABLES = Object.freeze([...VERSION_THIRTEEN_TABLES, "telegram_operator_drafts"]);
 const VERSION_FIFTEEN_TABLES = Object.freeze([...VERSION_FOURTEEN_TABLES, "telegram_mission_draft_operations"]);
 const VERSION_SIXTEEN_TABLES = VERSION_FIFTEEN_TABLES;
+const VERSION_SEVENTEEN_TABLES = Object.freeze([...VERSION_SIXTEEN_TABLES, "metodo_veloce_content_productions"]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -191,6 +192,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 15, "durable_telegram_mission_drafts");
     applyTelegramMissionCoordinationMigration(database);
   }
+  const contentProductionVersion = readPragmaInteger(database, "user_version");
+  if (contentProductionVersion === 16) {
+    verifyDatabaseIdentity(database, 16);
+    verifyExpectedTables(database, VERSION_SIXTEEN_TABLES);
+    verifyMigration(database, 16, "atomic_telegram_mission_sessions");
+    applyMetodoVeloceContentProductionMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -213,7 +221,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_SIXTEEN_TABLES);
+  verifyExpectedTables(database, VERSION_SEVENTEEN_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -230,6 +238,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 14, "durable_telegram_operator_sessions");
   verifyMigration(database, 15, "durable_telegram_mission_drafts");
   verifyMigration(database, 16, "atomic_telegram_mission_sessions");
+  verifyMigration(database, 17, "durable_metodo_veloce_content_productions");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -902,6 +911,32 @@ function applyTelegramMissionCoordinationMigration(database: DatabaseSync): void
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Telegram Mission coordination migration failed");
+  }
+}
+
+function applyMetodoVeloceContentProductionMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE metodo_veloce_content_productions (
+        production_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('APPROVED_FOR_SCHEDULING', 'ARCHIVED', 'BLOCKED', 'PENDING_FABIO_APPROVAL', 'SCHEDULED')),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        scheduled_for TEXT,
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX metodo_veloce_content_productions_queue
+        ON metodo_veloce_content_productions (workspace_id, status, scheduled_for, updated_at, production_id);
+      INSERT INTO schema_migrations (version, name) VALUES (17, 'durable_metodo_veloce_content_productions');
+      PRAGMA user_version = 17;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Metodo Veloce content production migration failed");
   }
 }
 

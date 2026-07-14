@@ -11,6 +11,7 @@ import { DEFAULT_AGENT_COMPANY_MAP } from "../assistants/agent-company-specifica
 import { DEFAULT_AGENT_PERMISSION_MATRIX } from "../assistants/agent-permission-matrix.js";
 import { DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX } from "../assistants/inter-agent-responsibility-matrix.js";
 import { DeterministicLocalMissionPlanningDryRun } from "../missions/local-mission-planning-dry-run-service.js";
+import { DeterministicMetodoVeloceContentProductionLine } from "../content-production/deterministic-metodo-veloce-content-production-line.js";
 import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { Clock } from "../ports/clock.js";
 import { AgentInvocationValidator } from "../validation/agent-invocation-validator.js";
@@ -35,6 +36,8 @@ export function createLocalWorkflowCommandBoundary(input: { readonly actorId: st
   return new LocalWorkflowCommandBoundary({
     actorId: input.actorId,
     candidates: boundary,
+    clock: input.clock,
+    contentProduction: new DeterministicMetodoVeloceContentProductionLine(input.clock),
     controls: createWorkflowControlCheckpointService({ eventIds: { nextWorkflowControlCheckpointEventId: () => randomId() }, guardianAuthorities: { operator_safety: "operator_safety-guardian", quality: "quality-guardian" }, operatorActorId: input.actorId, repositories: input.repositories }),
     invoker: createWorkflowAgentInvoker({ agentRuntime, agentSpecifications: specifications, boundary, clock: input.clock, repositories: input.repositories, resolver, resultValidator }),
     lifecycle: createWorkflowLifecycleService({ clock: input.clock, maxAttempts: 3, operatorActorId: input.actorId, repositories: input.repositories, timeoutMs: 60_000 }),

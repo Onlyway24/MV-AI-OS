@@ -61,6 +61,9 @@ import type { WorkflowAgentInvocationEvent, WorkflowAgentInvocationReceipt } fro
 import type { WorkflowStepOutcomeReceipt } from "../../src/workflows/runtime/workflow-step-outcome.js";
 import type { WorkflowLifecycleEvent, WorkflowLifecycleRecord } from "../../src/workflows/runtime/workflow-lifecycle.js";
 import type { LocalWorkflowCommandReceipt, LocalWorkflowOwnership } from "../../src/runtime/local-workflow-command-repository.js";
+import type { MetodoVeloceContentProductionRecord } from "../../src/content-production/metodo-veloce-content-production-record.js";
+import { isMetodoVeloceContentProductionTransitionAllowed } from "../../src/content-production/metodo-veloce-content-production-record.js";
+import { MetodoVeloceContentProductionRecordValidator } from "../../src/content-production/metodo-veloce-content-production-validator.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -82,6 +85,7 @@ interface RepositoryState {
   readonly workflowLifecycleEvents: Map<string, WorkflowLifecycleEvent>;
   readonly localWorkflowCommands: Map<string, LocalWorkflowCommandReceipt>;
   readonly localWorkflowOwnership: Map<string, LocalWorkflowOwnership>;
+  readonly metodoVeloceContentProductions: Map<string, MetodoVeloceContentProductionRecord>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -115,6 +119,7 @@ function createRepositories(
 ): RepositoryTransaction {
   return Object.freeze({
     audits: new InMemoryAuditRepository(state),
+    contentProductions: new InMemoryMetodoVeloceContentProductionRepository(state),
     requests: new InMemoryRequestRepository(state),
     tasks: new InMemoryTaskRepository(state),
     workflowCommands: new InMemoryLocalWorkflowCommandRepository(state),
@@ -142,6 +147,19 @@ class InMemoryLocalWorkflowCommandRepository {
   public getOwnership(id: string): Promise<LocalWorkflowOwnership | undefined> { return Promise.resolve(cloneOptional(this.state.localWorkflowOwnership.get(id))); }
   public insertOwnership(ownership: LocalWorkflowOwnership): Promise<void> { if (this.state.localWorkflowOwnership.has(ownership.instanceId)) throw new RepositoryConflictError("Local Workflow ownership already exists"); this.state.localWorkflowOwnership.set(ownership.instanceId, cloneFrozen(ownership)); return Promise.resolve(); }
 }
+
+class InMemoryMetodoVeloceContentProductionRepository {
+  readonly #validator = new MetodoVeloceContentProductionRecordValidator();
+  public constructor(private readonly state: RepositoryState) {}
+  public getById(productionId: string): Promise<MetodoVeloceContentProductionRecord | undefined> { return Promise.resolve(cloneOptional(this.state.metodoVeloceContentProductions.get(productionId))); }
+  public insert(record: MetodoVeloceContentProductionRecord): Promise<void> { const checked = this.#validate(record); if (checked.version !== 0) throw new RepositoryValidationError("A new Metodo Veloce content production must start at version zero"); if (this.state.metodoVeloceContentProductions.has(checked.productionId)) throw new RepositoryConflictError("Metodo Veloce content production already exists"); this.state.metodoVeloceContentProductions.set(checked.productionId, cloneFrozen(checked)); return Promise.resolve(); }
+  public listByWorkspaceId(workspaceId: string, limit: number): Promise<readonly MetodoVeloceContentProductionRecord[]> { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 25) throw new RepositoryValidationError("Metodo Veloce content production queue limit is invalid"); const order: Record<MetodoVeloceContentProductionRecord["status"], number> = { SCHEDULED: 0, PENDING_FABIO_APPROVAL: 1, APPROVED_FOR_SCHEDULING: 2, BLOCKED: 3, ARCHIVED: 4 }; return Promise.resolve(Object.freeze([...this.state.metodoVeloceContentProductions.values()].filter((record) => record.workspaceId === workspaceId).sort((left, right) => order[left.status] - order[right.status] || (left.schedule?.scheduledFor ?? left.updatedAt).localeCompare(right.schedule?.scheduledFor ?? right.updatedAt) || left.productionId.localeCompare(right.productionId)).slice(0, limit).map(cloneFrozen))); }
+  public update(record: MetodoVeloceContentProductionRecord, expectation: { readonly version: number }): Promise<void> { const checked = this.#validate(record); const existing = this.state.metodoVeloceContentProductions.get(checked.productionId); if (existing?.version !== expectation.version || checked.version !== expectation.version + 1) throw new RepositoryConflictError("Metodo Veloce content production changed after read"); if (!sameContentIdentity(existing, checked) || !isContentTransitionValid(existing, checked)) throw new RepositoryConflictError("Metodo Veloce content production transition is invalid"); this.state.metodoVeloceContentProductions.set(checked.productionId, cloneFrozen(checked)); return Promise.resolve(); }
+  #validate(value: unknown): MetodoVeloceContentProductionRecord { const checked = this.#validator.validate(value); if (!checked.ok) throw new RepositoryValidationError("Metodo Veloce content production record is invalid"); return checked.value; }
+}
+
+function isContentTransitionValid(previous: MetodoVeloceContentProductionRecord, next: MetodoVeloceContentProductionRecord): boolean { if (!isMetodoVeloceContentProductionTransitionAllowed(previous.status, next.status)) return false; return previous.status !== "SCHEDULED" || next.status !== "SCHEDULED" || (previous.metrics === undefined && next.metrics !== undefined && JSON.stringify({ ...previous, metrics: next.metrics, updatedAt: next.updatedAt, version: next.version }) === JSON.stringify(next)); }
+function sameContentIdentity(previous: MetodoVeloceContentProductionRecord, next: MetodoVeloceContentProductionRecord): boolean { return previous.actorId === next.actorId && previous.createdAt === next.createdAt && previous.productionId === next.productionId && previous.workspaceId === next.workspaceId && JSON.stringify(previous.package) === JSON.stringify(next.package); }
 
 class InMemoryWorkflowAgentInvocationRepository {
   public constructor(private readonly state: RepositoryState) {}
@@ -1012,6 +1030,7 @@ function createState(): RepositoryState {
     workflowLifecycleEvents: new Map(),
     localWorkflowCommands: new Map(),
     localWorkflowOwnership: new Map(),
+    metodoVeloceContentProductions: new Map(),
   };
 }
 
@@ -1071,6 +1090,7 @@ function cloneState(state: RepositoryState): RepositoryState {
     workflowLifecycleEvents: new Map([...state.workflowLifecycleEvents].map(([key, value]) => [key, cloneFrozen(value)])),
     localWorkflowCommands: new Map([...state.localWorkflowCommands].map(([key, value]) => [key, cloneFrozen(value)])),
     localWorkflowOwnership: new Map([...state.localWorkflowOwnership].map(([key, value]) => [key, cloneFrozen(value)])),
+    metodoVeloceContentProductions: new Map([...state.metodoVeloceContentProductions].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

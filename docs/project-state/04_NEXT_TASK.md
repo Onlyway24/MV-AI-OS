@@ -19,6 +19,11 @@ before any continuous operation.
   and the no-unauthorized-external-action statement.
 - The Workflow starts at Fabio approval plus Quality and Operator-Safety/Risk Guardian
   checkpoints; it does not invoke an agent or any external system.
+- The Metodo Veloce production line now has a durable queue, exact-version Fabio review,
+  internal calendar, metrics record, and archive. Each production carries an editorial
+  plan, 7-slide carousel, TikTok script, Instagram copy, variants, claim-risk block,
+  Quality Guardian report, and weekly metrics plan. It remains preparation-only and
+  never publishes automatically.
 
 ## Required next scope
 
@@ -26,6 +31,8 @@ before any continuous operation.
   repeated `/mission quick` or `/status` while the same operator remains running.
 - Design the next explicit controls for Guardian evidence and Fabio approval before
   exposing any agent invocation in Telegram.
+- Design the Telegram-only views and confirmations for the Metodo Veloce production
+  queue, without exposing publication or any external action.
 - Keep all Telegram data minimization, replay protection, durable state, private
   allowlisting, and safe diagnostics intact.
 
