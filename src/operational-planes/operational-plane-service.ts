@@ -155,7 +155,7 @@ export class OperationalPlaneService {
   async #ownedContent(repository: { getById(id: string): Promise<MetodoVeloceContentProductionRecord | undefined> }, productionId: string): Promise<MetodoVeloceContentProductionRecord> { const content = await repository.getById(productionId); if (content?.workspaceId !== this.dependencies.workspaceId || content.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Content production is unavailable"); return content; }
   #assertEvidencePolicy(evidence: EvidenceRecord, source: SourceRegistryEntry): void {
     if (source.status !== "AUTHORIZED" || source.category === "FORBIDDEN") throw new RepositoryConflictError("Evidence source is not authorized");
-    if (!evidence.sourceReference.startsWith(source.canonicalReference) || !source.permittedRiskDomains.includes(evidence.riskDomain)) throw new RepositoryValidationError("Evidence does not match the authorized source policy");
+    if (!referenceWithinAuthorizedSource(evidence.sourceReference, source.canonicalReference) || !source.permittedRiskDomains.includes(evidence.riskDomain)) throw new RepositoryValidationError("Evidence does not match the authorized source policy");
     const maxExpiry = Date.parse(evidence.acquiredAt) + source.maxFreshnessDays * 86_400_000;
     if (Date.parse(evidence.freshnessExpiresAt) > maxExpiry) throw new RepositoryValidationError("Evidence freshness exceeds the source policy");
     const now = this.dependencies.clock.now().getTime();
@@ -185,3 +185,15 @@ export class OperationalPlaneService {
 }
 
 function fingerprint(value: unknown): string { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }
+
+function referenceWithinAuthorizedSource(reference: string, canonicalReference: string): boolean {
+  try {
+    const candidate = new URL(reference);
+    const canonical = new URL(canonicalReference);
+    if (candidate.protocol !== canonical.protocol || candidate.hostname !== canonical.hostname || candidate.port !== canonical.port) return false;
+    const basePath = canonical.pathname.endsWith("/") ? canonical.pathname : `${canonical.pathname}/`;
+    return canonical.pathname === "/" || candidate.pathname === canonical.pathname || candidate.pathname.startsWith(basePath);
+  } catch {
+    return reference === canonicalReference;
+  }
+}
