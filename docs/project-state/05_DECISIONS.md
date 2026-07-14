@@ -715,7 +715,7 @@ Any future dashboard, alerting, durable safety ledger, scheduler, monitor, or
 automatic pause/remediation behavior requires separate policy, approval, audit,
 idempotency, persistence, and redaction milestones.
 
-## ADR-030 — Only Way Assistant starts as a specification, not a runtime
+## ADR-030 — Onlyway Assistant starts as a specification, not a runtime
 
 **Context:** MV AI OS now has a report-only control-plane safety foundation. The
 next product direction is a single operator-facing assistant so Fabio does not
@@ -724,7 +724,7 @@ agents, memory, knowledge, models, tools, workflows, guardians, and approvals, b
 adding execution too early would risk hidden autonomy, provider calls, tool use,
 workflow side effects, and policy bypass.
 
-**Decision:** Define Only Way Assistant first as a validated Main Assistant /
+**Decision:** Define Onlyway Assistant first as a validated Main Assistant /
 Orchestrator specification built on the existing `AgentSpecification` contract. The
 specification records identity, mission, structured input/output schemas,
 capabilities, policy requirements, forbidden capabilities, safety preflights, human
@@ -749,7 +749,7 @@ Model Gateway, Memory, Knowledge, Workflow Specification, or Tool Gateway bounda
 
 ## ADR-031 — Main Assistant runtime boundary is deterministic and side-effect free
 
-**Context:** Only Way Assistant now has a validated declarative specification, but
+**Context:** Onlyway Assistant now has a validated declarative specification, but
 Fabio needs a controlled first executable boundary before any future multi-agent,
 workflow, tool, dashboard, or autonomous behavior is introduced. A full orchestrator
 at this point would risk mixing operator interaction with provider calls, guardian
@@ -757,7 +757,7 @@ execution, delegation, workflows, tools, persistence, or hidden side effects.
 
 **Decision:** Implement `MainAssistantRuntime` as a narrow deterministic local
 boundary. It validates `MainAssistantInvocation`, consumes only supplied Operator
-Safety context, uses the existing Only Way Assistant specification as its identity
+Safety context, uses the existing Onlyway Assistant specification as its identity
 and contract source, refuses unsafe or under-specified requests, surfaces approval
 requirements for escalation categories, and returns a validated redaction-safe
 `MainAssistantResult`. It does not call models, call providers, execute guardians,
@@ -784,7 +784,7 @@ Core Brain ownership.
 
 ## ADR-032 — Guardian Consultation is a supplied-signal decision gate
 
-**Context:** Only Way Assistant has a validated specification and deterministic
+**Context:** Onlyway Assistant has a validated specification and deterministic
 runtime boundary. It can consume Operator Safety context, but safety consultation
 logic needs to be reusable by later operator decisioning, delegation policy, mission
 planning, and agent-company milestones without running guardians automatically or
@@ -821,7 +821,7 @@ before taking action.
 
 ## ADR-033 — Operator Decision Engine decides but does not execute
 
-**Context:** Only Way Assistant now has a validated specification, a deterministic
+**Context:** Onlyway Assistant now has a validated specification, a deterministic
 runtime boundary, and a Guardian Consultation Boundary. The next product step is a
 single operator-facing command layer that turns Fabio's objective into an explicit
 decision without requiring him to choose which future internal agent to prompt. That
@@ -830,7 +830,7 @@ tool executor.
 
 **Decision:** Implement Operator Decision Engine as a deterministic, redaction-safe
 decision boundary. It consumes a validated `OperatorDecisionContext` containing the
-Only Way Assistant specification, operator objective, requested outcome, requested
+Onlyway Assistant specification, operator objective, requested outcome, requested
 operations, Guardian Consultation decision, optional sanitized cost posture, and
 optional delegation signal. It returns a validated `OperatorDecision`: proceed,
 clarification required, approval required, confirmation required, refused, blocked,
@@ -841,7 +841,7 @@ autonomously.
 
 **Reason:** Fabio needs one clean decision surface before mission planning and future
 delegation. Keeping this layer deterministic and non-executing preserves cost,
-security, policy, approval, and audit boundaries while making Only Way Assistant more
+security, policy, approval, and audit boundaries while making Onlyway Assistant more
 operator-useful.
 
 **Tradeoffs:** The engine cannot complete work by itself. It does not perform
@@ -857,7 +857,7 @@ policy enforcement, and explicit execution boundaries.
 
 ## ADR-034 — Delegation Policy is declarative and non-executing
 
-**Context:** Only Way Assistant now has a validated specification, deterministic
+**Context:** Onlyway Assistant now has a validated specification, deterministic
 runtime boundary, Guardian Consultation Boundary, and Operator Decision Engine. The
 system needs to know which future specialist categories may be proposed before an
 agent-company map or mission planner can be safe, but adding real sub-agent runtime
@@ -894,7 +894,7 @@ tool, and agent runtime milestones are approved.
 
 ## ADR-035 — Operator Protocol is a presentation contract, not a runtime
 
-**Context:** Only Way Assistant now has a validated specification, deterministic
+**Context:** Onlyway Assistant now has a validated specification, deterministic
 runtime boundary, Guardian Consultation Boundary, Operator Decision Engine, and
 Delegation Policy. Fabio needs one operator-facing protocol that can present decisions
 without exposing raw internal payloads or forcing him to manage separate specialist
@@ -932,7 +932,7 @@ approved.
 **Context:** MV AI OS now has a large set of implemented foundations: Core Brain,
 durable SQLite persistence, memory, knowledge, model gateway, OpenAI adapter wiring,
 operation limits, usage accounting, budget enforcement, guardians, Operator Safety
-Report, Only Way Assistant specification/runtime/consultation/decision/delegation
+Report, Onlyway Assistant specification/runtime/consultation/decision/delegation
 boundaries, and Operator Protocol. The project is also being continued across AI
 sessions and tools, which creates risk of context loss, architecture drift,
 over-agentification, or premature autonomy.
@@ -958,14 +958,14 @@ project-state documents, and it must not be used to justify implementing feature
 outside the current `04_NEXT_TASK.md` milestone.
 
 **Future impact:** Agent Company Specification Foundation and every later milestone
-must preserve the constitution's ordering: Fabio -> Only Way Assistant -> Control
+must preserve the constitution's ordering: Fabio -> Onlyway Assistant -> Control
 Plane -> Agent Company -> Workflow Runtime -> Tool Runtime -> Product Layer. If a
 future decision conflicts with the constitution, it must be recorded as an explicit
 ADR rather than silently drifting.
 
 ## ADR-037 — Agent Company starts as a validated non-executing map
 
-**Context:** Only Way Assistant can now present operator-facing decisions and
+**Context:** Onlyway Assistant can now present operator-facing decisions and
 non-executing delegation summaries. The next risk is over-agentification: adding
 specialists without a stable role map would make Fabio manage random agents and would
 blur safety, approval, memory, knowledge, and future specification boundaries.
@@ -1008,7 +1008,7 @@ handoff targets, and instruction references. The specifications do not execute
 agents, call models, call providers, run workflows, execute tools, persist state, use
 network behavior, or act autonomously.
 
-**Reason:** Exact specifications give the Only Way Assistant and future mission
+**Reason:** Exact specifications give the Onlyway Assistant and future mission
 planner stable internal company structure without introducing runtime autonomy.
 Reusing the existing AgentSpecification contract and validator prevents a parallel
 agent-description system.
@@ -1077,7 +1077,7 @@ execute tools, grant permissions, persist state, use network behavior, publish, 
 outreach, deliver customer work, spend money, provide final legal approval, or act
 autonomously.
 
-**Reason:** Fabio should not babysit a swarm of agents, and Only Way Assistant needs
+**Reason:** Fabio should not babysit a swarm of agents, and Onlyway Assistant needs
 a coherent internal organization before it can safely plan work. Ownership clarity is
 a prerequisite for mission planning, capability mapping, permission mapping, and
 handoff contracts.
@@ -1113,7 +1113,7 @@ run workflows, execute tools, persist state, use network behavior, publish, send
 outreach, deliver customer work, spend money, provide final legal approval, or act
 autonomously.
 
-**Reason:** Only Way Assistant needs precise internal capability ownership before it
+**Reason:** Onlyway Assistant needs precise internal capability ownership before it
 can produce safe mission-plan dry runs. Fabio should see coherent business planning,
 not random agent delegation. Capability ownership improves future orchestration
 quality while preserving the default-deny and approval-first architecture.
@@ -1316,7 +1316,7 @@ live evidence. Their value is reliable structure and control, not human-level ma
 judgment. Profiles must remain general across mission families rather than encode one
 restaurant use case.
 
-**Future impact:** The Only Way Quality Gate and Scenario Lab must evaluate these
+**Future impact:** The Onlyway Quality Gate and Scenario Lab must evaluate these
 plans. Any future provider-neutral intelligent planner must preserve this deterministic
 planner as a safe fallback and pass the same Mission Plan validator and quality gate.
 

@@ -8,3 +8,15 @@ coverage/
 
 *.log
 .DS_Store
+
+# Dati operativi locali e segreti di sessione: non devono entrare nella storia Git.
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.cookie
+*.cookies
+*.lock
+*.pid
+*.local.json
+screenshots/

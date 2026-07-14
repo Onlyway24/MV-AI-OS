@@ -36,7 +36,7 @@ The mature system should feel simple from Fabio's perspective:
 
 ```text
 Fabio
-  -> Only Way Assistant
+  -> Onlyway Assistant
   -> Control Plane
   -> Agent Company
   -> Workflow Runtime
@@ -79,7 +79,7 @@ tool is about to mutate something unsafe.
 MV AI OS is a product and operating system before it is an automation playground. Its
 product philosophy is:
 
-1. **One visible operating surface.** Fabio should talk primarily to the Only Way
+1. **One visible operating surface.** Fabio should talk primarily to the Onlyway
    Assistant. Internal specialists may exist, but they are departments inside the
    operating system, not separate personalities Fabio must manage manually.
 2. **Capability follows control.** More power is added only after matching safety,
@@ -122,7 +122,7 @@ to reduce operational drag, not convert Fabio into a dispatcher for bots.
 
 ## 6. Why Fabio talks to one assistant, not many agents
 
-The permanent operator model is one visible assistant: the Only Way Assistant.
+The permanent operator model is one visible assistant: the Onlyway Assistant.
 
 Many visible agents create three failure modes:
 
@@ -148,7 +148,7 @@ The system is ordered deliberately:
 
 ```text
 Fabio
-  -> Only Way Assistant
+  -> Onlyway Assistant
   -> Control Plane
   -> Agent Company
   -> Workflow Runtime
@@ -161,7 +161,7 @@ This order prevents unsafe power from arriving before governance.
 Fabio comes first because business direction and approval belong to the human
 operator.
 
-Only Way Assistant comes next because a single operator interface prevents
+Onlyway Assistant comes next because a single operator interface prevents
 over-agentification.
 
 Control Plane comes before the Agent Company because costs, secrets, backups,
@@ -181,16 +181,16 @@ The Product Layer comes after these foundations because dashboards, APIs, and
 customer-facing surfaces must not bypass the same policy, runtime, audit, and
 approval boundaries.
 
-## 8. Only Way Assistant
+## 8. Onlyway Assistant
 
-The Only Way Assistant is Fabio's single operating surface.
+The Onlyway Assistant is Fabio's single operating surface.
 
 Its mission is to convert Fabio's goals into bounded tasks, present operator-readable
 decisions, surface missing information, summarize specialist outputs, identify
 approval requirements, and protect Fabio from having to manually supervise internal
 agent machinery.
 
-The Only Way Assistant is responsible for:
+The Onlyway Assistant is responsible for:
 
 - understanding Fabio's command at the operator level;
 - preserving a concise, useful conversation path;
@@ -201,7 +201,7 @@ The Only Way Assistant is responsible for:
 - explaining next actions in practical terms;
 - keeping the system aligned with Fabio's business objective.
 
-The Only Way Assistant is not responsible for:
+The Onlyway Assistant is not responsible for:
 
 - bypassing Core Brain;
 - granting itself permissions;
@@ -212,7 +212,7 @@ The Only Way Assistant is not responsible for:
 - hiding internal failures;
 - inventing approval where Fabio has not given it.
 
-The Only Way Assistant should evolve from specification, to deterministic runtime
+The Onlyway Assistant should evolve from specification, to deterministic runtime
 boundary, to presentation protocol, to controlled operator interface. It must remain
 grounded in Core Brain, policy, guardians, task records, memory, knowledge, and audit.
 

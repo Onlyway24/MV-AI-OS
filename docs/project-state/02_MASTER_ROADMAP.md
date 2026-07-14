@@ -222,7 +222,7 @@ state. Operator Safety Report now adds deterministic, report-only, redaction-saf
 aggregation of supplied guardian reports into one operator-facing safety summary
 without dashboards, alerts, scheduling, autonomy, persistence, network, model calls,
 or tool execution. Main Assistant / Orchestrator Specification Foundation now defines
-Only Way Assistant declaratively on top of the existing Agent Specification boundary
+Onlyway Assistant declaratively on top of the existing Agent Specification boundary
 with safety preflights, approval requirements, forbidden capabilities, and future
 delegation policy, without adding full runtime orchestration. Main Assistant /
 Orchestrator Runtime Boundary now adds a deterministic local invocation boundary
@@ -236,7 +236,7 @@ categories, safety-to-autonomy posture, guardian coverage, and approval requirem
 to produce redaction-safe may-continue, warning, confirmation, approval-required, or
 blocked outcomes without running guardians, models, tools, workflows, persistence,
 network behavior, scheduling, or autonomous action. Operator Decision Engine
-Foundation now adds deterministic operator-facing decisioning from validated Only Way
+Foundation now adds deterministic operator-facing decisioning from validated Onlyway
 Assistant specification identity, Guardian Consultation decisions, requested
 operations, optional sanitized cost posture, and optional delegation signals into
 proceed, clarification, approval, confirmation, refusal, blocked, or non-executing
@@ -296,7 +296,7 @@ external-action denial while preserving existing runtime plan contracts. The
 Deterministic Mission Planner now converts validated briefs into validated plans for
 all ten mission types using the smallest sufficient declared team, explicit
 assumptions, material clarification, and derived approval/guardian controls without
-models or execution. Only Way Mission Quality Gate now evaluates those plans through
+models or execution. Onlyway Mission Quality Gate now evaluates those plans through
 fixed 0–10 quality dimensions, an exact 82-point approval threshold, anti-slop and
 safety-control checks, deterministic remediation, and redaction-safe immutable
 reports without invoking models, agents, workflows, tools, persistence, or external

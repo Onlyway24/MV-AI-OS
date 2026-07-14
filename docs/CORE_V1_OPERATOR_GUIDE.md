@@ -2,7 +2,7 @@
 
 ## What Core V1 is
 
-Core V1 is a controlled local Mission and Workflow runtime for Fabio. It validates a structured Founder Mission Brief, creates deterministic Mission Plans, applies the Only Way Quality Gate, persists Workflows in SQLite, enforces approvals and Guardian decisions, invokes one deterministic local Content Director, validates its structured preparation-only result, and supports explicit completion and lifecycle recovery.
+Core V1 is a controlled local Mission and Workflow runtime for Fabio. It validates a structured Founder Mission Brief, creates deterministic Mission Plans, applies the Onlyway Quality Gate, persists Workflows in SQLite, enforces approvals and Guardian decisions, invokes one deterministic local Content Director, validates its structured preparation-only result, and supports explicit completion and lifecycle recovery.
 
 Every CLI invocation reads one bounded JSON command from standard input, writes one JSON result to standard output, closes the runtime, and performs no unauthorized external action.
 

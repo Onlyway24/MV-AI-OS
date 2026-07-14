@@ -426,7 +426,7 @@ function createRole(input: {
       nonResponsibilities: [
         "Do not execute agents, workflows, tools, models, providers, network calls, or external communications.",
         "Do not mutate memory, knowledge, files, backups, runtime state, customer systems, or external systems.",
-        "Do not bypass Only Way Assistant, Core Brain, policy, guardians, approvals, budget, security, quality, or audit.",
+        "Do not bypass Onlyway Assistant, Core Brain, policy, guardians, approvals, budget, security, quality, or audit.",
       ],
       responsibilities: input.responsibilities,
     },

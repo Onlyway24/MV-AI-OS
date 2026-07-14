@@ -777,14 +777,14 @@ function validateAgentSpecificationBoundary(
   if (agentSpecification.instructionsRef !== ONLY_WAY_ASSISTANT_INSTRUCTIONS_REF) {
     issues.push({
       code: "invalid_value",
-      message: "agentSpecification.instructionsRef must reference Only Way instructions",
+      message: "agentSpecification.instructionsRef must reference Onlyway instructions",
       path: "agentSpecification.instructionsRef",
     });
   }
   if (agentSpecification.limits.maxToolCalls !== 0) {
     issues.push({
       code: "forbidden_capability",
-      message: "Only Way Assistant must not have direct tool-call capacity",
+      message: "Onlyway Assistant must not have direct tool-call capacity",
       path: "agentSpecification.limits.maxToolCalls",
     });
   }
@@ -795,7 +795,7 @@ function validateAgentSpecificationBoundary(
     ) {
       issues.push({
         code: "forbidden_capability",
-        message: "Only Way Assistant must not declare direct tool capabilities",
+        message: "Onlyway Assistant must not declare direct tool capabilities",
         path: `agentSpecification.capabilities[${String(index)}].capabilityType`,
       });
     }
@@ -805,7 +805,7 @@ function validateAgentSpecificationBoundary(
     ) {
       issues.push({
         code: "provider_specific_capability",
-        message: "Only Way Assistant model permissions must remain provider-neutral",
+        message: "Onlyway Assistant model permissions must remain provider-neutral",
         path: `agentSpecification.capabilities[${String(index)}].permission`,
       });
     }
@@ -947,7 +947,7 @@ function validateDelegationPolicy(
     if (target.agentId === assistantId) {
       issues.push({
         code: "invalid_value",
-        message: "Only Way Assistant cannot delegate to itself",
+        message: "Onlyway Assistant cannot delegate to itself",
         path: `delegationPolicy.allowedTargets[${String(index)}].agentId`,
       });
     }

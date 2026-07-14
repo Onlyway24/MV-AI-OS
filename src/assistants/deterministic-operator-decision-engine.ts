@@ -56,7 +56,7 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       certainty: "high",
       decision: "blocked",
       explanation:
-        "Only Way Assistant stopped because Guardian Consultation blocked the requested operation.",
+        "Onlyway Assistant stopped because Guardian Consultation blocked the requested operation.",
       reasons: [
         reason(
           "guardian_blocked",
@@ -76,7 +76,7 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       certainty: "high",
       decision: "blocked",
       explanation:
-        "Only Way Assistant stopped because the supplied cost posture is over budget.",
+        "Onlyway Assistant stopped because the supplied cost posture is over budget.",
       reasons: [
         reason(
           "cost_budget_blocked",
@@ -96,12 +96,12 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       blockedReasons: [],
       certainty: "low",
       clarificationQuestions: [
-        "What concrete business outcome should Only Way Assistant optimize for?",
+        "What concrete business outcome should Onlyway Assistant optimize for?",
         "What final output should Fabio receive from this request?",
       ],
       decision: "clarification_required",
       explanation:
-        "Only Way Assistant needs a clearer objective and requested outcome before making an operator decision.",
+        "Onlyway Assistant needs a clearer objective and requested outcome before making an operator decision.",
       reasons: [
         reason(
           "under_specified_request",
@@ -122,7 +122,7 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       certainty: "medium",
       decision: "confirmation_required",
       explanation:
-        "Only Way Assistant needs Fabio confirmation before continuing because Guardian Consultation requires it.",
+        "Onlyway Assistant needs Fabio confirmation before continuing because Guardian Consultation requires it.",
       reasons: [
         reason(
           "guardian_confirmation_required",
@@ -142,7 +142,7 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       certainty: "medium",
       decision: "approval_required",
       explanation:
-        "Only Way Assistant needs explicit Fabio approval before the requested escalation can proceed.",
+        "Onlyway Assistant needs explicit Fabio approval before the requested escalation can proceed.",
       reasons: [
         reason(
           "approval_required",
@@ -163,7 +163,7 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       certainty: "medium",
       decision: "confirmation_required",
       explanation:
-        "Only Way Assistant needs Fabio confirmation because the supplied cost posture is near its limit.",
+        "Onlyway Assistant needs Fabio confirmation because the supplied cost posture is near its limit.",
       reasons: [
         reason(
           "cost_budget_warning",
@@ -184,7 +184,7 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       certainty: "medium",
       decision: "refused",
       explanation:
-        "Only Way Assistant refused to propose delegation because the supplied delegation signal does not allow it.",
+        "Onlyway Assistant refused to propose delegation because the supplied delegation signal does not allow it.",
       reasons: [
         reason(
           "delegation_not_allowed",
@@ -205,7 +205,7 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
       certainty: "high",
       decision: "mission_plan_candidate",
       explanation:
-        "Only Way Assistant can create a non-executing mission-plan candidate for this bounded request.",
+        "Onlyway Assistant can create a non-executing mission-plan candidate for this bounded request.",
       missionPlanCandidate: createMissionPlanCandidate(context),
       reasons: [
         reason(
@@ -230,8 +230,8 @@ function buildDecision(context: OperatorDecisionContext): OperatorDecision {
     decision: "proceed",
     explanation:
       context.guardianConsultation.decision === "continue_with_warning"
-        ? "Only Way Assistant may proceed with visible guardian warnings inside controlled boundaries."
-        : "Only Way Assistant may proceed inside the current controlled boundaries.",
+        ? "Onlyway Assistant may proceed with visible guardian warnings inside controlled boundaries."
+        : "Onlyway Assistant may proceed inside the current controlled boundaries.",
     reasons: [
       context.guardianConsultation.decision === "continue_with_warning"
         ? reason(

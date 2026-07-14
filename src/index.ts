@@ -25,6 +25,22 @@ export { TelegramOperatorProcessLock } from "./telegram/telegram-operator-lock.j
 export { TelegramOperatorLifecycle, type TelegramOperatorLifecycleOptions, type TelegramPollingConsole } from "./telegram/telegram-operator-lifecycle.js";
 export { TELEGRAM_OPERATOR_ERROR_CODES, TelegramOperatorError, isRetryablePollingFailure, safeTelegramOperatorDiagnostic, type TelegramOperatorErrorCode, type TelegramOperatorLifecycleStage } from "./telegram/telegram-operator-errors.js";
 export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
+export {
+  COMMAND_CENTER_CONTRACT_VERSION,
+  CommandCenterQueryService,
+  type CommandCenterAgentSummary,
+  type CommandCenterClock,
+  type CommandCenterEvidenceSummary,
+  type CommandCenterMetric,
+  type CommandCenterOverview,
+  type CommandCenterRuntimeSummary,
+  type CommandCenterSnapshot,
+} from "./command-center/command-center-query-service.js";
+export {
+  PrivateCommandCenterServer,
+  type CommandCenterServerOptions,
+  type StartedCommandCenter,
+} from "./command-center/command-center-server.js";
 export { TelegramMissionDraftSessionCoordinator, telegramMissionCommandFingerprint, type TelegramMissionDraftCallback, type TelegramMissionDraftSessionCommand, type TelegramMissionDraftSessionSnapshot } from "./telegram/telegram-mission-draft-session-coordinator.js";
 export { TelegramMissionPlanningConsole } from "./telegram/telegram-mission-planning-console.js";
 export { TelegramWorkflowOperatorConsole } from "./telegram/telegram-workflow-operator-console.js";

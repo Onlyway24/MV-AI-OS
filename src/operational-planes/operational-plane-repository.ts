@@ -12,7 +12,10 @@ export interface OperationalPlaneRepository {
   insertFeedbackSnapshot(record: FeedbackMetricSnapshot): Promise<void>;
   insertPublication(record: PublicationPlan): Promise<void>;
   insertSource(record: SourceRegistryEntry): Promise<void>;
+  listEvidenceByWorkspaceId(workspaceId: string, limit: number): Promise<readonly EvidenceRecord[]>;
+  listEvidencePacksByWorkspaceId(workspaceId: string, limit: number): Promise<readonly EvidencePack[]>;
   listFeedbackSnapshots(publicationId: string): Promise<readonly FeedbackMetricSnapshot[]>;
+  listSourcesByWorkspaceId(workspaceId: string, limit: number): Promise<readonly SourceRegistryEntry[]>;
   updatePublication(record: PublicationPlan, expectation: { readonly version: number }): Promise<void>;
   upsertPublicationKillSwitch(record: PublicationKillSwitch, expectation: { readonly version: number }): Promise<void>;
 }

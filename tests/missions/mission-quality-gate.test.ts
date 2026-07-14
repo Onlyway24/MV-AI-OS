@@ -16,7 +16,7 @@ type DeepMutable<T> = T extends readonly (infer Entry)[]
     ? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
     : T;
 
-describe("Only Way Mission Quality Gate", () => {
+describe("Onlyway Mission Quality Gate", () => {
   it("accepts a valid Mission Plan input", () => {
     expect(new MissionQualityGateInputValidator().validate(input(DEFAULT_MISSION_PLAN))).toMatchObject({
       ok: true,

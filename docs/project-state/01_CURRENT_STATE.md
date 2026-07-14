@@ -81,7 +81,7 @@ and tests, not intended future behavior.
   `609b854 feat: add mission plan contracts`.
 - The Deterministic Mission Planner milestone was committed in
   `db552bc feat: add deterministic mission planner`.
-- The Only Way Mission Quality Gate milestone was committed in
+- The Onlyway Mission Quality Gate milestone was committed in
   `6356cea feat: add only way mission quality gate`.
 - The Mission Planning Scenario Lab milestone was committed in
   `e1b1e48 test: add mission planning scenario lab`.
@@ -316,7 +316,7 @@ provider, n8n, or external SDK types.
 50. Founder Intent / Mission Brief Foundation.
 51. Mission Plan Contracts.
 52. Deterministic Mission Planner.
-53. Only Way Mission Quality Gate.
+53. Onlyway Mission Quality Gate.
 54. Mission Planning Scenario Lab.
 55. Local Mission Planning Dry-Run Vertical Slice.
 56. Mission Planning Sprint Review and Project-State Alignment.
@@ -568,7 +568,7 @@ provider, n8n, or external SDK types.
 ### Specifications and tools
 
 - Versioned Agent Specification contracts, validators, and registry interface.
-- Versioned Main Assistant / Orchestrator specification foundation for Only Way
+- Versioned Main Assistant / Orchestrator specification foundation for Onlyway
   Assistant, built on the existing Agent Specification contract and explicit
   operator-safety, guardian, approval, and delegation requirements.
 - Versioned Main Assistant / Orchestrator runtime boundary contracts and
@@ -581,7 +581,7 @@ provider, n8n, or external SDK types.
   escalation categories, approval requirements, and required guardian coverage into
   redaction-safe continue, warning, confirmation, approval, or blocking decisions.
 - Versioned Operator Decision Engine contracts and deterministic engine for combining
-  Only Way Assistant specification identity, validated operator objective, Guardian
+  Onlyway Assistant specification identity, validated operator objective, Guardian
   Consultation decision, requested operations, optional sanitized cost posture, and
   optional delegation signal into redaction-safe proceed, clarification, approval,
   confirmation, refusal, blocked, or non-executing mission-plan-candidate decisions.
@@ -648,7 +648,7 @@ provider, n8n, or external SDK types.
   constraints, forbidden and proposed external actions, risk tolerance, quality,
   originality, founder preferences, versioned brand profiles, evidence expectations,
   known facts, assumptions, classified unknowns, and material clarification questions.
-- Default Only Way founder preferences plus separate MV AI OS and Metodo Veloce brand
+- Default Onlyway founder preferences plus separate MV AI OS and Metodo Veloce brand
   profiles. Visual direction remains scoped to relevant deliverables and profiles.
 - Full non-executing Mission Plan contract with mission summary, optional strategy
   options, exact agent/specification assignments, responsibility/capability/permission
@@ -710,7 +710,7 @@ provider, n8n, or external SDK types.
   contracts.
 - Main Assistant / Orchestrator specification, safety-domain, escalation,
   forbidden-capability, approval, delegation-policy, delegation-target, output-rule,
-  and Only Way Assistant default specification contracts.
+  and Onlyway Assistant default specification contracts.
 - Main Assistant / Orchestrator invocation, safety-preflight context, result,
   runtime-interface, runtime safety-decision, result-status, invocation-intent, and
   invocation-risk contracts.
@@ -958,7 +958,7 @@ covering:
   handling, per-guardian summary inclusion, deterministic action ordering, highest
   severity calculation, safety-to-autonomy decision calculation, invalid nested
   guardian report rejection, and redaction-safe aggregate report boundaries.
-- Main Assistant / Orchestrator Specification validation, Only Way Assistant identity,
+- Main Assistant / Orchestrator Specification validation, Onlyway Assistant identity,
   existing Agent Specification compatibility, required guardian preflights, forbidden
   direct tool/provider capabilities, input/output schema validation, policy and
   approval coverage, handoff/delegation alignment, immutable default specification,
@@ -1065,7 +1065,7 @@ covering:
   assumptions, unsafe/contradictory rejection, unavailable-company rejection,
   dependency ordering, useful steps, justified strategy alternatives, immutability,
   no input mutation, and redaction-safe failure.
-- Only Way Mission Quality Gate coverage for the exact 82-point release threshold,
+- Onlyway Mission Quality Gate coverage for the exact 82-point release threshold,
   generic filler and directive gaps, evidence and metric gaps, value and audience
   gaps, excessive manual work, unsupported certainty, originality-versus-feasibility,
   external commercial approval blocking, deterministic remediation, deep
@@ -1112,7 +1112,7 @@ report-only Control Plane Safety chapter now has a deterministic local Operator
 Safety Report foundation that aggregates supplied guardian reports into one
 operator-facing safety summary without adding autonomy, scheduling, alerts, network,
 model calls, tool execution, dashboards, or persistence. The Main Assistant /
-Orchestrator chapter now has a declarative Only Way Assistant specification
+Orchestrator chapter now has a declarative Onlyway Assistant specification
 foundation that reuses the existing Agent Specification system and defines
 operator-facing mission, safety preflights, approvals, forbidden capabilities, and
 future delegation policy, plus a deterministic local runtime boundary that validates
@@ -1122,7 +1122,7 @@ full orchestration or side effects. Guardian Consultation Boundary now isolates 
 deterministic safety consultation decision for supplied Operator Safety reports,
 requested escalation categories, safety-to-autonomy posture, required guardian
 coverage, and approval requirements without executing guardians or adding autonomy.
-Operator Decision Engine Foundation now combines the Only Way Assistant
+Operator Decision Engine Foundation now combines the Onlyway Assistant
 specification, Guardian Consultation decision, requested operations, optional
 sanitized cost posture, and optional delegation signal into a deterministic
 operator-facing decision without executing agents, workflows, tools, models, or
@@ -1208,7 +1208,7 @@ chapter.
   not collect signals, scan files, read secrets, call models, send alerts, schedule
   checks, mutate state, execute tools, render dashboards, persist ledgers, or act
   autonomously.
-- Only Way Assistant has a validated Main Assistant / Orchestrator specification and
+- Onlyway Assistant has a validated Main Assistant / Orchestrator specification and
   a deterministic runtime boundary, but it does not run planning loops, call models,
   execute guardian services, delegate work, execute tools, execute workflows, mutate
   state, persist runtime ledgers, schedule work, use the network, or operate
@@ -1280,7 +1280,7 @@ chapter.
   and declarations only. It does not call an LLM, model, provider, agent, guardian,
   workflow, tool, repository, network, filesystem, external service, or execution
   path.
-- Only Way Mission Quality Gate deterministically evaluates a validated Mission Plan
+- Onlyway Mission Quality Gate deterministically evaluates a validated Mission Plan
   against fixed quality and safety criteria. It cannot execute a plan, call a model,
   invoke an agent or guardian, persist data, use a network, or authorize an external
   action.
@@ -1397,7 +1397,7 @@ chapter.
   redaction-safe guardian reports, and receive a validated aggregate report with
   overall status, coverage, per-domain summaries, deterministic recommended actions,
   and a safety-to-autonomy decision.
-- A caller can validate the immutable Only Way Assistant specification and confirm it
+- A caller can validate the immutable Onlyway Assistant specification and confirm it
   conforms to the existing Agent Specification contract plus Main Assistant
   safety/preflight/delegation requirements.
 - A caller can invoke `DeterministicMainAssistantRuntime` with a validated
