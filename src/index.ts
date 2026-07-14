@@ -594,6 +594,10 @@ export {
 export type { MetodoVeloceContentProductionRepository, MetodoVeloceContentProductionUpdateExpectation } from "./content-production/metodo-veloce-content-production-repository.js";
 export { DeterministicMetodoVeloceContentProductionLine } from "./content-production/deterministic-metodo-veloce-content-production-line.js";
 export { contentClaimRisk, MetodoVeloceContentProductionArchiveRequestValidator, MetodoVeloceContentProductionBriefValidator, MetodoVeloceContentProductionMetricsRequestValidator, MetodoVeloceContentProductionPackageValidator, MetodoVeloceContentProductionRecordValidator, MetodoVeloceContentProductionReviewRequestValidator, MetodoVeloceContentProductionScheduleRequestValidator } from "./content-production/metodo-veloce-content-production-validator.js";
+export { PRODUCTION_RUNTIME_CONTRACT_VERSION, isProductionRuntimeJobTransitionAllowed, type ProductionRuntimeEnqueueRequest, type ProductionRuntimeHealthReport, type ProductionRuntimeJob, type ProductionRuntimeJobError, type ProductionRuntimeJobResult, type ProductionRuntimeJobStatus, type ProductionRuntimeRunResult } from "./production-runtime/production-runtime-job.js";
+export type { ProductionRuntimeJobCounts, ProductionRuntimeJobRepository, ProductionRuntimeJobUpdateExpectation } from "./production-runtime/production-runtime-job-repository.js";
+export { ProductionRuntimeService } from "./production-runtime/production-runtime-service.js";
+export { ProductionRuntimeEnqueueRequestValidator, ProductionRuntimeHealthReportValidator, ProductionRuntimeJobValidator, ProductionRuntimeRunResultValidator } from "./production-runtime/production-runtime-validator.js";
 export type {
   AgentInvocation,
   AgentInvocationLimits,

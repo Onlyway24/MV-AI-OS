@@ -9,6 +9,8 @@ import { MetodoVeloceContentProductionArchiveRequestValidator, MetodoVeloceConte
 import { RepositoryConflictError, RepositoryValidationError } from "../errors/core-error.js";
 import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { Clock } from "../ports/clock.js";
+import { ProductionRuntimeService } from "../production-runtime/production-runtime-service.js";
+import { ProductionRuntimeEnqueueRequestValidator } from "../production-runtime/production-runtime-validator.js";
 import type { Validator, ValidationResult } from "../validation/validation.js";
 import { validationFailure, validationSuccess } from "../validation/validation.js";
 import type { WorkflowControlCheckpointService } from "../workflows/runtime/workflow-control-checkpoint.js";
@@ -21,7 +23,7 @@ import type { WorkflowStepOutcomeService } from "../workflows/runtime/workflow-s
 import { WorkflowDefinitionValidator, WorkflowInstanceValidator } from "../workflows/runtime/workflow-runtime-validator.js";
 
 export const LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION = "1" as const;
-export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
+export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
 export type LocalWorkflowOperation = typeof LOCAL_WORKFLOW_OPERATIONS[number];
 export interface LocalWorkflowCommand { readonly contractVersion: "1"; readonly commandId: string; readonly actorId: string; readonly workspaceId: string; readonly operation: LocalWorkflowOperation; readonly input: Readonly<Record<string, unknown>>; }
 export interface LocalWorkflowCommandResponse { readonly contractVersion: "1"; readonly status: "ok"; readonly operation: LocalWorkflowOperation; readonly commandId: string; readonly result: unknown; readonly nextAction: string; readonly replayed: boolean; readonly unauthorizedExternalEffectOccurred: false; }
@@ -32,6 +34,7 @@ export interface LocalWorkflowCommandDependencies {
   readonly workspaceId: string;
   readonly missionPlanning: LocalMissionPlanningDryRun;
   readonly contentProduction: { produce(candidate: MetodoVeloceContentProductionBrief): MetodoVeloceContentProductionPackage };
+  readonly productionRuntime: ProductionRuntimeService;
   readonly readiness: WorkflowReadinessService;
   readonly candidates: WorkflowStepExecutionBoundary;
   readonly controls: WorkflowControlCheckpointService;
@@ -82,6 +85,7 @@ export class LocalWorkflowCommandBoundary {
   readonly #contentScheduleValidator = new MetodoVeloceContentProductionScheduleRequestValidator();
   readonly #contentMetricsValidator = new MetodoVeloceContentProductionMetricsRequestValidator();
   readonly #contentArchiveValidator = new MetodoVeloceContentProductionArchiveRequestValidator();
+  readonly #productionRuntimeEnqueueValidator = new ProductionRuntimeEnqueueRequestValidator();
   readonly #definitionValidator = new WorkflowDefinitionValidator();
   readonly #instanceValidator = new WorkflowInstanceValidator();
   public constructor(private readonly dependencies: LocalWorkflowCommandDependencies) {}
@@ -117,6 +121,9 @@ export class LocalWorkflowCommandBoundary {
       case "RECORD_METODO_VELOCE_CONTENT_METRICS": return this.#recordContentProductionMetrics(input);
       case "ARCHIVE_METODO_VELOCE_CONTENT": return this.#archiveContentProduction(input);
       case "LIST_METODO_VELOCE_CONTENT_QUEUE": return this.#listContentProductionQueue(input);
+      case "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION": return this.#enqueueContentProductionRuntime(input);
+      case "RUN_PRODUCTION_RUNTIME_ONCE": return this.#runProductionRuntimeOnce(input);
+      case "GET_PRODUCTION_RUNTIME_HEALTH": return this.#productionRuntimeHealth(input);
       case "GET_OPERATOR_REPORT": return this.dependencies.report.create(input as unknown as WorkflowOperatorReportRequest);
       case "EVALUATE_READINESS": return this.dependencies.readiness.evaluate(input as never);
       case "GET_NEXT_CANDIDATE": return this.dependencies.candidates.prepare(input as never);
@@ -227,6 +234,16 @@ export class LocalWorkflowCommandBoundary {
     if (Object.keys(input).length !== 1 || !Number.isSafeInteger(input.limit) || (input.limit as number) < 1 || (input.limit as number) > 25) throw new RepositoryValidationError("Metodo Veloce content production queue request is invalid");
     return this.dependencies.repositories.transaction(({ contentProductions }) => contentProductions.listByWorkspaceId(this.dependencies.workspaceId, input.limit as number));
   }
+  async #enqueueContentProductionRuntime(input: Readonly<Record<string, unknown>>) { return this.dependencies.productionRuntime.enqueue(validate(input, this.#productionRuntimeEnqueueValidator, "Production Runtime enqueue request")); }
+  async #runProductionRuntimeOnce(input: Readonly<Record<string, unknown>>) {
+    if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Production Runtime run request is invalid");
+    return this.dependencies.productionRuntime.runOnce(async (job) => {
+      const response = await this.execute({ actorId: this.dependencies.actorId, commandId: productionRuntimeCommandId(job.jobId), contractVersion: "1", input: { brief: job.brief }, operation: "PRODUCE_METODO_VELOCE_CONTENT", workspaceId: this.dependencies.workspaceId });
+      if (!record(response.result) || !safeId(response.result.productionId)) throw new RepositoryValidationError("Production Runtime content result is invalid");
+      return response.result.productionId;
+    });
+  }
+  async #productionRuntimeHealth(input: Readonly<Record<string, unknown>>) { if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Production Runtime health request is invalid"); return this.dependencies.productionRuntime.health(); }
   async #ownedContentProduction(repository: MetodoVeloceContentProductionRepository, productionId: string): Promise<MetodoVeloceContentProductionRecord> {
     const record = await repository.getById(productionId);
     if (record === undefined) throw new RepositoryConflictError("Metodo Veloce content production does not exist");
@@ -236,7 +253,7 @@ export class LocalWorkflowCommandBoundary {
 
   async #resourceInstanceId(command: LocalWorkflowCommand): Promise<string | undefined> {
     const input = command.input;
-    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
+    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
     if (typeof input.instanceId === "string") return input.instanceId;
     if (record(input.checkpoint) && typeof input.checkpoint.instanceId === "string") return input.checkpoint.instanceId;
     if (record(input.boundaryRequest) && typeof input.boundaryRequest.instanceId === "string") return input.boundaryRequest.instanceId;
@@ -258,6 +275,9 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   if (operation === "RECORD_METODO_VELOCE_CONTENT_METRICS") return `Review declared metrics for Metodo Veloce content package ${id(input.productionId)}; this did not publish anything.`;
   if (operation === "ARCHIVE_METODO_VELOCE_CONTENT") return `Keep archived Metodo Veloce content package ${id(input.productionId)} out of the active queue.`;
   if (operation === "LIST_METODO_VELOCE_CONTENT_QUEUE") return "Review the durable Metodo Veloce content production queue and choose one explicit next action.";
+  if (operation === "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION") return `Run the controlled Production Runtime worker for job ${id(input.jobId)} when its schedule is due.`;
+  if (operation === "RUN_PRODUCTION_RUNTIME_ONCE") return record(result) && result.status === "IDLE" ? "No due preparation job exists; inspect Production Runtime health." : "Review the completed or retrying Production Runtime job; no external action was executed.";
+  if (operation === "GET_PRODUCTION_RUNTIME_HEALTH") return record(result) && result.status === "ATTENTION_REQUIRED" ? "Inspect the Production Runtime dead-letter queue before scheduling additional work." : "Production Runtime is healthy; run one controlled worker tick when due work exists.";
   if (operation === "INSPECT_WORKFLOW") return `Request the Operator Workflow Report for Workflow ${id(input.instanceId)}.`;
   if (operation === "EVALUATE_READINESS") return `Request the next controlled candidate for Workflow ${id(input.instanceId)} at version ${number(input.expectedVersion)}.`;
   if (operation === "GET_NEXT_CANDIDATE") return record(result) && result.status === "CANDIDATE_AVAILABLE" ? `Invoke the controlled candidate for step ${nestedId(result, "candidate", "stepId") ?? "unknown"}.` : `Resolve the reported candidate blockers for Workflow ${id(input.instanceId)}.`;
@@ -270,6 +290,7 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   return `Request the Operator Workflow Report for Workflow ${instanceId}.`;
 }
 function id(value: unknown): string { return typeof value === "string" ? value : "unknown"; }
+function productionRuntimeCommandId(jobId: string): string { return `runtime-produce-${createHash("sha256").update(jobId, "utf8").digest("hex").slice(0, 24)}`; }
 function number(value: unknown): string { return typeof value === "number" ? String(value) : "unknown"; }
 function nestedId(input: Readonly<Record<string, unknown>>, parent: string, child: string): string | undefined { const value = input[parent]; return record(value) && typeof value[child] === "string" ? value[child] : undefined; }
 function nestedNumber(input: Readonly<Record<string, unknown>>, parent: string, child: string): string { const value = input[parent]; return record(value) && typeof value[child] === "number" ? String(value[child]) : "unknown"; }

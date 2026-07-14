@@ -56,6 +56,25 @@ describe("Telegram Workflow Operator Console", () => {
     await runtime.close();
     await state.close();
   }));
+
+  it("shows the private content queue and requires a one-use Telegram confirmation before Fabio approval", async () => withDatabase(async (path) => {
+    const runtime = await createLocalRuntime(config(path), { clock });
+    const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
+    const workflow = new TelegramWorkflowOperatorConsole({ actorId: "actor-local", chatId: "200", clock, confirmationRetentionSeconds: 600, runtime, state, workspaceId: "workspace-local" });
+    if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow command boundary unavailable");
+    await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "telegram-content-produce-001", contractVersion: "1", input: { brief: contentBrief("mv-content-telegram-001") }, operation: "PRODUCE_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
+
+    expect((await workflow.handle(identity, "/productions")).text).toContain("mv-content-telegram-001");
+    const preview = await workflow.handle(identity, "/production mv-content-telegram-001");
+    expect(preview.text).toContain("PENDING_FABIO_APPROVAL");
+    expect(preview.buttons?.[0]?.text).toBe("Approva per calendario");
+    const approved = await workflow.handleCallback(identity, preview.buttons?.[0]?.callbackData ?? "");
+    expect(approved?.text).toContain("approvato per il calendario interno");
+    expect(approved?.text).toContain("Non è stato pubblicato");
+
+    await runtime.close();
+    await state.close();
+  }));
 });
 
 async function approvalReadyMission(console: TelegramMissionPlanningConsole): Promise<void> {
@@ -74,4 +93,5 @@ async function approvalReadyMission(console: TelegramMissionPlanningConsole): Pr
 }
 
 function config(path: string): LocalRuntimeConfig { return { actorId: "actor-local", contentAgentMode: "deterministic", contractVersion: "1", permissions: { actorGrants: [], policyGrants: [], taskGrants: [] }, sqlite: { path, timeoutMs: 1_000 }, workspaceId: "workspace-local" }; }
+function contentBrief(productionId: string) { return { audience: "Persone che vogliono testare un'offerta prima di investire budget.", callToAction: "Salva il post e scegli un test piccolo per questa settimana.", contractVersion: "1", evidence: [{ evidenceId: "customer-note-1", sourceRef: "interview-2026-07", statement: "Le persone chiedono esempi concreti prima di valutare l'offerta." }], language: "it", missionReference: "mission-draft-1", objective: "educate", offer: "un percorso per validare offerte digitali", productionId, topic: "come validare un'offerta prima di promuoverla" } as const; }
 async function withDatabase(test: (path: string) => Promise<void>): Promise<void> { const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-telegram-workflow-")); try { await test(join(directory, "runtime.sqlite")); } finally { await rm(directory, { force: true, recursive: true }); } }

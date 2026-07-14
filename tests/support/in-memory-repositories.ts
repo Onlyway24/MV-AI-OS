@@ -64,6 +64,8 @@ import type { LocalWorkflowCommandReceipt, LocalWorkflowOwnership } from "../../
 import type { MetodoVeloceContentProductionRecord } from "../../src/content-production/metodo-veloce-content-production-record.js";
 import { isMetodoVeloceContentProductionTransitionAllowed } from "../../src/content-production/metodo-veloce-content-production-record.js";
 import { MetodoVeloceContentProductionRecordValidator } from "../../src/content-production/metodo-veloce-content-production-validator.js";
+import { isProductionRuntimeJobTransitionAllowed, type ProductionRuntimeJob } from "../../src/production-runtime/production-runtime-job.js";
+import { ProductionRuntimeJobValidator } from "../../src/production-runtime/production-runtime-validator.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
@@ -86,6 +88,7 @@ interface RepositoryState {
   readonly localWorkflowCommands: Map<string, LocalWorkflowCommandReceipt>;
   readonly localWorkflowOwnership: Map<string, LocalWorkflowOwnership>;
   readonly metodoVeloceContentProductions: Map<string, MetodoVeloceContentProductionRecord>;
+  readonly productionRuntimeJobs: Map<string, ProductionRuntimeJob>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -120,6 +123,7 @@ function createRepositories(
   return Object.freeze({
     audits: new InMemoryAuditRepository(state),
     contentProductions: new InMemoryMetodoVeloceContentProductionRepository(state),
+    productionRuntimeJobs: new InMemoryProductionRuntimeJobRepository(state),
     requests: new InMemoryRequestRepository(state),
     tasks: new InMemoryTaskRepository(state),
     workflowCommands: new InMemoryLocalWorkflowCommandRepository(state),
@@ -160,6 +164,22 @@ class InMemoryMetodoVeloceContentProductionRepository {
 
 function isContentTransitionValid(previous: MetodoVeloceContentProductionRecord, next: MetodoVeloceContentProductionRecord): boolean { if (!isMetodoVeloceContentProductionTransitionAllowed(previous.status, next.status)) return false; return previous.status !== "SCHEDULED" || next.status !== "SCHEDULED" || (previous.metrics === undefined && next.metrics !== undefined && JSON.stringify({ ...previous, metrics: next.metrics, updatedAt: next.updatedAt, version: next.version }) === JSON.stringify(next)); }
 function sameContentIdentity(previous: MetodoVeloceContentProductionRecord, next: MetodoVeloceContentProductionRecord): boolean { return previous.actorId === next.actorId && previous.createdAt === next.createdAt && previous.productionId === next.productionId && previous.workspaceId === next.workspaceId && JSON.stringify(previous.package) === JSON.stringify(next.package); }
+
+class InMemoryProductionRuntimeJobRepository {
+  readonly #validator = new ProductionRuntimeJobValidator();
+  public constructor(private readonly state: RepositoryState) {}
+  public claimNextDue(workspaceId: string, now: string, leaseExpiresAt: string): Promise<ProductionRuntimeJob | undefined> { const current = [...this.state.productionRuntimeJobs.values()].filter((job) => job.workspaceId === workspaceId && ["QUEUED", "RETRY_SCHEDULED"].includes(job.status) && job.runAfter <= now).sort((left, right) => left.runAfter.localeCompare(right.runAfter) || left.jobId.localeCompare(right.jobId))[0]; if (current === undefined) return Promise.resolve(undefined); const next = this.#valid(runtimeJobClaimed(current, now, leaseExpiresAt)); this.state.productionRuntimeJobs.set(next.jobId, cloneFrozen(next)); return Promise.resolve(cloneFrozen(next)); }
+  public getById(jobId: string): Promise<ProductionRuntimeJob | undefined> { return Promise.resolve(cloneOptional(this.state.productionRuntimeJobs.get(jobId))); }
+  public insert(job: ProductionRuntimeJob): Promise<void> { const checked = this.#valid(job); if (checked.version !== 0 || checked.status !== "QUEUED" || this.state.productionRuntimeJobs.has(checked.jobId)) throw new RepositoryConflictError("Production Runtime job already exists"); this.state.productionRuntimeJobs.set(checked.jobId, cloneFrozen(checked)); return Promise.resolve(); }
+  public listExpiredClaims(workspaceId: string, now: string, limit: number): Promise<readonly ProductionRuntimeJob[]> { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 25) throw new RepositoryValidationError("Production Runtime expiry limit is invalid"); return Promise.resolve(Object.freeze([...this.state.productionRuntimeJobs.values()].filter((job) => job.workspaceId === workspaceId && job.status === "RUNNING" && (job.leaseExpiresAt ?? "") <= now).sort((left, right) => (left.leaseExpiresAt ?? "").localeCompare(right.leaseExpiresAt ?? "") || left.jobId.localeCompare(right.jobId)).slice(0, limit).map(cloneFrozen))); }
+  public summarize(workspaceId: string): Promise<{ readonly completed: number; readonly deadLetter: number; readonly queued: number; readonly retryScheduled: number; readonly running: number }> { const jobs = [...this.state.productionRuntimeJobs.values()].filter((job) => job.workspaceId === workspaceId); return Promise.resolve(Object.freeze({ completed: jobs.filter(({ status }) => status === "COMPLETED").length, deadLetter: jobs.filter(({ status }) => status === "DEAD_LETTER").length, queued: jobs.filter(({ status }) => status === "QUEUED").length, retryScheduled: jobs.filter(({ status }) => status === "RETRY_SCHEDULED").length, running: jobs.filter(({ status }) => status === "RUNNING").length })); }
+  public update(job: ProductionRuntimeJob, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(job); const current = this.state.productionRuntimeJobs.get(checked.jobId); if (current?.version !== expectation.version || checked.version !== expectation.version + 1 || !sameRuntimeJobIdentity(current, checked) || !runtimeJobTransition(current, checked)) throw new RepositoryConflictError("Production Runtime job transition is invalid"); this.state.productionRuntimeJobs.set(checked.jobId, cloneFrozen(checked)); return Promise.resolve(); }
+  #valid(value: unknown): ProductionRuntimeJob { const checked = this.#validator.validate(value); if (!checked.ok) throw new RepositoryValidationError("Production Runtime job is invalid"); return checked.value; }
+}
+
+function runtimeJobTransition(previous: ProductionRuntimeJob, next: ProductionRuntimeJob): boolean { return isProductionRuntimeJobTransitionAllowed(previous.status, next.status) && (next.status === "RUNNING" ? next.attempt === previous.attempt + 1 : next.attempt === previous.attempt); }
+function sameRuntimeJobIdentity(previous: ProductionRuntimeJob, next: ProductionRuntimeJob): boolean { return previous.actorId === next.actorId && previous.createdAt === next.createdAt && previous.jobId === next.jobId && previous.maxAttempts === next.maxAttempts && previous.workspaceId === next.workspaceId && JSON.stringify(previous.brief) === JSON.stringify(next.brief); }
+function runtimeJobClaimed(current: ProductionRuntimeJob, updatedAt: string, leaseExpiresAt: string): ProductionRuntimeJob { return { actorId: current.actorId, attempt: current.attempt + 1, brief: current.brief, contractVersion: current.contractVersion, createdAt: current.createdAt, jobId: current.jobId, leaseExpiresAt, maxAttempts: current.maxAttempts, runAfter: current.runAfter, status: "RUNNING", updatedAt, version: current.version + 1, workspaceId: current.workspaceId }; }
 
 class InMemoryWorkflowAgentInvocationRepository {
   public constructor(private readonly state: RepositoryState) {}
@@ -1031,6 +1051,7 @@ function createState(): RepositoryState {
     localWorkflowCommands: new Map(),
     localWorkflowOwnership: new Map(),
     metodoVeloceContentProductions: new Map(),
+    productionRuntimeJobs: new Map(),
   };
 }
 
@@ -1091,6 +1112,7 @@ function cloneState(state: RepositoryState): RepositoryState {
     localWorkflowCommands: new Map([...state.localWorkflowCommands].map(([key, value]) => [key, cloneFrozen(value)])),
     localWorkflowOwnership: new Map([...state.localWorkflowOwnership].map(([key, value]) => [key, cloneFrozen(value)])),
     metodoVeloceContentProductions: new Map([...state.metodoVeloceContentProductions].map(([key, value]) => [key, cloneFrozen(value)])),
+    productionRuntimeJobs: new Map([...state.productionRuntimeJobs].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

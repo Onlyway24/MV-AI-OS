@@ -62,13 +62,25 @@ describe("Metodo Veloce durable content production command", () => {
     const current = await createRuntime(path);
     await current.close();
     const legacy = new DatabaseSync(path);
-    legacy.exec("DROP TABLE metodo_veloce_content_productions; DELETE FROM schema_migrations WHERE version = 17; PRAGMA user_version = 16;");
+    legacy.exec("DROP TABLE production_runtime_jobs; DROP TABLE metodo_veloce_content_productions; DELETE FROM schema_migrations WHERE version IN (17, 18); PRAGMA user_version = 16;");
     legacy.close();
 
     const migrated = await createRuntime(path);
     const created = await run(migrated, "PRODUCE_METODO_VELOCE_CONTENT", { brief: { ...brief(), productionId: "mv-content-migrated-001" } }, "migrated-content-create-001");
     expect(created.result).toMatchObject({ productionId: "mv-content-migrated-001", status: "PENDING_FABIO_APPROVAL" });
     await migrated.close();
+  }));
+
+  it("runs a due content-preparation job through the controlled Production Runtime worker", async () => withDatabase(async (path) => {
+    const runtime = await createRuntime(path);
+    const enqueued = await run(runtime, "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", { brief: { ...brief(), productionId: "mv-content-runtime-command-001" }, jobId: "content-runtime-command-001", runAfter: "2026-07-14T12:00:00.000Z" }, "content-runtime-enqueue-001");
+    expect(enqueued.result).toMatchObject({ status: "QUEUED", version: 0 });
+    expect((await run(runtime, "GET_PRODUCTION_RUNTIME_HEALTH", {}, "content-runtime-health-before-001")).result).toMatchObject({ counts: { queued: 1 }, status: "READY" });
+
+    const processed = await run(runtime, "RUN_PRODUCTION_RUNTIME_ONCE", {}, "content-runtime-run-001");
+    expect(processed).toMatchObject({ result: { job: { result: { productionId: "mv-content-runtime-command-001" }, status: "COMPLETED" }, status: "COMPLETED", unauthorizedExternalEffectOccurred: false } });
+    expect((await run(runtime, "INSPECT_METODO_VELOCE_CONTENT", { productionId: "mv-content-runtime-command-001" }, "content-runtime-inspect-001")).result).toMatchObject({ status: "PENDING_FABIO_APPROVAL" });
+    await runtime.close();
   }));
 });
 

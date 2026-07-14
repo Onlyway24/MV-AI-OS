@@ -157,8 +157,9 @@ describe("SQLite memory persistence", () => {
         DROP TABLE telegram_operator_drafts;
         DROP TABLE telegram_mission_draft_operations;
         DROP TABLE metodo_veloce_content_productions;
+        DROP TABLE production_runtime_jobs;
         DROP INDEX audit_events_workspace_correlation;
-        DELETE FROM schema_migrations WHERE version IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
+        DELETE FROM schema_migrations WHERE version IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18);
         PRAGMA user_version = 1;
       `);
       legacyDatabase.close();

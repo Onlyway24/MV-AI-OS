@@ -12,15 +12,18 @@ describe("Telegram Bot API authorization", () => {
     expect(client.normalize(message({ chatId: 201 }))).toEqual({ rejection: "UNAUTHORIZED" });
     expect(client.normalize(message({ userId: 101 }))).toEqual({ rejection: "UNAUTHORIZED" });
   });
-  it("keeps Workflow creation, reports, and callbacks on the exact private command surface", async () => {
+  it("keeps Workflow creation, content approvals, reports, and callbacks on the exact private command surface", async () => {
     const calls: { readonly method: string; readonly body: Readonly<Record<string, unknown>> }[] = [];
     const client = new TelegramBotApiClient(config, "token-not-logged", { request: ({ method, body }) => { calls.push({ body, method }); return Promise.resolve({ ok: true, result: [] }); } });
     expect(client.normalize(message({ text: "/workflow mission-draft-1" }))).toMatchObject({ action: { kind: "WORKFLOW", payload: "/workflow mission-draft-1" } });
     expect(client.normalize(message({ text: "/report mission-draft-1" }))).toMatchObject({ action: { kind: "REPORT", payload: "/report mission-draft-1" } });
     expect(client.normalize(message({ text: "/workflows" }))).toMatchObject({ action: { kind: "WORKFLOWS" } });
+    expect(client.normalize(message({ text: "/productions" }))).toMatchObject({ action: { kind: "CONTENT_QUEUE" } });
+    expect(client.normalize(message({ text: "/production mv-content-001" }))).toMatchObject({ action: { kind: "CONTENT_PRODUCTION", payload: "/production mv-content-001" } });
     await client.setCommands();
     expect(JSON.stringify(calls[0]?.body)).toContain("workflow");
     expect(JSON.stringify(calls[0]?.body)).toContain("report");
+    expect(JSON.stringify(calls[0]?.body)).toContain("productions");
   });
   it.each([
     { chat: { id: 200, type: "group" } },

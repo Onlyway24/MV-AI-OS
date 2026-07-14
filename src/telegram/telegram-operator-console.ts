@@ -65,7 +65,7 @@ export class ControlledTelegramOperatorConsole {
         else await this.input.api.deliver({ chatId: this.input.config.allowedChatId, contractVersion: "1", text: "Conferma non valida o non più attuale." });
       }
       else if (action.kind === "MISSION_DRAFT" && mission !== undefined) await this.input.api.deliver(await mission.handle(binding, action.updateId, action.payload ?? "/mission"));
-      else if (["REPORT", "WORKFLOW", "WORKFLOWS"].includes(action.kind)) await this.input.api.deliver(await workflow.handle(binding, action.payload ?? `/${action.kind.toLowerCase()}`));
+      else if (["CONTENT_PRODUCTION", "CONTENT_QUEUE", "REPORT", "WORKFLOW", "WORKFLOWS"].includes(action.kind)) await this.input.api.deliver(await workflow.handle(binding, action.payload ?? workflowCommand(action.kind)));
       else if (action.kind === "CANCEL_ACTION" && mission !== undefined) await this.input.api.deliver(mission.cancel(binding, action.updateId));
       else await this.#processStandardAction(binding, action.kind);
       this.#state(() => { this.input.state.complete(action.updateId); });
@@ -104,15 +104,16 @@ export class ControlledTelegramOperatorConsole {
 function response(kind: string, stopConfirmed = false): string {
   const values: Readonly<Record<string, string>> = {
     CANCEL_ACTION: "Azione annullata.",
-    HELP: "Comandi attivi: /start, /help, /status, /mission, /workflow, /workflows, /report, /cancel_action, /stop, /developer.",
+    HELP: "Comandi attivi: /start, /help, /status, /mission, /workflow, /workflows, /report, /productions, /production, /cancel_action, /stop, /developer.",
     DEVELOPER: "Modalità sviluppatore non ancora attiva. La Fase 2 non è stata avviata.",
     MISSION_DRAFT: "Usa /mission per avviare la pianificazione guidata della Missione.",
     SETTINGS: "Impostazioni locali protette. Nessun dato personale Telegram è disponibile.",
-    START: "MV-AI-OS è pronto. Comandi attivi: /help, /status, /mission, /workflows, /cancel_action, /stop.",
+    START: "MV-AI-OS è pronto. Comandi attivi: /help, /status, /mission, /workflows, /productions, /cancel_action, /stop.",
     STATUS: "MV-AI-OS locale è disponibile. Nessuna azione esterna è stata eseguita.",
     STOP: stopConfirmed ? "Processo Telegram arrestato in modo sicuro." : "Conferma l'arresto inviando di nuovo /stop. Nessuna azione Core V1 verrà modificata.",
   };
   return values[kind] ?? "Comando non disponibile.";
 }
+function workflowCommand(kind: string): string { return kind === "CONTENT_QUEUE" ? "/productions" : `/${kind.toLowerCase()}`; }
 function rawUpdateId(value: unknown): string | undefined { return typeof value === "object" && value !== null && "update_id" in value && (typeof value.update_id === "number" || typeof value.update_id === "string") && /^-?[1-9][0-9]{0,18}$/u.test(String(value.update_id)) ? String(value.update_id) : undefined; }
 function isCallbackUpdate(value: unknown): boolean { return typeof value === "object" && value !== null && "callback_query" in value; }

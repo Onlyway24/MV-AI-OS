@@ -6,7 +6,7 @@ Core V1 is a controlled local Mission and Workflow runtime for Fabio. It validat
 
 Every CLI invocation reads one bounded JSON command from standard input, writes one JSON result to standard output, closes the runtime, and performs no unauthorized external action.
 
-Core V1 does not include GPT or Claude calls, provider APIs, tools, browser or network automation, publication, outreach, payments, customer delivery, background workers, scheduling, a Web Console, a public server, or multi-user behavior.
+Core V1 does not include GPT or Claude calls, provider APIs, tools, browser or network automation, publication, outreach, payments, customer delivery, an automatically started background worker or scheduler, a Web Console, a public server, or multi-user behavior. Its controlled production runtime is durable, but runs only when an authorized local operator explicitly requests one worker tick.
 
 ## Build and configure
 
@@ -51,6 +51,9 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `RECORD_METODO_VELOCE_CONTENT_METRICS` | Record declared views, saves, leads, conversions, and cost after separate human confirmation. |
 | `ARCHIVE_METODO_VELOCE_CONTENT` | Remove one active production from the queue without deleting its history. |
 | `LIST_METODO_VELOCE_CONTENT_QUEUE` | Read up to 25 durable content records ordered for operational review. |
+| `ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION` | Validate and durably queue one Metodo Veloce production brief for a controlled worker. |
+| `RUN_PRODUCTION_RUNTIME_ONCE` | Recover expired work, then claim and prepare at most one due production job. |
+| `GET_PRODUCTION_RUNTIME_HEALTH` | Read queue, running, retry, completed, and dead-letter counts without changing state. |
 | `GET_OPERATOR_REPORT` | Get status, blockers, retry state, evidence, and one action. |
 | `EVALUATE_READINESS` | Evaluate exact-version Step readiness without invocation. |
 | `GET_NEXT_CANDIDATE` | Select exactly one controlled Step candidate. |
@@ -85,14 +88,15 @@ Authoritative request shapes are exported TypeScript contracts and exercised in 
 4. After the separate human confirmation of external performance, record metrics,
    inspect the queue, or archive the production. None of those commands publish,
    contact, spend, deploy, or invoke a provider.
-5. Create the reviewed Workflow with `CREATE_WORKFLOW`.
-6. Call `GET_OPERATOR_REPORT` and follow its one `nextAction`.
-7. Call `EVALUATE_READINESS`.
-8. Record required Fabio approval and each Guardian decision independently.
-9. Call `GET_NEXT_CANDIDATE`, then `INVOKE_AGENT`.
-10. Inspect the result with `INSPECT_AGENT_RESULT`.
-11. Use `ACCEPT_OUTCOME` only when evidence is acceptable; otherwise use `REJECT_OUTCOME`, then explicitly classify failure or revise through a later command.
-12. Request a fresh Operator Report after every state change.
+5. For controlled queue processing, submit `ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION`, inspect `GET_PRODUCTION_RUNTIME_HEALTH`, then explicitly submit `RUN_PRODUCTION_RUNTIME_ONCE`. One tick can prepare at most one due job. It has three bounded attempts, an expiring lease for restart recovery, bounded backoff, and a dead-letter queue. It never schedules itself, publishes, or invokes a provider.
+6. Create the reviewed Workflow with `CREATE_WORKFLOW`.
+7. Call `GET_OPERATOR_REPORT` and follow its one `nextAction`.
+8. Call `EVALUATE_READINESS`.
+9. Record required Fabio approval and each Guardian decision independently.
+10. Call `GET_NEXT_CANDIDATE`, then `INVOKE_AGENT`.
+11. Inspect the result with `INSPECT_AGENT_RESULT`.
+12. Use `ACCEPT_OUTCOME` only when evidence is acceptable; otherwise use `REJECT_OUTCOME`, then explicitly classify failure or revise through a later command.
+13. Request a fresh Operator Report after every state change.
 
 The Content Director prepares direction only. It never publishes, contacts anyone, changes external assets, modifies a logo, pays, deploys, or delivers.
 
@@ -104,6 +108,7 @@ The Content Director prepares direction only. It never publishes, contacts anyon
 - Resume: `RESUME_WORKFLOW`, then obtain fresh readiness, policy, approval, Guardian, specification, executor, and version evidence.
 - Cancel: `CANCEL_WORKFLOW` retains completed and failure evidence and claims no compensation.
 - Timeout: `EVALUATE_TIMEOUT` uses the durable reservation timestamp, injected clock, and fixed 60-second local ceiling. Time passing alone does nothing.
+- Production runtime: a `RUN_PRODUCTION_RUNTIME_ONCE` tick first returns an expired lease to retry eligibility, then claims exactly one due job. A failure waits for bounded exponential backoff and reaches `DEAD_LETTER` after the third failed attempt. Inspect health and dead-letter counts; do not alter SQLite or replay jobs manually.
 
 ## Shutdown, restart, and persisted recovery
 

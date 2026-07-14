@@ -2,13 +2,13 @@
 
 ## Milestone name
 
-Workflow Operator — controlled Mission-to-Workflow foundation
+Production Runtime & Telegram Approval Center — controlled foundation
 
 ## Goal
 
-Complete the first professional vertical slice from an approved Mission Plan to a
-durable Workflow, then retain the private-phone Telegram acceptance as the launch gate
-before any continuous operation.
+Deliver a reliable foundation for Metodo Veloce production: durable work queue,
+restart-safe worker ticks, bounded recovery, and private Telegram review. Keep every
+external effect separately authorized and observable before introducing it.
 
 ## Delivered in this slice
 
@@ -24,21 +24,34 @@ before any continuous operation.
   plan, 7-slide carousel, TikTok script, Instagram copy, variants, claim-risk block,
   Quality Guardian report, and weekly metrics plan. It remains preparation-only and
   never publishes automatically.
+- The controlled production runtime now persists jobs, claims at most one due job per
+  requested tick, recovers expired leases after restart, uses bounded retry/backoff,
+  sends exhausted jobs to a dead-letter queue, and exposes safe health counts.
+- Telegram now exposes `/productions` and `/production <id>` in the configured private
+  chat. A waiting production can receive exactly one Fabio approval for the internal
+  calendar through a bound, one-use confirmation; it is never published from Telegram.
 
 ## Required next scope
 
 - Complete the private-phone continuity test: `/mission`, `/mission quick`, then a
   repeated `/mission quick` or `/status` while the same operator remains running.
-- Design the next explicit controls for Guardian evidence and Fabio approval before
-  exposing any agent invocation in Telegram.
-- Design the Telegram-only views and confirmations for the Metodo Veloce production
-  queue, without exposing publication or any external action.
+- Add a Research Agent adapter that accepts only attributable, timestamped evidence and
+  fails closed when no authorized source is available. It must not depend on an OpenAI
+  key or browse the web until those credentials and scopes are deliberately enabled.
+- Design publication adapters as separate, least-privilege integrations: selected
+  channel, asset, planned time, final human confirmation, idempotency key, audit result,
+  and an immediate disable switch. No adapter is authorized yet.
+- Design the external-metrics import boundary with source attribution, time window,
+  deduplication, declared currency, and correction history before continuous
+  improvement is calculated.
 - Keep all Telegram data minimization, replay protection, durable state, private
-  allowlisting, and safe diagnostics intact.
+  allowlisting, safe diagnostics, and cost limits intact.
 
 ## Forbidden scope
 
-- No H24 scheduler, worker, auto-retry loop, or automatic restart yet.
+- No automatically started scheduler, worker loop, automatic restart, or cloud
+  deployment. The existing worker runs only through explicit controlled ticks.
 - No publication, email, CRM change, customer contact, spending, deployment, merge,
   browsing, provider/model call, tool execution, or external action.
+- No use, storage, or request for Fabio's OpenAI key in this scope.
 - No Telegram personal-account observation or Developer Control Plane.

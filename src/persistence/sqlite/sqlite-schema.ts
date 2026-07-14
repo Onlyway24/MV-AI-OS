@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 17;
+export const SQLITE_SCHEMA_VERSION = 18;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -57,6 +57,7 @@ const VERSION_FOURTEEN_TABLES = Object.freeze([...VERSION_THIRTEEN_TABLES, "tele
 const VERSION_FIFTEEN_TABLES = Object.freeze([...VERSION_FOURTEEN_TABLES, "telegram_mission_draft_operations"]);
 const VERSION_SIXTEEN_TABLES = VERSION_FIFTEEN_TABLES;
 const VERSION_SEVENTEEN_TABLES = Object.freeze([...VERSION_SIXTEEN_TABLES, "metodo_veloce_content_productions"]);
+const VERSION_EIGHTEEN_TABLES = Object.freeze([...VERSION_SEVENTEEN_TABLES, "production_runtime_jobs"]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -199,6 +200,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 16, "atomic_telegram_mission_sessions");
     applyMetodoVeloceContentProductionMigration(database);
   }
+  const productionRuntimeVersion = readPragmaInteger(database, "user_version");
+  if (productionRuntimeVersion === 17) {
+    verifyDatabaseIdentity(database, 17);
+    verifyExpectedTables(database, VERSION_SEVENTEEN_TABLES);
+    verifyMigration(database, 17, "durable_metodo_veloce_content_productions");
+    applyProductionRuntimeMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -221,7 +229,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_SEVENTEEN_TABLES);
+  verifyExpectedTables(database, VERSION_EIGHTEEN_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -239,6 +247,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 15, "durable_telegram_mission_drafts");
   verifyMigration(database, 16, "atomic_telegram_mission_sessions");
   verifyMigration(database, 17, "durable_metodo_veloce_content_productions");
+  verifyMigration(database, 18, "durable_production_runtime_jobs");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -937,6 +946,35 @@ function applyMetodoVeloceContentProductionMigration(database: DatabaseSync): vo
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Metodo Veloce content production migration failed");
+  }
+}
+
+function applyProductionRuntimeMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE production_runtime_jobs (
+        job_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('COMPLETED', 'DEAD_LETTER', 'QUEUED', 'RETRY_SCHEDULED', 'RUNNING')),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        run_after TEXT NOT NULL,
+        lease_expires_at TEXT,
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX production_runtime_jobs_next
+        ON production_runtime_jobs (workspace_id, status, run_after, job_id);
+      CREATE INDEX production_runtime_jobs_lease
+        ON production_runtime_jobs (workspace_id, status, lease_expires_at, job_id);
+      INSERT INTO schema_migrations (version, name) VALUES (18, 'durable_production_runtime_jobs');
+      PRAGMA user_version = 18;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Production Runtime migration failed");
   }
 }
 
