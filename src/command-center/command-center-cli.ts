@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 import { MAX_LOCAL_CLI_CONFIG_BYTES, type LocalCliConfig } from "../cli/local-cli-config.js";
 import { LocalCliConfigValidator } from "../cli/local-cli-config-validator.js";
 import { SqliteRepositoryTransactionRunner } from "../persistence/sqlite/sqlite-repository-transaction-runner.js";
+import { createLocalWorkflowCommandBoundary } from "../runtime/create-local-workflow-command-boundary.js";
+import { CommandCenterActionService } from "./command-center-action-service.js";
 import { CommandCenterQueryService } from "./command-center-query-service.js";
 import { PrivateCommandCenterServer } from "./command-center-server.js";
 
@@ -16,6 +18,17 @@ export async function runCommandCenterCli(arguments_: readonly string[]): Promis
   const config = parseConfig(await readBoundedFile(configPath));
   const repositories = new SqliteRepositoryTransactionRunner(config.runtime.sqlite);
   const server = new PrivateCommandCenterServer({
+    actionService: new CommandCenterActionService({
+      actorId: config.runtime.actorId,
+      commands: createLocalWorkflowCommandBoundary({
+        actorId: config.runtime.actorId,
+        clock: systemClock,
+        repositories,
+        workspaceId: config.runtime.workspaceId,
+      }),
+      repositories,
+      workspaceId: config.runtime.workspaceId,
+    }),
     queryService: new CommandCenterQueryService({
       repositories,
       workspaceId: config.runtime.workspaceId,
@@ -41,6 +54,8 @@ export async function runCommandCenterCli(arguments_: readonly string[]): Promis
   process.on("SIGINT", onSignal);
   process.on("SIGTERM", onSignal);
 }
+
+const systemClock = Object.freeze({ now: () => new Date() });
 
 function parseArguments(arguments_: readonly string[]): string {
   if (arguments_.length !== 2 || arguments_[0] !== "--config") {

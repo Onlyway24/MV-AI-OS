@@ -23,14 +23,31 @@ export class OperationalPlaneService {
   }
 
   public async recordEvidence(input: EvidenceRecordRequest): Promise<EvidenceRecord> {
+    const records = await this.recordEvidenceBatch([input]);
+    const record = records[0];
+    if (record === undefined) throw new RepositoryValidationError("Evidence record batch returned no result");
+    return record;
+  }
+
+  public async recordEvidenceBatch(inputs: readonly EvidenceRecordRequest[]): Promise<readonly EvidenceRecord[]> {
+    if (inputs.length < 1 || inputs.length > 18 || new Set(inputs.map(({ evidenceId }) => evidenceId)).size !== inputs.length) throw new RepositoryValidationError("Evidence record batch must contain unique bounded evidence IDs");
     const acquiredAt = this.#now();
-    const candidate: EvidenceRecord = { ...input, acquiredAt, actorId: this.dependencies.actorId, version: 0, workspaceId: this.dependencies.workspaceId };
+    const candidates: readonly EvidenceRecord[] = Object.freeze(inputs.map((input) => Object.freeze({ ...input, acquiredAt, actorId: this.dependencies.actorId, version: 0 as const, workspaceId: this.dependencies.workspaceId })));
     return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
-      const source = await this.#ownedSource(operationalPlanes, candidate.sourceId);
-      if (await operationalPlanes.getEvidenceById(candidate.evidenceId) !== undefined) throw new RepositoryConflictError("Evidence record already exists");
-      this.#assertEvidencePolicy(candidate, source);
-      if (candidate.status === "VERIFIED") await this.#assertCorroboration(candidate, source, operationalPlanes);
-      await operationalPlanes.insertEvidence(candidate); return candidate;
+      const sources = new Map<string, SourceRegistryEntry>();
+      for (const candidate of candidates) {
+        if (await operationalPlanes.getEvidenceById(candidate.evidenceId) !== undefined) throw new RepositoryConflictError("Evidence record already exists");
+        const source = sources.get(candidate.sourceId) ?? await this.#ownedSource(operationalPlanes, candidate.sourceId);
+        sources.set(candidate.sourceId, source);
+        this.#assertEvidencePolicy(candidate, source);
+      }
+      for (const candidate of candidates) {
+        const source = sources.get(candidate.sourceId);
+        if (source === undefined) throw new RepositoryConflictError("Evidence source is unavailable");
+        if (candidate.status === "VERIFIED") await this.#assertBatchCorroboration(candidate, source, operationalPlanes, candidates);
+      }
+      for (const candidate of candidates) await operationalPlanes.insertEvidence(candidate);
+      return candidates;
     });
   }
 
@@ -181,10 +198,19 @@ export class OperationalPlaneService {
     const claimIds = new Set(evidence.claimMappings.map(({ claimId }) => claimId));
     if (!corroborations.some((item) => item?.workspaceId === this.dependencies.workspaceId && item.status === "VERIFIED" && item.sourceId !== evidence.sourceId && item.claimMappings.some(({ claimId }) => claimIds.has(claimId)))) throw new RepositoryValidationError("Verified high-risk or corroborated evidence requires an independent supporting source");
   }
+  async #assertBatchCorroboration(evidence: EvidenceRecord, source: SourceRegistryEntry, repository: OperationalPlaneRepository, candidates: readonly EvidenceRecord[]): Promise<void> {
+    const needsSecondSource = source.requiresSecondSource || evidence.riskDomain !== "GENERAL";
+    if (!needsSecondSource) return;
+    const candidateIds = new Set(evidence.corroboratingEvidenceIds);
+    const batchSupports = candidates.some((item) => candidateIds.has(item.evidenceId) && item.status === "VERIFIED" && item.sourceId !== evidence.sourceId && sharesClaim(item, evidence));
+    if (batchSupports) return;
+    await this.#assertCorroboration(evidence, source, repository);
+  }
   #now(): string { const value = this.dependencies.clock.now(); if (Number.isNaN(value.getTime())) throw new RepositoryValidationError("Operational plane clock is invalid"); return value.toISOString(); }
 }
 
 function fingerprint(value: unknown): string { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }
+function sharesClaim(left: EvidenceRecord, right: EvidenceRecord): boolean { const claims = new Set(right.claimMappings.map(({ claimId }) => claimId)); return left.claimMappings.some(({ claimId }) => claims.has(claimId)); }
 
 function referenceWithinAuthorizedSource(reference: string, canonicalReference: string): boolean {
   try {

@@ -1,0 +1,11 @@
+{
+  "actorId": "actor-local",
+  "commandId": "import-flashnotizie24-observation-2026-07-16",
+  "contractVersion": "1",
+  "input": {
+    "batchId": "flashnotizie24-observation-2026-07-16",
+    "csv": "observation_id,competitor_record_id,observed_at,source_url,source_excerpt,format,frequency,hook,cover_pattern,call_to_action,audio,hashtags,topics,repetitions,visible_engagement,editorial_gap\ncompetitor-observation-flashnotizie24-20260716,competitor-instagram-flashnotizie24,2026-07-16T00:15:00.000Z,https://www.instagram.com/flashnotizie24/reel/Da0eRRSiYl0/,\"Post pubblico diretto del 15 luglio 2026 osservato in sola lettura; cover tipo poster con headline molto grande su notizia di cronaca; 98 Mi piace visibili al momento dell'acquisizione.\",REEL_COVER,PLURIQUOTIDIANA_VISIBILE,\"Condanna definitiva per il gioielliere di Cuneo\",\"Poster verticale ad alto contrasto con marchio ricorrente titolo principale dominante testo secondario e indicatore Ultim'ora\",\"Invito a seguire il profilo per notizie e video\",,\"viral|cronaca\",\"hook visuale|headline|cover|contrasto\",\"titolo dominante|marchio ricorrente|palette ad alto contrasto\",98,\"Riferimento utile soltanto per forza della cover gerarchia headline e leggibilità; Metodo Veloce deve mantenere identità propria evitare toni sensazionalistici e non usarlo per claim economici o di rivendita\"\n"
+  },
+  "operation": "IMPORT_SOCIAL_COMPETITOR_OBSERVATIONS_CSV",
+  "workspaceId": "workspace-local"
+}

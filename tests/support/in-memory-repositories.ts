@@ -70,11 +70,23 @@ import type { Validator } from "../../src/validation/validation.js";
 import type { EvidencePack, EvidenceRecord, FeedbackMetricSnapshot, PublicationKillSwitch, PublicationPlan, SourceRegistryEntry } from "../../src/operational-planes/operational-plane.js";
 import { isPublicationTransitionAllowed } from "../../src/operational-planes/operational-plane.js";
 import { EvidencePackValidator, EvidenceRecordValidator, FeedbackMetricSnapshotValidator, PublicationKillSwitchValidator, PublicationPlanValidator, SourceRegistryEntryValidator } from "../../src/operational-planes/operational-plane-validator.js";
+import type { BusinessMissionDossier } from "../../src/business/business-mission.js";
+import { BusinessMissionDossierValidator } from "../../src/business/business-mission-validator.js";
+import type { AgentCompanyWorkday } from "../../src/agent-company/operational-agent-company.js";
+import { AgentCompanyWorkdayValidator } from "../../src/agent-company/operational-agent-company-validator.js";
+import type { AuthorizedResearchMission, ResearchAcquisitionSnapshot } from "../../src/research/authorized-research.js";
+import { AuthorizedResearchMissionValidator, ResearchAcquisitionSnapshotValidator } from "../../src/research/authorized-research-validator.js";
+import type { SocialLiveRecord } from "../../src/social-intelligence-live/social-intelligence-live.js";
+import { SocialLiveRecordValidator } from "../../src/social-intelligence-live/social-intelligence-live-validator.js";
 
 const REQUEST_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/u;
 
 interface RepositoryState {
+  readonly agentCompanyWorkdays: Map<string, AgentCompanyWorkday>;
+  readonly authorizedResearchMissions: Map<string, AuthorizedResearchMission>;
+  readonly authorizedResearchSnapshots: Map<string, ResearchAcquisitionSnapshot>;
   readonly audits: Map<string, AuditEvent>;
+  readonly businessMissions: Map<string, BusinessMissionDossier>;
   readonly requests: Map<string, StoredRequest>;
   readonly tasks: Map<string, TaskRecord>;
   readonly workflowCommandReceipts: Map<string, WorkflowCommandReceipt>;
@@ -99,6 +111,7 @@ interface RepositoryState {
   readonly publicationPlans: Map<string, PublicationPlan>;
   readonly publicationKillSwitches: Map<string, PublicationKillSwitch>;
   readonly feedbackMetricSnapshots: Map<string, FeedbackMetricSnapshot>;
+  readonly socialLiveRecords: Map<string, SocialLiveRecord>;
   workflowControlCheckpointEventSequence: number;
   workflowEventSequence: number;
 }
@@ -131,7 +144,10 @@ function createRepositories(
   state: RepositoryState,
 ): RepositoryTransaction {
   return Object.freeze({
+    agentCompanyWorkdays: new InMemoryAgentCompanyWorkdayRepository(state),
+    authorizedResearch: new InMemoryAuthorizedResearchRepository(state),
     audits: new InMemoryAuditRepository(state),
+    businessMissions: new InMemoryBusinessMissionRepository(state),
     contentProductions: new InMemoryMetodoVeloceContentProductionRepository(state),
     productionRuntimeJobs: new InMemoryProductionRuntimeJobRepository(state),
     operationalPlanes: new InMemoryOperationalPlaneRepository(state),
@@ -153,6 +169,41 @@ function createRepositories(
       stepOutcomes: new InMemoryWorkflowStepOutcomeRepository(state),
     }),
   });
+}
+
+class InMemoryAgentCompanyWorkdayRepository {
+  readonly #validator = new AgentCompanyWorkdayValidator();
+  public constructor(private readonly state: RepositoryState) {}
+  public getById(workdayId: string): Promise<AgentCompanyWorkday | undefined> { return Promise.resolve(cloneOptional(this.state.agentCompanyWorkdays.get(workdayId))); }
+  public insert(record: AgentCompanyWorkday): Promise<void> { const checked = this.#valid(record); if (checked.version !== 0 || this.state.agentCompanyWorkdays.has(checked.workdayId)) throw new RepositoryConflictError("Agent Company workday already exists"); this.state.agentCompanyWorkdays.set(checked.workdayId, cloneFrozen(checked)); return Promise.resolve(); }
+  public listByWorkspaceId(workspaceId: string, limit: number): Promise<readonly AgentCompanyWorkday[]> { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new RepositoryValidationError("Agent Company workday limit is invalid"); return Promise.resolve(Object.freeze([...this.state.agentCompanyWorkdays.values()].filter((record) => record.workspaceId === workspaceId).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || left.workdayId.localeCompare(right.workdayId)).slice(0, limit).map(cloneFrozen))); }
+  public update(record: AgentCompanyWorkday, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(record); const current = this.state.agentCompanyWorkdays.get(checked.workdayId); if (current?.version !== expectation.version || checked.version !== expectation.version + 1 || current.inputFingerprint !== checked.inputFingerprint || current.status !== "RUNNING") throw new RepositoryConflictError("Agent Company workday transition is invalid"); this.state.agentCompanyWorkdays.set(checked.workdayId, cloneFrozen(checked)); return Promise.resolve(); }
+  #valid(value: unknown): AgentCompanyWorkday { const result = this.#validator.validate(value); if (!result.ok) throw new RepositoryValidationError("Agent Company workday is invalid"); return result.value; }
+}
+
+class InMemoryAuthorizedResearchRepository {
+  readonly #mission = new AuthorizedResearchMissionValidator();
+  readonly #snapshot = new ResearchAcquisitionSnapshotValidator();
+  public constructor(private readonly state: RepositoryState) {}
+  public getMissionById(missionId: string): Promise<AuthorizedResearchMission | undefined> { return Promise.resolve(cloneOptional(this.state.authorizedResearchMissions.get(missionId))); }
+  public getSnapshotById(snapshotId: string): Promise<ResearchAcquisitionSnapshot | undefined> { return Promise.resolve(cloneOptional(this.state.authorizedResearchSnapshots.get(snapshotId))); }
+  public insertMission(mission: AuthorizedResearchMission): Promise<void> { const checked = this.#validMission(mission); if (checked.version !== 0 || checked.status !== "RUNNING" || this.state.authorizedResearchMissions.has(checked.input.missionId)) throw new RepositoryConflictError("Authorized Research Mission already exists"); this.state.authorizedResearchMissions.set(checked.input.missionId, cloneFrozen(checked)); return Promise.resolve(); }
+  public insertSnapshot(snapshot: ResearchAcquisitionSnapshot): Promise<void> { const checked = this.#validSnapshot(snapshot); if (this.state.authorizedResearchSnapshots.has(checked.snapshotId)) throw new RepositoryConflictError("Authorized Research snapshot already exists"); this.state.authorizedResearchSnapshots.set(checked.snapshotId, cloneFrozen(checked)); return Promise.resolve(); }
+  public listMissionsByWorkspaceId(workspaceId: string, limit: number): Promise<readonly AuthorizedResearchMission[]> { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new RepositoryValidationError("Authorized Research list limit is invalid"); return Promise.resolve(Object.freeze([...this.state.authorizedResearchMissions.values()].filter((mission) => mission.workspaceId === workspaceId).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || left.input.missionId.localeCompare(right.input.missionId)).slice(0, limit).map(cloneFrozen))); }
+  public listSnapshotsByMissionId(missionId: string): Promise<readonly ResearchAcquisitionSnapshot[]> { return Promise.resolve(Object.freeze([...this.state.authorizedResearchSnapshots.values()].filter((snapshot) => snapshot.missionId === missionId).sort((left, right) => left.acquiredAt.localeCompare(right.acquiredAt) || left.snapshotId.localeCompare(right.snapshotId)).map(cloneFrozen))); }
+  public updateMission(mission: AuthorizedResearchMission, expectation: { readonly version: number }): Promise<void> { const checked = this.#validMission(mission); const current = this.state.authorizedResearchMissions.get(checked.input.missionId); if (current?.version !== expectation.version || current.status !== "RUNNING" || checked.version !== expectation.version + 1 || !["BLOCKED", "READY"].includes(checked.status) || current.inputFingerprint !== checked.inputFingerprint) throw new RepositoryConflictError("Authorized Research Mission transition is invalid"); this.state.authorizedResearchMissions.set(checked.input.missionId, cloneFrozen(checked)); return Promise.resolve(); }
+  #validMission(value: unknown): AuthorizedResearchMission { const checked = this.#mission.validate(value); if (!checked.ok) throw new RepositoryValidationError("Authorized Research Mission is invalid"); return checked.value; }
+  #validSnapshot(value: unknown): ResearchAcquisitionSnapshot { const checked = this.#snapshot.validate(value); if (!checked.ok) throw new RepositoryValidationError("Authorized Research snapshot is invalid"); return checked.value; }
+}
+
+class InMemoryBusinessMissionRepository {
+  readonly #validator = new BusinessMissionDossierValidator();
+  public constructor(private readonly state: RepositoryState) {}
+  public getById(missionId: string): Promise<BusinessMissionDossier | undefined> { return Promise.resolve(cloneOptional(this.state.businessMissions.get(missionId))); }
+  public insert(record: BusinessMissionDossier): Promise<void> { const checked = this.#valid(record); if (checked.version !== 0 || this.state.businessMissions.has(checked.mission.missionId)) throw new RepositoryConflictError("Business Mission dossier already exists"); this.state.businessMissions.set(checked.mission.missionId, cloneFrozen(checked)); return Promise.resolve(); }
+  public listByWorkspaceId(workspaceId: string, limit: number): Promise<readonly BusinessMissionDossier[]> { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new RepositoryValidationError("Business Mission list limit is invalid"); return Promise.resolve(Object.freeze([...this.state.businessMissions.values()].filter((record) => record.workspaceId === workspaceId).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || left.mission.missionId.localeCompare(right.mission.missionId)).slice(0, limit).map(cloneFrozen))); }
+  public update(record: BusinessMissionDossier, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(record); const current = this.state.businessMissions.get(checked.mission.missionId); if (current?.version !== expectation.version || checked.version !== expectation.version + 1 || current.fingerprint !== checked.fingerprint || current.status !== "PENDING_FABIO_APPROVAL" || !["APPROVED", "REJECTED", "REVISION_REQUESTED"].includes(checked.status)) throw new RepositoryConflictError("Business Mission dossier transition is invalid"); this.state.businessMissions.set(checked.mission.missionId, cloneFrozen(checked)); return Promise.resolve(); }
+  #valid(value: unknown): BusinessMissionDossier { const checked = this.#validator.validate(value); if (!checked.ok) throw new RepositoryValidationError("Business Mission dossier is invalid"); return checked.value; }
 }
 
 class InMemoryLocalWorkflowCommandRepository {
@@ -189,7 +240,7 @@ class InMemoryProductionRuntimeJobRepository {
 }
 
 class InMemoryOperationalPlaneRepository {
-  readonly #evidence = new EvidenceRecordValidator(); readonly #evidencePack = new EvidencePackValidator(); readonly #feedback = new FeedbackMetricSnapshotValidator(); readonly #kill = new PublicationKillSwitchValidator(); readonly #publication = new PublicationPlanValidator(); readonly #source = new SourceRegistryEntryValidator();
+  readonly #evidence = new EvidenceRecordValidator(); readonly #evidencePack = new EvidencePackValidator(); readonly #feedback = new FeedbackMetricSnapshotValidator(); readonly #kill = new PublicationKillSwitchValidator(); readonly #publication = new PublicationPlanValidator(); readonly #source = new SourceRegistryEntryValidator(); readonly #socialLive = new SocialLiveRecordValidator();
   public constructor(private readonly state: RepositoryState) {}
   public getSourceById(sourceId: string): Promise<SourceRegistryEntry | undefined> { return Promise.resolve(cloneOptional(this.state.sources.get(sourceId))); }
   public getEvidenceById(evidenceId: string): Promise<EvidenceRecord | undefined> { return Promise.resolve(cloneOptional(this.state.evidenceRecords.get(evidenceId))); }
@@ -197,17 +248,20 @@ class InMemoryOperationalPlaneRepository {
   public getPublicationById(publicationId: string): Promise<PublicationPlan | undefined> { return Promise.resolve(cloneOptional(this.state.publicationPlans.get(publicationId))); }
   public getPublicationKillSwitch(workspaceId: string): Promise<PublicationKillSwitch | undefined> { return Promise.resolve(cloneOptional(this.state.publicationKillSwitches.get(workspaceId))); }
   public getFeedbackSnapshotById(snapshotId: string): Promise<FeedbackMetricSnapshot | undefined> { return Promise.resolve(cloneOptional(this.state.feedbackMetricSnapshots.get(snapshotId))); }
+  public getSocialLiveRecordById(recordId: string): Promise<SocialLiveRecord | undefined> { return Promise.resolve(cloneOptional(this.state.socialLiveRecords.get(recordId))); }
   public insertSource(record: SourceRegistryEntry): Promise<void> { const checked = this.#valid(record, this.#source, "Evidence source"); if (this.state.sources.has(checked.sourceId)) throw new RepositoryConflictError("Evidence source already exists"); this.state.sources.set(checked.sourceId, cloneFrozen(checked)); return Promise.resolve(); }
   public insertEvidence(record: EvidenceRecord): Promise<void> { const checked = this.#valid(record, this.#evidence, "Evidence record"); if (this.state.evidenceRecords.has(checked.evidenceId)) throw new RepositoryConflictError("Evidence record already exists"); this.state.evidenceRecords.set(checked.evidenceId, cloneFrozen(checked)); return Promise.resolve(); }
   public insertEvidencePack(record: EvidencePack): Promise<void> { const checked = this.#valid(record, this.#evidencePack, "Evidence Pack"); if (this.state.evidencePacks.has(checked.packId)) throw new RepositoryConflictError("Evidence Pack already exists"); this.state.evidencePacks.set(checked.packId, cloneFrozen(checked)); return Promise.resolve(); }
   public insertPublication(record: PublicationPlan): Promise<void> { const checked = this.#valid(record, this.#publication, "Publication plan"); if (checked.version !== 0 || checked.status !== "DRY_RUN" || this.state.publicationPlans.has(checked.publicationId) || [...this.state.publicationPlans.values()].some((item) => item.workspaceId === checked.workspaceId && item.idempotencyKey === checked.idempotencyKey)) throw new RepositoryConflictError("Publication plan already exists"); this.state.publicationPlans.set(checked.publicationId, cloneFrozen(checked)); return Promise.resolve(); }
   public insertFeedbackSnapshot(record: FeedbackMetricSnapshot): Promise<void> { const checked = this.#valid(record, this.#feedback, "Feedback metric snapshot"); if (this.state.feedbackMetricSnapshots.has(checked.snapshotId)) throw new RepositoryConflictError("Feedback metric snapshot already exists"); this.state.feedbackMetricSnapshots.set(checked.snapshotId, cloneFrozen(checked)); return Promise.resolve(); }
+  public insertSocialLiveRecord(record: SocialLiveRecord): Promise<void> { const checked = this.#valid(record, this.#socialLive, "Social Intelligence Live record"); if (this.state.socialLiveRecords.has(checked.recordId)) throw new RepositoryConflictError("Social Intelligence Live record already exists"); this.state.socialLiveRecords.set(checked.recordId, cloneFrozen(checked)); return Promise.resolve(); }
   public updatePublication(record: PublicationPlan, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(record, this.#publication, "Publication plan"); const current = this.state.publicationPlans.get(checked.publicationId); if (current === undefined) throw new RepositoryConflictError("Publication plan transition is invalid"); if (current.version !== expectation.version || checked.version !== expectation.version + 1 || !isPublicationTransitionAllowed(current.status, checked.status) || !samePublicationIdentity(current, checked)) throw new RepositoryConflictError("Publication plan transition is invalid"); this.state.publicationPlans.set(checked.publicationId, cloneFrozen(checked)); return Promise.resolve(); }
   public upsertPublicationKillSwitch(record: PublicationKillSwitch, expectation: { readonly version: number }): Promise<void> { const checked = this.#valid(record, this.#kill, "Publication kill switch"); const current = this.state.publicationKillSwitches.get(checked.workspaceId); if ((current?.version ?? 0) !== expectation.version || checked.version !== expectation.version + 1) throw new RepositoryConflictError("Publication kill switch changed during update"); this.state.publicationKillSwitches.set(checked.workspaceId, cloneFrozen(checked)); return Promise.resolve(); }
   public listFeedbackSnapshots(publicationId: string): Promise<readonly FeedbackMetricSnapshot[]> { return Promise.resolve(Object.freeze([...this.state.feedbackMetricSnapshots.values()].filter((item) => item.publicationId === publicationId).sort((left, right) => left.capturedAt.localeCompare(right.capturedAt) || left.snapshotId.localeCompare(right.snapshotId)).map(cloneFrozen))); }
   public listSourcesByWorkspaceId(workspaceId: string, limit: number): Promise<readonly SourceRegistryEntry[]> { return Promise.resolve(this.#list(this.state.sources.values(), workspaceId, limit, (item) => item.sourceId)); }
   public listEvidenceByWorkspaceId(workspaceId: string, limit: number): Promise<readonly EvidenceRecord[]> { return Promise.resolve(this.#list(this.state.evidenceRecords.values(), workspaceId, limit, (item) => item.evidenceId)); }
   public listEvidencePacksByWorkspaceId(workspaceId: string, limit: number): Promise<readonly EvidencePack[]> { return Promise.resolve(this.#list(this.state.evidencePacks.values(), workspaceId, limit, (item) => item.packId)); }
+  public listSocialLiveRecordsByWorkspaceId(workspaceId: string, limit: number): Promise<readonly SocialLiveRecord[]> { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) throw new RepositoryValidationError("Social Intelligence Live list limit is invalid"); return Promise.resolve(Object.freeze([...this.state.socialLiveRecords.values()].filter((item) => item.workspaceId === workspaceId).sort((left, right) => left.importedAt.localeCompare(right.importedAt) || left.recordId.localeCompare(right.recordId)).slice(0, limit).map(cloneFrozen))); }
   #list<T extends { readonly workspaceId: string }>(items: Iterable<T>, workspaceId: string, limit: number, identifier: (item: T) => string): readonly T[] { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new RepositoryValidationError("Operational plane list limit is invalid"); return Object.freeze([...items].filter((item) => item.workspaceId === workspaceId).sort((left, right) => identifier(left).localeCompare(identifier(right))).slice(0, limit).map(cloneFrozen)); }
   #valid<T>(value: unknown, validator: Validator<T>, label: string): T { const checked = validator.validate(value); if (!checked.ok) throw new RepositoryValidationError(`${label} is invalid`); return checked.value; }
 }
@@ -1068,7 +1122,11 @@ class InMemoryWorkflowControlCheckpointEventRepository {
 
 function createState(): RepositoryState {
   return {
+    agentCompanyWorkdays: new Map(),
+    authorizedResearchMissions: new Map(),
+    authorizedResearchSnapshots: new Map(),
     audits: new Map(),
+    businessMissions: new Map(),
     requests: new Map(),
     tasks: new Map(),
     workflowCommandReceipts: new Map(),
@@ -1095,14 +1153,19 @@ function createState(): RepositoryState {
     publicationPlans: new Map(),
     publicationKillSwitches: new Map(),
     feedbackMetricSnapshots: new Map(),
+    socialLiveRecords: new Map(),
   };
 }
 
 function cloneState(state: RepositoryState): RepositoryState {
   return {
+    agentCompanyWorkdays: new Map([...state.agentCompanyWorkdays].map(([key, value]) => [key, cloneFrozen(value)])),
+    authorizedResearchMissions: new Map([...state.authorizedResearchMissions].map(([key, value]) => [key, cloneFrozen(value)])),
+    authorizedResearchSnapshots: new Map([...state.authorizedResearchSnapshots].map(([key, value]) => [key, cloneFrozen(value)])),
     audits: new Map(
       [...state.audits].map(([key, value]) => [key, cloneFrozen(value)]),
     ),
+    businessMissions: new Map([...state.businessMissions].map(([key, value]) => [key, cloneFrozen(value)])),
     requests: new Map(
       [...state.requests].map(([key, value]) => [
         key,
@@ -1162,6 +1225,7 @@ function cloneState(state: RepositoryState): RepositoryState {
     publicationPlans: new Map([...state.publicationPlans].map(([key, value]) => [key, cloneFrozen(value)])),
     publicationKillSwitches: new Map([...state.publicationKillSwitches].map(([key, value]) => [key, cloneFrozen(value)])),
     feedbackMetricSnapshots: new Map([...state.feedbackMetricSnapshots].map(([key, value]) => [key, cloneFrozen(value)])),
+    socialLiveRecords: new Map([...state.socialLiveRecords].map(([key, value]) => [key, cloneFrozen(value)])),
   };
 }
 

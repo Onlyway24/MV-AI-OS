@@ -1,0 +1,11 @@
+{
+  "actorId": "actor-local",
+  "commandId": "import-audio-rights-cml-verification-2026-07-16-v1",
+  "contractVersion": "1",
+  "input": {
+    "batchId": "audio-rights-cml-verification-2026-07-16-v1",
+    "csv": "observation_id,audio_id,title,platform,account_ref,country,available,account_compatibility,commercial_use,mood,observed_at,expires_at,saturation\naudio-check-cml-no-account-20260716,no-authorized-result,Nessun audio account-specifico verificabile,TIKTOK,metodo-veloce-tiktok-non-registrato,IT,false,UNKNOWN,NOT_AUTHORIZED,NON_APPLICABILE,2026-07-15T22:55:00.000Z,2026-07-16T22:55:00.000Z,\n"
+  },
+  "operation": "IMPORT_SOCIAL_AUDIO_RIGHTS_CSV",
+  "workspaceId": "workspace-local"
+}

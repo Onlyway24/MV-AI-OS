@@ -1,0 +1,29 @@
+{
+  "actorId": "actor-local",
+  "commandId": "record-telotrovosu-public-evidence-2026-07-16-v1",
+  "contractVersion": "1",
+  "input": {
+    "claimMappings": [
+      {
+        "claimId": "telotrovosu-public-format-claim-20260716",
+        "statement": "Il post osservato usa una selezione second-hand collegata a newsletter e prodotti."
+      }
+    ],
+    "contentPublishedAt": "2026-07-05T00:00:00.000Z",
+    "corroboratingEvidenceIds": [],
+    "evidenceId": "evidence-telotrovosu-public-post-20260716",
+    "excerpt": "Il carosello pubblico osservato il 5 luglio 2026 presenta una selezione di articoli second-hand collegata a una newsletter e ai link dei prodotti.",
+    "fingerprint": "15b18132427aeca5c93de28f6c79781ce838366992f3c6143cf6013057f245ce",
+    "freshnessExpiresAt": "2026-07-22T22:38:54.000Z",
+    "limitations": [
+      "L'ora di pubblicazione non è esposta e la data è normalizzata a mezzanotte UTC.",
+      "L'osservazione descrive il formato e non prova domanda commerciale o risultati economici."
+    ],
+    "riskDomain": "GENERAL",
+    "sourceId": "social-instagram-telotrovosu-post-20260705",
+    "sourceReference": "https://www.instagram.com/telotrovosu/p/DabFuDbjU3V/",
+    "status": "VERIFIED"
+  },
+  "operation": "RECORD_EVIDENCE",
+  "workspaceId": "workspace-local"
+}

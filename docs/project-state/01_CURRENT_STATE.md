@@ -1495,26 +1495,60 @@ chapter.
   local, validated, version-bound, durable, and non-external.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
+- The local command boundary exposes 54 allowlisted operations, including durable
+  Business Mission and Agent Company commands. `RUN_AGENT_COMPANY_WORKDAY` executes
+  one coherent local workday across 17 versioned departments, persists every task
+  transition, structured output fingerprint, measured duration/cost and Quality /
+  Risk / Cost Gate, and stops in `AWAITING_FABIO` without external actions.
+- Reopening the same SQLite database resumes an incomplete Agent Company workday and
+  idempotently returns an already completed one. The end-to-end test verifies all 17
+  departments, 51 Gate results, Business dossier, Evidence Packs, Metodo Veloce
+  package, restart recovery, command replay, metrics and Command Center projection.
+- The private loopback-only Centro di Comando Onlyway is implemented. Its Agent
+  Company section reads the operational catalog and durable workdays from the same
+  repository boundary and renders executor, task, state, blocker, Gate, fingerprint,
+  cost and duration without synthetic telemetry.
+- The Metodo Veloce Social Intelligence vertical slice validates provenance-bound
+  audience, trend, competitor, hashtag, audio-rights, scheduling, brand, conversion,
+  risk and fatigue signals; calculates a deterministic 12-criterion Opportunity
+  Score without imputing missing data; creates one fingerprinted six-slide Social
+  Publishing Pack; binds it to an authorized Evidence Pack; persists it through the
+  local command boundary; and projects the daily decision report in the private
+  Command Center. Publication and all other external actions remain disabled.
+- The Social Intelligence Live data plane persists append-only account, analytics,
+  trend, authorized-competitor observation, audio-rights and controlled experiment
+  records in SQLite. Four bounded official sources are registered through the same
+  command boundary. Multi-record imports support dry-run, atomic commit, fingerprinted
+  replay and all-or-nothing failure; a strict analytics CSV adapter preserves blank
+  metrics as missing. The live report exposes acquisition readiness while continuing
+  to show zero real observations until attributable exports are imported.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
   permanent strategic doctrine before reading project-state and implementing the
   exact next milestone.
 
-There is no HTTP service, dashboard, background server, or default live-provider test
-path.
+There is no network-exposed HTTP service, autonomous background Agent Company worker,
+or default live-provider test path. The existing private dashboard binds only to
+`127.0.0.1`, requires a local authenticated session and shares the validated command
+and repository boundaries.
 
 ## Not implemented yet
 
 - Universal runtime enforcement of Agent Specifications for all executors.
 - Automatic Workflow dependency scheduling, automatic retry, or n8n.
-- Real tool implementations or direct tool execution.
+- General-purpose real tool execution for Agent Company roles. The V1 executors are
+  bounded deterministic local tasks; Developer is change-plan only and Research
+  compiles already acquired authorized evidence.
 - Live-provider integration test gating, provider telemetry, durable model usage
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
-  dashboards, and external notification channels.
-- Approval UI/transport and autonomous Guardian evaluation.
+  external notification channels, and external metrics connectors.
+- Approval UI for an entire Agent Company workday and autonomous Guardian evaluation.
 - General Workflow Specification admission into the durable Core V1 command path.
 - Workflow lifecycle cancellation propagation beyond durable local Workflow state.
 - Any model/provider/tool/network/browser/external execution from a workflow candidate.
 - Production secret management.
-- HTTP, webhook, schedule, dashboard, or other transport adapters.
+- Network-facing HTTP, webhook, H24 schedule, or multi-user transport adapters.
+- Automated Google Trends, TikTok Creative Center, Instagram Insights or Commercial
+  Music Library acquisition connectors. Their Source Registry entries exist, but no
+  observation is inferred merely because a source has been authorized.
 - Cancellation propagation, production retry budgets, operational health checks,
   metrics exporters, deployment packaging, and multi-user authentication.

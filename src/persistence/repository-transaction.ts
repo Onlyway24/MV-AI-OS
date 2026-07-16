@@ -6,9 +6,15 @@ import type { LocalWorkflowCommandRepository } from "../runtime/local-workflow-c
 import type { MetodoVeloceContentProductionRepository } from "../content-production/metodo-veloce-content-production-repository.js";
 import type { ProductionRuntimeJobRepository } from "../production-runtime/production-runtime-job-repository.js";
 import type { OperationalPlaneRepository } from "../operational-planes/operational-plane-repository.js";
+import type { BusinessMissionRepository } from "../business/business-mission-repository.js";
+import type { AgentCompanyWorkdayRepository } from "../agent-company/agent-company-workday-repository.js";
+import type { AuthorizedResearchRepository } from "../research/authorized-research-repository.js";
 
 export interface RepositoryTransaction {
+  readonly agentCompanyWorkdays: AgentCompanyWorkdayRepository;
+  readonly authorizedResearch: AuthorizedResearchRepository;
   readonly audits: AuditRepository;
+  readonly businessMissions: BusinessMissionRepository;
   readonly contentProductions: MetodoVeloceContentProductionRepository;
   readonly productionRuntimeJobs: ProductionRuntimeJobRepository;
   readonly operationalPlanes: OperationalPlaneRepository;

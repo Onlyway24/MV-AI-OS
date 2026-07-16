@@ -26,6 +26,13 @@ import { createWorkflowControlCheckpointService } from "../workflows/runtime/wor
 import { createWorkflowOperatorReportService } from "../workflows/runtime/workflow-operator-report.js";
 import { createWorkflowReadinessService } from "../workflows/runtime/workflow-readiness-service.js";
 import { LocalWorkflowCommandBoundary } from "./local-workflow-command.js";
+import { BusinessMissionService } from "../business/business-mission-service.js";
+import { OperationalAgentCompanyService } from "../agent-company/operational-agent-company-service.js";
+import { AuthorizedResearchService } from "../research/authorized-research-service.js";
+import { NodeRestrictedHttpsClient } from "../research/restricted-https-client.js";
+import { DeterministicMetodoVeloceSocialProductionLine } from "../social-intelligence/deterministic-metodo-veloce-social-production-line.js";
+import { SocialIntelligenceLiveService } from "../social-intelligence-live/social-intelligence-live-service.js";
+import { GoogleTrendsLiveAcquisitionService } from "../social-intelligence-live/google-trends-live-acquisition-service.js";
 
 export function createLocalWorkflowCommandBoundary(input: { readonly actorId: string; readonly workspaceId: string; readonly clock: Clock; readonly repositories: RepositoryTransactionRunner }): LocalWorkflowCommandBoundary {
   const specifications = new ImmutableAgentSpecificationRegistry([CONTENT_DIRECTOR_SPECIFICATION], new AgentSpecificationValidator());
@@ -35,21 +42,31 @@ export function createLocalWorkflowCommandBoundary(input: { readonly actorId: st
   const boundary = createWorkflowStepExecutionBoundary({ agentCompany: DEFAULT_AGENT_COMPANY_MAP, agentSpecifications: specifications, capabilities: DEFAULT_AGENT_CAPABILITY_REGISTRY, controlEvidenceMode: "DURABLE_ONLY", operatorActorId: input.actorId, permissionMatrix: DEFAULT_AGENT_PERMISSION_MATRIX, repositories: input.repositories, responsibilities: DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX });
   const resultValidator = new AgentResultValidator();
   const agentRuntime = new InProcessAgentRuntime([executor], new AgentInvocationValidator(), resultValidator, input.clock);
+  const businessMissions = new BusinessMissionService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId });
+  const operationalPlanes = new OperationalPlaneService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId });
+  const https = new NodeRestrictedHttpsClient();
+  const socialIntelligenceLive = new SocialIntelligenceLiveService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId });
   return new LocalWorkflowCommandBoundary({
+    agentCompany: new OperationalAgentCompanyService({ actorId: input.actorId, businessMissions, clock: input.clock, operationalPlanes, repositories: input.repositories, workspaceId: input.workspaceId }),
     actorId: input.actorId,
+    authorizedResearch: new AuthorizedResearchService({ actorId: input.actorId, clock: input.clock, https, operationalPlanes, repositories: input.repositories, workspaceId: input.workspaceId }),
+    businessMissions,
     candidates: boundary,
     clock: input.clock,
     contentProduction: new DeterministicMetodoVeloceContentProductionLine(input.clock),
     controls: createWorkflowControlCheckpointService({ eventIds: { nextWorkflowControlCheckpointEventId: () => randomId() }, guardianAuthorities: { operator_safety: "operator_safety-guardian", quality: "quality-guardian" }, operatorActorId: input.actorId, repositories: input.repositories }),
+    googleTrendsLive: new GoogleTrendsLiveAcquisitionService({ actorId: input.actorId, clock: input.clock, https, live: socialIntelligenceLive, repositories: input.repositories, workspaceId: input.workspaceId }),
     invoker: createWorkflowAgentInvoker({ agentRuntime, agentSpecifications: specifications, boundary, clock: input.clock, repositories: input.repositories, resolver, resultValidator }),
     lifecycle: createWorkflowLifecycleService({ clock: input.clock, maxAttempts: 3, operatorActorId: input.actorId, repositories: input.repositories, timeoutMs: 60_000 }),
     missionPlanning: new DeterministicLocalMissionPlanningDryRun(),
     outcomes: createWorkflowStepOutcomeService({ clock: input.clock, operatorActorId: input.actorId, repositories: input.repositories, resolver }),
-    operationalPlanes: new OperationalPlaneService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId }),
+    operationalPlanes,
     productionRuntime: new ProductionRuntimeService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId }),
     readiness: createWorkflowReadinessService({ repositories: input.repositories }),
     report: createWorkflowOperatorReportService(input.repositories),
     repositories: input.repositories,
+    socialContentProduction: new DeterministicMetodoVeloceSocialProductionLine(input.clock),
+    socialIntelligenceLive,
     workspaceId: input.workspaceId,
   });
 }

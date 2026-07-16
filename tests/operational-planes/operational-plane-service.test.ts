@@ -56,7 +56,7 @@ describe("OperationalPlaneService", () => {
   it("migrates an existing version 18 database without losing the runtime tables", async () => withDatabase(async (path) => {
     const initial = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 }); await initial.close();
     const legacy = openSqliteDatabase({ path, timeoutMs: 1_000 }).database;
-    legacy.exec("DROP TABLE evidence_packs; DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DELETE FROM schema_migrations WHERE version IN (19, 20); PRAGMA user_version = 18;"); legacy.close();
+    legacy.exec("DROP TABLE social_intelligence_live_records; DROP TABLE research_acquisition_snapshots; DROP TABLE authorized_research_missions; DROP TABLE agent_company_workdays; DROP TABLE business_mission_dossiers; DROP TABLE evidence_packs; DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DELETE FROM schema_migrations WHERE version IN (19, 20, 21, 22, 23, 24, 25); PRAGMA user_version = 18;"); legacy.close();
     const migrated = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
     await migrated.transaction(async ({ operationalPlanes, productionRuntimeJobs }) => { expect(await operationalPlanes.getSourceById("missing-source")).toBeUndefined(); expect(await productionRuntimeJobs.getById("missing-job")).toBeUndefined(); });
     await migrated.close();

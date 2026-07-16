@@ -1942,3 +1942,75 @@ confirmation authority, ownership confusion, or restart ambiguity.
 Telegram UX, but it must not duplicate its state machine or persistence logic. Public
 `/mission`, Mission planning, Quality Gate, and Workflow admission remain separate
 future authorization points.
+
+## ADR-075 — Operational Agent Company readiness requires an executable durable task
+
+**Decision:** A role is operationally `READY` only when the versioned operational
+catalog binds it to at least one validated executor task whose structured result,
+attempts, measured duration, measured cost, output fingerprint and Quality / Risk /
+Cost Gate are durably persisted. Manifest-only readiness remains a separate legacy
+declaration concept and cannot populate operational telemetry.
+
+The first vertical slice is one shared Agent Company workday. It persists every task
+transition and resumes incomplete work after reopening SQLite. All external actions
+remain forbidden. Publisher is dry-run only; Developer is change-plan only; Research
+may compile only previously acquired authorized evidence.
+
+**Reason:** Fabio needs measurable departments that complete one coherent business
+mission, while MV-AI-OS must not misrepresent planned tools, fabricated metrics or a
+test fixture as autonomous business output.
+
+**Tradeoffs:** Execution is currently synchronous inside the local command process,
+and the catalog exposes a deliberately narrow useful task for Developer and Research.
+This provides real durable work without pretending that the H24 worker, repository
+tool gateway or authorized web acquisition already exists.
+
+**Future impact:** Expanding an agent's supported tasks requires a new validated
+executor and end-to-end test. H24 leases, live Research acquisition and Developer
+repository mutation must extend this boundary rather than replacing it with direct
+database writes or unrestricted tools.
+
+## ADR-076 — Social intelligence must preserve provenance and missing data
+
+**Decision:** A Metodo Veloce Social Publishing Pack may calculate its Opportunity
+Score only when all 12 declared criteria have a value and provenance classification.
+`MISSING` contributes no invented value and suppresses the total score. Trend,
+audience, competitor, hashtag, audio-rights and timing signals retain their source or
+Evidence reference and observation time. Images supplied as creative references may
+shape visual direction but can never prove demand, trend velocity, rights or results.
+
+Audio is selectable only when commercial use and account availability are declared.
+A publication window is dynamic only when backed by sufficient measured history;
+otherwise it is explicitly experimental and uses only supplied candidate windows.
+Metrics start in an awaiting-import state. The entire pack remains preparation-only,
+fingerprinted and subject to Fabio review.
+
+**Reason:** A content system that fills missing social data with plausible values can
+look productive while steering the brand with false evidence. The vertical slice must
+produce a useful six-slide draft and an honest decision at the same time.
+
+**Future impact:** Live social connectors must import append-only snapshots into this
+contract and must not bypass Source Registry, rights checks, expiry, the Evidence Pack
+binding or the controlled publication plane.
+
+## ADR-077 — Social live acquisition is source-bound and atomic
+
+**Decision:** The initial Social Intelligence Live source set is limited to Google
+Trends Trending Now, TikTok Creative Center, the owned Instagram Insights export and
+TikTok Commercial Music Library. Source registration authorizes acquisition policy;
+it does not create a trend, metric, competitor observation or audio authorization.
+Google and TikTok trend observations require separate attributable records and the
+declared corroboration policy.
+
+Multi-record imports are previewed before commit and execute in one repository
+transaction. A valid exact replay returns the original logical result, while partial
+replay, unauthorized sources or invalid dependencies block the entire batch. CSV
+metric cells that are not present remain missing rather than becoming zero.
+
+**Reason:** A partially imported social snapshot can corrupt baselines and make a
+future recommendation appear better supported than it is. Treating a source URL as
+an observation would manufacture evidence.
+
+**Future impact:** Provider adapters must terminate in this batch boundary and retain
+the original acquisition timestamp, account/platform identity and source reference.
+They cannot publish, schedule externally or bypass the Action Plane.

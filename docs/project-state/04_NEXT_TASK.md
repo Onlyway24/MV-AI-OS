@@ -21,7 +21,7 @@ external effect separately authorized and observable before introducing it.
   checkpoints; it does not invoke an agent or any external system.
 - The Metodo Veloce production line now has a durable queue, exact-version Fabio review,
   internal calendar, metrics record, and archive. Each production carries an editorial
-  plan, 7-slide carousel, TikTok script, Instagram copy, variants, claim-risk block,
+  plan, 6-slide carousel, TikTok script, Instagram copy, variants, claim-risk block,
   Quality Guardian report, and weekly metrics plan. It remains preparation-only and
   never publishes automatically.
 - The controlled production runtime now persists jobs, claims at most one due job per
@@ -43,6 +43,13 @@ external effect separately authorized and observable before introducing it.
   conversions require verified attribution.
 
 ## Required next scope
+
+- Import the first attributable Metodo Veloce analytics export through the strict CSV
+  adapter. The first bounded Google Trends Italy snapshot is already durable: classify
+  it without treating unclassified attention as demand. Then obtain Fabio's exact
+  authorization for the six-account 2+2+1+1 competitor set, capture one attributable
+  public observation per account, and verify Commercial Music Library compatibility.
+  Keep every missing field absent and every publishing action locked.
 
 - Complete the private-phone continuity test: `/mission`, `/mission quick`, then a
   repeated `/mission quick` or `/status` while the same operator remains running.

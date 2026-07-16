@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 20;
+export const SQLITE_SCHEMA_VERSION = 25;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -60,6 +60,11 @@ const VERSION_SEVENTEEN_TABLES = Object.freeze([...VERSION_SIXTEEN_TABLES, "meto
 const VERSION_EIGHTEEN_TABLES = Object.freeze([...VERSION_SEVENTEEN_TABLES, "production_runtime_jobs"]);
 const VERSION_NINETEEN_TABLES = Object.freeze([...VERSION_EIGHTEEN_TABLES, "evidence_records", "feedback_metric_snapshots", "publication_kill_switches", "publication_plans", "source_registry_entries"]);
 const VERSION_TWENTY_TABLES = Object.freeze([...VERSION_NINETEEN_TABLES, "evidence_packs"]);
+const VERSION_TWENTY_ONE_TABLES = Object.freeze([...VERSION_TWENTY_TABLES, "business_mission_dossiers"]);
+const VERSION_TWENTY_TWO_TABLES = Object.freeze([...VERSION_TWENTY_ONE_TABLES, "agent_company_workdays"]);
+const VERSION_TWENTY_THREE_TABLES = Object.freeze([...VERSION_TWENTY_TWO_TABLES, "authorized_research_missions", "research_acquisition_snapshots"]);
+const VERSION_TWENTY_FOUR_TABLES = Object.freeze([...VERSION_TWENTY_THREE_TABLES, "social_intelligence_live_records"]);
+const VERSION_TWENTY_FIVE_TABLES = VERSION_TWENTY_FOUR_TABLES;
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -223,6 +228,41 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 19, "controlled_evidence_publication_feedback_planes");
     applyEvidencePackMigration(database);
   }
+  const businessMissionVersion = readPragmaInteger(database, "user_version");
+  if (businessMissionVersion === 20) {
+    verifyDatabaseIdentity(database, 20);
+    verifyExpectedTables(database, VERSION_TWENTY_TABLES);
+    verifyMigration(database, 20, "durable_evidence_packs");
+    applyBusinessMissionMigration(database);
+  }
+  const agentCompanyVersion = readPragmaInteger(database, "user_version");
+  if (agentCompanyVersion === 21) {
+    verifyDatabaseIdentity(database, 21);
+    verifyExpectedTables(database, VERSION_TWENTY_ONE_TABLES);
+    verifyMigration(database, 21, "durable_business_mission_dossiers");
+    applyAgentCompanyMigration(database);
+  }
+  const authorizedResearchVersion = readPragmaInteger(database, "user_version");
+  if (authorizedResearchVersion === 22) {
+    verifyDatabaseIdentity(database, 22);
+    verifyExpectedTables(database, VERSION_TWENTY_TWO_TABLES);
+    verifyMigration(database, 22, "operational_agent_company_workdays");
+    applyAuthorizedResearchMigration(database);
+  }
+  const socialIntelligenceLiveVersion = readPragmaInteger(database, "user_version");
+  if (socialIntelligenceLiveVersion === 23) {
+    verifyDatabaseIdentity(database, 23);
+    verifyExpectedTables(database, VERSION_TWENTY_THREE_TABLES);
+    verifyMigration(database, 23, "authorized_research_acquisition");
+    applySocialIntelligenceLiveMigration(database);
+  }
+  const competitorPackVersion = readPragmaInteger(database, "user_version");
+  if (competitorPackVersion === 24) {
+    verifyDatabaseIdentity(database, 24);
+    verifyExpectedTables(database, VERSION_TWENTY_FOUR_TABLES);
+    verifyMigration(database, 24, "social_intelligence_live_activation");
+    applyCompetitorIntelligencePackMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -245,7 +285,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_TWENTY_TABLES);
+  verifyExpectedTables(database, VERSION_TWENTY_FIVE_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -266,6 +306,11 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 18, "durable_production_runtime_jobs");
   verifyMigration(database, 19, "controlled_evidence_publication_feedback_planes");
   verifyMigration(database, 20, "durable_evidence_packs");
+  verifyMigration(database, 21, "durable_business_mission_dossiers");
+  verifyMigration(database, 22, "operational_agent_company_workdays");
+  verifyMigration(database, 23, "authorized_research_acquisition");
+  verifyMigration(database, 24, "social_intelligence_live_activation");
+  verifyMigration(database, 25, "durable_competitor_intelligence_packs");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -1057,6 +1102,149 @@ function applyEvidencePackMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Evidence Pack migration failed");
+  }
+}
+
+function applyBusinessMissionMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE business_mission_dossiers (
+        mission_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('APPROVED', 'BLOCKED', 'PENDING_FABIO_APPROVAL', 'REJECTED', 'REVISION_REQUESTED')),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        selected_opportunity_id TEXT,
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX business_mission_dossiers_workspace_status
+        ON business_mission_dossiers (workspace_id, status, updated_at DESC, mission_id);
+      INSERT INTO schema_migrations (version, name) VALUES (21, 'durable_business_mission_dossiers');
+      PRAGMA user_version = 21;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Business Mission migration failed");
+  }
+}
+
+function applyAgentCompanyMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE agent_company_workdays (
+        workday_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('AWAITING_FABIO', 'BLOCKED', 'RUNNING')),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX agent_company_workdays_workspace_status
+        ON agent_company_workdays (workspace_id, status, updated_at DESC, workday_id);
+      INSERT INTO schema_migrations (version, name) VALUES (22, 'operational_agent_company_workdays');
+      PRAGMA user_version = 22;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Agent Company migration failed");
+  }
+}
+
+function applyAuthorizedResearchMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE authorized_research_missions (
+        mission_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('BLOCKED', 'READY', 'RUNNING')),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX authorized_research_missions_workspace_status
+        ON authorized_research_missions (workspace_id, status, updated_at DESC, mission_id);
+      CREATE TABLE research_acquisition_snapshots (
+        snapshot_id TEXT PRIMARY KEY,
+        mission_id TEXT NOT NULL,
+        workspace_id TEXT NOT NULL,
+        source_id TEXT NOT NULL,
+        evidence_id TEXT NOT NULL,
+        acquired_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (mission_id, evidence_id)
+      ) STRICT;
+      CREATE INDEX research_acquisition_snapshots_mission
+        ON research_acquisition_snapshots (mission_id, acquired_at, snapshot_id);
+      INSERT INTO schema_migrations (version, name) VALUES (23, 'authorized_research_acquisition');
+      PRAGMA user_version = 23;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Authorized Research migration failed");
+  }
+}
+
+function applySocialIntelligenceLiveMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE social_intelligence_live_records (
+        record_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('ACCOUNT', 'ANALYTICS', 'AUDIO_RIGHTS', 'COMPETITOR', 'COMPETITOR_OBSERVATION', 'EXPERIMENT', 'TREND')),
+        imported_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX social_intelligence_live_workspace_kind_time
+        ON social_intelligence_live_records (workspace_id, kind, imported_at DESC, record_id);
+      INSERT INTO schema_migrations (version, name) VALUES (24, 'social_intelligence_live_activation');
+      PRAGMA user_version = 24;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Social Intelligence Live migration failed");
+  }
+}
+
+function applyCompetitorIntelligencePackMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      ALTER TABLE social_intelligence_live_records RENAME TO social_intelligence_live_records_v24;
+      CREATE TABLE social_intelligence_live_records (
+        record_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('ACCOUNT', 'ANALYTICS', 'AUDIO_RIGHTS', 'COMPETITOR', 'COMPETITOR_OBSERVATION', 'COMPETITOR_PACK', 'EXPERIMENT', 'TREND')),
+        imported_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      INSERT INTO social_intelligence_live_records (record_id, workspace_id, actor_id, kind, imported_at, fingerprint, record_json)
+        SELECT record_id, workspace_id, actor_id, kind, imported_at, fingerprint, record_json FROM social_intelligence_live_records_v24;
+      DROP TABLE social_intelligence_live_records_v24;
+      CREATE INDEX social_intelligence_live_workspace_kind_time
+        ON social_intelligence_live_records (workspace_id, kind, imported_at DESC, record_id);
+      INSERT INTO schema_migrations (version, name) VALUES (25, 'durable_competitor_intelligence_packs');
+      PRAGMA user_version = 25;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Competitor Intelligence Pack migration failed");
   }
 }
 

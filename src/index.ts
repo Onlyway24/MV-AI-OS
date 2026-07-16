@@ -610,6 +610,40 @@ export {
 export type { MetodoVeloceContentProductionRepository, MetodoVeloceContentProductionUpdateExpectation } from "./content-production/metodo-veloce-content-production-repository.js";
 export { DeterministicMetodoVeloceContentProductionLine } from "./content-production/deterministic-metodo-veloce-content-production-line.js";
 export { contentClaimRisk, MetodoVeloceContentProductionArchiveRequestValidator, MetodoVeloceContentProductionBriefValidator, MetodoVeloceContentProductionMetricsRequestValidator, MetodoVeloceContentProductionPackageValidator, MetodoVeloceContentProductionRecordValidator, MetodoVeloceContentProductionReviewRequestValidator, MetodoVeloceContentProductionScheduleRequestValidator } from "./content-production/metodo-veloce-content-production-validator.js";
+export {
+  METODO_VELOCE_SOCIAL_INTELLIGENCE_CONTRACT_VERSION,
+  SOCIAL_OPPORTUNITY_CRITERIA,
+  type MetodoVeloceSocialIntelligenceRequest,
+  type SocialAudioCandidate,
+  type SocialAudienceSignal,
+  type SocialBrandCheck,
+  type SocialCompetitorSignal,
+  type SocialConversionIntent,
+  type SocialCulturalRisk,
+  type SocialDataKind,
+  type SocialHashtagCandidate,
+  type SocialOpportunityCriterion,
+  type SocialOpportunityCriterionInput,
+  type SocialOpportunityDecision,
+  type SocialPlatform,
+  type SocialPublishingPack,
+  type SocialPublishingPackStatus,
+  type SocialRecentContent,
+  type SocialSchedulingInput,
+  type SocialSignalProvenance,
+  type SocialTrendPhase,
+  type SocialTrendSignal,
+} from "./social-intelligence/metodo-veloce-social-intelligence.js";
+export {
+  MetodoVeloceSocialIntelligenceRequestValidator,
+  SocialPublishingPackValidator,
+  socialPublishingPackFingerprint,
+} from "./social-intelligence/metodo-veloce-social-intelligence-validator.js";
+export {
+  DeterministicMetodoVeloceSocialIntelligenceEngine,
+  SOCIAL_OPPORTUNITY_WEIGHTS,
+} from "./social-intelligence/deterministic-metodo-veloce-social-intelligence-engine.js";
+export { DeterministicMetodoVeloceSocialProductionLine } from "./social-intelligence/deterministic-metodo-veloce-social-production-line.js";
 export { PRODUCTION_RUNTIME_CONTRACT_VERSION, isProductionRuntimeJobTransitionAllowed, type ProductionRuntimeEnqueueRequest, type ProductionRuntimeHealthReport, type ProductionRuntimeJob, type ProductionRuntimeJobError, type ProductionRuntimeJobResult, type ProductionRuntimeJobStatus, type ProductionRuntimeRunResult } from "./production-runtime/production-runtime-job.js";
 export type { ProductionRuntimeJobCounts, ProductionRuntimeJobRepository, ProductionRuntimeJobUpdateExpectation } from "./production-runtime/production-runtime-job-repository.js";
 export { ProductionRuntimeService } from "./production-runtime/production-runtime-service.js";
@@ -1497,3 +1531,126 @@ export type {
 export { ToolResultValidator } from "./tools/tool-result-validator.js";
 export type { ToolRiskLevel } from "./tools/tool-risk-level.js";
 export { ToolRiskLevelValidator } from "./tools/tool-risk-level-validator.js";
+export {
+  BUSINESS_MISSION_CONTRACT_VERSION,
+  BUSINESS_SCORE_CRITERIA,
+  type BusinessAcquisitionPlan,
+  type BusinessArtifact,
+  type BusinessCalculatedValue,
+  type BusinessCommercialPlan,
+  type BusinessCriterionInput,
+  type BusinessCriterionScore,
+  type BusinessEconomicsScenario,
+  type BusinessEconomicsScenarioInput,
+  type BusinessGate,
+  type BusinessMissionDefinition,
+  type BusinessMissionDossier,
+  type BusinessMissionExecutionInput,
+  type BusinessMissionReviewRequest,
+  type BusinessMissionStatus,
+  type BusinessOfferDesign,
+  type BusinessOpportunityCandidate,
+  type BusinessOpportunityScorecard,
+  type BusinessValidationExperiment,
+} from "./business/business-mission.js";
+export { BusinessMissionExecutionInputValidator, BusinessMissionDossierValidator, BusinessMissionReviewRequestValidator, dossierFingerprint } from "./business/business-mission-validator.js";
+export type { BusinessMissionRepository } from "./business/business-mission-repository.js";
+export { BusinessMissionService } from "./business/business-mission-service.js";
+export { DeterministicBusinessEconomicsEngine } from "./business/deterministic-economics-engine.js";
+export { DeterministicBusinessArtifactFactory } from "./business/deterministic-business-artifact-factory.js";
+export { BUSINESS_SCORE_WEIGHTS, DeterministicOpportunityScorer, type OpportunitySelection, type ScoredOpportunityInput } from "./business/deterministic-opportunity-scorer.js";
+export { SqliteBusinessMissionRepository } from "./persistence/sqlite/sqlite-business-mission-repository.js";
+export {
+  OPERATIONAL_AGENT_COMPANY_CATALOG,
+  OPERATIONAL_AGENT_COMPANY_CONTRACT_VERSION,
+  OPERATIONAL_AGENT_IDS,
+  type AgentCompanyResearchPackRequest,
+  type AgentCompanyWorkday,
+  type AgentCompanyWorkdayInput,
+  type AgentCompanyWorkdayStatus,
+  type AgentCompanyWorkItem,
+  type AgentCompanyWorkItemStatus,
+  type OperationalAgentCatalogEntry,
+  type OperationalAgentGate,
+  type OperationalAgentId,
+  type OperationalAgentMetrics,
+  type OperationalAgentState,
+} from "./agent-company/operational-agent-company.js";
+export type { AgentCompanyWorkdayRepository } from "./agent-company/agent-company-workday-repository.js";
+export {
+  AgentCompanyWorkdayInputValidator,
+  AgentCompanyWorkdayValidator,
+  createAgentCompanyInputFingerprint,
+  createAgentCompanyOutputFingerprint,
+} from "./agent-company/operational-agent-company-validator.js";
+export { OperationalAgentCompanyService } from "./agent-company/operational-agent-company-service.js";
+export { SqliteAgentCompanyWorkdayRepository } from "./persistence/sqlite/sqlite-agent-company-workday-repository.js";
+export {
+  AUTHORIZED_RESEARCH_CONTRACT_VERSION,
+  type AuthorizedResearchClaimRequest,
+  type AuthorizedResearchClaimResult,
+  type AuthorizedResearchMission,
+  type AuthorizedResearchMissionInput,
+  type AuthorizedResearchPackPlan,
+  type AuthorizedResearchTarget,
+  type ExtractedResearchFact,
+  type ResearchAcquisitionSnapshot,
+  type RestrictedHttpsAcquisition,
+} from "./research/authorized-research.js";
+export type { AuthorizedResearchRepository } from "./research/authorized-research-repository.js";
+export {
+  AuthorizedResearchMissionInputValidator,
+  AuthorizedResearchMissionValidator,
+  ResearchAcquisitionSnapshotValidator,
+  researchInputFingerprint,
+} from "./research/authorized-research-validator.js";
+export { AuthorizedResearchService } from "./research/authorized-research-service.js";
+export { extractAuthorizedDocument, type AuthorizedDocumentExtraction } from "./research/authorized-document-extractor.js";
+export {
+  NodeRestrictedHttpsClient,
+  type RestrictedHttpsClient,
+  type RestrictedHttpsRequestDriver,
+  type RestrictedHttpsResolver,
+} from "./research/restricted-https-client.js";
+export { SqliteAuthorizedResearchRepository } from "./persistence/sqlite/sqlite-authorized-research-repository.js";
+export {
+  SOCIAL_INTELLIGENCE_LIVE_CONTRACT_VERSION,
+  type AuthorizedCompetitorRecord,
+  type CompetitorObservation,
+  type DailySocialOperationsReport,
+  type CompetitorIntelligenceFinding,
+  type CompetitorIntelligencePack,
+  type SocialAccountBaseline,
+  type SocialAccountRecord,
+  type SocialAnalyticsMetrics,
+  type SocialAnalyticsSnapshot,
+  type SocialAudioRightsObservation,
+  type SocialLivePlatform,
+  type SocialLiveImportBatchReceipt,
+  type SocialLiveImportBatchRequest,
+  type SocialLiveRecord,
+  type SocialLiveRecordKind,
+  type SocialPublicationExperiment,
+  type SocialTrendObservation,
+} from "./social-intelligence-live/social-intelligence-live.js";
+export { SocialLiveRecordValidator, payloadForFingerprint, socialLiveFingerprint } from "./social-intelligence-live/social-intelligence-live-validator.js";
+export { SocialIntelligenceLiveService, buildCompetitorIntelligencePack, buildDailySocialOperationsReport, createFirstMetodoVeloceExperiment } from "./social-intelligence-live/social-intelligence-live-service.js";
+export { INITIAL_SOCIAL_SOURCE_BLUEPRINTS, SOCIAL_PUBLIC_OBSERVATION_SOURCE_BLUEPRINTS, SOCIAL_SOURCE_POLICY_NOTES, ensureInitialSocialSources } from "./social-intelligence-live/social-official-sources.js";
+export { parseSocialAnalyticsCsv, socialAnalyticsCsvTemplate, parseBoundedSocialCsv } from "./social-intelligence-live/social-analytics-csv-adapter.js";
+export { parseCompetitorObservationsCsv, competitorObservationsCsvTemplate } from "./social-intelligence-live/social-competitor-observation-csv-adapter.js";
+export { parseAudioRightsCsv, audioRightsCsvTemplate } from "./social-intelligence-live/social-audio-rights-csv-adapter.js";
+export { parseGoogleTrendsRss, googleTrendsBatchRecords, type GoogleTrendsRssImport } from "./social-intelligence-live/google-trends-rss-adapter.js";
+export { GoogleTrendsLiveAcquisitionService, type GoogleTrendsLiveAcquisitionReceipt } from "./social-intelligence-live/google-trends-live-acquisition-service.js";
+export { EXACT_COMPETITOR_AUTHORIZATION_TEXT, INITIAL_SOCIAL_COMPETITOR_CANDIDATES, authorizeInitialSocialCompetitors, type InitialSocialCompetitorAuthorizationRequest } from "./social-intelligence-live/social-competitor-authorization.js";
+export {
+  CommandCenterActionService,
+  type CommandCenterActionClock,
+  type CommandCenterAnyActionProposal,
+  type CommandCenterAnyActionReceipt,
+  type CommandCenterActionProposal,
+  type CommandCenterActionReceipt,
+  type CommandCenterBusinessAction,
+  type CommandCenterBusinessActionProposal,
+  type CommandCenterBusinessActionReceipt,
+  type CommandCenterContentAction,
+} from "./command-center/command-center-action-service.js";

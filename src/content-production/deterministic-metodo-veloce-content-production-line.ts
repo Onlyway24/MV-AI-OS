@@ -43,6 +43,7 @@ export class DeterministicMetodoVeloceContentProductionLine {
 }
 
 function assets(brief: MetodoVeloceContentProductionBrief) {
+  if (brief.topic.toLocaleLowerCase("it").includes("5 oggetti in casa")) return resaleAssets(brief);
   const proof = evidenceLine(brief.evidence[0]);
   const hook = `Prima di ${brief.topic}, controlla questo.`;
   return {
@@ -51,13 +52,30 @@ function assets(brief: MetodoVeloceContentProductionBrief) {
       slide(2, "Il problema", `Molte persone parlano di ${brief.offer} prima di aver chiarito cosa serve davvero al pubblico.`),
       slide(3, "La domanda utile", `Per ${brief.audience}: quale azione concreta deve diventare più semplice?`),
       slide(4, "L'evidenza", proof),
-      slide(5, "Il test", `Usa ${brief.topic} per una sola ipotesi, un segnale osservabile e una revisione onesta.`),
-      slide(6, "La scelta", "Tieni ciò che è supportato, dichiara ciò che è ancora un'ipotesi."),
-      slide(7, "Prossimo passo", brief.callToAction),
+      slide(5, "Il test", `Usa ${brief.topic} per una sola ipotesi, un segnale osservabile e una revisione onesta. Tieni ciò che è supportato e dichiara ciò che è ancora un'ipotesi.`),
+      slide(6, "Ultimo passo", `Checklist: verifica il dato, mostra i limiti, scegli un'azione. ${brief.callToAction}`),
     ],
     instagram: { caption: [hook, "", `Se vuoi parlare di ${brief.offer}, prima rendi chiara la scelta da fare.`, proof, "", "Non servono promesse: servono un test piccolo, un dato dichiarato e una prossima azione.", "", brief.callToAction].join("\n"), firstLine: hook, hashtags: ["#metodoveloce", "#contenuti", "#marketing", "#business", "#strategia", "#creator"] },
     tiktok: { beats: [beat(1, "Fermati un attimo", hook), beat(2, "Il problema", `Parlare di ${brief.offer} senza una decisione chiara crea solo rumore.`), beat(3, "Il dato", proof), beat(4, "Il test", `Scegli un'ipotesi su ${brief.topic}, osserva un segnale e correggi.`), beat(5, "Azione", brief.callToAction)], caption: `${hook} ${brief.callToAction}`, durationSeconds: 35 as const, hook },
     variants: { instagramOpeners: [`Il problema con ${brief.topic} non è la mancanza di idee.`, `Prima di promuovere ${brief.offer}, chiarisci questa scelta.`, `Un contenuto utile non ha bisogno di promesse enormi.`], tiktokHooks: [hook, `Se ${brief.topic} non porta a una scelta, stai solo creando rumore.`, `La parte più importante di ${brief.offer} arriva prima della caption.`] },
+  };
+}
+
+function resaleAssets(brief: MetodoVeloceContentProductionBrief) {
+  const hook = "5 categorie che vale la pena controllare prima di liberare spazio";
+  const checklist = "Controlla marca e modello, stato reale, accessori presenti, domanda osservabile e prezzi di articoli già venduti. Nessuna categoria garantisce una vendita.";
+  return {
+    carousel: [
+      slide(1, "5 oggetti in casa da controllare", "Non è una promessa di guadagno: sono cinque categorie da verificare con condizioni, domanda e prezzi realmente osservabili."),
+      slide(2, "1. Elettronica usata", "Telefoni, cuffie e accessori possono avere domanda. Verifica modello, memoria, batteria, blocchi account, funzionamento e cavi prima dell'annuncio."),
+      slide(3, "2. Sneakers e streetwear", "Marca, modello, taglia, autenticità e stato cambiano la valutazione. Fotografa suola, etichette, difetti e dettagli senza nasconderli."),
+      slide(4, "3. Orologi e gioielli", "Materiali, misure, punzoni, documenti e provenienza richiedono controlli accurati. Evita stime economiche senza riscontri specifici."),
+      slide(5, "4–5. Corredo, profumi e accessori", "Scatole, certificati e confezioni possono completare l'oggetto; profumi e accessori richiedono stato, quantità, autenticità e regole della piattaforma."),
+      slide(6, "Ultimo passo: verifica prima di vendere", `${checklist} ${brief.callToAction}`),
+    ],
+    instagram: { caption: [hook, "", "Elettronica, streetwear, orologi, corredo, profumi e accessori non hanno un valore automatico.", checklist, "", brief.callToAction].join("\n"), firstLine: hook, hashtags: ["#metodoveloce", "#rivendita", "#secondhand", "#usato", "#vendereonline", "#microbusiness"] },
+    tiktok: { beats: [beat(1, "5 categorie da controllare", hook), beat(2, "Elettronica", "Verifica modello, batteria, funzionamento e account."), beat(3, "Streetwear", "Mostra autenticità, taglia, etichette e difetti reali."), beat(4, "Orologi e accessori", "Controlla materiali, corredo, quantità e regole della piattaforma."), beat(5, "Checklist", checklist)], caption: `${hook}. ${brief.callToAction}`, durationSeconds: 35 as const, hook },
+    variants: { instagramOpeners: [hook, "Prima di buttare o svendere, controlla queste cinque categorie.", "Il valore non si indovina: si verifica."], tiktokHooks: [hook, "Non buttare questi oggetti prima di aver fatto cinque controlli.", "Cinque categorie, zero promesse: solo verifiche concrete."] },
   };
 }
 

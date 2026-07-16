@@ -62,7 +62,7 @@ describe("Metodo Veloce durable content production command", () => {
     const current = await createRuntime(path);
     await current.close();
     const legacy = new DatabaseSync(path);
-    legacy.exec("DROP TABLE evidence_packs; DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DROP TABLE production_runtime_jobs; DROP TABLE metodo_veloce_content_productions; DELETE FROM schema_migrations WHERE version IN (17, 18, 19, 20); PRAGMA user_version = 16;");
+    legacy.exec("DROP TABLE social_intelligence_live_records; DROP TABLE research_acquisition_snapshots; DROP TABLE authorized_research_missions; DROP TABLE agent_company_workdays; DROP TABLE business_mission_dossiers; DROP TABLE evidence_packs; DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DROP TABLE production_runtime_jobs; DROP TABLE metodo_veloce_content_productions; DELETE FROM schema_migrations WHERE version IN (17, 18, 19, 20, 21, 22, 23, 24, 25); PRAGMA user_version = 16;");
     legacy.close();
 
     const migrated = await createRuntime(path);

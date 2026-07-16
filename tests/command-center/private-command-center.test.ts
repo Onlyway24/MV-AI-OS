@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,7 +9,9 @@ import type { LocalRuntimeConfig } from "../../src/runtime/local-runtime-config.
 import { createLocalRuntime } from "../../src/runtime/create-local-runtime.js";
 import { SqliteRepositoryTransactionRunner } from "../../src/persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { CommandCenterQueryService } from "../../src/command-center/command-center-query-service.js";
+import { CommandCenterActionService } from "../../src/command-center/command-center-action-service.js";
 import { PrivateCommandCenterServer } from "../../src/command-center/command-center-server.js";
+import { createLocalWorkflowCommandBoundary } from "../../src/runtime/create-local-workflow-command-boundary.js";
 import { FixedClock } from "../support/fixtures.js";
 
 describe("Private Command Center", () => {
@@ -44,6 +47,15 @@ describe("Private Command Center", () => {
         expect.objectContaining({ id: "approval", value: 1 }),
       );
       expect(snapshot.productions).toHaveLength(1);
+      expect(snapshot.business).toEqual([]);
+      expect(snapshot.agentCompany).toEqual([]);
+      expect(snapshot.socialIntelligence).toMatchObject({ blocked: 0, packs: [], readyForFabio: 0, requiresResearch: 0 });
+      expect(snapshot.agents).toHaveLength(17);
+      expect(snapshot.agents).toEqual(expect.arrayContaining([
+        expect.objectContaining({ agentId: "onlyway-assistant", completedTasks: 0, state: "READY" }),
+        expect.objectContaining({ agentId: "developer-agent", completedTasks: 0, state: "READY" }),
+        expect.objectContaining({ agentId: "publisher-agent", completedTasks: 0, state: "READY" }),
+      ]));
       expect(snapshot.runtime).toMatchObject({
         continuousWorker: "NOT_REGISTERED",
         killSwitch: "LOCKED",
@@ -51,6 +63,18 @@ describe("Private Command Center", () => {
 
       const server = new PrivateCommandCenterServer({
         accessToken: "1".repeat(64),
+        actionService: new CommandCenterActionService({
+          actorId: "actor-local",
+          clock: new FixedClock("2026-07-14T12:05:00.000Z"),
+          commands: createLocalWorkflowCommandBoundary({
+            actorId: "actor-local",
+            clock: new FixedClock("2026-07-14T12:05:00.000Z"),
+            repositories,
+            workspaceId: "workspace-local",
+          }),
+          repositories,
+          workspaceId: "workspace-local",
+        }),
         port: 0,
         queryService,
       });
@@ -76,9 +100,134 @@ describe("Private Command Center", () => {
       expect(page.status).toBe(200);
       expect(pageHtml).toContain("ONLYWAY");
       expect(pageHtml).toContain("Centro di Comando Onlyway");
-      expect(pageHtml).toContain("A3 — Propositiva");
+      expect(pageHtml).toContain("A3 — Controllata");
+      expect(pageHtml).toContain("CAMERA DI AUTORIZZAZIONE");
+      expect(pageHtml).toContain("Missioni Business");
+      expect(pageHtml).toContain("id=\"business\"");
+      expect(pageHtml).toContain("Intelligence Social");
+      expect(pageHtml).toContain("id=\"social\"");
+      expect(pageHtml).toContain("id=\"social-pack-list\"");
+      expect(pageHtml).toContain("id=\"business-mission-list\"");
+      expect(pageHtml).toContain("id=\"agent-grid\"");
+      expect(pageHtml).toContain("id=\"agent-workday-list\"");
+      expect(pageHtml).toContain("id=\"agent-workday-detail\"");
+      expect(pageHtml).toContain("id=\"sidebar-toggle\"");
+      expect(pageHtml).toContain("id=\"mobile-menu-toggle\"");
+      expect(pageHtml).toContain("id=\"package-inspector\"");
+      expect(pageHtml).toContain("id=\"action-confirmation-timer\"");
       expect(pageHtml).not.toContain(["Only", "Way"].join(" "));
       expect(pageHtml).not.toContain("1111111111111111111111111111111111111111111111111111111111111111");
+
+      const theme = await fetch(`${origin}/responsive.css`, { headers: { Cookie: cookie ?? "" } });
+      expect(theme.status).toBe(200);
+      const themeText = await theme.text();
+      expect(themeText).toContain("--ow-obsidian");
+      expect(themeText).toContain("onlyway-obsidian-chrome-original.png");
+      expect(themeText).toContain("cursor:auto");
+      expect(themeText).toContain("height:100dvh");
+      expect(themeText).toContain("transform:none!important");
+
+      const app = await fetch(`${origin}/app.js`, { headers: { Cookie: cookie ?? "" } });
+      expect(app.status).toBe(200);
+      const appText = await app.text();
+      expect(appText).not.toContain("window.confirm");
+      expect(appText).not.toContain("custom-cursor");
+      expect(appText).toContain("onlyway.command-center.sidebar");
+      expect(appText).toContain("renderAgentWorkdays(snapshot.agentCompany || [])");
+      expect(appText).toContain("renderSocialIntelligence(snapshot.socialIntelligence");
+      expect(appText).toContain("Nessun orario inventato");
+      expect(appText).toContain("agent.displayName");
+      expect(appText).not.toContain("agent.telemetry");
+      expect(appText).toContain("Conferma scaduta: nessuna modifica eseguita.");
+      expect(appText).toContain("REQUEST_BUSINESS_REVISION");
+      expect(appText).toContain("VISUAL GATE BLOCCATO");
+      expect(appText).toContain("Approvazione bloccata: logo originale mancante");
+
+      const insightsTemplate = await fetch(`${origin}/downloads/metodo-veloce-insights-template.csv`, { headers: { Cookie: cookie ?? "" } });
+      expect(insightsTemplate.status).toBe(200);
+      expect(insightsTemplate.headers.get("content-type")).toContain("text/csv");
+      expect(insightsTemplate.headers.get("content-disposition")).toContain("metodo-veloce-insights-template.csv");
+      expect(await insightsTemplate.text()).toContain("snapshot_id,content_id,published_at");
+      const competitorTemplate = await fetch(`${origin}/downloads/metodo-veloce-competitor-observations-template.csv`, { headers: { Cookie: cookie ?? "" } });
+      expect(competitorTemplate.status).toBe(200);
+      expect(await competitorTemplate.text()).toContain("observation_id,competitor_record_id,observed_at,source_url");
+      const audioTemplate = await fetch(`${origin}/downloads/metodo-veloce-audio-rights-template.csv`, { headers: { Cookie: cookie ?? "" } });
+      expect(audioTemplate.status).toBe(200);
+      expect(await audioTemplate.text()).toContain("observation_id,audio_id,title,platform,account_ref");
+
+      const protectedBrandAsset = await fetch(`${origin}/assets/brand/onlyway-obsidian-chrome-original.png`);
+      expect(protectedBrandAsset.status).toBe(401);
+      const protectedSocialAsset = await fetch(`${origin}/assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-01.png`);
+      expect(protectedSocialAsset.status).toBe(401);
+
+      const brandAsset = await fetch(`${origin}/assets/brand/onlyway-obsidian-chrome-original.png`, {
+        headers: { Cookie: cookie ?? "" },
+      });
+      expect(brandAsset.status).toBe(200);
+      expect(brandAsset.headers.get("content-type")).toBe("image/png");
+      const assetBytes = Buffer.from(await brandAsset.arrayBuffer());
+      expect(createHash("sha256").update(assetBytes).digest("hex")).toBe("f965c40a871a9dd4ce249708fac20da64a0a09a4fe74c8d1993b037caea15fe3");
+
+      const visualReview = await fetch(`${origin}/api/social-visual-review`, { headers: { Cookie: cookie ?? "" } });
+      expect(visualReview.status).toBe(200);
+      const visualPayload = await visualReview.json() as {
+        readonly approvalScope: string;
+        readonly assets: { readonly instagram: readonly Record<string, unknown>[]; readonly tiktok: readonly Record<string, unknown>[] };
+        readonly externalActionsAllowed: boolean;
+        readonly publicationAuthorized: boolean;
+        readonly visualReview: { readonly status: string };
+      };
+      expect(visualPayload).toMatchObject({
+        approvalScope: "INTERNAL_PACKAGE_ONLY",
+        externalActionsAllowed: false,
+        publicationAuthorized: false,
+        visualReview: { status: "BLOCKED_ORIGINAL_LOGO_MISSING" },
+      });
+      expect(visualPayload.assets.instagram).toHaveLength(6);
+      expect(visualPayload.assets.instagram.at(0)).toMatchObject({ height: 1350, slide: 1, width: 1080 });
+      expect(visualPayload.assets.tiktok).toHaveLength(6);
+      expect(visualPayload.assets.tiktok.at(0)).toMatchObject({ height: 1920, slide: 1, width: 1080 });
+      const socialAsset = await fetch(`${origin}/assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-01.png`, { headers: { Cookie: cookie ?? "" } });
+      expect(socialAsset.status).toBe(200);
+      expect(socialAsset.headers.get("content-type")).toBe("image/png");
+      expect(createHash("sha256").update(Buffer.from(await socialAsset.arrayBuffer())).digest("hex")).toBe("b6599a3fee2746c1a30bf8ceb45ff246426ef344c2cfd867c6d1d820f64015f8");
+      const rejectedVisualPath = await fetch(`${origin}/assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-07.png`, { headers: { Cookie: cookie ?? "" } });
+      expect(rejectedVisualPath.status).toBe(404);
+
+      const session = await fetch(`${origin}/api/session`, { headers: { Cookie: cookie ?? "" } });
+      const { csrfToken } = await session.json() as { readonly csrfToken: string };
+      const actionHeaders = {
+        "Content-Type": "application/json",
+        Cookie: cookie ?? "",
+        Origin: origin,
+        "X-Onlyway-Csrf": csrfToken,
+      };
+      const proposalResponse = await fetch(`${origin}/api/actions/propose`, {
+        body: JSON.stringify({ action: "REJECT_CONTENT", productionId: "mv-content-command-center-001" }),
+        headers: actionHeaders,
+        method: "POST",
+      });
+      expect(proposalResponse.status).toBe(200);
+      const proposal = await proposalResponse.json() as {
+        readonly actionId: string;
+        readonly confirmationToken: string;
+        readonly summary: { readonly packageFingerprint: string; readonly version: number };
+      };
+      expect(proposal.summary).toMatchObject({ version: 0 });
+      expect(proposal.summary.packageFingerprint).toMatch(/^[a-f0-9]{64}$/u);
+      const confirmation = await fetch(`${origin}/api/actions/confirm`, {
+        body: JSON.stringify({ actionId: proposal.actionId, confirmationToken: proposal.confirmationToken, packageFingerprint: proposal.summary.packageFingerprint }),
+        headers: actionHeaders,
+        method: "POST",
+      });
+      expect(confirmation.status).toBe(200);
+      await expect(confirmation.json()).resolves.toMatchObject({
+        action: "REJECT_CONTENT",
+        command: { operation: "REVIEW_METODO_VELOCE_CONTENT", replayed: false },
+      });
+      await expect(queryService.snapshot()).resolves.toMatchObject({
+        productions: [expect.objectContaining({ status: "ARCHIVED", version: 1 })],
+      });
 
       const forbiddenMutation = await fetch(`${origin}/api/overview`, {
         headers: { Cookie: cookie ?? "" },

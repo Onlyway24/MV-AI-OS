@@ -23,19 +23,38 @@ import type { WorkflowReadinessService } from "../workflows/runtime/workflow-rea
 import type { WorkflowStepExecutionBoundary } from "../workflows/runtime/workflow-step-execution-boundary.js";
 import type { WorkflowStepOutcomeService } from "../workflows/runtime/workflow-step-outcome.js";
 import { WorkflowDefinitionValidator, WorkflowInstanceValidator } from "../workflows/runtime/workflow-runtime-validator.js";
+import { BusinessMissionService } from "../business/business-mission-service.js";
+import { OPERATIONAL_AGENT_COMPANY_CATALOG } from "../agent-company/operational-agent-company.js";
+import { OperationalAgentCompanyService } from "../agent-company/operational-agent-company-service.js";
+import { AuthorizedResearchService } from "../research/authorized-research-service.js";
+import type { MetodoVeloceSocialIntelligenceRequest } from "../social-intelligence/metodo-veloce-social-intelligence.js";
+import { MetodoVeloceSocialIntelligenceRequestValidator } from "../social-intelligence/metodo-veloce-social-intelligence-validator.js";
+import { SocialIntelligenceLiveService, createFirstMetodoVeloceExperiment } from "../social-intelligence-live/social-intelligence-live-service.js";
+import { ensureInitialSocialSources } from "../social-intelligence-live/social-official-sources.js";
+import type { GoogleTrendsLiveAcquisitionService } from "../social-intelligence-live/google-trends-live-acquisition-service.js";
+import { parseSocialAnalyticsCsv } from "../social-intelligence-live/social-analytics-csv-adapter.js";
+import { authorizeInitialSocialCompetitors, authorizeSocialCompetitorReplacement } from "../social-intelligence-live/social-competitor-authorization.js";
+import { parseCompetitorObservationsCsv } from "../social-intelligence-live/social-competitor-observation-csv-adapter.js";
+import { parseAudioRightsCsv } from "../social-intelligence-live/social-audio-rights-csv-adapter.js";
 
 export const LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION = "1" as const;
-export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
+export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "RUN_AUTHORIZED_RESEARCH_MISSION", "INSPECT_AUTHORIZED_RESEARCH_MISSION", "LIST_AUTHORIZED_RESEARCH_MISSIONS", "RUN_AGENT_COMPANY_WORKDAY", "INSPECT_AGENT_COMPANY_WORKDAY", "LIST_AGENT_COMPANY_WORKDAYS", "GET_AGENT_COMPANY_CATALOG", "GET_AGENT_COMPANY_METRICS", "CREATE_BUSINESS_MISSION_DOSSIER", "INSPECT_BUSINESS_MISSION_DOSSIER", "LIST_BUSINESS_MISSION_DOSSIERS", "REVIEW_BUSINESS_MISSION_DOSSIER", "REGISTER_SOCIAL_OFFICIAL_SOURCES", "ACQUIRE_GOOGLE_TRENDS_LIVE", "CLASSIFY_SOCIAL_TREND", "IMPORT_SOCIAL_ANALYTICS_CSV", "AUTHORIZE_SOCIAL_COMPETITOR_SET", "REPLACE_SOCIAL_COMPETITOR", "MATERIALIZE_COMPETITOR_INTELLIGENCE_PACK", "IMPORT_SOCIAL_COMPETITOR_OBSERVATIONS_CSV", "IMPORT_SOCIAL_AUDIO_RIGHTS_CSV", "IMPORT_SOCIAL_LIVE_RECORD", "PREVIEW_SOCIAL_LIVE_BATCH", "IMPORT_SOCIAL_LIVE_BATCH", "GET_SOCIAL_LIVE_REPORT", "CREATE_FIRST_SOCIAL_EXPERIMENT", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
 export type LocalWorkflowOperation = typeof LOCAL_WORKFLOW_OPERATIONS[number];
 export interface LocalWorkflowCommand { readonly contractVersion: "1"; readonly commandId: string; readonly actorId: string; readonly workspaceId: string; readonly operation: LocalWorkflowOperation; readonly input: Readonly<Record<string, unknown>>; }
 export interface LocalWorkflowCommandResponse { readonly contractVersion: "1"; readonly status: "ok"; readonly operation: LocalWorkflowOperation; readonly commandId: string; readonly result: unknown; readonly nextAction: string; readonly replayed: boolean; readonly unauthorizedExternalEffectOccurred: false; }
 
 export interface LocalWorkflowCommandDependencies {
+  readonly agentCompany?: OperationalAgentCompanyService;
   readonly actorId: string;
+  readonly authorizedResearch?: AuthorizedResearchService;
+  readonly businessMissions?: BusinessMissionService;
   readonly clock: Clock;
+  readonly googleTrendsLive?: GoogleTrendsLiveAcquisitionService;
   readonly workspaceId: string;
   readonly missionPlanning: LocalMissionPlanningDryRun;
   readonly contentProduction: { produce(candidate: MetodoVeloceContentProductionBrief): MetodoVeloceContentProductionPackage };
+  readonly socialContentProduction?: { produce(brief: MetodoVeloceContentProductionBrief, intelligence: MetodoVeloceSocialIntelligenceRequest): MetodoVeloceContentProductionPackage };
+  readonly socialIntelligenceLive?: SocialIntelligenceLiveService;
   readonly productionRuntime: ProductionRuntimeService;
   readonly operationalPlanes: OperationalPlaneService;
   readonly readiness: WorkflowReadinessService;
@@ -88,6 +107,7 @@ export class LocalWorkflowCommandBoundary {
   readonly #contentScheduleValidator = new MetodoVeloceContentProductionScheduleRequestValidator();
   readonly #contentMetricsValidator = new MetodoVeloceContentProductionMetricsRequestValidator();
   readonly #contentArchiveValidator = new MetodoVeloceContentProductionArchiveRequestValidator();
+  readonly #socialIntelligenceValidator = new MetodoVeloceSocialIntelligenceRequestValidator();
   readonly #productionRuntimeEnqueueValidator = new ProductionRuntimeEnqueueRequestValidator();
   readonly #sourceRegistrationValidator = new SourceRegistrationRequestValidator();
   readonly #evidenceRecordValidator = new EvidenceRecordRequestValidator();
@@ -125,9 +145,55 @@ export class LocalWorkflowCommandBoundary {
       case "PLAN_MISSION": return this.dependencies.missionPlanning.run({ brief: validate(input.brief, this.#missionValidator, "Founder Mission Brief"), contractVersion: "1" });
       case "CREATE_WORKFLOW": return this.#createWorkflow(input.definition, input.instance);
       case "INSPECT_WORKFLOW": return this.dependencies.repositories.transaction(async ({ workflows }) => { const instance = await workflows.instances.getById(requiredId(input, "instanceId")); if (instance === undefined) throw new RepositoryConflictError("Inspected Workflow does not exist"); return instance; });
+      case "RUN_AUTHORIZED_RESEARCH_MISSION": return this.#authorizedResearch().run(input.mission);
+      case "INSPECT_AUTHORIZED_RESEARCH_MISSION": return this.#authorizedResearch().inspect(requiredId(input, "missionId"));
+      case "LIST_AUTHORIZED_RESEARCH_MISSIONS": return this.#authorizedResearch().list(requiredLimit(input));
+      case "RUN_AGENT_COMPANY_WORKDAY": return this.#agentCompany().run(input.workday);
+      case "INSPECT_AGENT_COMPANY_WORKDAY": return this.#agentCompany().inspect(requiredId(input, "workdayId"));
+      case "LIST_AGENT_COMPANY_WORKDAYS": return this.#agentCompany().list(requiredLimit(input));
+      case "GET_AGENT_COMPANY_CATALOG": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Agent Company catalog request is invalid"); return OPERATIONAL_AGENT_COMPANY_CATALOG;
+      case "GET_AGENT_COMPANY_METRICS": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Agent Company metrics request is invalid"); return this.#agentCompany().metrics();
+      case "CREATE_BUSINESS_MISSION_DOSSIER": return this.#businessMissions().create(input.mission);
+      case "INSPECT_BUSINESS_MISSION_DOSSIER": return this.#businessMissions().inspect(requiredId(input, "missionId"));
+      case "LIST_BUSINESS_MISSION_DOSSIERS": return this.#businessMissions().list(requiredLimit(input));
+      case "REVIEW_BUSINESS_MISSION_DOSSIER": return this.#businessMissions().review(input);
+      case "REGISTER_SOCIAL_OFFICIAL_SOURCES": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Official Social source registration request is invalid"); return ensureInitialSocialSources({ operationalPlanes: this.dependencies.operationalPlanes, repositories: this.dependencies.repositories, workspaceId: this.dependencies.workspaceId });
+      case "ACQUIRE_GOOGLE_TRENDS_LIVE": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Google Trends Live acquisition request is invalid"); return this.#googleTrendsLive().acquire();
+      case "CLASSIFY_SOCIAL_TREND": {
+        if (!keys(input, ["trend"]) || !record(input.trend) || !keys(input.trend, ["audience", "classificationEvidenceRecordIds", "classificationRationale", "compatibility", "expiresAt", "keyword", "observedAt", "phase", "platform", "recordId", "sourceId", "territory"]) || typeof input.trend.compatibility !== "string" || !["COMPATIBLE", "INCOMPATIBLE"].includes(input.trend.compatibility) || input.trend.phase !== "UNCLASSIFIED") throw new RepositoryValidationError("Social trend compatibility classification request is invalid");
+        const classified = this.#socialIntelligenceLive().createRecord({ ...input.trend, classifiedAt: this.dependencies.clock.now().toISOString(), classifiedBy: this.dependencies.actorId, kind: "TREND" });
+        return this.#socialIntelligenceLive().importRecord(classified);
+      }
+      case "IMPORT_SOCIAL_ANALYTICS_CSV": {
+        if (!keys(input, ["accountRecordId", "batchId", "csv", "platform"]) || !safeId(input.accountRecordId) || !safeId(input.batchId) || typeof input.csv !== "string" || !["INSTAGRAM", "TIKTOK"].includes(String(input.platform))) throw new RepositoryValidationError("Social analytics CSV import request is invalid");
+        const records = parseSocialAnalyticsCsv({ accountRecordId: input.accountRecordId, csv: input.csv, platform: input.platform as "INSTAGRAM" | "TIKTOK", service: this.#socialIntelligenceLive(), sourceId: "social-instagram-insights-export" });
+        return this.#socialIntelligenceLive().importBatch({ batchId: input.batchId, records });
+      }
+      case "AUTHORIZE_SOCIAL_COMPETITOR_SET": return authorizeInitialSocialCompetitors({ actorId: this.dependencies.actorId, request: input.authorization, service: this.#socialIntelligenceLive() });
+      case "REPLACE_SOCIAL_COMPETITOR": return authorizeSocialCompetitorReplacement({ actorId: this.dependencies.actorId, request: input.authorization, service: this.#socialIntelligenceLive() });
+      case "MATERIALIZE_COMPETITOR_INTELLIGENCE_PACK": {
+        if (!keys(input, ["recordId"]) || !safeId(input.recordId)) throw new RepositoryValidationError("Competitor Intelligence Pack materialization request is invalid");
+        return this.#socialIntelligenceLive().materializeCompetitorIntelligencePack(input.recordId);
+      }
+      case "IMPORT_SOCIAL_COMPETITOR_OBSERVATIONS_CSV": {
+        if (!keys(input, ["batchId", "csv"]) || !safeId(input.batchId) || typeof input.csv !== "string") throw new RepositoryValidationError("Social competitor observation CSV import request is invalid");
+        const records = parseCompetitorObservationsCsv({ csv: input.csv, service: this.#socialIntelligenceLive(), sourceId: "social-instagram-public-competitors" });
+        return this.#socialIntelligenceLive().importBatch({ batchId: input.batchId, records });
+      }
+      case "IMPORT_SOCIAL_AUDIO_RIGHTS_CSV": {
+        if (!keys(input, ["batchId", "csv"]) || !safeId(input.batchId) || typeof input.csv !== "string") throw new RepositoryValidationError("Social audio rights CSV import request is invalid");
+        const records = parseAudioRightsCsv({ csv: input.csv, service: this.#socialIntelligenceLive(), sourceId: "social-tiktok-commercial-music-library" });
+        return this.#socialIntelligenceLive().importBatch({ batchId: input.batchId, records });
+      }
+      case "IMPORT_SOCIAL_LIVE_RECORD": return this.#socialIntelligenceLive().importRecord(input.record);
+      case "PREVIEW_SOCIAL_LIVE_BATCH": return this.#socialIntelligenceLive().previewBatch(input.batch);
+      case "IMPORT_SOCIAL_LIVE_BATCH": return this.#socialIntelligenceLive().importBatch(input.batch);
+      case "GET_SOCIAL_LIVE_REPORT": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Social Intelligence Live report request is invalid"); return this.#socialIntelligenceLive().report();
+      case "CREATE_FIRST_SOCIAL_EXPERIMENT": { const experiment = createFirstMetodoVeloceExperiment(this.#socialIntelligenceLive(), { experimentId: requiredId(input, "experimentId"), ...(typeof input.eveningPublicationAt === "string" ? { eveningPublicationAt: input.eveningPublicationAt } : {}), ...(typeof input.lunchPublicationAt === "string" ? { lunchPublicationAt: input.lunchPublicationAt } : {}) }); return this.#socialIntelligenceLive().importRecord(experiment); }
       case "PRODUCE_METODO_VELOCE_CONTENT": return this.#produceContentProduction(input.brief);
       case "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE": return this.#produceContentProductionFromEvidence(input);
       case "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK": return this.#produceContentProductionFromEvidencePack(input);
+      case "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK": return this.#produceSocialContentProductionFromEvidencePack(input);
       case "INSPECT_METODO_VELOCE_CONTENT": return this.#inspectContentProduction(requiredId(input, "productionId"));
       case "REVIEW_METODO_VELOCE_CONTENT": return this.#reviewContentProduction(input);
       case "SCHEDULE_METODO_VELOCE_CONTENT": return this.#scheduleContentProduction(input);
@@ -168,6 +234,9 @@ export class LocalWorkflowCommandBoundary {
     }
   }
 
+  #socialIntelligenceLive(): SocialIntelligenceLiveService { if (this.dependencies.socialIntelligenceLive === undefined) throw new RepositoryConflictError("Social Intelligence Live service is unavailable"); return this.dependencies.socialIntelligenceLive; }
+  #googleTrendsLive(): GoogleTrendsLiveAcquisitionService { if (this.dependencies.googleTrendsLive === undefined) throw new RepositoryConflictError("Google Trends Live acquisition service is unavailable"); return this.dependencies.googleTrendsLive; }
+
   async #createWorkflow(definitionInput: unknown, instanceInput: unknown): Promise<{ readonly created: boolean }> {
     const definition = validate(definitionInput, this.#definitionValidator, "Workflow definition");
     const instance = validate(instanceInput, this.#instanceValidator, "Workflow instance");
@@ -193,8 +262,8 @@ export class LocalWorkflowCommandBoundary {
     return this.#insertContentProduction(record);
   }
 
-  #contentProductionRecord(brief: MetodoVeloceContentProductionBrief, evidencePack?: MetodoVeloceContentProductionRecord["evidencePack"]): MetodoVeloceContentProductionRecord {
-    const contentPackage = this.dependencies.contentProduction.produce(brief);
+  #contentProductionRecord(brief: MetodoVeloceContentProductionBrief, evidencePack?: MetodoVeloceContentProductionRecord["evidencePack"], preparedPackage?: MetodoVeloceContentProductionPackage): MetodoVeloceContentProductionRecord {
+    const contentPackage = preparedPackage ?? this.dependencies.contentProduction.produce(brief);
     return {
       actorId: this.dependencies.actorId,
       contractVersion: "1",
@@ -231,6 +300,23 @@ export class LocalWorkflowCommandBoundary {
     return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes }) => {
       const pack = await this.dependencies.operationalPlanes.assertEvidencePackForContentInTransaction(operationalPlanes, evidencePackId, brief.evidence);
       const record = this.#contentProductionRecord(brief, { fingerprint: pack.fingerprint, minFreshnessExpiresAt: pack.minFreshnessExpiresAt, packId: pack.packId, verifiedAt: this.dependencies.clock.now().toISOString() });
+      if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
+      await contentProductions.insert(record);
+      return record;
+    });
+  }
+
+  async #produceSocialContentProductionFromEvidencePack(input: Readonly<Record<string, unknown>>): Promise<MetodoVeloceContentProductionRecord> {
+    const evidencePackId = input.evidencePackId;
+    if (!keys(input, ["brief", "evidencePackId", "socialIntelligence"]) || !safeId(evidencePackId)) throw new RepositoryValidationError("Social Publishing Pack production request is invalid");
+    const brief = validate(input.brief, this.#contentBriefValidator, "Metodo Veloce Social Publishing brief");
+    const intelligence = validate(input.socialIntelligence, this.#socialIntelligenceValidator, "Metodo Veloce Social Intelligence request");
+    const production = this.dependencies.socialContentProduction;
+    if (production === undefined) throw new RepositoryConflictError("Social content production service is not configured");
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes }) => {
+      const pack = await this.dependencies.operationalPlanes.assertEvidencePackForContentInTransaction(operationalPlanes, evidencePackId, brief.evidence);
+      const preparedPackage = production.produce(brief, intelligence);
+      const record = this.#contentProductionRecord(brief, { fingerprint: pack.fingerprint, minFreshnessExpiresAt: pack.minFreshnessExpiresAt, packId: pack.packId, verifiedAt: this.dependencies.clock.now().toISOString() }, preparedPackage);
       if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
       await contentProductions.insert(record);
       return record;
@@ -305,7 +391,7 @@ export class LocalWorkflowCommandBoundary {
 
   async #resourceInstanceId(command: LocalWorkflowCommand): Promise<string | undefined> {
     const input = command.input;
-    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
+    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "RUN_AUTHORIZED_RESEARCH_MISSION", "INSPECT_AUTHORIZED_RESEARCH_MISSION", "LIST_AUTHORIZED_RESEARCH_MISSIONS", "RUN_AGENT_COMPANY_WORKDAY", "INSPECT_AGENT_COMPANY_WORKDAY", "LIST_AGENT_COMPANY_WORKDAYS", "GET_AGENT_COMPANY_CATALOG", "GET_AGENT_COMPANY_METRICS", "CREATE_BUSINESS_MISSION_DOSSIER", "INSPECT_BUSINESS_MISSION_DOSSIER", "LIST_BUSINESS_MISSION_DOSSIERS", "REVIEW_BUSINESS_MISSION_DOSSIER", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
     if (typeof input.instanceId === "string") return input.instanceId;
     if (record(input.checkpoint) && typeof input.checkpoint.instanceId === "string") return input.checkpoint.instanceId;
     if (record(input.boundaryRequest) && typeof input.boundaryRequest.instanceId === "string") return input.boundaryRequest.instanceId;
@@ -314,6 +400,9 @@ export class LocalWorkflowCommandBoundary {
   }
 
   async #assertOwnership(instanceId: string): Promise<void> { const ownership = await this.dependencies.repositories.transaction(({ workflowCommands }) => workflowCommands.getOwnership(instanceId)); if (ownership?.workspaceId !== this.dependencies.workspaceId || ownership.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Local Workflow resource ownership is unauthorized"); }
+  #businessMissions(): BusinessMissionService { if (this.dependencies.businessMissions === undefined) throw new RepositoryConflictError("Business Mission service is not configured"); return this.dependencies.businessMissions; }
+  #agentCompany(): OperationalAgentCompanyService { if (this.dependencies.agentCompany === undefined) throw new RepositoryConflictError("Operational Agent Company service is not configured"); return this.dependencies.agentCompany; }
+  #authorizedResearch(): AuthorizedResearchService { if (this.dependencies.authorizedResearch === undefined) throw new RepositoryConflictError("Authorized Research service is not configured"); return this.dependencies.authorizedResearch; }
 }
 
 function action(operation: LocalWorkflowOperation, input: Readonly<Record<string, unknown>>, result: unknown): string {
@@ -321,10 +410,33 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   if (operation === "CREATE_MISSION") return `Plan validated Mission Brief ${nestedId(input, "brief", "briefId") ?? "mission"}.`;
   if (operation === "PLAN_MISSION") return "Create a durable Workflow from the validated Mission Plan.";
   if (operation === "CREATE_WORKFLOW") return `Request the Operator Workflow Report for Workflow ${nestedId(input, "instance", "instanceId") ?? "unknown"}.`;
+  if (operation === "RUN_AUTHORIZED_RESEARCH_MISSION") return record(result) && result.status === "READY" ? "Use the durable Evidence Packs in the shared Onlyway workday." : "Resolve the Authorized Research blockers before Business selection.";
+  if (operation === "INSPECT_AUTHORIZED_RESEARCH_MISSION" || operation === "LIST_AUTHORIZED_RESEARCH_MISSIONS") return "Review sources, immutable snapshots, claim corroboration, freshness, and blockers.";
+  if (operation === "RUN_AGENT_COMPANY_WORKDAY") return record(result) && result.status === "AWAITING_FABIO" ? "Open the Agent Company workday in the Onlyway Command Center for Fabio review; no external action was executed." : "Resolve the durable Agent Company blocker before resuming the shared Mission.";
+  if (operation === "INSPECT_AGENT_COMPANY_WORKDAY" || operation === "LIST_AGENT_COMPANY_WORKDAYS") return "Review assigned tasks, durable outputs, gates, costs, blockers, and approvals.";
+  if (operation === "GET_AGENT_COMPANY_CATALOG" || operation === "GET_AGENT_COMPANY_METRICS") return "Only agents with an executable task and durable measured results are reported as operational.";
+  if (operation === "CREATE_BUSINESS_MISSION_DOSSIER") return "Open the durable Business Mission dossier in the Onlyway Approval Center; no external action was executed.";
+  if (operation === "INSPECT_BUSINESS_MISSION_DOSSIER" || operation === "LIST_BUSINESS_MISSION_DOSSIERS") return "Review scorecards, economics, validation plan, artifacts, and gates before any decision.";
+  if (operation === "REVIEW_BUSINESS_MISSION_DOSSIER") return "The Business Mission decision is recorded durably; experiments and external actions remain separately locked.";
+  if (operation === "REGISTER_SOCIAL_OFFICIAL_SOURCES") return "Import only attributable observations from these official sources; registration does not create a trend or metric.";
+  if (operation === "ACQUIRE_GOOGLE_TRENDS_LIVE") return "Classify the imported Italian trend observations for Metodo Veloce compatibility; unclassified signals cannot justify production.";
+  if (operation === "CLASSIFY_SOCIAL_TREND") return "Review the evidence-linked compatibility decision; phase, velocity and saturation remain unclassified unless separately evidenced.";
+  if (operation === "IMPORT_SOCIAL_ANALYTICS_CSV") return "Review the real account baseline; insufficient history must remain an experiment rather than a claimed best time.";
+  if (operation === "AUTHORIZE_SOCIAL_COMPETITOR_SET") return "Observe only these six public accounts and preserve attributable snapshots; authorization does not permit outreach, login, or copying.";
+  if (operation === "REPLACE_SOCIAL_COMPETITOR") return "Acquire one attributable public observation for the replacement profile; do not interact with the account or use it as claim evidence.";
+  if (operation === "MATERIALIZE_COMPETITOR_INTELLIGENCE_PACK") return "Preserve this exact pack version and fingerprint; any later source change requires a new version.";
+  if (operation === "IMPORT_SOCIAL_COMPETITOR_OBSERVATIONS_CSV") return "Review the six attributable public observations and competitor gaps; no profile interaction or outreach occurred.";
+  if (operation === "IMPORT_SOCIAL_AUDIO_RIGHTS_CSV") return "Use only currently available audio candidates allowed for the exact account and country; otherwise retain AUDIO_NON_AUTORIZZATO.";
+  if (operation === "IMPORT_SOCIAL_LIVE_RECORD") return "Inspect the updated Social Intelligence Live report; imported observations remain append-only and cannot authorize publication.";
+  if (operation === "PREVIEW_SOCIAL_LIVE_BATCH") return record(result) && result.status === "READY" ? "The batch is valid for an explicit atomic import." : "Resolve every batch blocker before importing any record.";
+  if (operation === "IMPORT_SOCIAL_LIVE_BATCH") return "Review the durable batch receipt and refreshed Social Intelligence Live report; no external action was executed.";
+  if (operation === "GET_SOCIAL_LIVE_REPORT") return "Resolve missing real inputs or review the controlled timing experiment in the Onlyway Command Center.";
+  if (operation === "CREATE_FIRST_SOCIAL_EXPERIMENT") return "Fabio must set both exact test windows before internal scheduling; publication remains manual and separately authorized.";
   if (operation === "PRODUCE_METODO_VELOCE_CONTENT" || operation === "INSPECT_METODO_VELOCE_CONTENT") return `Request Fabio review for Metodo Veloce content package ${operation === "PRODUCE_METODO_VELOCE_CONTENT" ? nestedId(input, "brief", "productionId") ?? "unknown" : id(input.productionId)}.`;
   if (operation === "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE") return `Request Fabio review for evidence-bound Metodo Veloce content package ${nestedId(input, "brief", "productionId") ?? "unknown"}.`;
   if (operation === "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK") return `Open the evidence-led Metodo Veloce content package ${nestedId(input, "brief", "productionId") ?? "unknown"} in Telegram for Fabio review.`;
-  if (operation === "REVIEW_METODO_VELOCE_CONTENT") return record(result) && result.status === "APPROVED_FOR_SCHEDULING" ? `Schedule Metodo Veloce content package ${id(input.productionId)}.` : `Keep archived Metodo Veloce content package ${id(input.productionId)} out of the publication queue.`;
+  if (operation === "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK") return `Open Social Publishing Pack ${nestedId(input, "brief", "productionId") ?? "unknown"}: review opportunity, expiry, rights, timing experiment, claims, and six-slide carousel before any external action.`;
+  if (operation === "REVIEW_METODO_VELOCE_CONTENT") return record(result) && result.status === "APPROVED_FOR_SCHEDULING" ? `The exact internal Metodo Veloce package ${id(input.productionId)} is approved. Scheduling and publication remain separate and locked.` : `Keep archived Metodo Veloce content package ${id(input.productionId)} out of the publication queue.`;
   if (operation === "SCHEDULE_METODO_VELOCE_CONTENT") return `Await Fabio's separate publication decision for scheduled Metodo Veloce content package ${id(input.productionId)}.`;
   if (operation === "RECORD_METODO_VELOCE_CONTENT_METRICS") return `Review declared metrics for Metodo Veloce content package ${id(input.productionId)}; this did not publish anything.`;
   if (operation === "ARCHIVE_METODO_VELOCE_CONTENT") return `Keep archived Metodo Veloce content package ${id(input.productionId)} out of the active queue.`;
@@ -364,7 +476,7 @@ function validate<T>(value: unknown, validator: Validator<T>, label: string): T 
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function keys(value: Record<string, unknown>, allowed: readonly string[]): boolean { return Object.keys(value).length === allowed.length && Object.keys(value).every((key) => allowed.includes(key)); }
 function safeId(value: unknown): value is string { return typeof value === "string" && value.length > 0 && value.length <= 128 && /^[a-zA-Z0-9@._:-]+$/u.test(value); }
-function prohibited(value: string): boolean { return /(?:sk-[a-z0-9]|rawPrompt|rawCompletion|providerPayload|secret|stack trace)/iu.test(value); }
+function prohibited(value: string): boolean { return /(?:\bsk-[a-z0-9][a-z0-9_-]{10,}|rawPrompt|rawCompletion|providerPayload|secret|stack trace)/iu.test(value); }
 function json(value: unknown): string | undefined { try { return jsonValue(value) ? JSON.stringify(value) : undefined; } catch { return undefined; } }
 function jsonValue(value: unknown): boolean {
   if (value === null || typeof value === "string" || typeof value === "boolean") return true;

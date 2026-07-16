@@ -10,7 +10,7 @@ describe("Metodo Veloce content production line", () => {
     const result = line.produce(brief());
 
     expect(result).toMatchObject({ approval: { required: true, status: "PENDING_FABIO" }, externalActionsAllowed: false, status: "READY_FOR_FABIO_APPROVAL", risk: { findings: [], status: "CLEAR" }, quality: { readinessScore: 88 } });
-    expect(result.assets?.carousel).toHaveLength(7);
+    expect(result.assets?.carousel).toHaveLength(6);
     expect(result.assets?.tiktok.beats).toHaveLength(5);
     expect(result.assets?.instagram.hashtags).toHaveLength(6);
     expect(result.metrics.measures).toEqual(["contenuti prodotti", "percentuale approvata", "tempo di produzione", "costo per contenuto", "salvataggi", "visualizzazioni", "lead", "conversioni"]);

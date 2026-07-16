@@ -29,6 +29,9 @@ import { SqliteLocalWorkflowCommandRepository } from "./sqlite-local-workflow-co
 import { SqliteMetodoVeloceContentProductionRepository } from "./sqlite-metodo-veloce-content-production-repository.js";
 import { SqliteProductionRuntimeJobRepository } from "./sqlite-production-runtime-job-repository.js";
 import { SqliteOperationalPlaneRepository } from "./sqlite-operational-plane-repository.js";
+import { SqliteBusinessMissionRepository } from "./sqlite-business-mission-repository.js";
+import { SqliteAgentCompanyWorkdayRepository } from "./sqlite-agent-company-workday-repository.js";
+import { SqliteAuthorizedResearchRepository } from "./sqlite-authorized-research-repository.js";
 
 export class SqliteRepositoryTransactionRunner
   implements RepositoryTransactionRunner
@@ -66,11 +69,14 @@ export class SqliteRepositoryTransactionRunner
 
       const scope: SqliteTransactionScope = { active: true };
       const repositories: RepositoryTransaction = Object.freeze({
+        agentCompanyWorkdays: new SqliteAgentCompanyWorkdayRepository(this.#database, scope),
+        authorizedResearch: new SqliteAuthorizedResearchRepository(this.#database, scope),
         audits: new SqliteAuditRepository(
           this.#database,
           scope,
           this.#codec,
         ),
+        businessMissions: new SqliteBusinessMissionRepository(this.#database, scope),
         contentProductions: new SqliteMetodoVeloceContentProductionRepository(this.#database, scope),
         productionRuntimeJobs: new SqliteProductionRuntimeJobRepository(this.#database, scope),
         operationalPlanes: new SqliteOperationalPlaneRepository(this.#database, scope),

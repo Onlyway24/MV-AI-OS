@@ -1,0 +1,10 @@
+{
+  "actorId": "actor-local",
+  "commandId": "materialize-competitor-pack-v1-2026-07-16",
+  "contractVersion": "1",
+  "input": {
+    "recordId": "competitor-intelligence-pack-record-v1-20260716"
+  },
+  "operation": "MATERIALIZE_COMPETITOR_INTELLIGENCE_PACK",
+  "workspaceId": "workspace-local"
+}

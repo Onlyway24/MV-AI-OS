@@ -1,0 +1,29 @@
+{
+  "actorId": "actor-local",
+  "commandId": "record-maert-public-evidence-2026-07-16-v1",
+  "contractVersion": "1",
+  "input": {
+    "claimMappings": [
+      {
+        "claimId": "maert-public-format-claim-20260716",
+        "statement": "Il post osservato usa un carosello esperienziale con mercatini e una domanda finale."
+      }
+    ],
+    "contentPublishedAt": "2026-07-14T00:00:00.000Z",
+    "corroboratingEvidenceIds": [],
+    "evidenceId": "evidence-maert-public-post-20260716",
+    "excerpt": "Il carosello pubblico osservato il 14 luglio 2026 presenta luoghi, mercatini e una domanda finale per scegliere un approfondimento.",
+    "fingerprint": "164b91c8225d8e8e43062344b6df56b03f7aa69489674dbc24f36eee479f8732",
+    "freshnessExpiresAt": "2026-07-22T22:38:54.000Z",
+    "limitations": [
+      "L'ora di pubblicazione non è esposta e la data è normalizzata a mezzanotte UTC.",
+      "L'osservazione descrive il formato e non prova domanda commerciale o risultati economici."
+    ],
+    "riskDomain": "GENERAL",
+    "sourceId": "social-instagram-maert-post-20260714",
+    "sourceReference": "https://www.instagram.com/maert.ens/p/DayFF8Ijut9/",
+    "status": "VERIFIED"
+  },
+  "operation": "RECORD_EVIDENCE",
+  "workspaceId": "workspace-local"
+}

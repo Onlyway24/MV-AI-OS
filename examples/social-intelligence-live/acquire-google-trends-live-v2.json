@@ -1,0 +1,8 @@
+{
+  "actorId": "actor-local",
+  "commandId": "acquire-google-trends-it-live-2026-07-16-v2",
+  "contractVersion": "1",
+  "input": {},
+  "operation": "ACQUIRE_GOOGLE_TRENDS_LIVE",
+  "workspaceId": "workspace-local"
+}

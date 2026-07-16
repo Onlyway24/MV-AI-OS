@@ -1,5 +1,6 @@
 import type { RequestContractVersion } from "../contracts/request-envelope.js";
 import type { QualityGuardianReport } from "../guardians/quality-guardian.js";
+import type { SocialPublishingPack } from "../social-intelligence/metodo-veloce-social-intelligence.js";
 
 export const METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION = "1" as const;
 
@@ -60,4 +61,5 @@ export interface MetodoVeloceContentProductionPackage {
   readonly status: ContentProductionStatus;
   readonly version: 1;
   readonly assets?: MetodoVeloceContentAssets;
+  readonly socialPublishingPack?: SocialPublishingPack;
 }

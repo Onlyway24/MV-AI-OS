@@ -1,0 +1,2 @@
+observation_id,audio_id,title,platform,account_ref,country,available,account_compatibility,commercial_use,mood,observed_at,expires_at,saturation
+audio-check-cml-no-account-20260716,no-authorized-result,Nessun audio account-specifico verificabile,TIKTOK,metodo-veloce-tiktok-non-registrato,IT,false,UNKNOWN,NOT_AUTHORIZED,NON_APPLICABILE,2026-07-15T22:55:00.000Z,2026-07-16T22:55:00.000Z,

@@ -8,6 +8,16 @@ import type {
 } from "../operational-planes/operational-plane.js";
 import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { ProductionRuntimeJobCounts } from "../production-runtime/production-runtime-job-repository.js";
+import type { BusinessMissionDossier } from "../business/business-mission.js";
+import {
+  OPERATIONAL_AGENT_COMPANY_CATALOG,
+  type AgentCompanyWorkday,
+  type OperationalAgentState,
+} from "../agent-company/operational-agent-company.js";
+import type { AuthorizedResearchMission } from "../research/authorized-research.js";
+import type { SocialPublishingPack } from "../social-intelligence/metodo-veloce-social-intelligence.js";
+import type { DailySocialOperationsReport } from "../social-intelligence-live/social-intelligence-live.js";
+import { buildDailySocialOperationsReport } from "../social-intelligence-live/social-intelligence-live-service.js";
 
 export const COMMAND_CENTER_CONTRACT_VERSION = "1" as const;
 
@@ -16,31 +26,56 @@ export interface CommandCenterClock {
 }
 
 export interface CommandCenterSnapshot {
+  readonly agentCompany: readonly AgentCompanyWorkday[];
   readonly agents: readonly CommandCenterAgentSummary[];
+  readonly business: readonly BusinessMissionDossier[];
   readonly contractVersion: typeof COMMAND_CENTER_CONTRACT_VERSION;
   readonly evidence: CommandCenterEvidenceSummary;
   readonly generatedAt: string;
   readonly overview: CommandCenterOverview;
   readonly productions: readonly MetodoVeloceContentProductionRecord[];
+  readonly research: readonly AuthorizedResearchMission[];
   readonly runtime: CommandCenterRuntimeSummary;
+  readonly socialIntelligence: CommandCenterSocialIntelligenceSummary;
+  readonly socialLive: DailySocialOperationsReport;
+}
+
+export interface CommandCenterSocialIntelligenceSummary {
+  readonly blocked: number;
+  readonly expiringWithin24Hours: number;
+  readonly packs: readonly SocialPublishingPack[];
+  readonly readyForFabio: number;
+  readonly requiresResearch: number;
 }
 
 export interface CommandCenterAgentSummary {
-  readonly autonomy: "A3 — Propositiva";
-  readonly executor: "content-director@1.0.0";
-  readonly role: "Divisione strategica";
-  readonly state: "AVAILABLE";
-  readonly telemetry: "Nessuna telemetria di esecuzione raccolta";
+  readonly agentId: string;
+  readonly autonomy: "A3 — Controllata";
+  readonly acceptedFirstPassTasks: number;
+  readonly averageQualityScore: number | "NOT_AVAILABLE";
+  readonly blockedTasks: number;
+  readonly completedTasks: number;
+  readonly displayName: string;
+  readonly executor: string;
+  readonly measuredCostCents: number;
+  readonly measuredDurationMs: number;
+  readonly revisionsRequired: number;
+  readonly role: string;
+  readonly state: OperationalAgentState;
+  readonly supportedTasks: readonly string[];
+  readonly validationErrors: number;
 }
 
 export interface CommandCenterEvidenceSummary {
   readonly evidence: readonly EvidenceRecord[];
   readonly evidencePacks: readonly EvidencePack[];
+  readonly researchMissions: readonly AuthorizedResearchMission[];
   readonly sources: readonly SourceRegistryEntry[];
 }
 
 export interface CommandCenterOverview {
-  readonly autonomy: "A3 — Propositiva";
+  readonly autonomy: "A3 — Controllata";
+  readonly decisionsRequired: number;
   readonly dailyBrief: {
     readonly decision: string;
     readonly detail: string;
@@ -55,14 +90,15 @@ export interface CommandCenterMetric {
   readonly context: string;
   readonly id:
     | "approval"
-    | "blocked"
+    | "claim-blocked"
     | "dead-letter"
     | "evidence-packs"
     | "production-queue"
-    | "scheduled";
+    | "quality"
+    | "worker";
   readonly label: string;
   readonly tone: "attention" | "gold" | "neutral" | "success";
-  readonly value: number;
+  readonly value: number | string;
 }
 
 export interface CommandCenterRuntimeSummary {
@@ -90,28 +126,45 @@ export class CommandCenterQueryService {
 
   public async snapshot(): Promise<CommandCenterSnapshot> {
     return this.#repositories.transaction(async ({
+      businessMissions,
+      agentCompanyWorkdays,
+      authorizedResearch,
       contentProductions,
       operationalPlanes,
       productionRuntimeJobs,
     }) => {
       const [
         productions,
+        workdays,
+        business,
         sources,
         evidence,
         evidencePacks,
         runtimeCounts,
         killSwitch,
+        research,
+        socialLiveRecords,
       ] = await Promise.all([
         contentProductions.listByWorkspaceId(this.#workspaceId, 25),
+        agentCompanyWorkdays.listByWorkspaceId(this.#workspaceId, 25),
+        businessMissions.listByWorkspaceId(this.#workspaceId, 25),
         operationalPlanes.listSourcesByWorkspaceId(this.#workspaceId, 100),
         operationalPlanes.listEvidenceByWorkspaceId(this.#workspaceId, 100),
         operationalPlanes.listEvidencePacksByWorkspaceId(this.#workspaceId, 100),
         productionRuntimeJobs.summarize(this.#workspaceId),
         operationalPlanes.getPublicationKillSwitch(this.#workspaceId),
+        authorizedResearch.listMissionsByWorkspaceId(this.#workspaceId, 25),
+        operationalPlanes.listSocialLiveRecordsByWorkspaceId(this.#workspaceId, 500),
       ]);
       const pendingFabio = productions.filter(
         ({ status }) => status === "PENDING_FABIO_APPROVAL",
       ).length;
+      const pendingBusiness = business.filter(({ status }) => status === "PENDING_FABIO_APPROVAL").length;
+      const pendingWorkdays = workdays.filter(({ status }) => status === "AWAITING_FABIO").length;
+      const blockedWorkdays = workdays.filter(({ status }) => status === "BLOCKED").length;
+      const blockedBusiness = business.filter(({ status }) => status === "BLOCKED").length;
+      const blockedResearch = research.filter(({ status }) => status === "BLOCKED").length;
+      const blockedClaims = research.flatMap(({ claimResults }) => claimResults).filter(({ status }) => status !== "VERIFIED").length;
       const pendingEvidenceAttested = productions.filter(
         ({ evidencePack, status }) =>
           status === "PENDING_FABIO_APPROVAL" && evidencePack !== undefined,
@@ -119,49 +172,50 @@ export class CommandCenterQueryService {
       const blocked = productions.filter(
         ({ status }) => status === "BLOCKED",
       ).length;
-      const scheduled = productions.filter(
-        ({ status }) => status === "SCHEDULED",
-      ).length;
-      const attentionRequired = runtimeCounts.deadLetter > 0;
+      const attentionRequired = runtimeCounts.deadLetter > 0 || blockedBusiness > 0 || blockedWorkdays > 0 || blockedResearch > 0;
+      const averageQuality = productions.length === 0
+        ? undefined
+        : Math.round(productions.reduce((total, production) => total + production.package.quality.readinessScore, 0) / productions.length);
+      const socialPacks = productions.flatMap(({ package: contentPackage }) => contentPackage.socialPublishingPack === undefined ? [] : [contentPackage.socialPublishingPack]);
+      const snapshotAt = this.#clock.now().getTime();
 
       return Object.freeze({
-        agents: Object.freeze([
-          Object.freeze({
-            autonomy: "A3 — Propositiva" as const,
-            executor: "content-director@1.0.0" as const,
-            role: "Divisione strategica" as const,
-            state: "AVAILABLE" as const,
-            telemetry: "Nessuna telemetria di esecuzione raccolta",
-          }),
-        ]),
+        agentCompany: Object.freeze([...workdays]),
+        agents: agentSummaries(workdays),
+        business: Object.freeze([...business]),
         contractVersion: COMMAND_CENTER_CONTRACT_VERSION,
         evidence: Object.freeze({
           evidence: Object.freeze([...evidence]),
           evidencePacks: Object.freeze([...evidencePacks]),
+          researchMissions: Object.freeze([...research]),
           sources: Object.freeze([...sources]),
         }),
         generatedAt: this.#clock.now().toISOString(),
         overview: Object.freeze({
-          autonomy: "A3 — Propositiva" as const,
+          autonomy: "A3 — Controllata" as const,
           dailyBrief: dailyBrief({
             blocked,
+            blockedBusiness,
+            blockedResearch,
             evidencePacks: evidencePacks.length,
             pendingFabio,
+            pendingBusiness,
+            pendingWorkdays,
+            blockedWorkdays,
             pendingEvidenceAttested,
             runtimeCounts,
           }),
+          decisionsRequired: pendingFabio + blocked + pendingBusiness + blockedBusiness + pendingWorkdays + blockedWorkdays + blockedResearch + runtimeCounts.deadLetter,
           externalActions: "LOCKED" as const,
           metrics: Object.freeze([
             metric(
               "approval",
               "Revisione Fabio",
-              pendingFabio,
-              pendingFabio === 0
-                ? "Nessun pacchetto richiede una decisione."
-                : pendingEvidenceAttested === pendingFabio
-                  ? "I pacchetti attestati dalle evidenze richiedono la decisione di Fabio."
-                  : "Alcuni pacchetti attendono la revisione senza un'attestazione dell'Evidence Pack.",
-              pendingFabio === 0 ? "neutral" : "gold",
+              pendingFabio + pendingBusiness + pendingWorkdays,
+              pendingFabio + pendingBusiness + pendingWorkdays === 0
+                ? "Nessun pacchetto o giornata operativa richiede una decisione."
+                : `${String(pendingWorkdays)} giornate operative, ${String(pendingBusiness)} dossier Business e ${String(pendingFabio)} pacchetto/i contenuto richiedono una decisione.${pendingEvidenceAttested === pendingFabio ? " I contenuti in attesa hanno attestazione delle evidenze." : " Alcuni contenuti richiedono ancora un'attestazione dell'Evidence Pack."}`,
+              pendingFabio + pendingBusiness + pendingWorkdays === 0 ? "neutral" : "gold",
             ),
             metric(
               "production-queue",
@@ -171,31 +225,27 @@ export class CommandCenterQueryService {
               "gold",
             ),
             metric(
-              "blocked",
-              "Contenuti bloccati",
-              blocked,
-              blocked === 0
-                ? "Nessun contenuto bloccato è stato registrato."
-                : "Richiede correzione prima dell'approvazione.",
-              blocked === 0 ? "neutral" : "attention",
+              "claim-blocked",
+              "Claim bloccati",
+              research.length === 0 ? "—" : blockedClaims,
+              research.length === 0 ? "Dato non ancora disponibile: nessuna Research Mission durevole è stata eseguita." : `${String(blockedClaims)} claim contestati o insufficienti nelle Research Mission durevoli.`,
+              blockedClaims > 0 ? "attention" : research.length === 0 ? "neutral" : "success",
             ),
             metric(
-              "evidence-packs",
-              "Pacchetti di evidenze",
-              evidencePacks.length,
-              evidencePacks.length === 0
-                ? "Non è stato creato alcun pacchetto immutabile per la revisione."
-                : "Insiemi di evidenze immutabili pronti per la revisione.",
-              evidencePacks.length === 0 ? "neutral" : "success",
+              "quality",
+              "Qualità media",
+              averageQuality === undefined ? "—" : `${String(averageQuality)}/100`,
+              averageQuality === undefined
+                ? "Dato non ancora disponibile: nessun pacchetto persistito."
+                : "Media calcolata sui pacchetti di contenuto persistiti.",
+              averageQuality === undefined ? "neutral" : "success",
             ),
             metric(
-              "scheduled",
-              "Calendario interno",
-              scheduled,
-              scheduled === 0
-                ? "Nessun contenuto è pianificato internamente."
-                : "Pianificato internamente; la pubblicazione resta bloccata separatamente.",
-              scheduled === 0 ? "neutral" : "success",
+              "worker",
+              "Stato worker",
+              "NON REGISTRATO",
+              "Coda, lease e retry sono disponibili; il processo H24 supervisionato non è ancora registrato.",
+              "attention",
             ),
             metric(
               "dead-letter",
@@ -210,6 +260,7 @@ export class CommandCenterQueryService {
           system: attentionRequired ? "ATTENTION_REQUIRED" : "READY",
         }),
         productions: Object.freeze([...productions]),
+        research: Object.freeze([...research]),
         runtime: Object.freeze({
           continuousWorker: "NOT_REGISTERED" as const,
           counts: Object.freeze({ ...runtimeCounts }),
@@ -217,6 +268,14 @@ export class CommandCenterQueryService {
           status: attentionRequired ? "ATTENTION_REQUIRED" : "READY",
           telegram: "NOT_OBSERVED" as const,
         }),
+        socialIntelligence: Object.freeze({
+          blocked: socialPacks.filter(({ status }) => status === "BLOCKED").length,
+          expiringWithin24Hours: socialPacks.filter(({ trendAnalysis }) => trendAnalysis.status === "ACTIVE" && trendAnalysis.publishBy !== undefined && Date.parse(trendAnalysis.publishBy) > snapshotAt && Date.parse(trendAnalysis.publishBy) <= snapshotAt + 86_400_000).length,
+          packs: Object.freeze([...socialPacks]),
+          readyForFabio: socialPacks.filter(({ status }) => status === "READY_FOR_FABIO_APPROVAL").length,
+          requiresResearch: socialPacks.filter(({ status }) => status === "REQUIRES_RESEARCH").length,
+        }),
+        socialLive: buildDailySocialOperationsReport(socialLiveRecords, this.#clock.now(), sources.map(({ sourceId }) => sourceId)),
       });
     });
   }
@@ -224,11 +283,51 @@ export class CommandCenterQueryService {
 
 function dailyBrief(input: {
   readonly blocked: number;
+  readonly blockedBusiness: number;
+  readonly blockedResearch: number;
+  readonly blockedWorkdays: number;
   readonly evidencePacks: number;
   readonly pendingFabio: number;
+  readonly pendingBusiness: number;
   readonly pendingEvidenceAttested: number;
+  readonly pendingWorkdays: number;
   readonly runtimeCounts: ProductionRuntimeJobCounts;
 }): CommandCenterOverview["dailyBrief"] {
+  if (input.pendingWorkdays > 0) {
+    return Object.freeze({
+      decision: "È richiesta la revisione della giornata Agent Company",
+      detail: `${String(input.pendingWorkdays)} giornata/e operative hanno completato i reparti reali e attendono Fabio. Nessuna azione esterna è stata eseguita.`,
+      priority: "Apri Compagnia Agenti e verifica output, gate, costi misurati e fingerprint prima di decidere.",
+    });
+  }
+  if (input.blockedWorkdays > 0) {
+    return Object.freeze({
+      decision: "Una giornata Agent Company è bloccata",
+      detail: `${String(input.blockedWorkdays)} giornata/e operative sono state fermate da un blocker o da un gate.`,
+      priority: "Ispeziona il task bloccato e correggi l'input senza aggirare Quality, Risk o Cost Guardian.",
+    });
+  }
+  if (input.blockedResearch > 0) {
+    return Object.freeze({
+      decision: "Una Research Mission è bloccata",
+      detail: `${String(input.blockedResearch)} missione/i di ricerca sono state fermate da freshness, attribuzione, corroborazione o policy della fonte.`,
+      priority: "Apri il Centro Evidenze e verifica claim, blocker e fonti senza aggirare il Source Registry.",
+    });
+  }
+  if (input.pendingBusiness > 0) {
+    return Object.freeze({
+      decision: "È richiesta una decisione Business",
+      detail: `${String(input.pendingBusiness)} dossier Business Mission contiene confronto, offerta, economics, validazione e gate pronti per Fabio.`,
+      priority: "Apri Business e verifica scorecard, assunzioni, formule e conseguenze prima della decisione.",
+    });
+  }
+  if (input.blockedBusiness > 0) {
+    return Object.freeze({
+      decision: "Una Business Mission richiede dati o correzioni",
+      detail: `${String(input.blockedBusiness)} dossier Business è bloccato dai gate deterministici.`,
+      priority: "Risolvi evidenze, economics o vincoli di rischio senza imputare valori mancanti.",
+    });
+  }
   if (input.pendingFabio > 0) {
     return Object.freeze({
       decision: "È richiesta una decisione di approvazione",
@@ -264,10 +363,46 @@ function dailyBrief(input: {
   });
 }
 
+function agentSummaries(
+  workdays: readonly AgentCompanyWorkday[],
+): readonly CommandCenterAgentSummary[] {
+  return Object.freeze(OPERATIONAL_AGENT_COMPANY_CATALOG.map((agent) => {
+    const tasks = workdays.flatMap(({ tasks }) =>
+      tasks.filter(({ agentId }) => agentId === agent.agentId),
+    );
+    const hasRunningTask = tasks.some(({ status }) => status === "RUNNING");
+    const blockedTasks = tasks.filter(({ status }) => status === "BLOCKED").length;
+    const qualityScores = tasks.flatMap(({ gates }) => gates.filter(({ gate }) => gate === "QUALITY").map(({ score }) => score));
+    const state: OperationalAgentState = hasRunningTask
+      ? "ACTIVE"
+      : blockedTasks > 0
+        ? "DEGRADED"
+        : agent.state;
+
+    return Object.freeze({
+      agentId: agent.agentId,
+      acceptedFirstPassTasks: tasks.filter(({ attempts, gates, status }) => status === "COMPLETED" && attempts === 1 && gates.every(({ status: gateStatus }) => gateStatus === "PASSED")).length,
+      averageQualityScore: qualityScores.length === 0 ? "NOT_AVAILABLE" as const : Math.round(qualityScores.reduce((total, score) => total + score, 0) / qualityScores.length),
+      autonomy: "A3 — Controllata" as const,
+      blockedTasks,
+      completedTasks: tasks.filter(({ status }) => status === "COMPLETED").length,
+      displayName: agent.displayName,
+      executor: agent.executorId,
+      measuredCostCents: tasks.reduce((total, { costCents }) => total + costCents, 0),
+      measuredDurationMs: tasks.reduce((total, { durationMs }) => total + durationMs, 0),
+      revisionsRequired: tasks.reduce((total, { attempts }) => total + Math.max(0, attempts - 1), 0),
+      role: agent.role,
+      state,
+      supportedTasks: agent.supportedTasks,
+      validationErrors: blockedTasks,
+    });
+  }));
+}
+
 function metric(
   id: CommandCenterMetric["id"],
   label: string,
-  value: number,
+  value: number | string,
   context: string,
   tone: CommandCenterMetric["tone"],
 ): CommandCenterMetric {
