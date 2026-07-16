@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import type { Stats } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
 
 import type { JsonObject } from "../contracts/json.js";
 import { CoreError } from "../errors/core-error.js";
@@ -20,14 +21,22 @@ export type LocalSecretResolverReadFile = (
   path: string,
 ) => Promise<Uint8Array>;
 
+export type LocalSecretResolverStatFile = (path: string) => Promise<Stats>;
+
 export interface LocalSecretResolverDependencies {
   readonly environment?: Readonly<Record<string, string | undefined>>;
   readonly readFile?: LocalSecretResolverReadFile;
+  /**
+   * Injectable only so offline tests can exercise permission failures. The
+   * resolver deliberately never returns the file path in a public error.
+   */
+  readonly statFile?: LocalSecretResolverStatFile;
 }
 
 type SecretResolutionErrorCode =
   | "secret_reference_invalid"
   | "secret_environment_missing"
+  | "secret_file_insecure"
   | "secret_file_missing"
   | "secret_file_unavailable"
   | "secret_value_invalid";
@@ -39,7 +48,10 @@ export class SecretResolutionError extends CoreError {
     details?: JsonObject,
   ) {
     super({
-      category: code === "secret_value_invalid" ? "validation" : "not_found",
+      category:
+        code === "secret_value_invalid" || code === "secret_file_insecure"
+          ? "validation"
+          : "not_found",
       code,
       ...(details === undefined ? {} : { details }),
       message,
@@ -51,6 +63,7 @@ export class SecretResolutionError extends CoreError {
 export class LocalSecretResolver implements SecretResolver {
   readonly #environment: Readonly<Record<string, string | undefined>>;
   readonly #readFile: LocalSecretResolverReadFile;
+  readonly #statFile: LocalSecretResolverStatFile;
   readonly #referenceValidator = new SecretReferenceValidator();
   readonly #resultValidator = new SecretResolutionResultValidator();
 
@@ -59,6 +72,7 @@ export class LocalSecretResolver implements SecretResolver {
     this.#readFile =
       dependencies.readFile ??
       (async (path: string): Promise<Uint8Array> => readFile(path));
+    this.#statFile = dependencies.statFile ?? stat;
   }
 
   public async resolve(
@@ -121,6 +135,26 @@ export class LocalSecretResolver implements SecretResolver {
   }
 
   async #resolveLocalFile(path: string): Promise<string> {
+    let details: Stats;
+    try {
+      details = await this.#statFile(path);
+    } catch (error) {
+      throw new SecretResolutionError(
+        isMissingFileError(error)
+          ? "secret_file_missing"
+          : "secret_file_unavailable",
+        "Local secret file is not available",
+        { source: "local-file" },
+      );
+    }
+    if (!isPrivateRegularFile(details)) {
+      throw new SecretResolutionError(
+        "secret_file_insecure",
+        "Local secret file permissions are not secure",
+        { source: "local-file" },
+      );
+    }
+
     let bytes: Uint8Array;
     try {
       bytes = await this.#readFile(path);
@@ -170,6 +204,13 @@ export class LocalSecretResolver implements SecretResolver {
       );
     }
   }
+}
+
+function isPrivateRegularFile(details: Stats): boolean {
+  const mode = details.mode & 0o777;
+  const ownerMatches =
+    typeof process.getuid !== "function" || details.uid === process.getuid();
+  return details.isFile() && ownerMatches && mode === 0o600;
 }
 
 function validationIssuesToJson(

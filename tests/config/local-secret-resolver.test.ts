@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -46,6 +46,7 @@ describe("Controlled local secret resolution", () => {
     try {
       const secretPath = join(directory, "provider-token.txt");
       await writeFile(secretPath, "file-secret-value", "utf8");
+      await chmod(secretPath, 0o600);
 
       await expect(
         new LocalSecretResolver().resolve(
@@ -106,6 +107,32 @@ describe("Controlled local secret resolution", () => {
     });
   });
 
+  it("fails closed for insecure permissions and an empty local secret without exposing its location", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-secrets-"));
+    try {
+      const secretPath = join(directory, "private-value.txt");
+      await writeFile(secretPath, "file-secret-value", "utf8");
+
+      await expect(
+        new LocalSecretResolver().resolve(createLocalFileSecretReference(secretPath)),
+      ).rejects.toMatchObject({ code: "secret_file_insecure" });
+
+      await chmod(secretPath, 0o600);
+      await writeFile(secretPath, "", "utf8");
+      await expect(
+        new LocalSecretResolver().resolve(createLocalFileSecretReference(secretPath)),
+      ).rejects.toMatchObject({ code: "secret_value_invalid" });
+
+      try {
+        await new LocalSecretResolver().resolve(createLocalFileSecretReference(secretPath));
+      } catch (error) {
+        expect(JSON.stringify(error)).not.toContain("private-value.txt");
+      }
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
   it("validates secret resolution output contracts", () => {
     const validValue = {
       contractVersion: "1",
@@ -148,6 +175,7 @@ describe("Controlled local secret resolution", () => {
       const secretPath = join(directory, "super-secret-location.txt");
       const secretValue = "do-not-leak-this-secret";
       await writeFile(secretPath, secretValue, "utf8");
+      await chmod(secretPath, 0o600);
 
       await expect(
         new LocalSecretResolver().resolve({

@@ -1071,6 +1071,61 @@ export {
   type OpenAIResponsesTransportRequest,
   type OpenAIResponsesTransportResponse,
 } from "./models/providers/openai-model-provider.js";
+export {
+  OpenAIImageGenerationProvider,
+  FetchOpenAIImageGenerationTransport,
+  createDefaultOpenAIImageGenerationProviderConfig,
+  OPENAI_IMAGES_GENERATIONS_PATH,
+  type OpenAIImageGenerationProviderConfig,
+  type OpenAIImageGenerationProviderDependencies,
+  type OpenAIImageGenerationTransport,
+  type OpenAIImageGenerationTransportRequest,
+  type OpenAIImageGenerationTransportResponse,
+} from "./media-factory/openai-image-generation-provider.js";
+export {
+  BRAND_MEDIA_FACTORY_CONTRACT_VERSION,
+  MediaGenerationProviderError,
+  type BrandMediaFactoryProviderError,
+  type BrandMediaFactoryProviderErrorCode,
+  type GeneratedMasterImage,
+  type MediaGenerationProvider,
+  type MediaGenerationRequest,
+  type MediaGenerationResponse,
+} from "./media-factory/media-generation-provider.js";
+export {
+  LIVE_AI_BRAND_MEDIA_PILOT_CONTRACT_VERSION,
+  LIVE_AI_BRAND_MEDIA_PILOT_PLAN,
+  LiveAiBrandMediaPilot,
+  type LiveAiBrandMediaCostLedger,
+  type LivePilotAuthorizationPort,
+  type LiveAiBrandMediaPilotDependencies,
+  type LiveAiBrandMediaPilotRequest,
+  type LiveAiBrandMediaPilotResult,
+} from "./media-factory/live-ai-brand-media-pilot.js";
+export {
+  LIVE_PILOT_OPERATIONS,
+  LIVE_PILOT_SESSION_CONTRACT_VERSION,
+  LivePilotSessionError,
+  LivePilotSessionLedger,
+  type CreateLivePilotSessionInput,
+  type LivePilotClock,
+  type LivePilotLedgerSnapshot,
+  type LivePilotOperation,
+  type LivePilotReservation,
+  type LivePilotSessionLedgerOptions,
+  type LivePilotSessionPreflight,
+  type LivePilotSessionStatus,
+} from "./media-factory/live-pilot-session-ledger.js";
+export {
+  SOCIAL_PUBLICATION_CHECKPOINT_CONTRACT_VERSION,
+  FakeSocialPlatformPublicationTransport,
+  browserCheckpointFor,
+  connectionRequirementsFor,
+  type SocialPlatformConnectionRequirements,
+  type SocialPlatformPublicationTransport,
+  type SocialPublicationBrowserCheckpoint,
+  type SocialPublicationPlatform,
+} from "./social-publishing/social-platform-publication-contract.js";
 export type {
   ModelOutputFormat,
   ModelProfile,
