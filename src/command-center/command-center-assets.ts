@@ -330,7 +330,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   const actionConfirmationTimer = document.getElementById("action-confirmation-timer");
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const mobileSidebar = window.matchMedia ? window.matchMedia("(max-width: 820px)") : { matches: false };
-  const state = { confirmationInterval: null, csrfToken: null, pendingConfirmation: null, snapshot: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, visualReview: null, visualSlideIndex: 0 };
+  const state = { confirmationInterval: null, csrfToken: null, pendingConfirmation: null, snapshot: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, visualReview: null, visualSlideIndex: 0, mediaFactory: null };
 
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
@@ -342,10 +342,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   async function refresh() {
     try {
-      const [response, visualResponse] = await Promise.all([fetch("/api/overview", { cache: "no-store", credentials: "same-origin" }), fetch("/api/social-visual-review", { cache: "no-store", credentials: "same-origin" })]);
+      const [response, visualResponse, mediaFactoryResponse] = await Promise.all([fetch("/api/overview", { cache: "no-store", credentials: "same-origin" }), fetch("/api/social-visual-review", { cache: "no-store", credentials: "same-origin" }), fetch("/api/brand-media-factory", { cache: "no-store", credentials: "same-origin" })]);
       if (!response.ok) throw new Error("L'API locale del Centro di Comando non è disponibile.");
       state.snapshot = await response.json();
       state.visualReview = visualResponse.ok ? await visualResponse.json() : null;
+      state.mediaFactory = mediaFactoryResponse.ok ? await mediaFactoryResponse.json() : null;
       render(state.snapshot);
     } catch (error) {
       root.dataset.apiState = "error";
@@ -379,7 +380,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     renderRuntime(snapshot.runtime);
     renderAgents(snapshot.agents);
     renderAgentWorkdays(snapshot.agentCompany || []);
-    renderApprovals(snapshot.productions, snapshot.business || [], snapshot.socialLive, state.visualReview);
+    renderApprovals(snapshot.productions, snapshot.business || [], snapshot.socialLive, state.visualReview, state.mediaFactory);
   }
 
   function renderMetrics(metrics) {
@@ -940,14 +941,15 @@ export const COMMAND_CENTER_CLIENT_JS = `
   function agentStat(label, value) { const item = element("div", "cc-agent-stat"); item.append(element("span", "", label), element("b", "", value)); return item; }
   function duration(milliseconds) { if (!Number.isFinite(milliseconds)) return "—"; if (milliseconds < 1000) return number(milliseconds) + " ms"; return new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 }).format(milliseconds / 1000) + " s"; }
 
-  function renderApprovals(productions, business, live, visualReview) {
+  function renderApprovals(productions, business, live, visualReview, mediaFactory) {
     const pending = productions.filter((item) => item.status === "PENDING_FABIO_APPROVAL");
     const pendingBusiness = business.filter((item) => item.status === "PENDING_FABIO_APPROVAL");
     const reviewList = byId("approval-review-list");
     reviewList.replaceChildren();
+    if (mediaFactory) reviewList.append(mediaFactoryApprovalCard(mediaFactory));
     if (pending.length === 0 && pendingBusiness.length === 0) {
-      text("approval-title", "Nessun pacchetto richiede la decisione di Fabio");
-      text("approval-detail", "Un futuro pacchetto contenuti o dossier Business apparirà qui con versione esatta, fingerprint, evidenze e gate.");
+      text("approval-title", mediaFactory ? "Pilot Live AI in attesa di Fabio" : "Nessun pacchetto richiede la decisione di Fabio");
+      text("approval-detail", mediaFactory ? "Il factory mostra lo stato reale di budget, asset e gate. Non approva, programma o pubblica nulla." : "Un futuro pacchetto contenuti o dossier Business apparirà qui con versione esatta, fingerprint, evidenze e gate.");
       return;
     }
     const evidenceAttested = pending.filter((item) => item.evidencePack).length;
@@ -1013,8 +1015,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const previous = element("button", "", "← Precedente"); previous.type = "button";
     const position = element("strong", "", String(state.visualSlideIndex + 1) + " / 6");
     const next = element("button", "", "Successiva →"); next.type = "button";
-    previous.addEventListener("click", () => { state.visualSlideIndex -= 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview); });
-    next.addEventListener("click", () => { state.visualSlideIndex += 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview); });
+    previous.addEventListener("click", () => { state.visualSlideIndex -= 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview, state.mediaFactory); });
+    next.addEventListener("click", () => { state.visualSlideIndex += 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview, state.mediaFactory); });
     nav.append(previous, position, next); head.append(nav); shell.append(head);
     const canvases = element("div", "cc-visual-review-canvases");
     for (const platform of ["instagram", "tiktok"]) {
@@ -1027,6 +1029,64 @@ export const COMMAND_CENTER_CLIENT_JS = `
     shell.append(canvases);
     if (review.visualReview.status !== "READY_FOR_HUMAN_DECISION") shell.append(element("p", "cc-visual-review-warning", "BLOCCO: il logo visibile è un estratto pixel-per-pixel del post reale, ma manca il file originale autonomo. Nessuna approvazione viene proposta."));
     return shell;
+  }
+
+  function mediaFactoryApprovalCard(factory) {
+    const card = element("article", "cc-approval-review");
+    card.dataset.visualStatus = factory.status === "PENDING_FABIO_APPROVAL" ? "ready" : "blocked";
+    const head = element("div", "cc-approval-review-head");
+    const title = factory.status === "PENDING_FABIO_APPROVAL" ? "PILOT LIVE AI · DECISIONE VISIVA RICHIESTA" : "PILOT LIVE AI · BLOCCATO IN SICUREZZA";
+    const identity = element("div");
+    identity.append(element("p", "cc-panel-label", title), element("h3", "", "Brand-Locked Media Factory"), element("small", "", "Solo asset locali · nessuna pubblicazione"));
+    const gates = element("div", "cc-approval-gates");
+    for (const [label, gate] of [["QUALITY", factory.qualityGate], ["RISK", factory.riskGate], ["COST", factory.costGate], ["VISUAL", factory.visualGate]]) {
+      const status = gate && gate.status ? gate.status : "NON DISPONIBILE";
+      const chip = element("span", "", label + " " + statusLabel(status));
+      chip.dataset.gate = status.includes("PASS") || status.includes("PENDING_FABIO") ? "ready" : "blocked";
+      gates.append(chip);
+    }
+    head.append(identity, gates); card.append(head);
+    const grid = element("div", "cc-approval-review-grid");
+    const calls = factory.liveCalls === undefined ? "—" : String(factory.liveCalls);
+    const social = factory.social || {};
+    const models = factory.models || { image: factory.imageModel, text: factory.textModel };
+    const ledger = factory.costLedger || factory.costGate || {};
+    const estimatedCost = typeof ledger.estimatedCumulativeCostUsd === "number" ? "USD " + ledger.estimatedCumulativeCostUsd.toFixed(3) : "—";
+    const budget = typeof ledger.hardStopUsd === "number" ? "Hard stop USD " + ledger.hardStopUsd + " · Budget API EUR " + String(ledger.apiBudgetEur || "—") : "Budget non disponibile";
+    grid.append(
+      socialBlock("Stato", statusLabel(factory.status), factory.reason || "Asset e gate sono conservati solo localmente."),
+      socialBlock("Chiamate live", calls, "Il limite assoluto è otto; massimo una generazione immagine."),
+      socialBlock("Provider", statusLabel(factory.provider || "NON DISPONIBILE"), "Il confine di generazione resta provider-neutral."),
+      socialBlock("Modello testo", models.text || "—", "Solo il modello esplicitamente selezionato."),
+      socialBlock("Modello immagine", models.image || "—", "Nessun fallback costoso o implicito."),
+      socialBlock("Costo stimato", estimatedCost, budget),
+      socialBlock("TikTok", statusLabel(social.tiktok || "BROWSER_CONNECTION_REQUIRED"), "Nessuna app, token, account o pubblicazione è inventata."),
+      socialBlock("Instagram", statusLabel(social.instagram || "BROWSER_CONNECTION_REQUIRED"), "Nessuna app, token, account o pubblicazione è inventata.")
+    );
+    card.append(grid);
+    if (factory.brandAssets || factory.fingerprint) {
+      const provenance = element("div", "cc-approval-fingerprint");
+      provenance.append(element("strong", "", "Provenienza e impronta"));
+      if (factory.brandAssets) provenance.append(
+        element("code", "", "Logo originale " + (factory.brandAssets.originalLogoSha256 || "—")),
+        element("code", "", "Overlay tecnico " + (factory.brandAssets.technicalOverlaySha256 || "—"))
+      );
+      if (factory.fingerprint) provenance.append(element("code", "", "Fingerprint " + factory.fingerprint));
+      card.append(provenance);
+    }
+    if (factory.assets && factory.assets.instagram && factory.assets.tiktok) {
+      const canvases = element("div", "cc-visual-review-canvases");
+      for (const platform of ["instagram", "tiktok"]) {
+        const asset = factory.assets[platform];
+        const frame = element("figure", "cc-visual-canvas");
+        frame.append(element("span", "", platform.toUpperCase() + " · " + String(asset.width) + "×" + String(asset.height)));
+        const image = document.createElement("img"); image.alt = "Variante locale Metodo Veloce per " + platform; image.src = "/" + asset.path; image.loading = "eager";
+        frame.append(image); canvases.append(frame);
+      }
+      card.append(canvases);
+    }
+    card.append(element("p", "", "Fabio deve verificare il Visual Gate e, in un unico checkpoint browser, collegare o verificare gli account TikTok e Instagram senza pubblicare."));
+    return card;
   }
 
   function navigate(query) {

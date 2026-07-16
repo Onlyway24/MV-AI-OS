@@ -1,0 +1,47 @@
+{
+  "costLedger": {
+    "apiBudgetEur": 5,
+    "estimatedCumulativeCostUsd": 0.005,
+    "hardStopUsd": 4,
+    "imageGenerations": 0,
+    "liveCalls": 1,
+    "preflightReservedCostUsd": 0.011,
+    "serverSpendUsd": 0,
+    "sessionResidualBudgetUsd": 0.095,
+    "sessionStatus": "CLOSED",
+    "textCostUsd": 0.005
+  },
+  "externalEffects": {
+    "openAiProviderCalls": 1,
+    "socialPublications": 0,
+    "serverSpendUsd": 0
+  },
+  "imageModel": "gpt-image-1-mini",
+  "preflight": [
+    {
+      "authorizedCounts": {
+        "image": 0,
+        "providerCalls": 0,
+        "text": 0
+      },
+      "maxCostUsd": 0.005,
+      "model": "gpt-4o-mini",
+      "residualBudgetUsd": 0.1,
+      "status": "ready"
+    },
+    {
+      "authorizedCounts": {
+        "image": 0,
+        "providerCalls": 0,
+        "text": 0
+      },
+      "maxCostUsd": 0.006,
+      "model": "gpt-image-1-mini",
+      "residualBudgetUsd": 0.1,
+      "status": "ready"
+    }
+  ],
+  "reason": "text_generation_failed",
+  "status": "BLOCKED",
+  "textModel": "gpt-4o-mini"
+}

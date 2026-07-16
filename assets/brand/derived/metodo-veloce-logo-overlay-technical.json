@@ -1,0 +1,20 @@
+{
+  "assetId": "metodo-veloce-logo-overlay-technical@1",
+  "createdBy": "local-only renderer",
+  "creativeModificationAllowed": false,
+  "derivativeOperation": "lossless pixel crop for local overlay only",
+  "dimensions": {
+    "width": 796,
+    "height": 796
+  },
+  "originalAssetId": "metodo-veloce-logo-original@1",
+  "originalSha256": "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+  "overlayOnly": true,
+  "sha256": "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681",
+  "sourceCrop": {
+    "left": 144,
+    "top": 352,
+    "right": 940,
+    "bottom": 1148
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "assetId": "metodo-veloce-logo-original@1",
+  "sourcePath": "assets/brand/metodo-veloce-logo-original.jpg",
+  "sha256": "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+  "version": "1",
+  "dimensions": { "width": 1052, "height": 1208 },
+  "immutable": true,
+  "safeArea": "local renderer preserves source pixels; no creative transformation is permitted",
+  "minimumSize": { "width": 122, "height": 122 },
+  "aiGenerated": false,
+  "creativeModificationAllowed": false,
+  "providedBy": "Fabio",
+  "sourceFilename": "IMG_5609.jpg"
+}

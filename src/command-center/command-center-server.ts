@@ -29,6 +29,9 @@ const SESSION_COOKIE_NAME = "mv_ai_os_cc";
 const ORIGINAL_BRAND_ASSET_PATH = fileURLToPath(new URL("../../assets/brand/onlyway-obsidian-chrome-original.png", import.meta.url));
 const SOCIAL_VISUAL_PACK_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/social-pack-five-items-v3/", import.meta.url));
 const SOCIAL_VISUAL_PACK_MANIFEST_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/social-pack-five-items-v3/manifest.json", import.meta.url));
+const BRAND_MEDIA_FACTORY_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/", import.meta.url));
+const BRAND_MEDIA_FACTORY_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/pilot-status.json", import.meta.url));
+const BRAND_MEDIA_FACTORY_APPROVAL_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/approval-manifest.json", import.meta.url));
 
 export interface CommandCenterServerOptions {
   readonly accessToken?: string;
@@ -165,6 +168,11 @@ export class PrivateCommandCenterServer {
         send(response, 200, "image/png", visualAsset);
         return;
       }
+      const factoryAsset = await brandMediaFactoryVisualAsset(requestUrl.pathname);
+      if (factoryAsset !== undefined) {
+        send(response, 200, "image/png", factoryAsset);
+        return;
+      }
       if (requestUrl.pathname === "/downloads/metodo-veloce-insights-template.csv") {
         send(response, 200, "text/csv; charset=utf-8", socialAnalyticsCsvTemplate(), { "Content-Disposition": "attachment; filename=metodo-veloce-insights-template.csv" });
         return;
@@ -189,6 +197,15 @@ export class PrivateCommandCenterServer {
           return;
         }
         send(response, 200, "application/json; charset=utf-8", JSON.stringify(visualReview));
+        return;
+      }
+      if (requestUrl.pathname === "/api/brand-media-factory") {
+        const factoryStatus = await brandMediaFactoryStatus();
+        if (factoryStatus === undefined) {
+          send(response, 404, "text/plain; charset=utf-8", "Pilot media non ancora disponibile");
+          return;
+        }
+        send(response, 200, "application/json; charset=utf-8", JSON.stringify(factoryStatus));
         return;
       }
       if (requestUrl.pathname === "/api/session") {
@@ -296,6 +313,20 @@ async function socialVisualReview(): Promise<unknown> {
   }
 }
 
+async function brandMediaFactoryStatus(): Promise<unknown> {
+  try {
+    return JSON.parse(await readFile(BRAND_MEDIA_FACTORY_APPROVAL_PATH, "utf8")) as unknown;
+  } catch (error) {
+    if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+  }
+  try {
+    return JSON.parse(await readFile(BRAND_MEDIA_FACTORY_STATUS_PATH, "utf8")) as unknown;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
 async function socialVisualAsset(pathname: string): Promise<Buffer | undefined> {
   const match = /^\/assets\/metodo-veloce\/social-pack-five-items-v3\/(instagram|tiktok)\/(slide-(?:0[1-6])\.png)$/u.exec(pathname);
   if (match === null) return undefined;
@@ -303,6 +334,12 @@ async function socialVisualAsset(pathname: string): Promise<Buffer | undefined> 
   const filename = match[2];
   if (platform === undefined || filename === undefined) return undefined;
   return readFile(`${SOCIAL_VISUAL_PACK_ROOT}${platform}/${filename}`);
+}
+
+async function brandMediaFactoryVisualAsset(pathname: string): Promise<Buffer | undefined> {
+  const match = /^\/assets\/metodo-veloce\/live-ai-brand-media-pilot-v1\/(master-openai|instagram-local-variant|tiktok-local-variant)\.png$/u.exec(pathname);
+  if (match?.[1] === undefined) return undefined;
+  return readFile(`${BRAND_MEDIA_FACTORY_ROOT}${match[1]}.png`);
 }
 
 function visualReviewStatus(value: unknown): string | undefined {

@@ -142,6 +142,8 @@ describe("Private Command Center", () => {
       expect(appText).toContain("REQUEST_BUSINESS_REVISION");
       expect(appText).toContain("VISUAL GATE BLOCCATO");
       expect(appText).toContain("Approvazione bloccata: logo originale mancante");
+      expect(appText).toContain("/api/brand-media-factory");
+      expect(appText).toContain("Brand-Locked Media Factory");
 
       const insightsTemplate = await fetch(`${origin}/downloads/metodo-veloce-insights-template.csv`, { headers: { Cookie: cookie ?? "" } });
       expect(insightsTemplate.status).toBe(200);
@@ -193,6 +195,17 @@ describe("Private Command Center", () => {
       expect(createHash("sha256").update(Buffer.from(await socialAsset.arrayBuffer())).digest("hex")).toBe("b6599a3fee2746c1a30bf8ceb45ff246426ef344c2cfd867c6d1d820f64015f8");
       const rejectedVisualPath = await fetch(`${origin}/assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-07.png`, { headers: { Cookie: cookie ?? "" } });
       expect(rejectedVisualPath.status).toBe(404);
+
+      const mediaFactory = await fetch(`${origin}/api/brand-media-factory`, { headers: { Cookie: cookie ?? "" } });
+      expect(mediaFactory.status).toBe(200);
+      await expect(mediaFactory.json()).resolves.toMatchObject({
+        externalActionsAllowed: false,
+        externalEffects: { openAiProviderCalls: 1, socialPublications: 0, serverSpendUsd: 0 },
+        liveCalls: 1,
+        publicationAuthorized: false,
+        status: "BLOCKED",
+        visualGate: { status: "BLOCKED_NO_MASTER_IMAGE" },
+      });
 
       const session = await fetch(`${origin}/api/session`, { headers: { Cookie: cookie ?? "" } });
       const { csrfToken } = await session.json() as { readonly csrfToken: string };

@@ -1,0 +1,48 @@
+{
+  "approvalScope": "INTERNAL_PACKAGE_ONLY",
+  "brandAssets": {
+    "originalLogoSha256": "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+    "technicalOverlaySha256": "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681"
+  },
+  "costGate": {
+    "apiBudgetEur": 5,
+    "estimatedCumulativeCostUsd": 0.005,
+    "hardStopUsd": 4,
+    "maxImageGenerations": 1,
+    "maxLiveCalls": 8,
+    "preflightReservedCostUsd": 0.011,
+    "serverSpendUsd": 0,
+    "status": "PASS_BUDGET_PREFLIGHT"
+  },
+  "externalActionsAllowed": false,
+  "externalEffects": {
+    "openAiProviderCalls": 1,
+    "socialPublications": 0,
+    "serverSpendUsd": 0
+  },
+  "fingerprint": "58d70b509e29f49766334ab9480a786c74407fd7a5e1c5cd2f77edccba9e4725",
+  "imageModel": "gpt-image-1-mini",
+  "liveCalls": 1,
+  "models": {
+    "image": "gpt-image-1-mini",
+    "text": "gpt-4o-mini"
+  },
+  "publicationAuthorized": false,
+  "provider": "openai",
+  "qualityGate": {
+    "status": "BLOCKED_NO_MASTER_IMAGE"
+  },
+  "reason": "The single approved text provider call did not yield a valid response. The session is closed and the image operation remains unconsumed.",
+  "riskGate": {
+    "status": "PASS_NO_SOCIAL_OR_SERVER_EFFECTS"
+  },
+  "social": {
+    "instagram": "BROWSER_CONNECTION_REQUIRED",
+    "tiktok": "BROWSER_CONNECTION_REQUIRED"
+  },
+  "status": "BLOCKED",
+  "textModel": "gpt-4o-mini",
+  "visualGate": {
+    "status": "BLOCKED_NO_MASTER_IMAGE"
+  }
+}

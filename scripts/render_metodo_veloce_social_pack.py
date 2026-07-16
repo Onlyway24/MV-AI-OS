@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / "assets" / "metodo-veloce" / "social-pack-five-items-v3"
-LOGO = ROOT / "assets" / "brand" / "metodo-veloce-logo-extracted-reference-unverified.png"
+LOGO = ROOT / "assets" / "brand" / "metodo-veloce-logo-original.jpg"
 TITLE_FONT = Path("/System/Library/Fonts/Supplemental/DIN Condensed Bold.ttf")
 BODY_FONT = Path("/System/Library/Fonts/Avenir Next.ttc")
 YELLOW = "#FFD400"
@@ -248,8 +248,8 @@ def main() -> None:
         "publicationAuthorized": False,
         "visualReview": {
             "status": "BLOCKED_ORIGINAL_LOGO_MISSING",
-            "logoSource": "EXTRACTED_REFERENCE_UNVERIFIED",
-            "logoRequirement": "Standalone original Metodo Veloce logo required for identity approval",
+            "logoSource": "FABIO_ORIGINAL_IMMUTABLE",
+            "logoRequirement": "Original Metodo Veloce asset preserved without creative modification",
             "systemQualityScoreDoesNotReplaceHumanReview": True,
         },
         "audio": {
