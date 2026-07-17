@@ -5,7 +5,8 @@ export const OPENAI_RESPONSES_SDK_TRANSPORT_VERSION = "fetch-native-v1" as const
 
 export type OpenAiResponsesRequestMode =
   | "PLAIN_TEXT_V1"
-  | "STRUCTURED_OUTPUT_V1";
+  | "STRUCTURED_OUTPUT_V1"
+  | "MEDIA_DIRECTION_V1";
 
 export interface OpenAiResponsesRequestShapeManifest {
   readonly adapterVersion: typeof OPENAI_RESPONSES_REQUEST_BUILDER_VERSION;
@@ -67,6 +68,35 @@ const STRUCTURED_STATUS_SCHEMA = Object.freeze({
   type: "object",
 });
 
+const MEDIA_DIRECTION_SCHEMA = Object.freeze({
+  additionalProperties: false,
+  properties: Object.freeze({
+    editorialAngle: Object.freeze({ type: "string" }),
+    hook: Object.freeze({ type: "string" }),
+    negativeRules: Object.freeze({
+      items: Object.freeze({ type: "string" }),
+      type: "array",
+    }),
+    requiredObjects: Object.freeze({
+      items: Object.freeze({ type: "string" }),
+      type: "array",
+    }),
+    title: Object.freeze({ type: "string" }),
+    visualMood: Object.freeze({ type: "string" }),
+    visualScene: Object.freeze({ type: "string" }),
+  }),
+  required: Object.freeze([
+    "title",
+    "hook",
+    "editorialAngle",
+    "visualScene",
+    "visualMood",
+    "requiredObjects",
+    "negativeRules",
+  ]),
+  type: "object",
+});
+
 /**
  * Creates the only live-eligible Responses request: model plus string input.
  * Input remains transient; manifests carry shape only, never its value.
@@ -89,6 +119,20 @@ export function buildOpenAiResponsesStructuredOutputRequest(
 
 export function openAiResponsesStructuredStatusSchema(): Readonly<Record<string, unknown>> {
   return STRUCTURED_STATUS_SCHEMA;
+}
+
+/**
+ * Creates the sole live-eligible content-direction request for the controlled
+ * Media Factory closure. The schema is fixed here so callers cannot weaken it.
+ */
+export function buildOpenAiResponsesMediaDirectionRequest(
+  candidate: Readonly<Record<string, unknown>>,
+): OpenAiResponsesCanonicalRequest {
+  return build(candidate, "MEDIA_DIRECTION_V1");
+}
+
+export function openAiResponsesMediaDirectionSchema(): Readonly<Record<string, unknown>> {
+  return MEDIA_DIRECTION_SCHEMA;
 }
 
 function build(
@@ -139,21 +183,17 @@ function build(
   }
 
   const body: Record<string, unknown> = { model, input };
-  if (operationType === "STRUCTURED_OUTPUT_V1") {
-    if (sanitized.text !== undefined && !isStructuredTextFormat(sanitized.text)) {
+  if (operationType !== "PLAIN_TEXT_V1") {
+    const expected = operationType === "STRUCTURED_OUTPUT_V1"
+      ? structuredStatusFormat()
+      : mediaDirectionFormat();
+    if (sanitized.text !== undefined && JSON.stringify(sanitized.text) !== JSON.stringify(expected)) {
       throw new OpenAiResponsesRequestConformanceError(
         "RESPONSES_REQUEST_INVALID",
         "text",
       );
     }
-    body.text = {
-      format: {
-        type: "json_schema",
-        name: "onlyway_provider_status",
-        schema: STRUCTURED_STATUS_SCHEMA,
-        strict: true,
-      },
-    };
+    body.text = expected;
   }
 
   const serializedBody = JSON.stringify(body);
@@ -181,15 +221,24 @@ function build(
   return Object.freeze({ body: Object.freeze(body), manifest, serializedBody });
 }
 
-function isStructuredTextFormat(value: unknown): boolean {
-  if (!isRecord(value) || !isRecord(value.format)) return false;
-  const format = value.format;
-  return format.type === "json_schema" &&
-    format.name === "onlyway_provider_status" &&
-    format.strict === true &&
-    JSON.stringify(format.schema) === JSON.stringify(STRUCTURED_STATUS_SCHEMA);
+function structuredStatusFormat(): Readonly<Record<string, unknown>> {
+  return Object.freeze({
+    format: Object.freeze({
+      name: "onlyway_provider_status",
+      schema: STRUCTURED_STATUS_SCHEMA,
+      strict: true,
+      type: "json_schema",
+    }),
+  });
 }
 
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+function mediaDirectionFormat(): Readonly<Record<string, unknown>> {
+  return Object.freeze({
+    format: Object.freeze({
+      name: "metodo_veloce_media_direction",
+      schema: MEDIA_DIRECTION_SCHEMA,
+      strict: true,
+      type: "json_schema",
+    }),
+  });
 }

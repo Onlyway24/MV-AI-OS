@@ -105,7 +105,8 @@ describe("Live AI Brand Media Factory", () => {
 
     expect(transport.requests).toHaveLength(1);
     expect(transport.requests[0]).toMatchObject({
-      body: { model: "gpt-image-1-mini", n: 1, output_format: "b64_json", quality: "low", size: "1024x1536" },
+      body: { model: "gpt-image-1-mini", n: 1, output_format: "png", quality: "low", size: "1024x1536" },
+      headers: { "Idempotency-Key": "image-request-001" },
       method: "POST",
       url: "https://api.openai.com/v1/images/generations",
     });
@@ -147,6 +148,20 @@ describe("Live AI Brand Media Factory", () => {
 
     await expect(provider.generate(imageRequest())).rejects.toMatchObject({
       code: "image_transport_failed",
+    });
+  });
+
+  it("classifies an aborted image request as a redacted transport timeout", async () => {
+    const provider = new OpenAIImageGenerationProvider({
+      config: {
+        apiKey: { contractVersion: "1", secretId: "openai-live-media", value: "local-secret-value" },
+        baseUrl: "https://api.openai.com/v1",
+      },
+      transport: { send: () => Promise.reject(new DOMException("timed out", "AbortError")) },
+    });
+
+    await expect(provider.generate(imageRequest())).rejects.toMatchObject({
+      code: "image_transport_timeout",
     });
   });
 });

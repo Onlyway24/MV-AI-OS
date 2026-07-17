@@ -34,6 +34,10 @@ const BRAND_MEDIA_FACTORY_STATUS_PATH = fileURLToPath(new URL("../../assets/meto
 const BRAND_MEDIA_FACTORY_APPROVAL_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/approval-manifest.json", import.meta.url));
 const OPENAI_TEXT_DIAGNOSIS_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/openai-text-failure-diagnosis-v1/diagnosis-status.json", import.meta.url));
 const OPENAI_RESPONSES_CONFORMANCE_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/openai-responses-conformance-v1/conformance-status.json", import.meta.url));
+const MEDIA_QUALITY_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/media-factory-quality-closure-v1/", import.meta.url));
+const MEDIA_QUALITY_APPROVAL_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/media-factory-quality-closure-v1/approval-manifest.json", import.meta.url));
+const MEDIA_QUALITY_LIVE_RESULT_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/media-factory-quality-closure-v1/live-result.json", import.meta.url));
+const SOCIAL_CONNECTOR_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/media-factory-quality-closure-v1/social-connector-status.json", import.meta.url));
 
 export interface CommandCenterServerOptions {
   readonly accessToken?: string;
@@ -173,6 +177,11 @@ export class PrivateCommandCenterServer {
       const factoryAsset = await brandMediaFactoryVisualAsset(requestUrl.pathname);
       if (factoryAsset !== undefined) {
         send(response, 200, "image/png", factoryAsset);
+        return;
+      }
+      const qualityAsset = await mediaQualityVisualAsset(requestUrl.pathname);
+      if (qualityAsset !== undefined) {
+        send(response, 200, qualityAsset.contentType, qualityAsset.bytes);
         return;
       }
       if (requestUrl.pathname === "/downloads/metodo-veloce-insights-template.csv") {
@@ -317,8 +326,16 @@ async function socialVisualReview(): Promise<unknown> {
 
 async function brandMediaFactoryStatus(): Promise<unknown> {
   let factory: unknown;
+  for (const path of [MEDIA_QUALITY_APPROVAL_PATH, MEDIA_QUALITY_LIVE_RESULT_PATH]) {
+    try {
+      factory = JSON.parse(await readFile(path, "utf8")) as unknown;
+      break;
+    } catch (error) {
+      if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+    }
+  }
   try {
-    factory = JSON.parse(await readFile(BRAND_MEDIA_FACTORY_APPROVAL_PATH, "utf8")) as unknown;
+    if (factory === undefined) factory = JSON.parse(await readFile(BRAND_MEDIA_FACTORY_APPROVAL_PATH, "utf8")) as unknown;
   } catch (error) {
     if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
   }
@@ -344,7 +361,23 @@ async function brandMediaFactoryStatus(): Promise<unknown> {
       if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
     }
   }
+  try {
+    const value = JSON.parse(await readFile(SOCIAL_CONNECTOR_STATUS_PATH, "utf8")) as unknown;
+    if (record(value)) additions.socialConnections = value;
+  } catch (error) {
+    if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+  }
   return { ...factory, ...additions };
+}
+
+async function mediaQualityVisualAsset(pathname: string): Promise<{ readonly bytes: Buffer; readonly contentType: "image/jpeg" | "image/png" } | undefined> {
+  const match = /^\/assets\/metodo-veloce\/media-factory-quality-closure-v1\/(master-openai\.png|variants\/(?:instagram-1080x1350\.png|tiktok-1080x1920\.png|preview-instagram\.jpg|preview-tiktok\.jpg|contact-sheet\.jpg))$/u.exec(pathname);
+  const relative = match?.[1];
+  if (relative === undefined) return undefined;
+  return {
+    bytes: await readFile(`${MEDIA_QUALITY_ROOT}${relative}`),
+    contentType: relative.endsWith(".png") ? "image/png" : "image/jpeg",
+  };
 }
 
 async function socialVisualAsset(pathname: string): Promise<Buffer | undefined> {

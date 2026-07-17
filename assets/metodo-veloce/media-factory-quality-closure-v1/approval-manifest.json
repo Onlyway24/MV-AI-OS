@@ -1,0 +1,74 @@
+{
+  "contractVersion": "1",
+  "milestone": "MEDIA FACTORY QUALITY CLOSURE + INSTAGRAM AND TIKTOK OFFICIAL CONNECTION V1",
+  "status": "BLOCKED",
+  "reason": "IMAGE_PROVIDER_TRANSPORT_TIMEOUT: GPT Image 2 non ha restituito un master entro il timeout client di 60 secondi; nessun retry è autorizzato.",
+  "provider": "TEXT_READY_IMAGE_TIMEOUT",
+  "publication": "LOCKED",
+  "publicationAuthorized": false,
+  "externalActionsAllowed": false,
+  "review": "INTERNAL_PACKAGE_ONLY",
+  "fabioApproval": "NOT_GIVEN",
+  "liveCalls": 5,
+  "models": {
+    "text": "gpt-4o-mini",
+    "textSnapshot": "gpt-4o-mini-2024-07-18",
+    "image": "gpt-image-2",
+    "imageSnapshot": "gpt-image-2-2026-04-21"
+  },
+  "structuredOutput": {
+    "status": "VALIDATED",
+    "estimatedCostUsd": 0.00012375,
+    "costClassification": "ESTIMATED",
+    "outputPersistence": "MISSING_DUE_TO_CLOSURE_SERIALIZATION_DEFECT"
+  },
+  "master": null,
+  "qualityGate": {
+    "status": "BLOCKED_NO_MASTER_IMAGE"
+  },
+  "riskGate": {
+    "status": "BLOCKED_NO_MASTER_IMAGE"
+  },
+  "costGate": {
+    "status": "PASS_BUDGET_WITH_RECONCILIATION_PENDING"
+  },
+  "visualGate": {
+    "status": "BLOCKED_NO_MASTER_IMAGE"
+  },
+  "evidenceGate": {
+    "status": "PASS"
+  },
+  "costLedger": {
+    "apiBudgetEur": 5,
+    "dailyHardLimitUsd": 4,
+    "sessionHardLimitUsd": 1,
+    "textEstimatedCostUsd": 0.00012375,
+    "imageReservedPendingReconciliationUsd": 0.2,
+    "currentSessionEstimatedOrPendingExposureUsd": 0.20012375,
+    "priorReservedExposureUsd": 0.025,
+    "estimatedCumulativeCostUsd": 0.22512375,
+    "actualProviderCostUsd": null,
+    "reconciliation": "IMAGE_PROVIDER_BILLING_RECONCILIATION_REQUIRED"
+  },
+  "brandAssets": {
+    "originalLogoSha256": "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+    "technicalOverlaySha256": "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681",
+    "policy": "ORIGINAL_REGISTERED_ASSET_WITH_FAITHFUL_LOCAL_TECHNICAL_OVERLAY_ONLY"
+  },
+  "social": {
+    "instagram": "APP_CONFIGURATION_REQUIRED",
+    "tiktok": "APP_CONFIGURATION_REQUIRED"
+  },
+  "externalEffects": {
+    "completedImageGenerations": 0,
+    "openAiProviderCalls": 5,
+    "instagramPosts": 0,
+    "tiktokPosts": 0,
+    "messages": 0,
+    "purchases": 0,
+    "serverSpendUsd": 0,
+    "deploys": 0,
+    "mainMerges": 0
+  },
+  "fingerprint": "eccffb2ba7a131e75b5b6748161f79e5c1ccacc4365e98a7024861249a8a5565"
+}

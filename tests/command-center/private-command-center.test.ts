@@ -148,6 +148,11 @@ describe("Private Command Center", () => {
       expect(appText).toContain("Brand-Locked Media Factory");
       expect(appText).toContain("Conformità Responses");
       expect(appText).toContain("nessun body o segreto esposto");
+      expect(appText).toContain("Connetti");
+      expect(appText).toContain("Riconnetti");
+      expect(appText).toContain("Verifica stato");
+      expect(appText).toContain("Disconnetti");
+      expect(appText).not.toContain(">Pubblica<");
 
       const insightsTemplate = await fetch(`${origin}/downloads/metodo-veloce-insights-template.csv`, { headers: { Cookie: cookie ?? "" } });
       expect(insightsTemplate.status).toBe(200);
@@ -207,8 +212,8 @@ describe("Private Command Center", () => {
       };
       expect(mediaFactoryPayload).toMatchObject({
         externalActionsAllowed: false,
-        externalEffects: { openAiProviderCalls: 1, socialPublications: 0, serverSpendUsd: 0 },
-        liveCalls: 1,
+        externalEffects: { completedImageGenerations: 0, openAiProviderCalls: 5, serverSpendUsd: 0 },
+        liveCalls: 5,
         publicationAuthorized: false,
         responsesConformance: {
           canonicalRequestShape: { endpoint: "/v1/responses", fieldNames: ["model", "input"] },
@@ -216,6 +221,11 @@ describe("Private Command Center", () => {
           result: { status: "PROVIDER_PLAIN_READY" },
           session: { liveCalls: 1, status: "CLOSED" },
           visualGate: { status: "BLOCKED_NO_IMAGE_AUTHORIZATION" },
+        },
+        socialConnections: {
+          instagram: { expectedAccount: "@mr.metodo.veloce_official", state: "APP_CONFIGURATION_REQUIRED" },
+          publication: "LOCKED",
+          tiktok: { expectedAccount: "@metodo_veloce.official", state: "APP_CONFIGURATION_REQUIRED" },
         },
         status: "BLOCKED",
         visualGate: { status: "BLOCKED_NO_MASTER_IMAGE" },

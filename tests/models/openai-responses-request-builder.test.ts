@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildOpenAiResponsesMediaDirectionRequest,
   buildOpenAiResponsesPlainTextRequest,
   buildOpenAiResponsesStructuredOutputRequest,
   OpenAiResponsesRequestConformanceError,
@@ -142,6 +143,50 @@ describe("OpenAI Responses canonical request builder", () => {
       },
     });
     expect(request.manifest.operationType).toBe("STRUCTURED_OUTPUT_V1");
+  });
+
+  it("creates the fixed strict Media Factory direction contract", () => {
+    const request = buildOpenAiResponsesMediaDirectionRequest({
+      input: "authorized evidence-bound direction",
+      model: "gpt-4o-mini",
+    });
+
+    expect(request.manifest.operationType).toBe("MEDIA_DIRECTION_V1");
+    expect(request.body).toMatchObject({
+      model: "gpt-4o-mini",
+      text: {
+        format: {
+          name: "metodo_veloce_media_direction",
+          schema: {
+            additionalProperties: false,
+            required: [
+              "title",
+              "hook",
+              "editorialAngle",
+              "visualScene",
+              "visualMood",
+              "requiredObjects",
+              "negativeRules",
+            ],
+            type: "object",
+          },
+          strict: true,
+          type: "json_schema",
+        },
+      },
+    });
+  });
+
+  it("does not permit a caller to weaken the Media Factory schema", () => {
+    expectConformanceError(
+      () => buildOpenAiResponsesMediaDirectionRequest({
+        input: "x",
+        model: "gpt-4o-mini",
+        text: { format: { type: "json_schema" } },
+      }),
+      "RESPONSES_REQUEST_INVALID",
+      "text",
+    );
   });
 
   it("has a stable safe fingerprint on refresh", () => {

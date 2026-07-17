@@ -1,0 +1,62 @@
+{
+  "contractVersion": "1",
+  "repositoryRoot": "/Users/onlyway24/Desktop/MV-AI-OS",
+  "statusPath": "/Users/onlyway24/Desktop/MV-AI-OS/assets/metodo-veloce/media-factory-quality-closure-v1/social-connector-status.json",
+  "oauthVault": {
+    "path": "/Users/onlyway24/.config/mv-ai-os/social/oauth-vault.json",
+    "encryptionKey": {
+      "contractVersion": "1",
+      "encoding": "utf8",
+      "path": "/Users/onlyway24/.config/mv-ai-os/social/oauth-vault-key",
+      "secretId": "social-oauth-vault-key",
+      "source": "local-file"
+    }
+  },
+  "instagram": {
+    "redirectUri": "http://127.0.0.1:43123/oauth/instagram/callback",
+    "clientId": {
+      "contractVersion": "1",
+      "encoding": "utf8",
+      "path": "/Users/onlyway24/.config/mv-ai-os/social/instagram-app-id",
+      "secretId": "instagram-app-id",
+      "source": "local-file"
+    },
+    "clientSecret": {
+      "contractVersion": "1",
+      "encoding": "utf8",
+      "path": "/Users/onlyway24/.config/mv-ai-os/social/instagram-client-secret",
+      "secretId": "instagram-client-secret",
+      "source": "local-file"
+    },
+    "expectedAccount": "@mr.metodo.veloce_official",
+    "scopes": [
+      "instagram_business_basic",
+      "instagram_business_content_publish",
+      "instagram_business_manage_insights"
+    ]
+  },
+  "tiktok": {
+    "redirectUri": "http://127.0.0.1:43123/oauth/tiktok/callback/",
+    "clientId": {
+      "contractVersion": "1",
+      "encoding": "utf8",
+      "path": "/Users/onlyway24/.config/mv-ai-os/social/tiktok-client-key",
+      "secretId": "tiktok-client-key",
+      "source": "local-file"
+    },
+    "clientSecret": {
+      "contractVersion": "1",
+      "encoding": "utf8",
+      "path": "/Users/onlyway24/.config/mv-ai-os/social/tiktok-client-secret",
+      "secretId": "tiktok-client-secret",
+      "source": "local-file"
+    },
+    "expectedAccount": "@metodo_veloce.official",
+    "scopes": [
+      "user.info.basic",
+      "user.info.profile",
+      "video.publish"
+    ],
+    "usernameBindingScopeRationale": "TikTok documents username under user.info.profile; it is required only to reject a wrong account deterministically. video.list is not requested."
+  }
+}

@@ -2,6 +2,7 @@ export const BRAND_MEDIA_FACTORY_CONTRACT_VERSION = "1" as const;
 
 export type BrandMediaFactoryProviderErrorCode =
   | "image_response_invalid"
+  | "image_transport_timeout"
   | "image_transport_failed";
 
 export interface BrandMediaFactoryProviderError {

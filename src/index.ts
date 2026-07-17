@@ -1076,8 +1076,10 @@ export {
   type OpenAIResponsesTransportResponse,
 } from "./models/providers/openai-model-provider.js";
 export {
+  buildOpenAiResponsesMediaDirectionRequest,
   buildOpenAiResponsesPlainTextRequest,
   buildOpenAiResponsesStructuredOutputRequest,
+  openAiResponsesMediaDirectionSchema,
   openAiResponsesStructuredStatusSchema,
   OpenAiResponsesRequestConformanceError,
   OPENAI_RESPONSES_REQUEST_BUILDER_VERSION,
@@ -1142,6 +1144,39 @@ export {
   type LivePilotSessionStatus,
 } from "./media-factory/live-pilot-session-ledger.js";
 export {
+  MediaQualitySessionError,
+  MediaQualitySessionLedger,
+  MEDIA_QUALITY_DAILY_HARD_LIMIT_USD,
+  MEDIA_QUALITY_MAX_LIVE_CALLS,
+  MEDIA_QUALITY_SESSION_CONTRACT_VERSION,
+  MEDIA_QUALITY_SESSION_HARD_LIMIT_USD,
+  type MediaQualityClock,
+  type MediaQualityCostClassification,
+  type MediaQualityLedgerSnapshot,
+  type MediaQualityOperation,
+  type MediaQualityPreflight,
+  type MediaQualitySessionLedgerOptions,
+  type MediaQualitySessionStatus,
+} from "./media-factory/media-quality-session-ledger.js";
+export {
+  MediaQualityClosure,
+  MEDIA_QUALITY_CLOSURE_CONTRACT_VERSION,
+  MEDIA_QUALITY_IMAGE_MODEL,
+  MEDIA_QUALITY_IMAGE_OUTPUT_ESTIMATE_USD,
+  MEDIA_QUALITY_IMAGE_PRUDENT_ESTIMATE_USD,
+  MEDIA_QUALITY_IMAGE_RESERVATION_USD,
+  MEDIA_QUALITY_IMAGE_SNAPSHOT,
+  MEDIA_QUALITY_TEXT_MODEL,
+  MEDIA_QUALITY_TEXT_RESERVATION_USD,
+  MEDIA_QUALITY_TEXT_SNAPSHOT,
+  type MediaContentDirection,
+  type MediaQualityClosureReasonCode,
+  type MediaQualityClosureResult,
+  type MediaQualityDirectionProvider,
+  type MediaQualityOperationReceipt,
+} from "./media-factory/media-quality-closure.js";
+export { runMediaQualityClosureCli } from "./media-factory/media-quality-closure-cli.js";
+export {
   OPENAI_TEXT_FAILURE_DIAGNOSIS_CONTRACT_VERSION,
   OPENAI_TEXT_FAILURE_DIAGNOSIS_MODEL,
   OPENAI_TEXT_FAILURE_DIAGNOSIS_OPERATION_COST_USD,
@@ -1198,6 +1233,63 @@ export {
   type SocialPublicationBrowserCheckpoint,
   type SocialPublicationPlatform,
 } from "./social-publishing/social-platform-publication-contract.js";
+export {
+  deleteSecureStore,
+  EncryptedFileOAuthSecureStore,
+  generateOAuthState,
+  generatePkceVerifier,
+  InMemoryOAuthSecureStore,
+  INSTAGRAM_REDIRECT_URI,
+  MediaDeliveryBoundary,
+  OAuthSecurityError,
+  OFFICIAL_SOCIAL_CONNECTOR_CONTRACT_VERSION,
+  redactedIdentifier,
+  SOCIAL_CONNECTOR_LOCAL_PORT,
+  TIKTOK_REDIRECT_URI,
+  tiktokPkceChallenge,
+  type MediaDeliveryState,
+  type OAuthCredentialRecord,
+  type OAuthPendingSession,
+  type OAuthSecureStore,
+  type OfficialSocialAppConfiguration,
+  type OfficialSocialPlatform,
+} from "./social-publishing/oauth-connector-foundation.js";
+export {
+  INSTAGRAM_EXPECTED_USERNAME,
+  INSTAGRAM_REQUIRED_SCOPES,
+  OfficialInstagramConnector,
+  OfficialTikTokConnector,
+  TIKTOK_EXPECTED_USERNAME,
+  TIKTOK_REQUIRED_SCOPES,
+  type InstagramConnectionState,
+  type InstagramConnectorStatus,
+  type InstagramConnectorTransport,
+  type InstagramIdentity,
+  type SocialConnectorReceipt,
+  type SocialTokenExchangeResult,
+  type TikTokConnectionState,
+  type TikTokConnectorStatus,
+  type TikTokConnectorTransport,
+  type TikTokCreatorInfo,
+  type TikTokIdentity,
+} from "./social-publishing/official-social-connectors.js";
+export {
+  FetchInstagramConnectorTransport,
+  FetchTikTokConnectorTransport,
+  SocialProviderHttpError,
+} from "./social-publishing/official-social-http-transports.js";
+export { runSocialConnectorCli } from "./social-publishing/social-connector-cli.js";
+export {
+  instagramContainerDryRun,
+  SocialExternalActionPlane,
+  tiktokDirectPostDryRun,
+  tiktokPhotoPostDryRun,
+  type ForbiddenSocialPublicationOperation,
+  type InstagramContainerState,
+  type SocialExternalActionOperation,
+  type SocialExternalActionReceipt,
+  type TikTokPostState,
+} from "./social-publishing/social-external-action-plane.js";
 export type {
   ModelOutputFormat,
   ModelProfile,

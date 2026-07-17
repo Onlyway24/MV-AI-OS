@@ -78,20 +78,22 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
           background: "opaque",
           model: request.modelId,
           n: 1,
-          output_format: "b64_json",
+          output_format: request.outputFormat,
           prompt: request.prompt,
           quality: request.quality,
           size: request.size,
         },
-        headers: this.#headers(),
+        headers: this.#headers(request.requestId),
         method: "POST",
-        timeoutMs: 60_000,
+        timeoutMs: 180_000,
         url: `${this.#config.baseUrl}${OPENAI_IMAGES_GENERATIONS_PATH}`,
       });
-    } catch {
+    } catch (error) {
       throw new MediaGenerationProviderError(
-        "image_transport_failed",
-        "OpenAI image provider transport failed",
+        isAbortError(error) ? "image_transport_timeout" : "image_transport_failed",
+        isAbortError(error)
+          ? "OpenAI image provider transport timed out"
+          : "OpenAI image provider transport failed",
       );
     }
 
@@ -138,7 +140,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
     };
   }
 
-  #headers(): Readonly<Record<string, string>> {
+  #headers(idempotencyKey: string): Readonly<Record<string, string>> {
     return {
       ...(this.#config.organizationId === undefined
         ? {}
@@ -148,6 +150,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
         : { "OpenAI-Project": this.#config.projectId }),
       Authorization: `Bearer ${this.#config.apiKey.value}`,
       "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
     };
   }
 }
@@ -199,4 +202,8 @@ function readEncodedImage(value: unknown): string | undefined {
 function isPng(bytes: Uint8Array): boolean {
   const signature = [137, 80, 78, 71, 13, 10, 26, 10];
   return signature.every((value, index) => bytes[index] === value);
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
