@@ -33,6 +33,7 @@ const BRAND_MEDIA_FACTORY_ROOT = fileURLToPath(new URL("../../assets/metodo-velo
 const BRAND_MEDIA_FACTORY_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/pilot-status.json", import.meta.url));
 const BRAND_MEDIA_FACTORY_APPROVAL_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/approval-manifest.json", import.meta.url));
 const OPENAI_TEXT_DIAGNOSIS_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/openai-text-failure-diagnosis-v1/diagnosis-status.json", import.meta.url));
+const OPENAI_RESPONSES_CONFORMANCE_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/openai-responses-conformance-v1/conformance-status.json", import.meta.url));
 
 export interface CommandCenterServerOptions {
   readonly accessToken?: string;
@@ -329,13 +330,21 @@ async function brandMediaFactoryStatus(): Promise<unknown> {
       throw error;
     }
   }
-  try {
-    const diagnosis = JSON.parse(await readFile(OPENAI_TEXT_DIAGNOSIS_STATUS_PATH, "utf8")) as unknown;
-    return record(factory) && record(diagnosis) ? { ...factory, diagnosis } : factory;
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return factory;
-    throw error;
+  if (!record(factory)) return factory;
+  const additions: Record<string, unknown> = {};
+  const statuses = [
+    ["diagnosis", OPENAI_TEXT_DIAGNOSIS_STATUS_PATH],
+    ["responsesConformance", OPENAI_RESPONSES_CONFORMANCE_STATUS_PATH],
+  ] as const;
+  for (const [name, path] of statuses) {
+    try {
+      const value = JSON.parse(await readFile(path, "utf8")) as unknown;
+      if (record(value)) additions[name] = value;
+    } catch (error) {
+      if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+    }
   }
+  return { ...factory, ...additions };
 }
 
 async function socialVisualAsset(pathname: string): Promise<Buffer | undefined> {

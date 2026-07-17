@@ -1076,6 +1076,27 @@ export {
   type OpenAIResponsesTransportResponse,
 } from "./models/providers/openai-model-provider.js";
 export {
+  buildOpenAiResponsesPlainTextRequest,
+  buildOpenAiResponsesStructuredOutputRequest,
+  openAiResponsesStructuredStatusSchema,
+  OpenAiResponsesRequestConformanceError,
+  OPENAI_RESPONSES_REQUEST_BUILDER_VERSION,
+  OPENAI_RESPONSES_SDK_TRANSPORT_VERSION,
+  type OpenAiResponsesCanonicalRequest,
+  type OpenAiResponsesRequestMode,
+  type OpenAiResponsesRequestShapeManifest,
+} from "./models/providers/openai-responses-request-builder.js";
+export {
+  FetchOpenAiResponsesConformanceTransport,
+  OpenAiResponsesPlainConformanceProvider,
+  type OpenAiResponsesConformanceTransport,
+  type OpenAiResponsesConformanceTransportRequest,
+  type OpenAiResponsesConformanceTransportResponse,
+  type OpenAiResponsesPlainConformanceProviderDependencies,
+  type OpenAiResponsesPlainConformanceResponse,
+  type OpenAiResponsesProviderDiagnostic,
+} from "./models/providers/openai-responses-conformance-provider.js";
+export {
   OpenAIImageGenerationProvider,
   FetchOpenAIImageGenerationTransport,
   createDefaultOpenAIImageGenerationProviderConfig,
@@ -1146,6 +1167,27 @@ export {
   type OpenAiTextDiagnosticSessionStatus,
   type OpenAiTextDiagnosticSnapshot,
 } from "./media-factory/openai-text-diagnostic-session-ledger.js";
+export {
+  OPENAI_RESPONSES_PLAIN_CONFORMANCE_MODEL,
+  OpenAiResponsesPlainConformanceCheck,
+  type OpenAiResponsesPlainConformanceAuthorizationPort,
+  type OpenAiResponsesPlainConformanceDependencies,
+  type OpenAiResponsesPlainConformanceResult,
+  type OpenAiResponsesPlainReasonCode,
+} from "./media-factory/openai-responses-plain-conformance.js";
+export {
+  OPENAI_RESPONSES_CONFORMANCE_COST_CAP_USD,
+  OPENAI_RESPONSES_CONFORMANCE_MAX_LIVE_CALLS,
+  OPENAI_RESPONSES_CONFORMANCE_SESSION_CONTRACT_VERSION,
+  OpenAiResponsesConformanceSessionError,
+  OpenAiResponsesConformanceSessionLedger,
+  type OpenAiResponsesConformanceClock,
+  type OpenAiResponsesConformanceCostClassification,
+  type OpenAiResponsesConformancePreflight,
+  type OpenAiResponsesConformanceSessionLedgerOptions,
+  type OpenAiResponsesConformanceSessionStatus,
+  type OpenAiResponsesConformanceSnapshot,
+} from "./media-factory/openai-responses-conformance-session-ledger.js";
 export {
   SOCIAL_PUBLICATION_CHECKPOINT_CONTRACT_VERSION,
   FakeSocialPlatformPublicationTransport,

@@ -126,6 +126,8 @@ describe("Private Command Center", () => {
       expect(themeText).toContain("cursor:auto");
       expect(themeText).toContain("height:100dvh");
       expect(themeText).toContain("transform:none!important");
+      expect(themeText).toContain("@media (max-width:820px)");
+      expect(themeText).toContain(".cc-approval-review-grid,.cc-visual-review-canvases{grid-template-columns:1fr}");
 
       const app = await fetch(`${origin}/app.js`, { headers: { Cookie: cookie ?? "" } });
       expect(app.status).toBe(200);
@@ -144,6 +146,8 @@ describe("Private Command Center", () => {
       expect(appText).toContain("Approvazione bloccata: logo originale mancante");
       expect(appText).toContain("/api/brand-media-factory");
       expect(appText).toContain("Brand-Locked Media Factory");
+      expect(appText).toContain("Conformità Responses");
+      expect(appText).toContain("nessun body o segreto esposto");
 
       const insightsTemplate = await fetch(`${origin}/downloads/metodo-veloce-insights-template.csv`, { headers: { Cookie: cookie ?? "" } });
       expect(insightsTemplate.status).toBe(200);
@@ -198,14 +202,29 @@ describe("Private Command Center", () => {
 
       const mediaFactory = await fetch(`${origin}/api/brand-media-factory`, { headers: { Cookie: cookie ?? "" } });
       expect(mediaFactory.status).toBe(200);
-      await expect(mediaFactory.json()).resolves.toMatchObject({
+      const mediaFactoryPayload = await mediaFactory.json() as {
+        readonly responsesConformance: { readonly fingerprint: string };
+      };
+      expect(mediaFactoryPayload).toMatchObject({
         externalActionsAllowed: false,
         externalEffects: { openAiProviderCalls: 1, socialPublications: 0, serverSpendUsd: 0 },
         liveCalls: 1,
         publicationAuthorized: false,
+        responsesConformance: {
+          canonicalRequestShape: { endpoint: "/v1/responses", fieldNames: ["model", "input"] },
+          conformanceGate: { status: "PASS" },
+          result: { status: "PROVIDER_PLAIN_READY" },
+          session: { liveCalls: 1, status: "CLOSED" },
+          visualGate: { status: "BLOCKED_NO_IMAGE_AUTHORIZATION" },
+        },
         status: "BLOCKED",
         visualGate: { status: "BLOCKED_NO_MASTER_IMAGE" },
       });
+      const refreshedMediaFactory = await fetch(`${origin}/api/brand-media-factory`, { headers: { Cookie: cookie ?? "" } });
+      const refreshedPayload = await refreshedMediaFactory.json() as {
+        readonly responsesConformance: { readonly fingerprint: string };
+      };
+      expect(refreshedPayload.responsesConformance.fingerprint).toBe(mediaFactoryPayload.responsesConformance.fingerprint);
 
       const session = await fetch(`${origin}/api/session`, { headers: { Cookie: cookie ?? "" } });
       const { csrfToken } = await session.json() as { readonly csrfToken: string };

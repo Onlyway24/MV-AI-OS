@@ -1,0 +1,114 @@
+{
+  "canonicalRequestShape": {
+    "adapterVersion": "1",
+    "contentType": "application/json",
+    "endpoint": "/v1/responses",
+    "fieldNames": [
+      "model",
+      "input"
+    ],
+    "fieldTypes": {
+      "model": "string",
+      "input": "string"
+    },
+    "headerNames": [
+      "Authorization",
+      "Content-Type",
+      "Idempotency-Key"
+    ],
+    "method": "POST",
+    "operationType": "PLAIN_TEXT_V1",
+    "sdkTransportVersion": "fetch-native-v1",
+    "fingerprint": "89bf54ce90bee133e96d5f63e5d4d461fe9621536c9bfb040ee50c2a85bd3aa6"
+  },
+  "conformanceGate": {
+    "status": "PASS"
+  },
+  "contractVersion": "1",
+  "cost": {
+    "actualProviderCostUsd": null,
+    "estimatedCostUsd": 0.0000051,
+    "priorReservedExposureUsd": 0.015,
+    "reconciliation": "ESTIMATED_USAGE_PENDING_BILLING_RECONCILIATION",
+    "reconciliationPendingCostUsd": 0,
+    "reservedCostUsd": 0.01,
+    "totalReservedExposureUsd": 0.025
+  },
+  "externalEffects": {
+    "cumulativeOpenAiProviderCalls": 3,
+    "imageGenerations": 0,
+    "openAiProviderCallsThisSession": 1,
+    "serverSpendUsd": 0,
+    "socialPublications": 0
+  },
+  "imageGeneration": {
+    "model": "gpt-image-1-mini",
+    "status": "DISABLED_DEPRECATED_PENDING_SEPARATE_AUTHORIZATION"
+  },
+  "milestone": "RESPONSES REQUEST CONFORMANCE FIX V1",
+  "models": {
+    "image": "DISABLED_DEPRECATED_PENDING_SEPARATE_AUTHORIZATION",
+    "text": "gpt-4o-mini"
+  },
+  "noAutomaticRetries": true,
+  "operation": "OPENAI_RESPONSES_PLAIN_CONFORMANCE_CHECK",
+  "preflight": {
+    "endpoint": "/v1/responses",
+    "fieldNames": [
+      "model",
+      "input"
+    ],
+    "maxCostUsd": 0.01,
+    "model": "gpt-4o-mini",
+    "residualBudgetUsd": 0.01,
+    "status": "ready"
+  },
+  "previousRequestShape": {
+    "endpoint": "/v1/responses",
+    "legacyPayloadFieldNames": [
+      "input",
+      "max_output_tokens",
+      "metadata",
+      "model",
+      "store",
+      "text"
+    ],
+    "legacySourceTransform": "ModelRequest.messages was transformed into input array; generic limits, correlation metadata and output settings were added.",
+    "rootCause": "The generic translation did not build the canonical Responses contract and polluted the plain request with internal wrapper fields."
+  },
+  "provider": {
+    "status": "READY"
+  },
+  "result": {
+    "status": "PROVIDER_PLAIN_READY",
+    "usage": {
+      "estimatedCostUsd": 0.0000051,
+      "inputTokens": 14,
+      "outputTokens": 5,
+      "totalTokens": 19
+    }
+  },
+  "session": {
+    "estimatedCostUsd": 0.0000051,
+    "expiresAt": "2026-07-17T11:34:30.731Z",
+    "liveCalls": 1,
+    "priorLiveCallsToday": 2,
+    "reconciliationPendingCostUsd": 0,
+    "reservedCostUsd": 0.01,
+    "sessionId": "openai-responses-conformance-e073a029-1868-4a90-8462-c78f038b98e7",
+    "sessionResidualBudgetUsd": 0,
+    "status": "CLOSED",
+    "actor": "Fabio",
+    "idempotency": "REQUIRED_AND_CONSUMED",
+    "killSwitch": "TEMPORARILY_AUTHORIZED_FOR_THIS_ONE_OPERATION",
+    "maxCalls": 1,
+    "maxImages": 0,
+    "maxRetries": 0,
+    "operationIdFingerprint": "6b0f347537e9da0039a7c330e745ee8f3bed9caafea10df3e72c46bd24159915",
+    "operationType": "OPENAI_RESPONSES_PLAIN_CONFORMANCE_CHECK"
+  },
+  "visualGate": {
+    "status": "BLOCKED_NO_IMAGE_AUTHORIZATION"
+  },
+  "fingerprint": "8c8bd014e8287bb810976e8002700ced662d23051d0c3062aeec7efaf37eeea9"
+}

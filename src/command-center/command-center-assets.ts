@@ -1073,6 +1073,29 @@ export const COMMAND_CENTER_CLIENT_JS = `
         socialBlock("Costo diagnostica", typeof diagnosticCost.estimatedCostUsd === "number" ? "USD " + diagnosticCost.estimatedCostUsd.toFixed(6) : "DA RICONCILIARE", "Classificazione " + (diagnosticCost.classification || "—"))
       );
     }
+    if (factory.responsesConformance) {
+      const conformance = factory.responsesConformance;
+      const conformanceCost = conformance.cost || {};
+      const conformanceSession = conformance.session || {};
+      const preflight = conformance.preflight || {};
+      const previousShape = conformance.previousRequestShape || {};
+      const canonicalShape = conformance.canonicalRequestShape || {};
+      const provider = conformance.provider || {};
+      const result = conformance.result || {};
+      const fields = Array.isArray(canonicalShape.fieldNames) ? canonicalShape.fieldNames.join(", ") : "—";
+      const previousFields = Array.isArray(previousShape.legacyPayloadFieldNames) ? previousShape.legacyPayloadFieldNames.join(", ") : "—";
+      const diagnostic = provider.diagnostic || {};
+      const parameter = diagnostic.providerParameter ? " · parametro " + diagnostic.providerParameter : "";
+      grid.append(
+        socialBlock("Conformità Responses", statusLabel(result.status || conformance.status || "NON DISPONIBILE"), "Gate " + statusLabel(conformance.conformanceGate && conformance.conformanceGate.status || "—") + " · provider " + statusLabel(provider.status || "—")),
+        socialBlock("Shape precedente", previousFields, previousShape.rootCause || "Contratto storico non disponibile."),
+        socialBlock("Shape corretta", (canonicalShape.method || preflight.method || "POST") + " " + (canonicalShape.endpoint || preflight.endpoint || "/v1/responses"), "Solo campi: " + fields),
+        socialBlock("Sessione monouso", String(conformanceSession.liveCalls === undefined ? "—" : conformanceSession.liveCalls) + "/1 chiamata", "Cap USD 0,01 · retry 0 · immagini 0 · stato " + statusLabel(conformanceSession.status || "—")),
+        socialBlock("Costo Responses", typeof conformanceCost.estimatedCostUsd === "number" ? "Stimato USD " + conformanceCost.estimatedCostUsd.toFixed(6) : "DA RICONCILIARE", "Effettivo non disponibile · riservato USD " + String(conformanceCost.reservedCostUsd === undefined ? "—" : conformanceCost.reservedCostUsd)),
+        socialBlock("Diagnostica HTTP", diagnostic.httpStatus === undefined ? "Nessun errore HTTP" : "HTTP " + diagnostic.httpStatus + parameter, "Codice " + (result.reasonCode || "PROVIDER_PLAIN_READY") + " · nessun body o segreto esposto."),
+        socialBlock("Visual Gate", statusLabel(conformance.visualGate && conformance.visualGate.status || "BLOCCATO"), "Nessuna immagine è autorizzata in questa milestone.")
+      );
+    }
     card.append(grid);
     if (factory.brandAssets || factory.fingerprint) {
       const provenance = element("div", "cc-approval-fingerprint");
