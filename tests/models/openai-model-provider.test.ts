@@ -211,8 +211,8 @@ describe("OpenAIModelProvider", () => {
 
     expect(response).toMatchObject({
       error: {
-        code: "model_provider_failed",
-        message: "The model provider failed",
+        code: "openai_transport_failed",
+        message: "OpenAI provider transport failed",
         stage: "provider_invocation",
       },
       status: "failed",
@@ -284,13 +284,49 @@ describe("OpenAIModelProvider", () => {
       error: {
         category: "authentication",
         code: "openai_http_error",
-        details: { status: 401 },
+        details: { providerType: "invalid_request_error", status: 401 },
         message: "OpenAI provider returned an unsuccessful response",
       },
       status: "failed",
     });
     expect(JSON.stringify(response)).not.toContain(secret);
     expect(JSON.stringify(response)).not.toContain("invalid token");
+  });
+
+  it("retains only identifier-shaped provider error fields for invalid requests", async () => {
+    const secret = "never-expose-this";
+    const provider = new OpenAIModelProvider({
+      clock: new FixedClock(),
+      config: createConfig(createSecretValue(secret)),
+      transport: new FakeOpenAITransport({
+        body: {
+          error: {
+            code: "unsupported_parameter",
+            message: `The parameter reveals ${secret}`,
+            param: "max_output_tokens",
+            type: "invalid_request_error",
+          },
+        },
+        status: 400,
+      }),
+    });
+
+    const response = await provider.generate(
+      createModelRequest(),
+      createModelProfile({ modelId: "gpt-5.5", providerId: "openai" }),
+    );
+
+    expect(response).toMatchObject({
+      error: {
+        details: {
+          providerCode: "unsupported_parameter",
+          providerParameter: "max_output_tokens",
+          providerType: "invalid_request_error",
+          status: 400,
+        },
+      },
+    });
+    expect(JSON.stringify(response)).not.toContain(secret);
   });
 });
 

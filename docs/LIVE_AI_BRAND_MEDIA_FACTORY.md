@@ -2,6 +2,11 @@
 
 ## Closure Run boundary
 
+> Historical note: the image stage is now disabled because its recorded image
+> model is deprecated. The Closure Run is closed and must not be reused. See
+> [OPENAI TEXT FAILURE DIAGNOSIS AND RECOVERY V1](./OPENAI_TEXT_FAILURE_DIAGNOSIS_AND_RECOVERY_V1.md)
+> for the text-only recovery milestone.
+
 The Closure Run is deliberately narrower than the daily application ceiling. It permits exactly two named provider operations for actor `Fabio` and the configured Metodo Veloce workspace:
 
 1. `OPENAI_TEXT_PROVIDER_SMOKE` — `gpt-4o-mini`, Responses API, JSON brief with `title`, `editorialAngle`, and `visualSceneSummary`.

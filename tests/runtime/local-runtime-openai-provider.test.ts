@@ -271,7 +271,7 @@ describe("Controlled local OpenAI provider wiring", () => {
       const response = await runtime.execute(createRequest());
       expect(response).toMatchObject({
         error: {
-          code: "model_provider_failed",
+          code: "openai_transport_failed",
         },
         status: "failed",
       });

@@ -29,6 +29,7 @@ const DEFAULT_OUTPUT = fileURLToPath(
 );
 const SESSION_DURATION_MS = 15 * 60 * 1_000;
 const AVAILABILITY_MAX_AGE_MS = 15 * 60 * 1_000;
+const IMAGE_GENERATION_DISABLED_REASON = "The Closure Run image stage is disabled because its historical image model is deprecated; a separately authorized catalog and cost preflight are required.";
 let closureRunPhase = "local-preflight";
 
 interface Arguments {
@@ -59,6 +60,7 @@ async function main(arguments_: readonly string[]): Promise<void> {
   ) {
     throw new Error("Closure configuration does not select the approved text model");
   }
+  if (imageGenerationDisabled()) throw new Error(IMAGE_GENERATION_DISABLED_REASON);
   const reference = configuration.secretReferences.find(
     (candidate) => candidate.secretId === provider.apiKeySecretId,
   );
@@ -298,6 +300,10 @@ function assertAvailabilityAttestation(value: string): void {
   if (!Number.isFinite(confirmedAt) || Math.abs(Date.now() - confirmedAt) > AVAILABILITY_MAX_AGE_MS) {
     throw new Error("OpenAI model availability must be confirmed immediately before the Closure Run");
   }
+}
+
+function imageGenerationDisabled(): boolean {
+  return true;
 }
 
 async function writeSafeResult(output: string, value: unknown): Promise<void> {

@@ -1049,6 +1049,10 @@ export {
 } from "./models/model-gateway-error.js";
 export type { ModelProvider } from "./models/model-provider.js";
 export {
+  isModelProviderFailure,
+  type ModelProviderFailure,
+} from "./models/model-provider-failure.js";
+export {
   DEFAULT_OPENAI_BASE_URL,
   MAX_OPENAI_BASE_URL_LENGTH,
   MAX_OPENAI_HEADER_VALUE_LENGTH,
@@ -1116,6 +1120,32 @@ export {
   type LivePilotSessionPreflight,
   type LivePilotSessionStatus,
 } from "./media-factory/live-pilot-session-ledger.js";
+export {
+  OPENAI_TEXT_FAILURE_DIAGNOSIS_CONTRACT_VERSION,
+  OPENAI_TEXT_FAILURE_DIAGNOSIS_MODEL,
+  OPENAI_TEXT_FAILURE_DIAGNOSIS_OPERATION_COST_USD,
+  OpenAiTextFailureDiagnosis,
+  type OpenAiTextDiagnosticAuthorizationPort,
+  type OpenAiTextDiagnosticOperationResult,
+  type OpenAiTextFailureDiagnosisDependencies,
+  type OpenAiTextFailureDiagnosisRequest,
+  type OpenAiTextFailureDiagnosisResult,
+  type OpenAiTextFailureReasonCode,
+  type OpenAiTextFailureStage,
+} from "./media-factory/openai-text-failure-diagnosis.js";
+export {
+  OPENAI_TEXT_DIAGNOSTIC_OPERATIONS,
+  OPENAI_TEXT_DIAGNOSTIC_SESSION_CONTRACT_VERSION,
+  OpenAiTextDiagnosticSessionError,
+  OpenAiTextDiagnosticSessionLedger,
+  type OpenAiTextDiagnosticClock,
+  type OpenAiTextDiagnosticCostClassification,
+  type OpenAiTextDiagnosticOperation,
+  type OpenAiTextDiagnosticPreflight,
+  type OpenAiTextDiagnosticSessionLedgerOptions,
+  type OpenAiTextDiagnosticSessionStatus,
+  type OpenAiTextDiagnosticSnapshot,
+} from "./media-factory/openai-text-diagnostic-session-ledger.js";
 export {
   SOCIAL_PUBLICATION_CHECKPOINT_CONTRACT_VERSION,
   FakeSocialPlatformPublicationTransport,

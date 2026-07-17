@@ -1063,6 +1063,16 @@ export const COMMAND_CENTER_CLIENT_JS = `
       socialBlock("TikTok", statusLabel(social.tiktok || "BROWSER_CONNECTION_REQUIRED"), "Nessuna app, token, account o pubblicazione è inventata."),
       socialBlock("Instagram", statusLabel(social.instagram || "BROWSER_CONNECTION_REQUIRED"), "Nessuna app, token, account o pubblicazione è inventata.")
     );
+    if (factory.diagnosis) {
+      const diagnosis = factory.diagnosis;
+      const diagnosticCost = diagnosis.cost || {};
+      const diagnosticSession = diagnosis.session || {};
+      grid.append(
+        socialBlock("Diagnosi OpenAI", statusLabel(diagnosis.providerStatus || "NON DISPONIBILE"), "Stage " + (diagnosis.stage || "—") + " · codice " + (diagnosis.reasonCode || "NESSUNO")),
+        socialBlock("Sessione testuale", String(diagnosticSession.liveCalls === undefined ? "—" : diagnosticSession.liveCalls) + "/2 chiamate", "Cap USD 0,02 · retry automatici 0 · immagini 0"),
+        socialBlock("Costo diagnostica", typeof diagnosticCost.estimatedCostUsd === "number" ? "USD " + diagnosticCost.estimatedCostUsd.toFixed(6) : "DA RICONCILIARE", "Classificazione " + (diagnosticCost.classification || "—"))
+      );
+    }
     card.append(grid);
     if (factory.brandAssets || factory.fingerprint) {
       const provenance = element("div", "cc-approval-fingerprint");

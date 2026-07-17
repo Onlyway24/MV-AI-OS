@@ -32,6 +32,7 @@ const SOCIAL_VISUAL_PACK_MANIFEST_PATH = fileURLToPath(new URL("../../assets/met
 const BRAND_MEDIA_FACTORY_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/", import.meta.url));
 const BRAND_MEDIA_FACTORY_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/pilot-status.json", import.meta.url));
 const BRAND_MEDIA_FACTORY_APPROVAL_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/approval-manifest.json", import.meta.url));
+const OPENAI_TEXT_DIAGNOSIS_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/openai-text-failure-diagnosis-v1/diagnosis-status.json", import.meta.url));
 
 export interface CommandCenterServerOptions {
   readonly accessToken?: string;
@@ -314,15 +315,25 @@ async function socialVisualReview(): Promise<unknown> {
 }
 
 async function brandMediaFactoryStatus(): Promise<unknown> {
+  let factory: unknown;
   try {
-    return JSON.parse(await readFile(BRAND_MEDIA_FACTORY_APPROVAL_PATH, "utf8")) as unknown;
+    factory = JSON.parse(await readFile(BRAND_MEDIA_FACTORY_APPROVAL_PATH, "utf8")) as unknown;
   } catch (error) {
     if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
   }
+  if (factory === undefined) {
+    try {
+      factory = JSON.parse(await readFile(BRAND_MEDIA_FACTORY_STATUS_PATH, "utf8")) as unknown;
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+      throw error;
+    }
+  }
   try {
-    return JSON.parse(await readFile(BRAND_MEDIA_FACTORY_STATUS_PATH, "utf8")) as unknown;
+    const diagnosis = JSON.parse(await readFile(OPENAI_TEXT_DIAGNOSIS_STATUS_PATH, "utf8")) as unknown;
+    return record(factory) && record(diagnosis) ? { ...factory, diagnosis } : factory;
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return factory;
     throw error;
   }
 }

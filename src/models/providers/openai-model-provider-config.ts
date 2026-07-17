@@ -1,6 +1,7 @@
 import type { JsonObject } from "../../contracts/json.js";
 import { CoreError } from "../../errors/core-error.js";
 import type { SecretValue } from "../../config/secret-value.js";
+import type { ModelProviderFailure } from "../model-provider-failure.js";
 import type { ValidationIssue } from "../../validation/validation.js";
 
 export const OPENAI_MODEL_PROVIDER_CONFIG_CONTRACT_VERSION = "1" as const;
@@ -37,19 +38,33 @@ export class OpenAIModelProviderConfigurationError extends CoreError {
   }
 }
 
-export class OpenAIModelProviderError extends CoreError {
+export class OpenAIModelProviderError
+  extends CoreError
+  implements ModelProviderFailure
+{
+  public readonly modelProviderFailure: ModelProviderFailure["modelProviderFailure"];
+
   public constructor(
     code: "openai_transport_failed" | "openai_response_invalid",
     message: string,
     details?: JsonObject,
   ) {
+    const retryable = code === "openai_transport_failed";
     super({
       category: "model",
       code,
       ...(details === undefined ? {} : { details }),
       message,
-      retryable: code === "openai_transport_failed",
+      retryable,
       stage: "openai_model_provider",
     });
+    this.modelProviderFailure = {
+      category: "provider",
+      code,
+      ...(details === undefined ? {} : { details }),
+      message,
+      retryable,
+      stage: "provider_invocation",
+    };
   }
 }

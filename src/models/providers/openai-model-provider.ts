@@ -118,7 +118,7 @@ export class OpenAIModelProvider implements ModelProvider {
         category: categoryForStatus(response.status),
         code: "openai_http_error",
         completedAt,
-        details: { status: response.status },
+        details: safeHttpErrorDetails(body, response.status),
         message: "OpenAI provider returned an unsuccessful response",
         modelRequestId: request.modelRequestId,
         profile,
@@ -367,6 +367,29 @@ function readIncompleteReason(
 ): string | undefined {
   const details = asRecord(body.incomplete_details);
   return details === undefined ? undefined : readString(details.reason);
+}
+
+function safeHttpErrorDetails(
+  body: Readonly<Record<string, unknown>>,
+  status: number,
+): JsonObject {
+  const providerError = asRecord(body.error);
+  const code = safeProviderIdentifier(providerError?.code);
+  const parameter = safeProviderIdentifier(providerError?.param);
+  const type = safeProviderIdentifier(providerError?.type);
+  return {
+    status,
+    ...(code === undefined ? {} : { providerCode: code }),
+    ...(parameter === undefined ? {} : { providerParameter: parameter }),
+    ...(type === undefined ? {} : { providerType: type }),
+  };
+}
+
+/** Only stable identifier-shaped fields are retained; provider messages remain redacted. */
+function safeProviderIdentifier(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 && value.length <= 96 && /^[A-Za-z0-9_.-]+$/u.test(value)
+    ? value
+    : undefined;
 }
 
 function asRecord(value: unknown): Readonly<Record<string, unknown>> | undefined {

@@ -22,6 +22,7 @@
     "cli": "node ./dist/cli/local-runtime-cli.js",
     "command-center": "node ./dist/command-center/command-center-cli.js",
     "live-media-pilot": "node ./dist/media-factory/live-ai-brand-media-pilot-cli.js",
+    "openai-text-diagnosis": "node ./dist/media-factory/openai-text-failure-diagnosis-cli.js",
     "lint": "eslint . --max-warnings 0",
     "telegram": "node ./dist/telegram/telegram-cli.js",
     "test": "vitest run --passWithNoTests",

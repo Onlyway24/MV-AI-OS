@@ -6,7 +6,10 @@
   },
   "costGate": {
     "apiBudgetEur": 5,
+    "classification": "RESERVED_PENDING_RECONCILIATION",
+    "conservativeBookedUsd": 0.005,
     "estimatedCumulativeCostUsd": 0.005,
+    "effectiveCostUsd": null,
     "hardStopUsd": 4,
     "maxImageGenerations": 1,
     "maxLiveCalls": 8,
@@ -20,11 +23,15 @@
     "socialPublications": 0,
     "serverSpendUsd": 0
   },
-  "fingerprint": "58d70b509e29f49766334ab9480a786c74407fd7a5e1c5cd2f77edccba9e4725",
+  "fingerprint": "97e12921f70580d222a64374b9e76a16aaddc534b81c406d9e4af5b2f8dd7774",
+  "imageGeneration": {
+    "model": "gpt-image-1-mini",
+    "status": "DISABLED_DEPRECATED_PENDING_NEW_AUTHORIZATION"
+  },
   "imageModel": "gpt-image-1-mini",
   "liveCalls": 1,
   "models": {
-    "image": "gpt-image-1-mini",
+    "image": "DISABLED_DEPRECATED_PENDING_NEW_AUTHORIZATION",
     "text": "gpt-4o-mini"
   },
   "publicationAuthorized": false,
@@ -32,7 +39,13 @@
   "qualityGate": {
     "status": "BLOCKED_NO_MASTER_IMAGE"
   },
-  "reason": "The single approved text provider call did not yield a valid response. The session is closed and the image operation remains unconsumed.",
+  "previousFailure": {
+    "observedReasonCode": "text_transport_failed_unpriced",
+    "observedStage": "provider_invocation",
+    "rootCause": "The adapter-safe provider failure was flattened to a generic text_generation_failed result, so authentication, HTTP, response extraction and Structured Output were not distinguishable.",
+    "status": "DIAGNOSTIC_REQUIRED"
+  },
+  "reason": "Historical provider failure is classified as reserved pending reconciliation; a separate text-only diagnosis supplies the precise reason code.",
   "riskGate": {
     "status": "PASS_NO_SOCIAL_OR_SERVER_EFFECTS"
   },

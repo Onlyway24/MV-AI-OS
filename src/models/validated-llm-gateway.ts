@@ -26,6 +26,7 @@ import {
 } from "./model-usage-accounting.js";
 import type { ModelProfile } from "./model-profile.js";
 import type { ModelProvider } from "./model-provider.js";
+import { isModelProviderFailure } from "./model-provider-failure.js";
 import type { ModelRequest } from "./model-request.js";
 import type { ModelResponse } from "./model-response.js";
 import type { ModelSelectionPolicy } from "./model-selection-policy.js";
@@ -283,6 +284,14 @@ export class ValidatedLlmGateway implements LlmGateway {
             },
             profile,
           );
+        }
+        if (isModelProviderFailure(error)) {
+          const failure = error.modelProviderFailure;
+          if (failure.retryable && call < operationLimits.maxProviderCalls) {
+            lastRetryableFailure = "provider";
+            continue;
+          }
+          return this.#failure(validRequest, failure, profile);
         }
         lastRetryableFailure = "provider";
         if (call < operationLimits.maxProviderCalls) {

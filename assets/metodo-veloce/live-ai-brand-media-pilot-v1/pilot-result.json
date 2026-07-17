@@ -1,7 +1,10 @@
 {
   "costLedger": {
     "apiBudgetEur": 5,
+    "costClassification": "RESERVED_PENDING_RECONCILIATION",
+    "conservativeBookedUsd": 0.005,
     "estimatedCumulativeCostUsd": 0.005,
+    "effectiveCostUsd": null,
     "hardStopUsd": 4,
     "imageGenerations": 0,
     "liveCalls": 1,
@@ -15,6 +18,10 @@
     "openAiProviderCalls": 1,
     "socialPublications": 0,
     "serverSpendUsd": 0
+  },
+  "imageGeneration": {
+    "model": "gpt-image-1-mini",
+    "status": "DISABLED_DEPRECATED_PENDING_NEW_AUTHORIZATION"
   },
   "imageModel": "gpt-image-1-mini",
   "preflight": [
@@ -41,6 +48,11 @@
       "status": "ready"
     }
   ],
+  "previousFailure": {
+    "observedReasonCode": "text_transport_failed_unpriced",
+    "observedStage": "provider_invocation",
+    "status": "DIAGNOSTIC_REQUIRED"
+  },
   "reason": "text_generation_failed",
   "status": "BLOCKED",
   "textModel": "gpt-4o-mini"
