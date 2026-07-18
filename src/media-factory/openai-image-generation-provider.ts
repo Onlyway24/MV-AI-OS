@@ -8,6 +8,7 @@ import {
 import {
   MediaGenerationProviderError,
   type MediaGenerationProvider,
+  type MediaGenerationProviderReceipt,
   type MediaGenerationRequest,
   type MediaGenerationResponse,
 } from "./media-generation-provider.js";
@@ -32,6 +33,9 @@ export interface OpenAIImageGenerationTransportRequest {
 
 export interface OpenAIImageGenerationTransportResponse {
   readonly body: unknown;
+  readonly headers?: {
+    readonly xRequestId?: string;
+  };
   readonly status: number;
 }
 
@@ -71,6 +75,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
   public async generate(
     request: MediaGenerationRequest,
   ): Promise<MediaGenerationResponse> {
+    const xClientRequestId = request.clientRequestId ?? request.requestId;
     let response: OpenAIImageGenerationTransportResponse;
     try {
       response = await this.#transport.send({
@@ -83,7 +88,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
           quality: request.quality,
           size: request.size,
         },
-        headers: this.#headers(request.requestId),
+        headers: this.#headers(request.requestId, xClientRequestId),
         method: "POST",
         timeoutMs: 180_000,
         url: `${this.#config.baseUrl}${OPENAI_IMAGES_GENERATIONS_PATH}`,
@@ -94,8 +99,11 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
         isAbortError(error)
           ? "OpenAI image provider transport timed out"
           : "OpenAI image provider transport failed",
+        { xClientRequestId },
       );
     }
+
+    const providerReceipt = readProviderReceipt(response, xClientRequestId);
 
     if (response.status < 200 || response.status >= 300) {
       return {
@@ -106,6 +114,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
           status: response.status,
         },
         modelId: request.modelId,
+        providerReceipt,
         providerId: this.providerId,
         status: "failed",
       };
@@ -116,6 +125,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
       throw new MediaGenerationProviderError(
         "image_response_invalid",
         "OpenAI image provider returned an invalid response",
+        providerReceipt,
       );
     }
     const bytes = Buffer.from(encoded, "base64");
@@ -123,6 +133,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
       throw new MediaGenerationProviderError(
         "image_response_invalid",
         "OpenAI image provider returned an invalid image",
+        providerReceipt,
       );
     }
 
@@ -135,12 +146,13 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
         width: request.size === "1536x1024" ? 1536 : 1024,
       },
       modelId: request.modelId,
+      providerReceipt,
       providerId: this.providerId,
       status: "succeeded",
     };
   }
 
-  #headers(idempotencyKey: string): Readonly<Record<string, string>> {
+  #headers(idempotencyKey: string, xClientRequestId: string): Readonly<Record<string, string>> {
     return {
       ...(this.#config.organizationId === undefined
         ? {}
@@ -151,6 +163,7 @@ export class OpenAIImageGenerationProvider implements MediaGenerationProvider {
       Authorization: `Bearer ${this.#config.apiKey.value}`,
       "Content-Type": "application/json",
       "Idempotency-Key": idempotencyKey,
+      "X-Client-Request-Id": xClientRequestId,
     };
   }
 }
@@ -172,11 +185,69 @@ export class FetchOpenAIImageGenerationTransport
         method: request.method,
         signal: controller.signal,
       });
-      return { body: await response.json(), status: response.status };
+      const xRequestId = response.headers.get("x-request-id") ?? undefined;
+      return {
+        body: await response.json(),
+        headers: xRequestId === undefined ? {} : { xRequestId },
+        status: response.status,
+      };
     } finally {
       clearTimeout(timeout);
     }
   }
+}
+
+function readProviderReceipt(
+  response: OpenAIImageGenerationTransportResponse,
+  xClientRequestId: string,
+): MediaGenerationProviderReceipt {
+  const receipt: MediaGenerationProviderReceipt = {
+    xClientRequestId,
+    ...(response.headers?.xRequestId === undefined ? {} : { xRequestId: response.headers.xRequestId }),
+    ...readCreatedAt(response.body),
+    ...readUsage(response.body),
+  };
+  return receipt;
+}
+
+function readCreatedAt(value: unknown): Pick<MediaGenerationProviderReceipt, "createdAtEpochSeconds"> {
+  if (!isRecord(value)) return {};
+  const created = value.created;
+  return typeof created === "number" && Number.isSafeInteger(created) && created >= 0
+    ? { createdAtEpochSeconds: created }
+    : {};
+}
+
+function readUsage(value: unknown): Pick<MediaGenerationProviderReceipt, "usage"> {
+  if (!isRecord(value) || !isRecord(value.usage)) return {};
+  const usage = value.usage;
+  const inputTokens = nonnegativeInteger(usage.input_tokens);
+  const outputTokens = nonnegativeInteger(usage.output_tokens);
+  const totalTokens = nonnegativeInteger(usage.total_tokens);
+  if (inputTokens === undefined || outputTokens === undefined || totalTokens === undefined) return {};
+  const inputDetails = isRecord(usage.input_tokens_details) ? usage.input_tokens_details : {};
+  const outputDetails = isRecord(usage.output_tokens_details) ? usage.output_tokens_details : {};
+  const inputImageTokens = nonnegativeInteger(inputDetails.image_tokens);
+  const inputTextTokens = nonnegativeInteger(inputDetails.text_tokens);
+  const outputImageTokens = nonnegativeInteger(outputDetails.image_tokens);
+  return {
+    usage: {
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      ...(inputImageTokens === undefined ? {} : { inputImageTokens }),
+      ...(inputTextTokens === undefined ? {} : { inputTextTokens }),
+      ...(outputImageTokens === undefined ? {} : { outputImageTokens }),
+    },
+  };
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function nonnegativeInteger(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
 export function createDefaultOpenAIImageGenerationProviderConfig(

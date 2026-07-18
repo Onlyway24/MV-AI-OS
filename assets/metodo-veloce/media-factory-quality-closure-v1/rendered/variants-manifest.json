@@ -1,0 +1,90 @@
+{
+  "contractVersion": "1",
+  "package": "MEDIA_FACTORY_QUALITY_CLOSURE_V1",
+  "status": "RENDERED_PENDING_VISUAL_GATE",
+  "approvalScope": "INTERNAL_PACKAGE_ONLY",
+  "publication": "LOCKED",
+  "master": {
+    "path": "assets/metodo-veloce/media-factory-quality-closure-v1/master-openai.png",
+    "sha256": "1f2c2d135bbe9151057ae189a85587cb78c572e6825d9181f63666ec0a0b4e2d",
+    "width": 1024,
+    "height": 1536
+  },
+  "brand": {
+    "originalPath": "assets/brand/metodo-veloce-logo-original.jpg",
+    "originalSha256": "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+    "overlayPath": "assets/brand/derived/metodo-veloce-logo-overlay-technical.png",
+    "overlaySha256": "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681",
+    "overlayProvenance": "FAITHFUL_TECHNICAL_CROP_FROM_REGISTERED_ORIGINAL",
+    "appliedBy": "LOCAL_RENDERER_ONLY",
+    "includedInModelPrompt": false
+  },
+  "layouts": {
+    "instagram": {
+      "layout": "INSTAGRAM_NATIVE_4X5_V1",
+      "safeZone": {
+        "left": 64,
+        "right": 76,
+        "top": 68,
+        "bottom": 64
+      },
+      "headline": "5 OGGETTI IN CASA — CHE PUOI VENDERE SUBITO",
+      "cta": "SALVA LA CHECKLIST — VALUTA PRIMA DI PUBBLICARE"
+    },
+    "tiktok": {
+      "layout": "TIKTOK_NATIVE_9X16_V1",
+      "safeZone": {
+        "left": 66,
+        "right": 210,
+        "top": 80,
+        "bottom": 194
+      },
+      "headline": "5 OGGETTI — CHE PUOI VENDERE SUBITO",
+      "cta": "SALVA LA CHECKLIST — VALUTA PRIMA DI PUBBLICARE"
+    }
+  },
+  "assets": {
+    "instagram": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/instagram-1080x1350.png",
+      "sha256": "e033c359ae1f3b76fc86ec5af2db6a543e01c9d8cab86f778c579c7183284822",
+      "width": 1080,
+      "height": 1350,
+      "role": "INSTAGRAM_NATIVE_VARIANT"
+    },
+    "tiktok": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/tiktok-1080x1920.png",
+      "sha256": "86d8824ad5ccee09dfc8ab7b524e837b888e78b7ec69573f67cf9f5adc3e50b4",
+      "width": 1080,
+      "height": 1920,
+      "role": "TIKTOK_NATIVE_VARIANT"
+    },
+    "instagramPreview": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/preview-instagram.jpg",
+      "sha256": "99073d3e4e6fcc6ef537c6ca3593dbc6a624c380c8a4d462458be3c820f4b43e",
+      "width": 432,
+      "height": 540,
+      "role": "INSTAGRAM_PREVIEW"
+    },
+    "tiktokPreview": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/preview-tiktok.jpg",
+      "sha256": "4505eceafc5a824e29c2b4e5ed95bc6729428cd6d2d5e8138c3e1d66d0c28ec1",
+      "width": 360,
+      "height": 640,
+      "role": "TIKTOK_PREVIEW"
+    },
+    "contactSheet": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/contact-sheet.jpg",
+      "sha256": "d23ecf4b41807c550d959b78c4bd61e3f7ee643db2a8f000dd91e242f307c4f7",
+      "width": 1800,
+      "height": 1160,
+      "role": "CONTACT_SHEET"
+    }
+  },
+  "contentFingerprint": "3eac90577b806c36515871d94aad11c35d69b687883ae4eeb2ced3bc618720bd",
+  "provenanceChain": [
+    "1f2c2d135bbe9151057ae189a85587cb78c572e6825d9181f63666ec0a0b4e2d",
+    "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+    "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681",
+    "3eac90577b806c36515871d94aad11c35d69b687883ae4eeb2ced3bc618720bd"
+  ]
+}

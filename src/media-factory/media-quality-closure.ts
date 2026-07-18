@@ -370,7 +370,7 @@ function contentDirectionPrompt(): string {
   ].join("\n");
 }
 
-function masterImagePrompt(direction: MediaContentDirection): string {
+export function masterImagePrompt(direction: MediaContentDirection): string {
   return [
     "Create one photorealistic professional advertising still, dark luxury cinematic mood, premium composition and realistic materials, shadows and lighting.",
     "Scene: a curated resale-ready arrangement containing exactly one used unbranded smartphone, one pair of unbranded over-ear headphones, one pair of unbranded sneakers, one unbranded streetwear accessory, and one small valuable unbranded household object.",

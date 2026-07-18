@@ -80,3 +80,24 @@ node ./dist/social-publishing/social-connector-cli.js --config ./config/official
 
 Open the local operator URL and use only Connect/Reconnect, Verify status or
 Disconnect. There is deliberately no Publish button.
+
+## Single final browser checkpoint for Fabio
+
+Complete this checkpoint only after the media package is ready for review:
+
+1. In the Meta App Dashboard, create or select **Onlyway Social Operator**, add
+   Instagram API with Instagram Login, register the exact Instagram callback
+   above, enable only the three listed scopes, and confirm the expected account
+   is Creator or Business. Do not paste the secret into chat.
+2. In TikTok for Developers, create or select **Onlyway Social Operator**, add
+   Login Kit and Content Posting API for Desktop, register the exact trailing-
+   slash TikTok callback above, enable only the three listed scopes, and complete
+   the provider-required domain/audit steps. Do not paste the secret into chat.
+3. Save the two provider credential pairs locally with the two scripts above.
+   They also create the owner-only OAuth vault key when it is absent.
+4. Start the local connector, connect the exact two expected profiles, and use
+   **Verify status**. Stop if the Instagram account is personal or either
+   username differs from the expected profile.
+
+This checkpoint grants connection and read verification only. It does not grant
+publication, scheduling, drafts, uploads, messages, comments or campaigns.

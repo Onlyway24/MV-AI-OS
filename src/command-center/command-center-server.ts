@@ -371,7 +371,7 @@ async function brandMediaFactoryStatus(): Promise<unknown> {
 }
 
 async function mediaQualityVisualAsset(pathname: string): Promise<{ readonly bytes: Buffer; readonly contentType: "image/jpeg" | "image/png" } | undefined> {
-  const match = /^\/assets\/metodo-veloce\/media-factory-quality-closure-v1\/(master-openai\.png|variants\/(?:instagram-1080x1350\.png|tiktok-1080x1920\.png|preview-instagram\.jpg|preview-tiktok\.jpg|contact-sheet\.jpg))$/u.exec(pathname);
+  const match = /^\/assets\/metodo-veloce\/media-factory-quality-closure-v1\/(master-openai\.png|rendered\/(?:instagram-1080x1350\.png|tiktok-1080x1920\.png|preview-instagram\.jpg|preview-tiktok\.jpg|contact-sheet\.jpg))$/u.exec(pathname);
   const relative = match?.[1];
   if (relative === undefined) return undefined;
   return {

@@ -1033,9 +1033,10 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function mediaFactoryApprovalCard(factory) {
     const card = element("article", "cc-approval-review");
-    card.dataset.visualStatus = factory.status === "PENDING_FABIO_APPROVAL" ? "ready" : "blocked";
+    const readyForFabio = factory.status === "PENDING_FABIO_APPROVAL" || factory.status === "READY_FOR_FABIO_REVIEW";
+    card.dataset.visualStatus = readyForFabio ? "ready" : "blocked";
     const head = element("div", "cc-approval-review-head");
-    const title = factory.status === "PENDING_FABIO_APPROVAL" ? "PILOT LIVE AI · DECISIONE VISIVA RICHIESTA" : "PILOT LIVE AI · BLOCCATO IN SICUREZZA";
+    const title = readyForFabio ? "PILOT LIVE AI · DECISIONE VISIVA RICHIESTA" : "PILOT LIVE AI · BLOCCATO IN SICUREZZA";
     const identity = element("div");
     identity.append(element("p", "cc-panel-label", title), element("h3", "", "Brand-Locked Media Factory"), element("small", "", "Solo asset locali · nessuna pubblicazione"));
     const gates = element("div", "cc-approval-gates");

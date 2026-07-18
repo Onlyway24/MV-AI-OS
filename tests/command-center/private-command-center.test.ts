@@ -212,8 +212,8 @@ describe("Private Command Center", () => {
       };
       expect(mediaFactoryPayload).toMatchObject({
         externalActionsAllowed: false,
-        externalEffects: { completedImageGenerations: 0, openAiProviderCalls: 5, serverSpendUsd: 0 },
-        liveCalls: 5,
+        externalEffects: { completedImageGenerations: 1, openAiProviderCalls: 6, serverSpendUsd: 0 },
+        liveCalls: 6,
         publicationAuthorized: false,
         responsesConformance: {
           canonicalRequestShape: { endpoint: "/v1/responses", fieldNames: ["model", "input"] },
@@ -227,9 +227,15 @@ describe("Private Command Center", () => {
           publication: "LOCKED",
           tiktok: { expectedAccount: "@metodo_veloce.official", state: "APP_CONFIGURATION_REQUIRED" },
         },
-        status: "BLOCKED",
-        visualGate: { status: "BLOCKED_NO_MASTER_IMAGE" },
+        status: "READY_FOR_FABIO_REVIEW",
+        visualGate: { status: "PASS" },
       });
+      const instagramVariant = await fetch(`${origin}/assets/metodo-veloce/media-factory-quality-closure-v1/rendered/instagram-1080x1350.png`, { headers: { Cookie: cookie ?? "" } });
+      expect(instagramVariant.status).toBe(200);
+      expect(instagramVariant.headers.get("content-type")).toBe("image/png");
+      expect(createHash("sha256").update(Buffer.from(await instagramVariant.arrayBuffer())).digest("hex")).toBe("e033c359ae1f3b76fc86ec5af2db6a543e01c9d8cab86f778c579c7183284822");
+      const rejectedQualityAsset = await fetch(`${origin}/assets/metodo-veloce/media-factory-quality-closure-v1/rendered/not-allowed.png`, { headers: { Cookie: cookie ?? "" } });
+      expect(rejectedQualityAsset.status).toBe(404);
       const refreshedMediaFactory = await fetch(`${origin}/api/brand-media-factory`, { headers: { Cookie: cookie ?? "" } });
       const refreshedPayload = await refreshedMediaFactory.json() as {
         readonly responsesConformance: { readonly fingerprint: string };

@@ -184,7 +184,13 @@ def main() -> None:
         "tiktokPreview": asset_record(tiktok_preview_path, 360, 640, "TIKTOK_PREVIEW"),
         "contactSheet": asset_record(contact_path, 1800, 1160, "CONTACT_SHEET"),
     }
-    content_fingerprint = hashlib.sha256(json.dumps(assets, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    fingerprint_assets = {
+        name: {key: value for key, value in record.items() if key != "path"}
+        for name, record in assets.items()
+    }
+    content_fingerprint = hashlib.sha256(
+        json.dumps(fingerprint_assets, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     manifest = {
         "contractVersion": "1",
         "package": "MEDIA_FACTORY_QUALITY_CLOSURE_V1",

@@ -1,16 +1,37 @@
 {
   "contractVersion": "1",
+  "checkedAt": "2026-07-18T00:02:27.000Z",
   "publication": "LOCKED",
+  "browserCheckpoint": {
+    "status": "BLOCKED",
+    "reasonCode": "BROWSER_WEBVIEW_ATTACH_TIMEOUT",
+    "attemptedDestinations": [
+      "https://developers.facebook.com/apps/",
+      "http://127.0.0.1:53238/"
+    ],
+    "tiktokDashboardAttempt": "NOT_STARTED_AFTER_SHARED_BROWSER_INFRASTRUCTURE_BLOCKER",
+    "externalChanges": 0
+  },
+  "localSecretReferences": {
+    "instagramAppId": "MISSING",
+    "instagramClientSecret": "MISSING",
+    "tiktokClientKey": "MISSING",
+    "tiktokClientSecret": "MISSING",
+    "oauthVaultKey": "MISSING",
+    "valuesDisplayed": false
+  },
   "instagram": {
     "expectedAccount": "@mr.metodo.veloce_official",
     "username": null,
     "state": "APP_CONFIGURATION_REQUIRED",
+    "reasonCode": "APP_CONFIGURATION_REQUIRED_MISSING_LOCAL_SECRET_REFERENCES",
     "accountType": "UNKNOWN_UNTIL_OAUTH",
     "scopes": [
       "instagram_business_basic",
-      "instagram_business_content_publish",
-      "instagram_business_manage_insights"
+      "instagram_business_manage_insights",
+      "instagram_business_content_publish"
     ],
+    "redirectUri": "http://127.0.0.1:43123/oauth/instagram/callback",
     "insights": "OAUTH_NOT_COMPLETED",
     "tokenExpiry": null,
     "mediaHosting": "LOCAL_ONLY",
@@ -20,11 +41,19 @@
     "expectedAccount": "@metodo_veloce.official",
     "username": null,
     "state": "APP_CONFIGURATION_REQUIRED",
+    "reasonCode": "APP_CONFIGURATION_REQUIRED_MISSING_LOCAL_SECRET_REFERENCES",
+    "products": [
+      "Login Kit",
+      "Content Posting API"
+    ],
     "scopes": [
       "user.info.basic",
       "user.info.profile",
       "video.publish"
     ],
+    "redirectUri": "http://127.0.0.1:43123/oauth/tiktok/callback/",
+    "pkce": "S256",
+    "antiCsrfState": "REQUIRED",
     "creatorInfo": "OAUTH_NOT_COMPLETED",
     "privacyLimitations": "UNKNOWN_UNTIL_CREATOR_INFO",
     "auditState": "UNKNOWN_UNTIL_APP_CONFIGURATION",
@@ -35,6 +64,9 @@
   "externalEffects": {
     "instagramPosts": 0,
     "tiktokPosts": 0,
-    "messages": 0
+    "drafts": 0,
+    "uploads": 0,
+    "messages": 0,
+    "oauthAuthorizations": 0
   }
 }

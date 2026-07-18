@@ -1,0 +1,33 @@
+{
+  "contractVersion": "1",
+  "direction": {
+    "editorialAngle": "Trasformare il disordine in una checklist concreta, senza promesse di vendita o guadagno.",
+    "hook": "Cinque categorie da controllare prima del prossimo annuncio.",
+    "negativeRules": [
+      "nessun testo generato",
+      "nessun logo o watermark",
+      "nessun oggetto duplicato o deformato",
+      "nessun marchio inventato",
+      "nessuna promessa economica"
+    ],
+    "requiredObjects": [
+      "smartphone usato",
+      "cuffie",
+      "sneakers",
+      "accessorio streetwear",
+      "piccolo oggetto di valore"
+    ],
+    "title": "5 oggetti da riscoprire in casa",
+    "visualMood": "dark luxury cinematografico, nero con accenti gialli e luci bianche pulite",
+    "visualScene": "still life pubblicitario premium con materiali realistici e spazio negativo per headline locale"
+  },
+  "fingerprint": "f5759b555aa696fe1e45e1b8f4612dedc5a34644b52cf7592d057dc0fe744f17",
+  "provenance": {
+    "classification": "CONSTRAINT_PRESERVING_RECOVERY_NOT_RAW_PROVIDER_OUTPUT",
+    "rawProviderOutputAvailable": false,
+    "sourceOperationId": "media-quality-bd0bb28b-599a-4091-9aa7-74ebf7a9d5a5:GPT_IMAGE_2_MASTER",
+    "sourceStructuredOutputStatus": "VALIDATED",
+    "sourceValidationReceipt": "LEDGER_SETTLEMENT_PRESENT_OUTPUT_RECEIPT_NOT_PERSISTED",
+    "textCallsAdded": 0
+  }
+}

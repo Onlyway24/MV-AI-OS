@@ -1,0 +1,131 @@
+{
+  "contractVersion": "1",
+  "contentDirection": {
+    "fingerprint": "f5759b555aa696fe1e45e1b8f4612dedc5a34644b52cf7592d057dc0fe744f17",
+    "provenance": "CONSTRAINT_PRESERVING_RECOVERY_NOT_RAW_PROVIDER_OUTPUT",
+    "textCallsAdded": 0
+  },
+  "externalEffects": {
+    "completedImageGenerationsThisSession": 1,
+    "imageRequestsThisSession": 1,
+    "instagramPosts": 0,
+    "messages": 0,
+    "purchases": 0,
+    "serverSpendUsd": 0,
+    "tiktokPosts": 0
+  },
+  "previousImage": {
+    "classification": "UNCERTAIN_RECONCILIATION_PENDING",
+    "completedAt": "2026-07-17T17:33:20.723Z",
+    "idempotency": {
+      "header": "Idempotency-Key",
+      "keyFingerprint": "3472a88655092cfb45a4f78bdef8b0bf76b4bf5cffbe398534570b5cfdc8d23d",
+      "status": "SENT"
+    },
+    "operationId": "media-quality-bd0bb28b-599a-4091-9aa7-74ebf7a9d5a5:GPT_IMAGE_2_MASTER",
+    "pendingExposureUsd": 0.2,
+    "providerCostUsd": null,
+    "providerUsage": null,
+    "receipt": "CLIENT_LEDGER_ONLY",
+    "startedAt": "2026-07-17T17:32:20.720Z",
+    "xClientRequestId": {
+      "status": "NOT_SENT_BY_PREVIOUS_CLIENT"
+    },
+    "xRequestId": {
+      "status": "UNAVAILABLE_AFTER_CLIENT_TIMEOUT"
+    }
+  },
+  "pricing": {
+    "checkedAt": "2026-07-17T23:54:49.000Z",
+    "image": {
+      "inputImagePerMillionTokensUsd": 8,
+      "inputTextPerMillionTokensUsd": 5,
+      "model": "gpt-image-2",
+      "outputImagePerMillionTokensUsd": 30,
+      "prudentHigh1024x1536EstimateUsd": 0.165,
+      "reservationUsd": 0.3,
+      "snapshot": "gpt-image-2-2026-04-21"
+    },
+    "sources": [
+      "https://developers.openai.com/api/docs/models/gpt-image-2",
+      "https://developers.openai.com/api/docs/pricing",
+      "https://developers.openai.com/api/reference/resources/images/methods/generate"
+    ]
+  },
+  "publication": "LOCKED",
+  "recovery": {
+    "callCount": 1,
+    "estimatedCostUsd": 0.16594,
+    "ledger": {
+      "callCount": 1,
+      "estimatedCostUsd": 0.16594,
+      "expiresAt": "2026-07-18T00:05:04.965Z",
+      "priorLiveCallsToday": 0,
+      "priorPendingExposureUsd": 0.2,
+      "reconciliationPendingCostUsd": 0,
+      "reservedCostUsd": 0.3,
+      "sessionId": "image-recovery-a8d259ad-baf7-46ee-a503-c6a98fd7fb53",
+      "status": "CLOSED"
+    },
+    "ledgerReceipt": {
+      "clientRequestId": "mv-ai-os-8c806c29-33cd-412e-aea1-1d5f43ddc086",
+      "idempotencyKeyFingerprint": "85992e7507da22f26f1271e01ac2394c87af393a420bbe91b4510c81714d5864",
+      "modelId": "gpt-image-2-2026-04-21",
+      "operationId": "image-recovery-a8d259ad-baf7-46ee-a503-c6a98fd7fb53:GPT_IMAGE_2_MASTER_RECOVERY",
+      "requestFingerprint": "60f55b7fca074b974cc78b3a541bbac44374343f27fe7ac05f261369f461808c",
+      "reservedCostUsd": 0.3,
+      "startedAt": "2026-07-17T23:55:04.966Z",
+      "status": "succeeded",
+      "completedAt": "2026-07-17T23:56:47.112Z",
+      "costClassification": "ESTIMATED",
+      "settledCostUsd": 0.16594,
+      "xRequestId": "req_cbe6baaa86dc48758d7afd8ac969a837"
+    },
+    "receipt": {
+      "costClassification": "ESTIMATED",
+      "estimatedCostUsd": 0.16594,
+      "idempotencyKeyFingerprint": "85992e7507da22f26f1271e01ac2394c87af393a420bbe91b4510c81714d5864",
+      "model": "gpt-image-2",
+      "modelSnapshot": "gpt-image-2-2026-04-21",
+      "operationId": "image-recovery-a8d259ad-baf7-46ee-a503-c6a98fd7fb53:GPT_IMAGE_2_MASTER_RECOVERY",
+      "provider": {
+        "xClientRequestId": "mv-ai-os-8c806c29-33cd-412e-aea1-1d5f43ddc086",
+        "xRequestId": "req_cbe6baaa86dc48758d7afd8ac969a837",
+        "createdAtEpochSeconds": 1784332606,
+        "usage": {
+          "inputTokens": 260,
+          "outputTokens": 5488,
+          "totalTokens": 5748,
+          "inputImageTokens": 0,
+          "inputTextTokens": 260,
+          "outputImageTokens": 5488
+        }
+      },
+      "requestFingerprint": "60f55b7fca074b974cc78b3a541bbac44374343f27fe7ac05f261369f461808c",
+      "status": "SUCCEEDED"
+    },
+    "status": "READY_FOR_LOCAL_RENDER"
+  },
+  "review": "INTERNAL_PACKAGE_ONLY",
+  "result": {
+    "status": "READY_FOR_LOCAL_RENDER"
+  },
+  "session": {
+    "dailyHardLimitUsd": 4,
+    "maxCalls": 1,
+    "maxImages": 1,
+    "maxRetries": 0,
+    "sessionHardLimitUsd": 0.3,
+    "status": "CLOSED"
+  },
+  "master": {
+    "height": 1536,
+    "mimeType": "image/png",
+    "model": "gpt-image-2",
+    "modelSnapshot": "gpt-image-2-2026-04-21",
+    "path": "assets/metodo-veloce/media-factory-quality-closure-v1/master-openai.png",
+    "sha256": "1f2c2d135bbe9151057ae189a85587cb78c572e6825d9181f63666ec0a0b4e2d",
+    "width": 1024
+  },
+  "fingerprint": "b5317025873ed2ceae305971e24408b676124845a8180bb2d0df14018b8b2483"
+}

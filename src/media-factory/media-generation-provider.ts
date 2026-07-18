@@ -13,6 +13,7 @@ export interface BrandMediaFactoryProviderError {
 }
 
 export interface MediaGenerationRequest {
+  readonly clientRequestId?: string;
   readonly contractVersion: typeof BRAND_MEDIA_FACTORY_CONTRACT_VERSION;
   readonly maxEstimatedCostUsd: number;
   readonly modelId: string;
@@ -21,6 +22,20 @@ export interface MediaGenerationRequest {
   readonly quality: "low" | "medium" | "high";
   readonly requestId: string;
   readonly size: "1024x1024" | "1024x1536" | "1536x1024";
+}
+
+export interface MediaGenerationProviderReceipt {
+  readonly createdAtEpochSeconds?: number;
+  readonly usage?: {
+    readonly inputImageTokens?: number;
+    readonly inputTextTokens?: number;
+    readonly inputTokens: number;
+    readonly outputImageTokens?: number;
+    readonly outputTokens: number;
+    readonly totalTokens: number;
+  };
+  readonly xClientRequestId: string;
+  readonly xRequestId?: string;
 }
 
 export interface GeneratedMasterImage {
@@ -35,12 +50,14 @@ export type MediaGenerationResponse =
   | {
       readonly image: GeneratedMasterImage;
       readonly modelId: string;
+      readonly providerReceipt?: MediaGenerationProviderReceipt;
       readonly providerId: string;
       readonly status: "succeeded";
     }
   | {
       readonly error: BrandMediaFactoryProviderError;
       readonly modelId: string;
+      readonly providerReceipt?: MediaGenerationProviderReceipt;
       readonly providerId: string;
       readonly status: "failed";
     };
@@ -53,12 +70,15 @@ export interface MediaGenerationProvider {
 
 export class MediaGenerationProviderError extends Error {
   public readonly code: BrandMediaFactoryProviderErrorCode;
+  public readonly providerReceipt: MediaGenerationProviderReceipt | undefined;
 
   public constructor(
     code: BrandMediaFactoryProviderErrorCode,
     message: string,
+    providerReceipt?: MediaGenerationProviderReceipt,
   ) {
     super(message);
     this.code = code;
+    this.providerReceipt = providerReceipt;
   }
 }

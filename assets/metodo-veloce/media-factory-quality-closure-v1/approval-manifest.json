@@ -1,15 +1,15 @@
 {
   "contractVersion": "1",
   "milestone": "MEDIA FACTORY QUALITY CLOSURE + INSTAGRAM AND TIKTOK OFFICIAL CONNECTION V1",
-  "status": "BLOCKED",
-  "reason": "IMAGE_PROVIDER_TRANSPORT_TIMEOUT: GPT Image 2 non ha restituito un master entro il timeout client di 60 secondi; nessun retry è autorizzato.",
-  "provider": "TEXT_READY_IMAGE_TIMEOUT",
+  "status": "READY_FOR_FABIO_REVIEW",
+  "reason": "Master e varianti locali hanno superato i gate; la precedente richiesta immagine resta da riconciliare e i connector social attendono il checkpoint browser di Fabio.",
+  "provider": "READY",
   "publication": "LOCKED",
   "publicationAuthorized": false,
   "externalActionsAllowed": false,
   "review": "INTERNAL_PACKAGE_ONLY",
   "fabioApproval": "NOT_GIVEN",
-  "liveCalls": 5,
+  "liveCalls": 6,
   "models": {
     "text": "gpt-4o-mini",
     "textSnapshot": "gpt-4o-mini-2024-07-18",
@@ -20,55 +20,139 @@
     "status": "VALIDATED",
     "estimatedCostUsd": 0.00012375,
     "costClassification": "ESTIMATED",
-    "outputPersistence": "MISSING_DUE_TO_CLOSURE_SERIALIZATION_DEFECT"
+    "outputPersistence": "RECOVERED_AS_CONSTRAINT_PRESERVING_DIRECTION_NOT_RAW_PROVIDER_OUTPUT",
+    "newTextCalls": 0
   },
-  "master": null,
+  "previousImage": {
+    "classification": "UNCERTAIN_RECONCILIATION_PENDING",
+    "operationId": "media-quality-bd0bb28b-599a-4091-9aa7-74ebf7a9d5a5:GPT_IMAGE_2_MASTER",
+    "xClientRequestId": "NOT_SENT_BY_PREVIOUS_CLIENT",
+    "xRequestId": "UNAVAILABLE_AFTER_CLIENT_TIMEOUT",
+    "providerUsage": null,
+    "providerCostUsd": null,
+    "pendingExposureUsd": 0.2
+  },
+  "imageRecovery": {
+    "status": "SUCCEEDED",
+    "sessionStatus": "CLOSED",
+    "callCount": 1,
+    "maxRetries": 0,
+    "operationId": "image-recovery-a8d259ad-baf7-46ee-a503-c6a98fd7fb53:GPT_IMAGE_2_MASTER_RECOVERY",
+    "xClientRequestId": "mv-ai-os-8c806c29-33cd-412e-aea1-1d5f43ddc086",
+    "xRequestId": "req_cbe6baaa86dc48758d7afd8ac969a837",
+    "costClassification": "ESTIMATED",
+    "estimatedCostUsd": 0.16594,
+    "usage": {
+      "inputTextTokens": 260,
+      "inputImageTokens": 0,
+      "outputImageTokens": 5488,
+      "totalTokens": 5748
+    }
+  },
+  "master": {
+    "path": "assets/metodo-veloce/media-factory-quality-closure-v1/master-openai.png",
+    "sha256": "1f2c2d135bbe9151057ae189a85587cb78c572e6825d9181f63666ec0a0b4e2d",
+    "mimeType": "image/png",
+    "width": 1024,
+    "height": 1536
+  },
+  "assets": {
+    "instagram": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/instagram-1080x1350.png",
+      "sha256": "e033c359ae1f3b76fc86ec5af2db6a543e01c9d8cab86f778c579c7183284822",
+      "width": 1080,
+      "height": 1350
+    },
+    "tiktok": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/tiktok-1080x1920.png",
+      "sha256": "86d8824ad5ccee09dfc8ab7b524e837b888e78b7ec69573f67cf9f5adc3e50b4",
+      "width": 1080,
+      "height": 1920
+    },
+    "instagramPreview": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/preview-instagram.jpg",
+      "sha256": "99073d3e4e6fcc6ef537c6ca3593dbc6a624c380c8a4d462458be3c820f4b43e"
+    },
+    "tiktokPreview": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/preview-tiktok.jpg",
+      "sha256": "4505eceafc5a824e29c2b4e5ed95bc6729428cd6d2d5e8138c3e1d66d0c28ec1"
+    },
+    "contactSheet": {
+      "path": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/contact-sheet.jpg",
+      "sha256": "d23ecf4b41807c550d959b78c4bd61e3f7ee643db2a8f000dd91e242f307c4f7"
+    }
+  },
   "qualityGate": {
-    "status": "BLOCKED_NO_MASTER_IMAGE"
+    "status": "PASS",
+    "checks": [
+      "FORMATO_E_DIMENSIONI",
+      "NESSUNO_STRETCHING",
+      "TESTO_LOCALE_LEGGIBILE",
+      "LOGO_PROPORZIONALE"
+    ]
   },
   "riskGate": {
-    "status": "BLOCKED_NO_MASTER_IMAGE"
+    "status": "PASS",
+    "publication": "LOCKED",
+    "brandPolicy": "ORIGINAL_REGISTERED_ASSET_WITH_FAITHFUL_LOCAL_TECHNICAL_OVERLAY_ONLY"
   },
   "costGate": {
     "status": "PASS_BUDGET_WITH_RECONCILIATION_PENDING"
   },
   "visualGate": {
-    "status": "BLOCKED_NO_MASTER_IMAGE"
+    "status": "PASS",
+    "inspectedAtOriginalResolution": true,
+    "findings": [
+      "COMPOSIZIONE_COHERENTE_CON_CONTENT_DIRECTION",
+      "OGGETTI_REALISTICI_SENZA_DUPLICAZIONI_ANOMALE",
+      "NESSUN_TESTO_AI_O_WATERMARK",
+      "RITAGLI_NATIVI_E_SAFE_ZONE_CONFORMI",
+      "LOGO_ORIGINALE_APPLICATO_SOLO_LOCALMENTE"
+    ]
   },
   "evidenceGate": {
-    "status": "PASS"
+    "status": "PASS",
+    "provenanceManifest": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/variants-manifest.json",
+    "contactSheet": "assets/metodo-veloce/media-factory-quality-closure-v1/rendered/contact-sheet.jpg"
   },
   "costLedger": {
     "apiBudgetEur": 5,
     "dailyHardLimitUsd": 4,
-    "sessionHardLimitUsd": 1,
-    "textEstimatedCostUsd": 0.00012375,
-    "imageReservedPendingReconciliationUsd": 0.2,
-    "currentSessionEstimatedOrPendingExposureUsd": 0.20012375,
-    "priorReservedExposureUsd": 0.025,
-    "estimatedCumulativeCostUsd": 0.22512375,
+    "imageRecoverySessionHardLimitUsd": 0.3,
+    "newImageEstimatedCostUsd": 0.16594,
+    "previousImagePendingExposureUsd": 0.2,
+    "newRecoveryPlusPendingExposureUsd": 0.36594,
+    "maximumReservationEnvelopeUsd": 0.5,
+    "priorRecordedEstimatedOrReservedExposureUsd": 0.22512375,
+    "estimatedCumulativeCostUsd": 0.39106375,
     "actualProviderCostUsd": null,
-    "reconciliation": "IMAGE_PROVIDER_BILLING_RECONCILIATION_REQUIRED"
+    "reconciliation": "PREVIOUS_IMAGE_PROVIDER_BILLING_RECONCILIATION_REQUIRED"
   },
   "brandAssets": {
+    "originalLogoPath": "assets/brand/metodo-veloce-logo-original.jpg",
     "originalLogoSha256": "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+    "technicalOverlayPath": "assets/brand/derived/metodo-veloce-logo-overlay-technical.png",
     "technicalOverlaySha256": "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681",
-    "policy": "ORIGINAL_REGISTERED_ASSET_WITH_FAITHFUL_LOCAL_TECHNICAL_OVERLAY_ONLY"
+    "policy": "ORIGINAL_REGISTERED_ASSET_WITH_FAITHFUL_LOCAL_TECHNICAL_OVERLAY_ONLY",
+    "includedInModelPrompt": false
   },
   "social": {
     "instagram": "APP_CONFIGURATION_REQUIRED",
     "tiktok": "APP_CONFIGURATION_REQUIRED"
   },
   "externalEffects": {
-    "completedImageGenerations": 0,
-    "openAiProviderCalls": 5,
+    "completedImageGenerations": 1,
+    "openAiProviderCalls": 6,
     "instagramPosts": 0,
     "tiktokPosts": 0,
+    "drafts": 0,
+    "uploads": 0,
     "messages": 0,
     "purchases": 0,
     "serverSpendUsd": 0,
     "deploys": 0,
     "mainMerges": 0
   },
-  "fingerprint": "eccffb2ba7a131e75b5b6748161f79e5c1ccacc4365e98a7024861249a8a5565"
+  "contentFingerprint": "3eac90577b806c36515871d94aad11c35d69b687883ae4eeb2ced3bc618720bd",
+  "fingerprint": "96e8f08d807aff0a4bc0098a4201fab8ddf7738a1315e559b6711442b54c65fb"
 }

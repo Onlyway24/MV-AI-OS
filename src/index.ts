@@ -20,6 +20,23 @@ export {
   type TelegramOperatorConfig,
 } from "./telegram/telegram-contracts.js";
 export { FetchTelegramBotApiTransport, TelegramBotApiClient, type TelegramBotApiTransport } from "./telegram/telegram-bot-api.js";
+export {
+  ImageRecovery,
+  IMAGE_RECOVERY_TIMEOUT_MS,
+  recoveredValidatedDirection,
+  type ImageRecoveryOperationReceipt,
+  type ImageRecoveryReasonCode,
+  type ImageRecoveryResult,
+} from "./media-factory/image-recovery.js";
+export {
+  ImageRecoverySessionLedger,
+  IMAGE_RECOVERY_CONTRACT_VERSION,
+  IMAGE_RECOVERY_DAILY_HARD_LIMIT_USD,
+  IMAGE_RECOVERY_MAX_CALLS,
+  IMAGE_RECOVERY_SESSION_HARD_LIMIT_USD,
+  type ImageRecoveryReceiptRow,
+  type ImageRecoverySnapshot,
+} from "./media-factory/image-recovery-session-ledger.js";
 export { ControlledTelegramOperatorConsole } from "./telegram/telegram-operator-console.js";
 export { TelegramOperatorProcessLock } from "./telegram/telegram-operator-lock.js";
 export { TelegramOperatorLifecycle, type TelegramOperatorLifecycleOptions, type TelegramPollingConsole } from "./telegram/telegram-operator-lifecycle.js";
