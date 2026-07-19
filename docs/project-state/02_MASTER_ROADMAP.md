@@ -11,7 +11,8 @@ authority. Status must be updated after every completed milestone.
 **Objective:** Provide a dedicated-bot, single-private-chat, local operator transport
 without personal-account access or autonomous execution.
 
-**Status:** In progress. The Telegram personal privacy boundary is authoritative;
+**Status:** Operational implementation complete; Fabio's private-phone continuity
+observation remains an external acceptance checkpoint. The Telegram personal privacy boundary is authoritative;
 Developer Control Plane is Phase 2 and has not started. Workflow Specification
 Admission Boundary is paused, not deleted. Phase 1B Checkpoints A, B, and C are complete: exact
 versioned Founder/Brand profiles and a narrow versioned policy profile are resolved
@@ -23,7 +24,35 @@ one-use callback bindings. Checkpoint D delivers the complete guided `/mission`
 Mission Planning Console: structured collection, review, separate data and planning
 confirmations, deterministic Mission validation/planner/Quality Gate, and restart-safe
 Italian result presentation. It creates no Workflow; Phase 1C Workflow controls remain
-unstarted.
+unstarted. `/daily_brief` reads the durable Daily Operating Brief through the real
+Telegram runtime and never activates H24 or publication. SQLite schema v30 persists a
+validated opaque delivery intent before transport: ambiguous sends advance their
+offset as `DELIVERY_UNCERTAIN`, require manual reconciliation through
+`DELIVERY_RECONCILIATION_REQUIRED`, and are never redelivered automatically. Local
+validation failures remain separately isolated as `REJECTED`.
+
+## Supervised local operations and Command Center event plane
+
+**Objective:** Run bounded zero-provider-cost local schedules under explicit operator
+supervision and project their redaction-safe durable state without granting autonomy.
+
+**Status:** Implementation complete, activation optional and explicit. Eleven schedule
+types, fenced leases, controls, timeout/cancellation/retry/dead-letter, recovery,
+usage summaries, operational events, Founder Workday, Daily Brief, SSE replay and
+allowlisted propose/confirm controls are covered by offline and SQLite restart tests.
+Agent Company acceptance records 16 `COMPLETED` work items and Backup Guardian
+`BLOCKED`, not a fabricated 17/17. Daily Brief keeps immutable `Europe/Rome`
+morning/EOD versions and leaves costs/external effects `UNAVAILABLE` without global
+coverage. Command Center totals are bounded and fail visibly at their caps. The exact
+Visual Gate is shared with Telegram and enforced again by the central command boundary;
+successful review persists its binding fingerprint. Legacy reviews without that
+fingerprint remain readable but cannot schedule or enter publication dry-run. The
+official logo exists; the old `BLOCKED_ORIGINAL_LOGO_MISSING` manifest reason is stale,
+while its missing exact approval binding/ready manifest remains the real blocker. A
+valid receipt permits only a separate internal scheduling decision.
+No launch agent is installed by the repository. Official-social connection remains a
+single Fabio browser checkpoint, starts only by CSRF-bound local `POST`, and
+`PUBLICATION` remains `LOCKED`.
 
 ## Phase 0 — Architecture and engineering baseline
 

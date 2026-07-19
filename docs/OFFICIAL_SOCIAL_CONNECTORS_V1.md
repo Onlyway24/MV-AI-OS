@@ -75,11 +75,47 @@ input is hidden and the scripts print only presence and file mode:
 ./scripts/save-instagram-connector-credentials.sh
 ./scripts/save-tiktok-connector-credentials.sh
 npm run build
-node ./dist/social-publishing/social-connector-cli.js --config ./config/official-social-connectors.json
+npm run social-connectors -- preflight --config ./config/official-social-connectors.json
+npm run social-connectors -- start --config ./config/official-social-connectors.json
 ```
 
-Open the local operator URL and use only Connect/Reconnect, Verify status or
-Disconnect. There is deliberately no Publish button.
+`preflight` performs no browser navigation, OAuth exchange or provider request. It
+strictly verifies the contract version, exact redirect URIs, expected accounts,
+scope allowlists, owner-only local SecretReferences and the requirement that every
+secret/vault path remains outside the repository. Its JSON result contains only
+stable check codes and opaque `secretId` values: never a path or resolved value.
+Startup remains blocked unless every check is `PASS`.
+
+Open only the local operator root and use its Connect/Reconnect, Verify status or
+Disconnect controls. Connect/Reconnect is a local HTML form `POST` to
+`/oauth/{platform}/start` with the page's CSRF token and an exact loopback `Origin`;
+`GET /oauth/{platform}/start` is deliberately unsupported. Do not paste or manually
+construct an authorization URL. There is deliberately no Publish button.
+
+The loopback runtime exposes three read-only operational endpoints:
+
+- `http://127.0.0.1:43123/health` — process readiness and publication lock;
+- `http://127.0.0.1:43123/api/status` — redacted connector state;
+- `http://127.0.0.1:43123/api/checkpoint` — the single machine-readable browser
+  checkpoint with dashboards, products, callbacks, scopes, scripts, accounts and
+  expected final states.
+
+Status writes use an owner-only temporary file, file sync and atomic rename. The
+artifact rejects access tokens, refresh tokens, authorization codes, client secrets
+and PKCE verifiers before any write. It records zero posts, drafts, uploads or
+messages and always keeps publication `LOCKED`.
+
+Pending OAuth state is durable across process restart. An unexpired pending request
+must complete through its original state-bound callback and blocks a duplicate
+Connect action. An expired pending request is removed automatically only when the
+operator explicitly starts a new connection; authorization-code replay fingerprints
+remain retained. No manual vault editing is required.
+
+Wrong-account, personal-account and explicit Disconnect paths delete the local
+credential before attempting best-effort provider revocation. A revocation failure
+therefore cannot leave a locally usable token: the receipt becomes `UNCERTAIN`, the
+connector remains disconnected/blocked and a later connection requires fresh OAuth.
+The deleted credential is never restored merely to retry revocation.
 
 ## Single final browser checkpoint for Fabio
 
@@ -98,6 +134,15 @@ Complete this checkpoint only after the media package is ready for review:
 4. Start the local connector, connect the exact two expected profiles, and use
    **Verify status**. Stop if the Instagram account is personal or either
    username differs from the expected profile.
+
+Exact dashboard entry points used by the machine-readable checkpoint:
+
+- Meta App Dashboard: <https://developers.facebook.com/apps/>
+- TikTok for Developers apps: <https://developers.tiktok.com/apps/>
+
+The checkpoint is complete only when Instagram reports `INSIGHTS_READY` and TikTok
+reports `CREATOR_INFO_READY`. TikTok audit/domain state remains a separately visible
+provider requirement; neither state unlocks publication.
 
 This checkpoint grants connection and read verification only. It does not grant
 publication, scheduling, drafts, uploads, messages, comments or campaigns.

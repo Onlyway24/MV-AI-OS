@@ -2014,3 +2014,107 @@ an observation would manufacture evidence.
 **Future impact:** Provider adapters must terminate in this batch boundary and retain
 the original acquisition timestamp, account/platform identity and source reference.
 They cannot publish, schedule externally or bypass the Action Plane.
+
+## ADR-078 — H24 is supervised local execution, not implicit autonomy
+
+**Decision:** The H24 plane is an explicitly started local scheduler/worker system
+with durable controls, fenced leases, bounded retries, measured usage and redacted
+events. Repository import, migration, Command Center or Telegram startup cannot install
+or activate it. Founder Workday and Daily Operating Brief perform snapshot, aggregate
+insert and event append in one repository transaction and replay by durable identity.
+
+The Command Center may project events and execute only allowlisted two-step controls.
+Official-social OAuth remains one separate Fabio browser checkpoint. No runtime,
+connection or review state unlocks publication; publication remains `LOCKED`.
+
+**Reason:** “24/7 ready” must describe tested recoverable machinery, not claim a
+running process or transfer Fabio's authority. Atomic aggregate/event persistence and
+fail-closed coverage prevent dashboards or briefings from turning partial data into
+operational success.
+
+**Future impact:** Cloud or multi-user deployment requires a new threat model and
+authorization. New schedules/handlers must declare budgets and external boundaries;
+new UI actions must use the existing proposal/confirmation and event contracts.
+
+## ADR-079 — Operational projections preserve immutable history and bounded coverage
+
+**Decision:** Daily Operating Brief uses the DST-safe `Europe/Rome` business date.
+Unchanged evidence replays the exact record; changed evidence for the same day creates
+a new immutable version. Completed work requires durable task completion evidence from
+Operations, Agent Company or Founder Workday. Command Center and Daily Brief repository
+queries are bounded; reaching any limit yields `LIMIT_REACHED`, a lower bound or
+`UNAVAILABLE`. Cost and external-effect totals remain `UNAVAILABLE` until one
+coverage-attested global ledger spans every relevant subsystem.
+
+**Reason:** Overwriting morning state, treating aggregate status as a task receipt or
+presenting a capped query/placeholder zero as a global measurement would create false
+operational evidence.
+
+**Future impact:** Every new projection source must declare its cap, completeness rule,
+business-time semantics and durable completion evidence. A future global cost/effects
+ledger must attest coverage before it can replace `UNAVAILABLE`.
+
+## ADR-080 — Visual approval is an exact shared binding
+
+**Decision:** Command Center and Telegram use the same fail-closed Visual Gate. A
+manifest must be ready for human decision and bind workspace, production ID/version,
+content package, Social Publishing Pack, Master Content Pack and asset set. The gate
+recomputes manifest and actual-file SHA-256, validates declared dimensions and confines
+paths to the asset root. Proposal/preview and confirmation/callback both revalidate;
+any change invalidates the pending decision. The central command boundary performs the
+same verification for every approved review regardless of adapter and persists the
+exact `visualApprovalBindingFingerprint` on the production record.
+
+**Reason:** A global, stale or path-swapped manifest cannot prove what Fabio actually
+reviewed. Sharing one gate prevents the browser and Telegram paths from granting
+different approval authority.
+
+**Future impact:** Legacy approved reviews without a visual fingerprint remain readable
+for compatibility and archive, but are not eligible for scheduling, publication
+dry-run or authorization. The official original logo exists with SHA-256
+`9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121`;
+the old manifest's `BLOCKED_ORIGINAL_LOGO_MISSING` value is stale historical metadata.
+Its operative blocker is the absence of an exact approval binding and matching
+`READY_FOR_HUMAN_DECISION` state. A passing Visual Gate plus Fabio's review permits
+only a later, separate internal scheduling command; publication remains locked.
+
+## ADR-081 — Social OAuth start is CSRF-bound and credential removal is first
+
+**Decision:** Official-social OAuth begins only through a local operator-root form
+`POST` protected by exact loopback Origin and CSRF; direct start `GET` is unsupported.
+On wrong account, personal Instagram account or explicit disconnect, the local
+credential is deleted before best-effort provider revocation. Revocation failure is
+recorded `UNCERTAIN` and never restores the credential.
+
+**Reason:** A state-changing `GET` enables cross-site login initiation, while
+revoke-before-delete can leave a usable local token after a provider/network failure.
+
+**Future impact:** Browser acceptance must start from the local root, and recovery from
+an uncertain revoke requires fresh OAuth. Connection, Insights, creator-info or audit
+state never unlocks publication.
+
+## ADR-082 — Telegram persists delivery intent before transport and never guesses
+
+**Decision:** SQLite schema v30 validates the complete Telegram outbound intent before
+transport and commits one opaque `UNCERTAIN` delivery record together with the inbound
+transition to `DELIVERY_UNCERTAIN` before the first Bot API byte can leave. Proven
+delivery commits the `DELIVERED` state, terminal `COMPLETED` or `REJECTED` receipt and
+polling offset atomically. If transport may have succeeded without local confirmation,
+the offset is still advanced, the uncertain evidence is retained, and the operator
+receives `DELIVERY_RECONCILIATION_REQUIRED`. Restart and polling must not redeliver the
+same intent or repeat the underlying domain command automatically.
+
+A local validation or handling error that occurs before any delivery intent is opened
+is a distinct update-local condition. If its safe fallback is delivered, the receipt
+is terminal `REJECTED` and the offset advances; this must not be reported as transport
+uncertainty.
+
+**Reason:** Retrying after an ambiguous network boundary can duplicate a Telegram
+response or, worse, repeat an already committed domain action. Treating a local
+validation rejection as uncertain delivery would instead stop unrelated later updates
+and hide a deterministic input failure.
+
+**Future impact:** `DELIVERY_UNCERTAIN` always requires manual reconciliation. Any
+future Telegram transport must preserve durable intent-before-I/O, atomic terminal
+finalization, offset monotonicity, data minimization and the no-automatic-redelivery
+rule.

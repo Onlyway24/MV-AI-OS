@@ -74,6 +74,28 @@ Construction, validation, lookup, planning, prompting, and authorization do not
 perform external actions. Side effects occur only at an explicit, authorized,
 idempotent, audited adapter boundary.
 
+## Supervision is not implicit autonomy
+
+H24 readiness means bounded scheduler/worker code, durable controls, fenced leases,
+recovery and current health evidence. It never means a process is installed or active.
+Startup is an explicit local operator action. Aggregate mutation and its redaction-safe
+event share one transaction; projections and Telegram reads cannot activate work.
+Connection, review and OAuth state never authorize publication.
+
+## Bounded coverage is not global truth
+
+A capped repository query is an observation window, never a global aggregate. Hitting
+the cap must produce an explicit incomplete-coverage state, lower-bound notation or
+`UNAVAILABLE`; an empty or zero placeholder cannot be labelled measured. Daily
+operating snapshots are immutable and versioned when their evidence changes.
+
+## Approval binds exact bytes and exact state
+
+Visual approval must bind the exact workspace, aggregate identity/version, content
+package, downstream packs, manifest and actual asset bytes. Both proposal/preview and
+confirmation/callback revalidate the same binding. Evidence, review or connection
+state cannot substitute for this gate and can never authorize publication.
+
 ## No provider lock-in
 
 Agent behavior refers to capability profiles and gateway contracts, not model names,

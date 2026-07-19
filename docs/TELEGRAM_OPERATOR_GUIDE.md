@@ -38,11 +38,19 @@ shutdown, unexpected terminal failure, and cleanup all use one awaited shutdown 
 the runtime, SQLite state and process lock are each closed once. SIGINT/SIGTERM request
 a graceful stop; they do not abandon asynchronous cleanup with `process.exit`.
 
+Schema v30 makes outbound delivery fail closed. After local command handling, the
+complete outbound intent is validated before transport. Immediately before the first
+Bot API byte may leave the process, one SQLite transaction records the opaque delivery
+intent and moves the inbound receipt from `RECEIVED` to `DELIVERY_UNCERTAIN`. A proven
+transport success then records `DELIVERED`, writes the terminal receipt and advances
+the polling offset atomically. No prompt, message body, token or raw Update is stored
+in this delivery ledger.
+
 If startup reports `OPERATOR_LOCK_HELD`, treat the lock as owned until you have proved
 that no operator process is active. Only then may you remove the stale lock manually;
 the operator never steals or deletes an existing lock automatically.
 
-Phase 1 accepts `/start`, `/help`, `/status`, `/mission`, `/workflow`, `/workflows`,
+Phase 1 accepts `/start`, `/help`, `/status`, `/daily_brief`, `/mission`, `/workflow`, `/workflows`,
 `/report`, `/productions`, `/production <id>`, `/cancel_action`, `/stop`, and
 `/developer`. `/mission` opens the
 Mission Console home: `Nuova missione`, `Avvio rapido`, safe help and status are
@@ -80,6 +88,13 @@ only the exact-version internal approval: it does not select a date, publish, se
 message, contact a client, spend money, change a CRM, deploy, merge, browse, call a
 model/provider, or activate a scheduler/worker.
 
+`/daily_brief` compone il `DailyOperatingBriefService` reale sullo stesso SQLite:
+crea o riproduce idempotentemente il brief della data Europe/Rome e mostra soltanto
+la sintesi bounded. `/daily_brief <id>` mostra il dettaglio redatto. Le sezioni senza
+copertura durevole sono marcate `UNAVAILABLE`; gli zero placeholder non sono descritti
+come spesa o azioni misurate. Il comando è in sola lettura operativa: non approva,
+non avvia un job e non pubblica.
+
 The private-phone acceptance remains incomplete until Fabio observes the corrected
 flow. After a successful preflight with the existing untracked local configuration,
 start the operator, send `/mission`, then send `/mission quick`; confirm the bounded
@@ -89,10 +104,14 @@ code.
 
 Phase 1 creates no transcript and stores no raw Update, message text, names,
 usernames, language, profile, contact, location, media, response body, or token.
-Update receipts, callback hashes, sessions, confirmations, and delivery metadata have
-bounded retention. Delivery is best effort: a crash after the durable MV-AI-OS command
-but before Telegram acknowledgement can leave delivery uncertain; the underlying
-command remains replay-safe and is never repeated solely to retry delivery.
+Update receipts, callback hashes, sessions, confirmations, and opaque delivery
+metadata have bounded retention. A transport exception or crash after the durable
+delivery intent is recorded may mean that Telegram accepted the response before local
+confirmation. In that case the receipt remains `DELIVERY_UNCERTAIN`, its offset is
+advanced, and the operator reports `DELIVERY_RECONCILIATION_REQUIRED`. Restart does
+not redeliver that response and the underlying domain command is never repeated merely
+to repair delivery. Fabio must reconcile the ambiguous response manually and send a
+new command only if a new action is actually required.
 
 ## Local reports and diagnostics
 
@@ -102,7 +121,8 @@ Normal operator failures contain only one stable reason code. The supported code
 `CONFIGURATION_UNAVAILABLE`, `SECRET_REFERENCE_UNAVAILABLE`, `DATABASE_UNAVAILABLE`,
 `OPERATOR_LOCK_HELD`, `TELEGRAM_IDENTITY_FAILED`, `TELEGRAM_BOOTSTRAP_FAILED`,
 `POLLING_TRANSIENT_FAILURE`, `UPDATE_PROCESSING_FAILED`,
-`OUTBOUND_DELIVERY_FAILED`, `OPERATOR_SHUTDOWN_FAILED`, and
+`OUTBOUND_DELIVERY_FAILED`, `DELIVERY_RECONCILIATION_REQUIRED`,
+`OPERATOR_SHUTDOWN_FAILED`, and
 `INTERNAL_OPERATOR_FAILURE`.
 
 For a bounded local diagnostic, add `--diagnostics` to the start command. It adds only
@@ -114,10 +134,13 @@ Long-poll transport failures are retried sequentially with a finite 100 ms, 250 
 then 500 ms backoff. A successful poll resets the retry budget. A non-retryable failure
 or exhausted budget stops through the same cleanup path and reports its stable code;
 there is no parallel poller, tight loop, background scheduler or automatic restart.
-An invalid supported update, Mission rendering failure or outbound-delivery failure is
-isolated to that update. Its bounded receipt is retained as rejected, no completed
-domain command is repeated, and later updates continue when the local state store is
-healthy.
+A local validation, unsupported-action, Mission-rendering or other pre-transport
+failure is isolated to that update. A successfully delivered safe fallback advances
+the offset and records the inbound receipt as `REJECTED`; later updates continue when
+the local state store is healthy. This local `REJECTED` state is not a transport
+outcome and must not be confused with `DELIVERY_UNCERTAIN`. Once a durable outbound
+intent exists, any ambiguous transport result instead requires reconciliation and is
+never redelivered automatically.
 
 After a completed deterministic Mission, export its intentionally safe report with an
 explicit absolute output path:
@@ -147,8 +170,9 @@ phone `/mission` then `/mission quick` continuity check described above.
 
 Verify BotFather settings above, exact user/chat allowlisting, `/start`, a rejected
 unknown sender, a rejected forwarded message, restart behavior, and graceful stop.
-Do not enable Developer Mode, tools, external models, n8n, a Web Console, or external
-publication capability. The controlled production runtime remains local and requires an
-explicit worker tick; a separate, observed H24 service launch is still a future
-operational decision. Workflow and content approvals remain behind their explicit
-one-use confirmations and checkpoints.
+Do not enable Developer Mode, external models, n8n or publication capability. The
+supervised H24 scheduler/worker implementation is available locally but remains inert
+until Fabio explicitly starts or installs it; Telegram startup does not activate it.
+Workflow and content approvals remain behind their explicit one-use confirmations and
+checkpoints. `PUBLICATION` remains `LOCKED`. See
+`docs/SUPERVISED_H24_RUNTIME_V1.md` for the unified runbook.

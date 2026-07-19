@@ -8,7 +8,10 @@ and tests, not intended future behavior.
 
 ## Repository baseline
 
-- Current branch at the time of this snapshot: `main`.
+- Authoritative checkout for this sprint:
+  `/Users/onlyway24/Desktop/MV-AI-OS`. The shadow checkout
+  `/Users/onlyway24/AI/MV-AI-OS` is explicitly excluded.
+- Current branch at the time of this snapshot: `feature/telegram-operator-console`.
 - Core V1 `v1.0.0-core` release baseline:
   `08950d412ba249357064d42eb27a3d92587c1f32`.
 - Validated local runtime composition was committed in
@@ -206,6 +209,60 @@ and tests, not intended future behavior.
   raw update, message, callback or database record is retained for diagnostics. The
   remaining acceptance is Fabio's private-phone `/mission` then `/mission quick`
   continuity observation; it is not claimed complete here.
+- Telegram delivery reconciliation is durable in SQLite schema v30. The complete
+  outbound intent is validated locally, then an opaque `UNCERTAIN` delivery intent and
+  `DELIVERY_UNCERTAIN` receipt are committed before the first transport byte. Proven
+  success finalizes delivery, terminal receipt and polling offset atomically. Ambiguous
+  transport advances the offset, emits `DELIVERY_RECONCILIATION_REQUIRED`, and is never
+  automatically redelivered or used to repeat its domain command. A local
+  pre-transport validation/handling failure remains separately isolatable as
+  `REJECTED` after delivery of the safe fallback; it is not a delivery result.
+- Supervised H24 Local Runtime V1 is implemented in the current change set: eleven
+  bounded schedules, fenced scheduler/worker leases, durable controls, heartbeat,
+  timeout, cancellation, bounded retry/dead-letter, startup reconciliation, measured
+  usage summaries, backup-verification boundary, redaction-safe operational events
+  and explicit local CLI/launchd supervision. No persistent process is installed or
+  started implicitly.
+- Agent Company acceptance is deliberately non-green for backup evidence: 16 work
+  items are `COMPLETED`; Backup Guardian is `BLOCKED` with
+  `BACKUP_RESTORE_RECEIPT_REQUIRED`. Per-task structured JSON output is bounded to
+  65.536 bytes, the complete workday to 1.048.576 bytes, and every blocked item has a
+  validated structured blocker. Cyclic, oversized or unverifiable output is rejected.
+- Founder Workday #001 and Daily Operating Brief are durable, workspace-bound and
+  restart-safe. Each reads its repository snapshot, inserts its aggregate and appends
+  its operational event in one transaction. Missing coverage is explicit; no task is
+  called complete without a receipt. Daily Brief snapshots use the DST-safe
+  `Europe/Rome` business date: unchanged generation replays exactly, while changed
+  morning/EOD state creates a new immutable version. Completed Agent Company and
+  Founder tasks enter the brief only from their durable completion evidence.
+  Cost/external-effects sections remain `UNAVAILABLE` without a coverage-attested
+  global ledger. `/daily_brief` is composed into the real private Telegram runtime.
+- The Command Center now has a durable event plane with authenticated SSE cursor
+  replay/reset/heartbeat and an allowlisted propose/confirm action layer for production,
+  job and incident controls. Exact target/version/fingerprint and idempotency checks
+  remain mandatory. Repository queries are bounded and expose `LIMIT_REACHED`, lower
+  bounds and `ATTENTION_REQUIRED` instead of presenting capped windows as global
+  totals.
+- Content approval in both Command Center and Telegram now fails closed behind the
+  same exact Visual Gate. Workspace, production ID/version, content package, Social
+  Publishing Pack, Master Content Pack, manifest and actual asset byte/dimension
+  fingerprints must all match at proposal/preview and confirmation/callback. The
+  central command boundary rechecks the gate and persists the exact
+  `visualApprovalBindingFingerprint`, so an adapter cannot bypass it. Legacy approved
+  reviews without the fingerprint remain readable but cannot be scheduled, used for a
+  publication dry-run or authorized. The official original logo exists with SHA-256
+  `9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121`;
+  `BLOCKED_ORIGINAL_LOGO_MISSING` embedded in the legacy manifest is stale. Its current
+  blocker is the missing exact `approvalBinding`/`READY_FOR_HUMAN_DECISION` manifest.
+  A valid visual receipt enables only a separate internal scheduling decision;
+  publication remains `LOCKED`.
+- Official Instagram/TikTok connector contracts, fake transport, local checkpoint
+  runtime and browser verification scripts are complete offline. OAuth start requires
+  a CSRF-bound form `POST` from the local operator root; direct start `GET` is not a
+  supported path. Wrong-account/personal/disconnect handling deletes the local
+  credential before best-effort provider revocation and records `UNCERTAIN` if that
+  revocation cannot be proven. No OAuth browser connection is claimed complete and
+  publication remains `LOCKED`.
 - Phase 1C Workflow controls remain unstarted.
 
 ## Current architecture
@@ -1495,15 +1552,18 @@ chapter.
   local, validated, version-bound, durable, and non-external.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
-- The local command boundary exposes 54 allowlisted operations, including durable
+- The local command boundary exposes 71 allowlisted operations, including durable
   Business Mission and Agent Company commands. `RUN_AGENT_COMPANY_WORKDAY` executes
   one coherent local workday across 17 versioned departments, persists every task
   transition, structured output fingerprint, measured duration/cost and Quality /
-  Risk / Cost Gate, and stops in `AWAITING_FABIO` without external actions.
+  Risk / Cost Gate, and executes no external action. In the current acceptance state
+  it terminates `BLOCKED`: 16 tasks are `COMPLETED` and Backup Guardian records
+  `BACKUP_RESTORE_RECEIPT_REQUIRED`.
 - Reopening the same SQLite database resumes an incomplete Agent Company workday and
-  idempotently returns an already completed one. The end-to-end test verifies all 17
-  departments, 51 Gate results, Business dossier, Evidence Packs, Metodo Veloce
-  package, restart recovery, command replay, metrics and Command Center projection.
+  idempotently returns the exact existing terminal record. The end-to-end test
+  verifies all 17 departments with the truthful 16-completed/one-blocked split, 51
+  Gate results, Business dossier, Evidence Packs, Metodo Veloce package, restart
+  recovery, command replay, metrics and Command Center projection.
 - The private loopback-only Centro di Comando Onlyway is implemented. Its Agent
   Company section reads the operational catalog and durable workdays from the same
   repository boundary and renders executor, task, state, blocker, Gate, fingerprint,
@@ -1526,10 +1586,11 @@ chapter.
   permanent strategic doctrine before reading project-state and implementing the
   exact next milestone.
 
-There is no network-exposed HTTP service, autonomous background Agent Company worker,
-or default live-provider test path. The existing private dashboard binds only to
-`127.0.0.1`, requires a local authenticated session and shares the validated command
-and repository boundaries.
+There is no network-exposed HTTP service, autonomous Agent Company authority or
+default live-provider test path. Command Center, social checkpoint and supervised
+processes are loopback/user-local only. H24 processes are available but inert until
+Fabio explicitly starts or installs them; activation is not inferred from source or
+tests.
 
 ## Not implemented yet
 
@@ -1546,9 +1607,12 @@ and repository boundaries.
 - Workflow lifecycle cancellation propagation beyond durable local Workflow state.
 - Any model/provider/tool/network/browser/external execution from a workflow candidate.
 - Production secret management.
-- Network-facing HTTP, webhook, H24 schedule, or multi-user transport adapters.
+- Public/network-facing HTTP, webhook, cloud deployment or multi-user transport
+  adapters. Local H24 supervision is implemented; installation/activation remains an
+  explicit operator action.
 - Automated Google Trends, TikTok Creative Center, Instagram Insights or Commercial
   Music Library acquisition connectors. Their Source Registry entries exist, but no
   observation is inferred merely because a source has been authorized.
-- Cancellation propagation, production retry budgets, operational health checks,
-  metrics exporters, deployment packaging, and multi-user authentication.
+- Provider-specific external metrics acquisition, deployment packaging and multi-user
+  authentication. Operations retry, health and usage summaries are now implemented
+  locally; no external metrics exporter is implied.
