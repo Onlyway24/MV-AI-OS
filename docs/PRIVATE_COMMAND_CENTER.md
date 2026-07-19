@@ -47,6 +47,21 @@ restano a zero finché una giornata non viene effettivamente eseguita. Il Develo
 limitato al change plan e il Research alla compilazione di evidenze già autorizzate;
 la UI mostra questi confini senza estenderli nominalmente.
 
+## Onlyway Tower e Squadra Apex
+
+La vista Agenti presenta i 17 reparti operativi come una squadra coordinata, divisa
+in sei unità visive: Command, Intelligence, Studio, Growth, Build e Guardians. I call
+sign e gli emblemi sono alias originali di presentazione: non introducono nuovi agent
+ID, executor, permessi o capacità runtime. Ruolo, task supportati, stato, durata, costo
+e output continuano a provenire esclusivamente dal catalogo e dalle giornate Agent
+Company persistite.
+
+La lettura degli stati resta rigorosa: `READY` indica che l'executor locale è
+disponibile, non che un processo sia in esecuzione; `ACTIVE` compare soltanto quando
+esiste lavoro corrente reale. Il dossier selezionabile espone i confini dell'agente e
+la telemetria disponibile, mentre i filtri cambiano solo la visualizzazione. Nessuna
+azione del roster autorizza spesa, pubblicazione o mutazioni del workflow.
+
 Il Control Action Layer permette di approvare o rifiutare un pacchetto Metodo
 Veloce e di approvare, rifiutare o richiedere revisione per un dossier Business
 in attesa di Fabio. Ogni azione mostra prima versione, gate, Evidence Pack e

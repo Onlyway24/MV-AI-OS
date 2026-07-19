@@ -1,5 +1,6 @@
 export const COMMAND_CENTER_HTML = `
 <div class="cc-app" id="command-center" data-sidebar-state="expanded">
+  <a class="cc-skip-link" href="#overview">Vai al quadro operativo</a>
   <div class="cc-world" aria-hidden="true">
     <div class="cc-world-image"></div>
     <div class="cc-world-vignette"></div>
@@ -11,7 +12,7 @@ export const COMMAND_CENTER_HTML = `
     <div class="cc-sidebar-head">
       <a class="cc-brand" href="#overview" aria-label="Panoramica del Centro di Comando Onlyway">
         <span class="cc-brand-mark" aria-hidden="true">OW</span>
-        <span class="cc-brand-copy"><b>ONLYWAY</b><small>CENTRO DI COMANDO</small></span>
+        <span class="cc-brand-copy"><b>ONLYWAY</b><small>MISSION CONTROL</small></span>
       </a>
       <button class="cc-sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="command-sidebar" aria-expanded="true" aria-label="Compatta il pannello laterale"><span aria-hidden="true">‹</span></button>
     </div>
@@ -24,7 +25,7 @@ export const COMMAND_CENTER_HTML = `
       <a href="#production" data-label="Centro Produzione"><span class="cc-nav-icon" aria-hidden="true">◇</span><span class="cc-nav-label">Centro Produzione</span></a>
       <a href="#approvals" data-label="Centro Approvazioni"><span class="cc-nav-icon" aria-hidden="true">◆</span><span class="cc-nav-label">Centro Approvazioni</span></a>
       <p>COMPAGNIA AGENTI</p>
-      <a href="#agents" data-label="Compagnia Agenti"><span class="cc-nav-icon" aria-hidden="true">◎</span><span class="cc-nav-label">Compagnia Agenti</span></a>
+      <a href="#agents" data-label="Squadra Apex"><span class="cc-nav-icon" aria-hidden="true">◎</span><span class="cc-nav-label">Squadra Apex</span></a>
       <p>CONOSCENZA</p>
       <a href="#evidence" data-label="Centro Evidenze"><span class="cc-nav-icon" aria-hidden="true">◈</span><span class="cc-nav-label">Centro Evidenze</span></a>
       <p>OPERAZIONI</p>
@@ -41,8 +42,8 @@ export const COMMAND_CENTER_HTML = `
   <main class="cc-main">
     <header class="cc-topbar">
       <div class="cc-command-title">
-        <p class="cc-eyebrow">ONLYWAY</p>
-        <h1>Centro di Comando</h1>
+        <p class="cc-eyebrow">ONLYWAY TOWER</p>
+        <h1>Mission Control</h1>
       </div>
       <div class="cc-status-rail" aria-label="Quadro operativo corrente">
         <span><i class="cc-status-dot" data-status-dot aria-hidden="true"></i>Sistema <b id="system-status">Caricamento</b></span>
@@ -64,6 +65,26 @@ export const COMMAND_CENTER_HTML = `
       <kbd>⌘ K</kbd>
     </form>
     <p class="cc-command-result" id="command-result" aria-live="polite"></p>
+
+    <section class="cc-tower-intro" aria-labelledby="tower-heading">
+      <div class="cc-tower-copy">
+        <p class="cc-kicker">OPERATIONAL AGENT COMPANY</p>
+        <h2 id="tower-heading">Non diciassette chatbot.<br /><em>Una squadra coordinata.</em></h2>
+        <p>Ogni agente ha una missione, un executor verificabile e confini precisi. Onlyway coordina il team; Fabio mantiene sempre l'ultima decisione.</p>
+        <div class="cc-tower-pacts" aria-label="Principi della squadra">
+          <span>Evidence-led</span><span>Quality gated</span><span>Zero autonomia esterna</span>
+        </div>
+      </div>
+      <div class="cc-tower-command" aria-label="Telemetria reale della squadra">
+        <div class="cc-tower-seal" aria-hidden="true"><span>OW</span><i></i></div>
+        <div class="cc-tower-rail">
+          <div><span>AGENTI</span><strong id="team-total">—</strong><small>catalogo operativo</small></div>
+          <div><span>PRONTI</span><strong id="team-ready">—</strong><small>ready o active</small></div>
+          <div><span>ATTIVI</span><strong id="team-active">—</strong><small>task in esecuzione</small></div>
+          <div><span>TASK COMPLETATI</span><strong id="team-completed">—</strong><small>telemetria durevole</small></div>
+        </div>
+      </div>
+    </section>
 
     <section class="cc-section cc-overview" id="overview" aria-labelledby="overview-heading">
       <div class="cc-section-heading cc-overview-heading">
@@ -162,17 +183,46 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="agents" aria-labelledby="agents-heading">
-      <div class="cc-section-heading"><div><p class="cc-kicker">COMPAGNIA AGENTI</p><h2 id="agents-heading">Reparti misurabili</h2></div><p class="cc-section-note">Un ruolo è mostrato attivo solo quando esiste un runtime eseguibile.</p></div>
-      <div class="cc-agent-company-layout">
+    <section class="cc-section cc-agent-section" id="agents" aria-labelledby="agents-heading">
+      <div class="cc-agent-hero">
         <div>
-          <p class="cc-panel-label">CATALOGO OPERATIVO</p>
+          <p class="cc-kicker">COMPAGNIA AGENTI · APEX</p>
+          <h2 id="agents-heading">La squadra che trasforma una missione in risultato.</h2>
+          <p>Sei reparti, diciassette specialisti, un solo comando. Le identità sono visive; ruoli, task, gate, costi e stati arrivano esclusivamente dal control plane.</p>
+        </div>
+        <div class="cc-agent-hero-stats" aria-label="Stato della Compagnia Agenti">
+          <div><strong id="apex-total">—</strong><span>specialisti</span></div>
+          <div><strong id="apex-squads">—</strong><span>reparti</span></div>
+          <div><strong id="apex-guardians">—</strong><span>guardiani</span></div>
+          <div><strong>A3</strong><span>controllata</span></div>
+        </div>
+      </div>
+      <div class="cc-agent-toolbar">
+        <div class="cc-agent-filters" role="group" aria-label="Filtra gli agenti per reparto">
+          <button type="button" data-agent-filter="ALL" aria-pressed="true">Tutti</button>
+          <button type="button" data-agent-filter="COMMAND" aria-pressed="false">Command</button>
+          <button type="button" data-agent-filter="INTELLIGENCE" aria-pressed="false">Intelligence</button>
+          <button type="button" data-agent-filter="STUDIO" aria-pressed="false">Studio</button>
+          <button type="button" data-agent-filter="GROWTH" aria-pressed="false">Growth</button>
+          <button type="button" data-agent-filter="BUILD" aria-pressed="false">Build</button>
+          <button type="button" data-agent-filter="GUARDIANS" aria-pressed="false">Guardians</button>
+        </div>
+        <p id="agent-filter-summary" aria-live="polite">Caricamento roster operativo.</p>
+      </div>
+      <div class="cc-agent-company-layout cc-agent-company-layout--apex">
+        <div class="cc-agent-roster">
+          <p class="cc-panel-label">ROSTER OPERATIVO</p>
           <div class="cc-agent-grid" id="agent-grid"></div>
         </div>
-        <aside class="cc-workday-console" aria-labelledby="workday-heading">
-          <div class="cc-workday-heading"><p class="cc-panel-label">GIORNATE DUREVOLI</p><h3 id="workday-heading">Giornata Agent Company</h3></div>
-          <div class="cc-workday-list" id="agent-workday-list"></div>
-          <div class="cc-workday-detail" id="agent-workday-detail"></div>
+        <aside class="cc-agent-side">
+          <article class="cc-agent-dossier" id="agent-dossier" aria-live="polite">
+            <div class="cc-list-empty">Seleziona uno specialista per aprire il dossier operativo.</div>
+          </article>
+          <section class="cc-workday-console" aria-labelledby="workday-heading">
+            <div class="cc-workday-heading"><p class="cc-panel-label">MISSIONI DUREVOLI</p><h3 id="workday-heading">Giornata Agent Company</h3></div>
+            <div class="cc-workday-list" id="agent-workday-list"></div>
+            <div class="cc-workday-detail" id="agent-workday-detail"></div>
+          </section>
         </aside>
       </div>
     </section>
@@ -298,6 +348,16 @@ html,body,button,a,input{cursor:auto}button,a,[role="button"]{cursor:pointer}
 .cc-evidence-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .cc-agent-company-layout{align-items:start;display:grid;gap:18px;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr)}.cc-agent-company-layout>div>.cc-panel-label{margin-bottom:11px}.cc-agent-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cc-agent{align-items:start;background:linear-gradient(145deg,rgba(18,12,23,.72),rgba(5,4,8,.68));backdrop-filter:blur(20px);grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:18px}.cc-agent>div:first-child{grid-column:1/-1;min-height:112px}.cc-agent h3{font-size:19px;line-height:1.1;margin:6px 0}.cc-agent .cc-kicker{font-size:8px;overflow-wrap:anywhere}.cc-agent-executor{color:var(--ow-bronze-dark);display:block;font:8px ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:10px;overflow-wrap:anywhere}.cc-agent-stat{border-left:0;border-top:1px solid rgba(226,220,229,.09);padding-left:0;padding-top:9px}.cc-agent-stat span{font-size:8px}.cc-agent-stat b{color:var(--ow-chrome-bright);font-size:10px}.cc-agent[data-state="DEGRADED"]{border-color:rgba(201,86,94,.42)}.cc-agent[data-state="ACTIVE"]{border-color:rgba(80,165,121,.38)}.cc-workday-console{background:linear-gradient(145deg,rgba(18,12,23,.78),rgba(5,4,8,.74));backdrop-filter:blur(23px);border:1px solid rgba(226,220,229,.17);box-shadow:0 24px 72px rgba(0,0,0,.3);max-height:calc(100dvh - 48px);overflow:auto;padding:22px;position:sticky;top:22px}.cc-workday-heading{border-bottom:1px solid rgba(226,220,229,.1);padding-bottom:15px}.cc-workday-heading h3{color:var(--ow-chrome-white);font-size:21px;margin:6px 0 0}.cc-workday-list{display:grid;gap:7px;margin-top:14px}.cc-workday-card{background:rgba(4,3,7,.45);border:1px solid rgba(226,220,229,.12);color:var(--ow-chrome);display:grid;gap:5px;padding:12px;text-align:left}.cc-workday-card:hover,.cc-workday-card:focus-visible,.cc-workday-card[aria-pressed="true"]{background:rgba(48,30,57,.28);border-color:rgba(231,200,146,.42);box-shadow:inset 0 1px rgba(255,255,255,.04);outline:0;transform:none}.cc-workday-card b{color:var(--ow-chrome-white);font:400 14px/1.25 Georgia,"Times New Roman",serif}.cc-workday-card span{color:var(--ow-bronze);font-size:8px;letter-spacing:.08em}.cc-workday-detail{border-top:1px solid rgba(226,220,229,.1);margin-top:16px;padding-top:16px}.cc-workday-summary{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}.cc-workday-tasks{display:grid;gap:7px;margin-top:18px}.cc-workday-task{background:rgba(0,0,0,.2);border-left:2px solid rgba(226,220,229,.19);display:grid;gap:4px;padding:11px 12px}.cc-workday-task[data-status="COMPLETED"]{border-left-color:rgba(80,165,121,.7)}.cc-workday-task[data-status="BLOCKED"]{border-left-color:rgba(201,86,94,.78)}.cc-workday-task>span{color:var(--ow-bronze);font:8px ui-monospace,SFMono-Regular,Menlo,monospace}.cc-workday-task>b{color:var(--ow-chrome-white);font-size:10px;font-weight:500;overflow-wrap:anywhere}.cc-workday-task>p,.cc-workday-task>small{color:var(--ow-chrome);font-size:8px;margin:0;overflow-wrap:anywhere}.cc-workday-task>small{color:var(--ow-bronze-dark);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.cc-task-output{border-top:1px solid rgba(226,220,229,.08);margin-top:5px;padding-top:7px}.cc-task-output summary{color:var(--ow-bronze);cursor:pointer;font-size:8px}.cc-task-output pre{color:var(--ow-chrome);font:8px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;margin:8px 0 0;overflow:auto;white-space:pre-wrap}.cc-workday-console,.cc-workday-card,.cc-agent{transition:background .28s ease,border-color .28s ease,box-shadow .28s ease}.cc-workday-console:hover,.cc-workday-card:hover,.cc-agent:hover{transform:none!important}
 
+/* Onlyway Tower and Squad Apex: cinematic hierarchy backed only by real agent data. */
+.cc-skip-link{background:var(--ow-gold-light);color:#09070b;font-size:12px;font-weight:700;left:18px;padding:10px 14px;position:fixed;top:12px;transform:translateY(-180%);transition:transform .2s ease;z-index:100}.cc-skip-link:focus{outline:2px solid var(--ow-chrome-white);outline-offset:3px;transform:translateY(0)}
+.cc-tower-intro{background:radial-gradient(circle at 77% 45%,rgba(117,89,190,.18),transparent 23rem),linear-gradient(118deg,rgba(18,12,25,.94),rgba(4,4,8,.88));border:1px solid rgba(231,200,146,.24);box-shadow:0 36px 110px rgba(0,0,0,.42);display:grid;grid-template-columns:minmax(0,1.12fr) minmax(360px,.88fr);isolation:isolate;margin-top:18px;min-height:430px;overflow:hidden;position:relative}.cc-tower-intro:before{background:linear-gradient(90deg,transparent,rgba(231,200,146,.8),transparent);content:"";height:1px;left:0;position:absolute;right:0;top:0}.cc-tower-intro:after{background:radial-gradient(circle,rgba(231,200,146,.13) 0 1px,transparent 1.5px);background-size:24px 24px;content:"";inset:0;mask-image:linear-gradient(90deg,transparent 25%,#000);opacity:.26;pointer-events:none;position:absolute;z-index:-1}.cc-tower-copy{align-self:center;padding:clamp(38px,6vw,82px)}.cc-tower-copy h2{font:400 clamp(38px,5.1vw,76px)/.95 Georgia,"Times New Roman",serif;letter-spacing:-.055em;margin:18px 0 24px;max-width:900px}.cc-tower-copy h2 em{color:var(--ow-gold-light);font-style:normal}.cc-tower-copy>p:not(.cc-kicker){color:var(--ow-chrome);font-size:clamp(13px,1.2vw,17px);line-height:1.7;margin:0;max-width:720px}.cc-tower-pacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:30px}.cc-tower-pacts span{background:rgba(3,3,7,.42);border:1px solid rgba(226,220,229,.14);color:var(--ow-chrome-bright);font-size:10px;letter-spacing:.1em;padding:9px 12px;text-transform:uppercase}.cc-tower-command{align-items:center;border-left:1px solid rgba(226,220,229,.1);display:grid;grid-template-columns:minmax(180px,.8fr) minmax(170px,1.2fr);padding:38px;position:relative}.cc-tower-seal{aspect-ratio:1;border:1px solid rgba(231,200,146,.34);border-radius:50%;display:grid;max-width:260px;place-items:center;position:relative;width:100%}.cc-tower-seal:before,.cc-tower-seal:after,.cc-tower-seal i{border:1px solid rgba(231,200,146,.18);border-radius:50%;content:"";inset:12%;position:absolute}.cc-tower-seal:after{border-style:dashed;inset:25%;transform:rotate(24deg)}.cc-tower-seal i{border-color:rgba(119,136,199,.32);inset:-9%}.cc-tower-seal span{color:var(--ow-chrome-white);font:400 clamp(32px,4vw,58px)/1 Georgia,"Times New Roman",serif;letter-spacing:.08em;text-shadow:0 0 34px rgba(231,200,146,.28)}.cc-tower-rail{display:grid;gap:0}.cc-tower-rail div{border-bottom:1px solid rgba(226,220,229,.1);display:grid;grid-template-columns:1fr auto;min-width:0;padding:15px 0 15px 24px}.cc-tower-rail div:last-child{border-bottom:0}.cc-tower-rail span{color:var(--ow-bronze);font-size:9px;letter-spacing:.14em}.cc-tower-rail strong{color:var(--ow-chrome-white);font:400 25px/1 Georgia,"Times New Roman",serif;grid-row:1/3}.cc-tower-rail small{color:var(--ow-chrome);font-size:9px;margin-top:4px}
+.cc-agent-section{scroll-margin-top:26px}.cc-agent-hero{align-items:end;background:linear-gradient(135deg,rgba(16,10,23,.82),rgba(3,3,7,.68));border:1px solid rgba(226,220,229,.14);display:grid;gap:30px;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr);overflow:hidden;padding:clamp(28px,4vw,54px);position:relative}.cc-agent-hero:after{background:linear-gradient(90deg,transparent,rgba(119,136,199,.16));content:"";inset:0;pointer-events:none;position:absolute}.cc-agent-hero h2{font-size:clamp(34px,4vw,58px);line-height:1;margin:12px 0 18px;max-width:870px}.cc-agent-hero>div>p:not(.cc-kicker){color:var(--ow-chrome);font-size:13px;line-height:1.65;margin:0;max-width:760px}.cc-agent-hero-stats{display:grid;gap:1px;grid-template-columns:repeat(2,minmax(0,1fr));position:relative;z-index:1}.cc-agent-hero-stats div{background:rgba(3,3,7,.66);border:1px solid rgba(226,220,229,.1);display:grid;gap:5px;min-height:100px;padding:17px}.cc-agent-hero-stats strong{color:var(--ow-gold-light);font:400 30px/1 Georgia,"Times New Roman",serif}.cc-agent-hero-stats span{color:var(--ow-chrome);font-size:9px;letter-spacing:.11em;text-transform:uppercase}.cc-agent-toolbar{align-items:center;border-bottom:1px solid rgba(226,220,229,.1);display:flex;gap:18px;justify-content:space-between;padding:18px 0}.cc-agent-filters{display:flex;flex-wrap:wrap;gap:7px}.cc-agent-filters button{background:rgba(5,4,8,.62);border:1px solid rgba(226,220,229,.14);color:var(--ow-chrome);cursor:pointer;font:9px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.09em;padding:9px 12px;text-transform:uppercase}.cc-agent-filters button:hover,.cc-agent-filters button:focus-visible,.cc-agent-filters button[aria-pressed="true"]{background:rgba(92,62,113,.22);border-color:rgba(231,200,146,.45);color:var(--ow-chrome-white);outline:0}.cc-agent-toolbar>p{color:var(--ow-chrome);font-size:10px;margin:0;text-align:right}.cc-agent-company-layout--apex{grid-template-columns:minmax(0,1.32fr) minmax(360px,.68fr);margin-top:18px}.cc-agent-roster>.cc-panel-label{margin-bottom:11px}.cc-agent-side{display:grid;gap:14px;min-width:0}.cc-agent-company-layout--apex .cc-agent-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-company-layout--apex .cc-agent{--apex-accent:#d7ae71;appearance:none;background:linear-gradient(145deg,color-mix(in srgb,var(--apex-accent) 10%,rgba(12,8,17,.9)),rgba(4,3,7,.84) 60%);border:1px solid color-mix(in srgb,var(--apex-accent) 30%,rgba(226,220,229,.12));border-radius:0;color:var(--ow-chrome-white);cursor:pointer;display:grid;font:inherit;gap:16px;min-height:330px;padding:20px;position:relative;text-align:left;width:100%}.cc-agent-company-layout--apex .cc-agent:before{background:var(--apex-accent);content:"";height:1px;left:0;opacity:.9;position:absolute;top:0;width:64px}.cc-agent-company-layout--apex .cc-agent:hover,.cc-agent-company-layout--apex .cc-agent:focus-visible,.cc-agent-company-layout--apex .cc-agent[aria-pressed="true"]{border-color:color-mix(in srgb,var(--apex-accent) 72%,white 4%);box-shadow:0 24px 68px color-mix(in srgb,var(--apex-accent) 12%,transparent),inset 0 1px rgba(255,255,255,.04);outline:0}.cc-agent[data-squad="COMMAND"],.cc-agent-dossier[data-squad="COMMAND"]{--apex-accent:#e5bd74}.cc-agent[data-squad="INTELLIGENCE"],.cc-agent-dossier[data-squad="INTELLIGENCE"]{--apex-accent:#7f91d8}.cc-agent[data-squad="STUDIO"],.cc-agent-dossier[data-squad="STUDIO"]{--apex-accent:#a578c2}.cc-agent[data-squad="GROWTH"],.cc-agent-dossier[data-squad="GROWTH"]{--apex-accent:#61b58a}.cc-agent[data-squad="BUILD"],.cc-agent-dossier[data-squad="BUILD"]{--apex-accent:#62a8c7}.cc-agent[data-squad="GUARDIANS"],.cc-agent-dossier[data-squad="GUARDIANS"]{--apex-accent:#cf7a70}.cc-agent-card-head{align-items:start;display:grid;gap:12px;grid-template-columns:auto minmax(0,1fr) auto;min-height:auto!important}.cc-agent-emblem,.cc-agent-dossier-emblem{align-items:center;aspect-ratio:1;background:radial-gradient(circle,color-mix(in srgb,var(--apex-accent) 18%,transparent),transparent 70%);border:1px solid color-mix(in srgb,var(--apex-accent) 55%,transparent);color:var(--apex-accent);display:flex;font:400 15px/1 Georgia,"Times New Roman",serif;justify-content:center;letter-spacing:.08em;position:relative;width:50px}.cc-agent-emblem:after,.cc-agent-dossier-emblem:after{border:1px solid color-mix(in srgb,var(--apex-accent) 22%,transparent);content:"";inset:5px;position:absolute;transform:rotate(45deg)}.cc-agent-identity{min-height:auto!important}.cc-agent-call-sign{color:var(--apex-accent)!important;font-size:9px!important;letter-spacing:.13em!important;margin:0!important;text-transform:uppercase}.cc-agent-company-layout--apex .cc-agent h3{font-size:21px;margin:5px 0}.cc-agent-executor{color:var(--ow-chrome)!important;font-size:9px!important;margin-top:6px!important}.cc-agent-state{border:1px solid rgba(226,220,229,.14);color:var(--ow-chrome);font-size:8px;letter-spacing:.09em;padding:6px 7px;text-transform:uppercase}.cc-agent-state[data-state="ACTIVE"],.cc-agent-state[data-state="READY"]{border-color:rgba(80,165,121,.45);color:#a6dfbe}.cc-agent-state[data-state="DEGRADED"],.cc-agent-state[data-state="BLOCKED"]{border-color:rgba(201,86,94,.52);color:#efa9af}.cc-agent-mission{border-bottom:1px solid rgba(226,220,229,.08);border-top:1px solid rgba(226,220,229,.08);padding:13px 0}.cc-agent-mission span,.cc-agent-power>span,.cc-agent-dossier-mission span,.cc-agent-dossier-capability>span{color:var(--apex-accent);font-size:8px;letter-spacing:.14em}.cc-agent-mission p{color:var(--ow-chrome-bright)!important;font-size:12px!important;line-height:1.5!important;margin:7px 0 0!important}.cc-agent-card-stats{display:grid;gap:7px;grid-template-columns:repeat(4,minmax(0,1fr))}.cc-agent-card-stats div{border-left:1px solid color-mix(in srgb,var(--apex-accent) 28%,transparent);display:grid;gap:5px;padding-left:8px}.cc-agent-card-stats span{color:var(--ow-chrome);font-size:8px}.cc-agent-card-stats strong{color:var(--ow-chrome-white);font:400 15px/1 Georgia,"Times New Roman",serif}.cc-agent-power{align-items:end;display:grid;gap:7px;grid-template-columns:minmax(0,1fr) auto;margin-top:auto}.cc-agent-power>span{grid-column:1/-1}.cc-agent-power code{color:var(--ow-chrome);font:9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}.cc-agent-power b{color:var(--apex-accent);font-size:9px;font-weight:500;white-space:nowrap}.cc-agent-dossier{--apex-accent:#e5bd74;background:linear-gradient(145deg,color-mix(in srgb,var(--apex-accent) 9%,rgba(12,8,17,.94)),rgba(4,3,7,.9));border:1px solid color-mix(in srgb,var(--apex-accent) 36%,rgba(226,220,229,.12));box-shadow:0 24px 72px rgba(0,0,0,.3);display:grid;gap:18px;padding:22px}.cc-agent-dossier-head{align-items:start;display:grid;gap:12px;grid-template-columns:auto minmax(0,1fr) auto}.cc-agent-dossier-emblem{width:64px}.cc-agent-dossier-head h3{font-size:25px;line-height:1;margin:6px 0}.cc-agent-dossier-head small{color:var(--ow-chrome);font:8px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}.cc-agent-dossier-mission,.cc-agent-dossier-capability{border-top:1px solid rgba(226,220,229,.09);display:grid;gap:8px;padding-top:14px}.cc-agent-dossier-mission p{color:var(--ow-chrome-bright);font:400 17px/1.35 Georgia,"Times New Roman",serif;margin:0}.cc-agent-dossier-capability code{background:rgba(0,0,0,.22);border-left:2px solid var(--apex-accent);color:var(--ow-chrome-bright);font:9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;padding:9px}.cc-agent-dossier-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-dossier-grid .cc-agent-stat{background:rgba(0,0,0,.16);border:1px solid rgba(226,220,229,.08);padding:10px}.cc-agent-dossier-grid .cc-agent-stat span{color:var(--ow-chrome);font-size:8px}.cc-agent-dossier-grid .cc-agent-stat b{font-size:10px}.cc-agent-guardrail{align-items:start;background:rgba(0,0,0,.2);border:1px solid rgba(226,220,229,.08);display:grid;gap:10px;grid-template-columns:auto 1fr;padding:12px}.cc-agent-guardrail span{border:1px solid color-mix(in srgb,var(--apex-accent) 45%,transparent);color:var(--apex-accent);font:9px ui-monospace,SFMono-Regular,Menlo,monospace;padding:6px}.cc-agent-guardrail p{color:var(--ow-chrome);font-size:9px;line-height:1.5;margin:0}.cc-agent-side .cc-workday-console{max-height:none;position:static}
+.cc-agent-card-stats{gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-card-stats div{min-height:42px;padding-left:10px}.cc-agent-card-stats span{line-height:1.25}.cc-agent-power{grid-template-columns:1fr}.cc-agent-power b{justify-self:end}
+@media (max-width:1280px){.cc-tower-intro{grid-template-columns:1fr}.cc-tower-command{border-left:0;border-top:1px solid rgba(226,220,229,.1);grid-template-columns:minmax(170px,.45fr) minmax(0,1fr)}.cc-tower-seal{max-width:210px}.cc-agent-hero{grid-template-columns:1fr}.cc-agent-company-layout--apex{grid-template-columns:1fr}.cc-agent-side{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-company-layout--apex .cc-agent-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-agent-card-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1020px){.cc-agent-company-layout--apex .cc-agent-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-side{grid-template-columns:1fr}}
+@media (max-width:820px){.cc-tower-copy{padding:34px 24px}.cc-tower-copy h2{font-size:clamp(38px,12vw,58px)}.cc-tower-command{grid-template-columns:1fr;padding:28px 24px}.cc-tower-seal{margin:0 auto;max-width:190px}.cc-tower-rail{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:28px}.cc-tower-rail div{border:1px solid rgba(226,220,229,.09);padding:13px}.cc-agent-hero{padding:28px 22px}.cc-agent-hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-toolbar{align-items:start;display:grid}.cc-agent-toolbar>p{text-align:left}.cc-agent-filters{flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding-bottom:4px}.cc-agent-filters button{white-space:nowrap}.cc-agent-company-layout--apex .cc-agent-grid{grid-template-columns:1fr}.cc-agent-company-layout--apex .cc-agent{min-height:300px}.cc-agent-dossier-head{grid-template-columns:auto minmax(0,1fr)}.cc-agent-dossier-head>.cc-agent-state{grid-column:1/-1;width:max-content}}
+@media (max-width:520px){.cc-tower-intro{margin-inline:-12px}.cc-tower-pacts span{font-size:8px}.cc-tower-rail strong{font-size:21px}.cc-agent-hero{margin-inline:-12px}.cc-agent-card-head{grid-template-columns:auto minmax(0,1fr)}.cc-agent-card-head>.cc-agent-state{grid-column:1/-1;width:max-content}.cc-agent-card-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-dossier-grid{grid-template-columns:1fr}.cc-agent-guardrail{grid-template-columns:1fr}.cc-agent-company-layout--apex .cc-agent{padding:17px}}
+
 /* Social Intelligence: daily decision surface, never placeholder analytics. */
 .cc-social-live{background:linear-gradient(145deg,rgba(15,11,20,.8),rgba(4,4,8,.66));backdrop-filter:blur(22px);border:1px solid rgba(205,165,86,.28);display:grid;gap:16px;margin-bottom:14px;padding:20px}.cc-social-live-head{align-items:start;display:flex;gap:18px;justify-content:space-between}.cc-social-live-head h3{font:400 clamp(20px,2.4vw,34px)/1 Georgia,"Times New Roman",serif;margin:3px 0}.cc-social-live-head .cc-social-score{font-size:20px;margin:2px 0 0;text-align:right}.cc-social-live-grid{display:grid;gap:10px;grid-template-columns:repeat(6,minmax(0,1fr))}.cc-social-live-grid div{border-left:1px solid rgba(205,165,86,.3);display:grid;gap:4px;padding:5px 10px}.cc-social-live-grid span{color:var(--ow-bronze);font-size:8px;text-transform:uppercase}.cc-social-live-grid b{font:400 22px/1 Georgia,"Times New Roman",serif}.cc-social-missing{color:var(--ow-chrome);font-size:9px;line-height:1.6;margin:0}.cc-social-candidate{background:rgba(3,3,7,.42);border:1px solid rgba(205,165,86,.2);display:grid;gap:9px;padding:14px}.cc-social-candidate strong{font:400 17px/1.2 Georgia,"Times New Roman",serif}.cc-social-candidate-signals{display:flex;flex-wrap:wrap;gap:6px}.cc-social-candidate-signals span{border:1px solid rgba(255,255,255,.12);font-size:8px;padding:5px 7px}.cc-social-candidate-signals span[data-ready="true"]{border-color:rgba(92,190,139,.4);color:#91d9b1}.cc-social-candidate-signals span[data-ready="false"]{border-color:rgba(222,169,82,.35);color:#d8b574}.cc-social-downloads{display:flex;flex-wrap:wrap;gap:8px 18px}.cc-social-download{color:var(--ow-gold);font-size:9px;letter-spacing:.08em;text-decoration:none;text-transform:uppercase}.cc-social-download:hover{color:var(--ow-ivory);text-decoration:underline}
 .cc-social-summary{display:grid;gap:10px;grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:14px}.cc-social-summary article{background:rgba(6,5,9,.62);backdrop-filter:blur(18px);border:1px solid rgba(226,220,229,.14);display:grid;gap:5px;min-height:96px;padding:16px}.cc-social-summary span{color:var(--ow-bronze);font-size:8px;letter-spacing:.09em;text-transform:uppercase}.cc-social-summary strong{color:var(--ow-chrome-white);font:400 25px/1 Georgia,"Times New Roman",serif}.cc-social-summary small{color:var(--ow-chrome);font-size:8px;line-height:1.4}.cc-social-pack-list{display:grid;gap:12px}.cc-social-pack{background:linear-gradient(145deg,rgba(15,11,20,.78),rgba(4,4,8,.68));backdrop-filter:blur(22px);border:1px solid rgba(226,220,229,.17);box-shadow:0 24px 68px rgba(0,0,0,.28);display:grid;gap:18px;grid-template-columns:minmax(210px,.72fr) minmax(0,1.28fr);padding:22px}.cc-social-pack[data-status="BLOCKED"]{border-color:rgba(201,86,94,.46)}.cc-social-pack[data-status="REQUIRES_RESEARCH"]{border-color:rgba(232,173,78,.42)}.cc-social-pack-head{border-right:1px solid rgba(226,220,229,.1);padding-right:20px}.cc-social-pack-head h3{color:var(--ow-chrome-white);font:400 23px/1.08 Georgia,"Times New Roman",serif;margin:8px 0}.cc-social-score{color:var(--ow-gold-light);display:block;font:400 34px/1 Georgia,"Times New Roman",serif;margin:18px 0 5px}.cc-social-pack-head small,.cc-social-block small{color:var(--ow-bronze-dark);font-size:8px;line-height:1.45}.cc-social-grid{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}.cc-social-block{background:rgba(0,0,0,.18);border-top:1px solid rgba(226,220,229,.12);display:grid;gap:5px;padding:11px}.cc-social-block span{color:var(--ow-bronze);font-size:8px;letter-spacing:.08em}.cc-social-block b{color:var(--ow-chrome-bright);font-size:10px;font-weight:500;overflow-wrap:anywhere}.cc-social-alert{border-top:1px solid rgba(201,86,94,.3);color:var(--ow-warning);font-size:9px;grid-column:1/-1;margin:0;padding-top:10px}
@@ -308,6 +368,7 @@ html,body,button,a,input{cursor:auto}button,a,[role="button"]{cursor:pointer}
 @media (max-width:820px){.cc-section{scroll-margin-top:72px}}
 @media (max-width:1280px){.cc-social-live-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:820px){.cc-social-live-grid{grid-template-columns:1fr}.cc-social-live-head{display:grid}}
+@media (max-width:820px){.cc-approval-review,.cc-approval-review>*{max-width:100%;min-width:0}.cc-approval-review-head,.cc-approval-review-foot,.cc-visual-review-head,.cc-approval-review-grid{grid-template-columns:minmax(0,1fr);width:100%}.cc-social-block,.cc-social-block>*,.cc-approval-fingerprint,.cc-approval-fingerprint code{max-width:100%;min-width:0;overflow-wrap:anywhere}.cc-approval-fingerprint code{word-break:break-all}}
 @media (prefers-reduced-motion:reduce){.cc-app,.cc-sidebar,.cc-world-image,.cc-nav a:after,.cc-mobile-menu span{transition:none!important}.cc-world-light{animation:none!important}}
 `;
 
@@ -330,7 +391,26 @@ export const COMMAND_CENTER_CLIENT_JS = `
   const actionConfirmationTimer = document.getElementById("action-confirmation-timer");
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const mobileSidebar = window.matchMedia ? window.matchMedia("(max-width: 820px)") : { matches: false };
-  const state = { confirmationInterval: null, csrfToken: null, pendingConfirmation: null, snapshot: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, visualReview: null, visualSlideIndex: 0, mediaFactory: null };
+  const AGENT_IDENTITIES = Object.freeze({
+    "onlyway-assistant": { callSign: "NEXUS", glyph: "OW", squad: "COMMAND", squadLabel: "Mission Command" },
+    "research-agent": { callSign: "ORACLE", glyph: "OR", squad: "INTELLIGENCE", squadLabel: "Intelligence" },
+    "business-agent": { callSign: "VECTOR", glyph: "VE", squad: "INTELLIGENCE", squadLabel: "Intelligence" },
+    "content-director": { callSign: "PRISM", glyph: "PR", squad: "STUDIO", squadLabel: "Creative Studio" },
+    "content-producer": { callSign: "FORGE", glyph: "FO", squad: "STUDIO", squadLabel: "Creative Studio" },
+    "sales-agent": { callSign: "PULSE", glyph: "PU", squad: "GROWTH", squadLabel: "Growth" },
+    "customer-delivery-agent": { callSign: "BRIDGE", glyph: "BR", squad: "GROWTH", squadLabel: "Growth" },
+    "knowledge-curator": { callSign: "ARCHIVE", glyph: "AR", squad: "INTELLIGENCE", squadLabel: "Intelligence" },
+    "developer-agent": { callSign: "TITAN", glyph: "TI", squad: "BUILD", squadLabel: "Build Lab" },
+    "finance-cost-analyst": { callSign: "LEDGER", glyph: "LE", squad: "GROWTH", squadLabel: "Growth" },
+    "legal-risk-reviewer": { callSign: "AEGIS", glyph: "AE", squad: "GROWTH", squadLabel: "Growth" },
+    "quality-guardian": { callSign: "PRIME", glyph: "QP", squad: "GUARDIANS", squadLabel: "Guardians" },
+    "risk-guardian": { callSign: "SENTINEL", glyph: "RS", squad: "GUARDIANS", squadLabel: "Guardians" },
+    "cost-guardian": { callSign: "SCALE", glyph: "CS", squad: "GUARDIANS", squadLabel: "Guardians" },
+    "security-guardian": { callSign: "CIPHER", glyph: "SC", squad: "GUARDIANS", squadLabel: "Guardians" },
+    "backup-guardian": { callSign: "VAULT", glyph: "BV", squad: "GUARDIANS", squadLabel: "Guardians" },
+    "publisher-agent": { callSign: "LAUNCH", glyph: "LA", squad: "GROWTH", squadLabel: "Growth" },
+  });
+  const state = { agentFilter: "ALL", confirmationInterval: null, csrfToken: null, pendingConfirmation: null, returnFocus: null, selectedAgentId: null, snapshot: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, visualReview: null, visualSlideIndex: 0, mediaFactory: null };
 
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
@@ -339,6 +419,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   function timestamp(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Data locale non disponibile" : new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeStyle: "short" }).format(date); }
   function statusLabel(value) { const labels = { ACTIVE: "ATTIVO", ATTENTION_REQUIRED: "ATTENZIONE RICHIESTA", AVAILABLE: "DISPONIBILE", AWAITING_FABIO: "IN ATTESA DI FABIO", BLOCKED: "BLOCCATO", COMPLETED: "COMPLETATO", DEGRADED: "DEGRADATO", IMPLEMENTING: "IN IMPLEMENTAZIONE", LOCKED: "BLOCCATO", NOT_OBSERVED: "NON OSSERVATO", NOT_REGISTERED: "NON REGISTRATO", QUEUED: "IN CODA", READY: "PRONTO", RUNNING: "IN ESECUZIONE", SPECIFIED: "SPECIFICATO", TRIGGERED: "ATTIVATO" }; return labels[value] || value.replaceAll("_", " "); }
   function statusLane(status) { if (status === "PENDING_FABIO_APPROVAL") return "REVISIONE FABIO"; if (status === "APPROVED_FOR_SCHEDULING") return "APPROVATI"; if (status === "SCHEDULED") return "CALENDARIO"; if (status === "BLOCKED") return "BLOCCATI DAL RISCHIO"; return "ARCHIVIATI"; }
+  function agentIdentity(agentId) { return AGENT_IDENTITIES[agentId] || { callSign: agentId.toLocaleUpperCase("it-IT"), glyph: "AI", squad: "BUILD", squadLabel: "Build Lab" }; }
 
   async function refresh() {
     try {
@@ -378,6 +459,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     renderProductions(snapshot.productions);
     renderEvidence(snapshot.evidence);
     renderRuntime(snapshot.runtime);
+    renderTeamPulse(snapshot.agents);
     renderAgents(snapshot.agents);
     renderAgentWorkdays(snapshot.agentCompany || []);
     renderApprovals(snapshot.productions, snapshot.business || [], snapshot.socialLive, state.visualReview, state.mediaFactory);
@@ -731,6 +813,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function openActionConfirmation(action, proposal) {
+    state.returnFocus = document.activeElement;
     const isBusiness = action === "APPROVE_BUSINESS" || action === "REJECT_BUSINESS" || action === "REQUEST_BUSINESS_REVISION";
     if (isBusiness) {
       const title = action === "APPROVE_BUSINESS" ? "Approvare questo dossier Business" : action === "REJECT_BUSINESS" ? "Rifiutare questo dossier Business" : "Richiedere la revisione del dossier";
@@ -769,11 +852,14 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function closeActionConfirmation(message) {
+    const returnFocus = state.returnFocus;
     if (state.confirmationInterval !== null) window.clearInterval(state.confirmationInterval);
     state.confirmationInterval = null;
     state.pendingConfirmation = null;
+    state.returnFocus = null;
     actionConfirmation.hidden = true;
     if (message) commandResult.textContent = message;
+    if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
   }
 
   function startConfirmationTimer(expiresAt) {
@@ -841,32 +927,109 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function renderAgents(agents) {
-    const target = byId("agent-grid"); target.replaceChildren();
-    for (const agent of agents) {
-      const card = element("article", "cc-agent");
+    const target = byId("agent-grid");
+    const dossier = byId("agent-dossier");
+    const focused = document.activeElement;
+    const focusedCard = focused && typeof focused.closest === "function" ? focused.closest(".cc-agent") : null;
+    const focusedAgentId = focusedCard ? focusedCard.dataset.agent : null;
+    const visible = agents.filter((agent) => state.agentFilter === "ALL" || agentIdentity(agent.agentId).squad === state.agentFilter);
+    target.replaceChildren();
+    document.querySelectorAll("[data-agent-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.agentFilter === state.agentFilter)));
+    text("agent-filter-summary", String(visible.length) + " specialista/i visibili · metriche solo da task durevoli");
+    if (!visible.some((agent) => agent.agentId === state.selectedAgentId)) state.selectedAgentId = visible[0] ? visible[0].agentId : null;
+    for (const agent of visible) {
+      const visual = agentIdentity(agent.agentId);
+      const card = element("button", "cc-agent");
+      card.type = "button";
       card.dataset.agent = agent.agentId;
       card.dataset.state = agent.state;
-      const identity = element("div");
+      card.dataset.squad = visual.squad;
+      card.setAttribute("aria-pressed", String(agent.agentId === state.selectedAgentId));
+      const head = element("div", "cc-agent-card-head");
+      const emblem = element("span", "cc-agent-emblem", visual.glyph);
+      const identity = element("div", "cc-agent-identity");
       identity.append(
-        element("p", "cc-kicker", agent.supportedTasks.join(" · ")),
+        element("p", "cc-agent-call-sign", visual.squadLabel + " · " + visual.callSign),
         element("h3", "", agent.displayName),
-        element("p", "", agent.role),
-        element("small", "cc-agent-executor", agent.executor),
+        element("small", "cc-agent-executor", agent.agentId),
       );
-      card.append(
-        identity,
-        agentStat("Stato", statusLabel(agent.state)),
-        agentStat("Task completati", number(agent.completedTasks)),
-        agentStat("Accettati al primo tentativo", number(agent.acceptedFirstPassTasks)),
-        agentStat("Task bloccati", number(agent.blockedTasks)),
-        agentStat("Qualità media", agent.averageQualityScore === "NOT_AVAILABLE" ? "Dato non disponibile" : number(agent.averageQualityScore) + "/100"),
-        agentStat("Revisioni", number(agent.revisionsRequired)),
-        agentStat("Tempo misurato", duration(agent.measuredDurationMs)),
-        agentStat("Costo misurato", euro(agent.measuredCostCents)),
+      const status = element("span", "cc-agent-state", statusLabel(agent.state));
+      status.dataset.state = agent.state;
+      head.append(emblem, identity, status);
+      const mission = element("div", "cc-agent-mission");
+      mission.append(element("span", "", "MISSIONE"), element("p", "", agent.role));
+      const stats = element("div", "cc-agent-card-stats");
+      stats.append(
+        agentCardMetric("Completati", number(agent.completedTasks)),
+        agentCardMetric("First pass", number(agent.acceptedFirstPassTasks)),
+        agentCardMetric("Bloccati", number(agent.blockedTasks)),
+        agentCardMetric("Qualità", agent.averageQualityScore === "NOT_AVAILABLE" ? "—" : number(agent.averageQualityScore) + "/100"),
       );
+      const power = element("div", "cc-agent-power");
+      power.append(element("span", "", "CAPACITÀ"), element("code", "", agent.supportedTasks.join(" · ")), element("b", "", "Apri dossier →"));
+      card.append(head, mission, stats, power);
+      card.addEventListener("click", () => { state.selectedAgentId = agent.agentId; renderAgents(agents); });
       target.append(card);
     }
+    const selected = agents.find((agent) => agent.agentId === state.selectedAgentId);
+    if (selected) renderAgentDossier(selected);
+    else dossier.replaceChildren(element("div", "cc-list-empty", "Nessuno specialista disponibile nel reparto selezionato."));
+    if (focusedAgentId) {
+      const replacement = Array.from(target.querySelectorAll(".cc-agent")).find((card) => card.dataset.agent === focusedAgentId);
+      if (replacement) replacement.focus();
+    }
   }
+
+  function renderTeamPulse(agents) {
+    const ready = agents.filter((agent) => agent.state === "READY" || agent.state === "ACTIVE").length;
+    const active = agents.filter((agent) => agent.state === "ACTIVE").length;
+    const completed = agents.reduce((total, agent) => total + agent.completedTasks, 0);
+    const guardians = agents.filter((agent) => agentIdentity(agent.agentId).squad === "GUARDIANS").length;
+    const squads = new Set(agents.map((agent) => agentIdentity(agent.agentId).squad)).size;
+    text("team-total", number(agents.length));
+    text("team-ready", number(ready));
+    text("team-active", number(active));
+    text("team-completed", number(completed));
+    text("apex-total", number(agents.length));
+    text("apex-squads", number(squads));
+    text("apex-guardians", number(guardians));
+  }
+
+  function renderAgentDossier(agent) {
+    const target = byId("agent-dossier");
+    const visual = agentIdentity(agent.agentId);
+    target.replaceChildren();
+    target.dataset.squad = visual.squad;
+    const head = element("div", "cc-agent-dossier-head");
+    head.append(element("span", "cc-agent-dossier-emblem", visual.glyph));
+    const title = element("div");
+    title.append(element("p", "cc-agent-call-sign", visual.squadLabel + " · " + visual.callSign), element("h3", "", agent.displayName), element("small", "", agent.executor));
+    head.append(title);
+    const status = element("span", "cc-agent-state", statusLabel(agent.state));
+    status.dataset.state = agent.state;
+    head.append(status);
+    const mission = element("section", "cc-agent-dossier-mission");
+    mission.append(element("span", "", "MISSIONE ASSEGNATA"), element("p", "", agent.role));
+    const capability = element("section", "cc-agent-dossier-capability");
+    capability.append(element("span", "", "POWER SET OPERATIVO"));
+    for (const task of agent.supportedTasks) capability.append(element("code", "", task));
+    const telemetry = element("div", "cc-agent-dossier-grid");
+    telemetry.append(
+      agentStat("Task completati", number(agent.completedTasks)),
+      agentStat("First pass", number(agent.acceptedFirstPassTasks)),
+      agentStat("Task bloccati", number(agent.blockedTasks)),
+      agentStat("Revisioni", number(agent.revisionsRequired)),
+      agentStat("Qualità media", agent.averageQualityScore === "NOT_AVAILABLE" ? "Dato non disponibile" : number(agent.averageQualityScore) + "/100"),
+      agentStat("Tempo misurato", duration(agent.measuredDurationMs)),
+      agentStat("Costo misurato", euro(agent.measuredCostCents)),
+      agentStat("Autonomia", agent.autonomy),
+    );
+    const guardrail = element("div", "cc-agent-guardrail");
+    guardrail.append(element("span", "", "Q · R · C"), element("p", "", "Quality, Risk e Cost Gate obbligatori. Nessuna pubblicazione, spesa, contatto, merge o deploy autonomo."));
+    target.append(head, mission, capability, telemetry, guardrail);
+  }
+
+  function agentCardMetric(label, value) { const item = element("div"); item.append(element("span", "", label), element("strong", "", value)); return item; }
 
   function renderAgentWorkdays(workdays) {
     const list = byId("agent-workday-list");
@@ -1158,7 +1321,12 @@ export const COMMAND_CENTER_CLIENT_JS = `
   function syncVisualContext() {
     const candidate = window.location.hash.slice(1);
     root.dataset.section = ["business", "social", "production", "evidence", "runtime", "approvals", "governance", "agents"].includes(candidate) ? candidate : "overview";
-    root.querySelectorAll(".cc-nav a").forEach((link) => link.classList.toggle("is-active", link.getAttribute("href") === "#" + root.dataset.section));
+    root.querySelectorAll(".cc-nav a").forEach((link) => {
+      const active = link.getAttribute("href") === "#" + root.dataset.section;
+      link.classList.toggle("is-active", active);
+      if (active) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
     if (mobileSidebar.matches) setMobileSidebar(false);
   }
 
@@ -1176,10 +1344,21 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function setMobileSidebar(open) {
-    root.dataset.mobileSidebar = open ? "open" : "closed";
-    mobileMenuToggle.setAttribute("aria-expanded", String(open));
-    mobileMenuToggle.setAttribute("aria-label", open ? "Chiudi il menu del Centro di Comando" : "Apri il menu del Centro di Comando");
-    sidebarBackdrop.hidden = !open;
+    const drawerOpen = mobileSidebar.matches && open;
+    root.dataset.mobileSidebar = drawerOpen ? "open" : "closed";
+    mobileMenuToggle.setAttribute("aria-expanded", String(drawerOpen));
+    mobileMenuToggle.setAttribute("aria-label", drawerOpen ? "Chiudi il menu del Centro di Comando" : "Apri il menu del Centro di Comando");
+    sidebarBackdrop.hidden = !drawerOpen;
+    sidebar.toggleAttribute("inert", mobileSidebar.matches && !drawerOpen);
+    if (mobileSidebar.matches && !drawerOpen) sidebar.setAttribute("aria-hidden", "true");
+    else sidebar.removeAttribute("aria-hidden");
+    const main = root.querySelector(".cc-main");
+    if (main) {
+      main.toggleAttribute("inert", drawerOpen);
+      if (drawerOpen) main.setAttribute("aria-hidden", "true");
+      else main.removeAttribute("aria-hidden");
+    }
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
   }
 
   function toggleSidebar() {
@@ -1194,6 +1373,19 @@ export const COMMAND_CENTER_CLIENT_JS = `
     mobileMenuToggle.addEventListener("click", toggleSidebar);
     sidebarBackdrop.addEventListener("click", () => setMobileSidebar(false));
     sidebar.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => { if (mobileSidebar.matches) setMobileSidebar(false); }));
+    if (typeof mobileSidebar.addEventListener === "function") {
+      mobileSidebar.addEventListener("change", () => setMobileSidebar(false));
+    }
+  }
+
+  function initializeAgentControls() {
+    document.querySelectorAll("[data-agent-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.agentFilter = button.dataset.agentFilter || "ALL";
+        state.selectedAgentId = null;
+        if (state.snapshot) renderAgents(state.snapshot.agents);
+      });
+    });
   }
 
   function prepareAmbientMotion() {
@@ -1217,9 +1409,22 @@ export const COMMAND_CENTER_CLIENT_JS = `
   });
   document.querySelectorAll("[data-confirmation-close]").forEach((button) => button.addEventListener("click", () => closeActionConfirmation("Azione annullata: nessuna modifica eseguita.")));
   actionConfirmationSubmit.addEventListener("click", () => { void confirmPendingAction(); });
-  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !actionConfirmation.hidden) closeActionConfirmation("Azione annullata: nessuna modifica eseguita."); });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !actionConfirmation.hidden) {
+      closeActionConfirmation("Azione annullata: nessuna modifica eseguita.");
+      return;
+    }
+    if (event.key !== "Tab" || actionConfirmation.hidden) return;
+    const controls = Array.from(actionConfirmation.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    if (controls.length === 0) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
   window.addEventListener("hashchange", syncVisualContext);
   initializeSidebar();
+  initializeAgentControls();
   syncVisualContext();
   prepareAmbientMotion();
   refresh();
