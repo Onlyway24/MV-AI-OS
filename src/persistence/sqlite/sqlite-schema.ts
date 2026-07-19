@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 25;
+export const SQLITE_SCHEMA_VERSION = 30;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -65,6 +65,31 @@ const VERSION_TWENTY_TWO_TABLES = Object.freeze([...VERSION_TWENTY_ONE_TABLES, "
 const VERSION_TWENTY_THREE_TABLES = Object.freeze([...VERSION_TWENTY_TWO_TABLES, "authorized_research_missions", "research_acquisition_snapshots"]);
 const VERSION_TWENTY_FOUR_TABLES = Object.freeze([...VERSION_TWENTY_THREE_TABLES, "social_intelligence_live_records"]);
 const VERSION_TWENTY_FIVE_TABLES = VERSION_TWENTY_FOUR_TABLES;
+const VERSION_TWENTY_SIX_TABLES = Object.freeze([
+  ...VERSION_TWENTY_FIVE_TABLES,
+  "operations_events",
+  "operations_job_attempts",
+  "operations_jobs",
+  "operations_process_leases",
+  "operations_runtime_controls",
+  "operations_schedules",
+]);
+const VERSION_TWENTY_SEVEN_TABLES = Object.freeze([
+  ...VERSION_TWENTY_SIX_TABLES,
+  "control_action_proposals",
+  "control_action_receipts",
+  "daily_operating_briefs",
+  "founder_workdays",
+  "operations_incidents",
+  "production_controls",
+]);
+const VERSION_TWENTY_EIGHT_TABLES = Object.freeze([
+  ...VERSION_TWENTY_SEVEN_TABLES,
+  "operations_job_successors",
+  "operations_runtime_usage_rollups",
+]);
+const VERSION_TWENTY_NINE_TABLES = VERSION_TWENTY_EIGHT_TABLES;
+const VERSION_THIRTY_TABLES = VERSION_TWENTY_NINE_TABLES;
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -263,6 +288,41 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 24, "social_intelligence_live_activation");
     applyCompetitorIntelligencePackMigration(database);
   }
+  const supervisedOperationsVersion = readPragmaInteger(database, "user_version");
+  if (supervisedOperationsVersion === 25) {
+    verifyDatabaseIdentity(database, 25);
+    verifyExpectedTables(database, VERSION_TWENTY_FIVE_TABLES);
+    verifyMigration(database, 25, "durable_competitor_intelligence_packs");
+    applySupervisedOperationsRuntimeMigration(database);
+  }
+  const founderControlPlaneVersion = readPragmaInteger(database, "user_version");
+  if (founderControlPlaneVersion === 26) {
+    verifyDatabaseIdentity(database, 26);
+    verifyExpectedTables(database, VERSION_TWENTY_SIX_TABLES);
+    verifyMigration(database, 26, "supervised_h24_operations_runtime");
+    applyFounderControlPlaneMigration(database);
+  }
+  const operationsHardeningVersion = readPragmaInteger(database, "user_version");
+  if (operationsHardeningVersion === 27) {
+    verifyDatabaseIdentity(database, 27);
+    verifyExpectedTables(database, VERSION_TWENTY_SEVEN_TABLES);
+    verifyMigration(database, 27, "durable_founder_operations_control_plane");
+    applyOperationsRuntimeHardeningMigration(database);
+  }
+  const dailyBriefHistoryVersion = readPragmaInteger(database, "user_version");
+  if (dailyBriefHistoryVersion === 28) {
+    verifyDatabaseIdentity(database, 28);
+    verifyExpectedTables(database, VERSION_TWENTY_EIGHT_TABLES);
+    verifyMigration(database, 28, "operations_runtime_p1_hardening");
+    applyDailyOperatingBriefHistoryMigration(database);
+  }
+  const telegramDeliveryReconciliationVersion = readPragmaInteger(database, "user_version");
+  if (telegramDeliveryReconciliationVersion === 29) {
+    verifyDatabaseIdentity(database, 29);
+    verifyExpectedTables(database, VERSION_TWENTY_NINE_TABLES);
+    verifyMigration(database, 29, "daily_operating_brief_snapshot_history");
+    applyTelegramDeliveryReconciliationMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -285,7 +345,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_TWENTY_FIVE_TABLES);
+  verifyExpectedTables(database, VERSION_THIRTY_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -311,6 +371,11 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 23, "authorized_research_acquisition");
   verifyMigration(database, 24, "social_intelligence_live_activation");
   verifyMigration(database, 25, "durable_competitor_intelligence_packs");
+  verifyMigration(database, 26, "supervised_h24_operations_runtime");
+  verifyMigration(database, 27, "durable_founder_operations_control_plane");
+  verifyMigration(database, 28, "operations_runtime_p1_hardening");
+  verifyMigration(database, 29, "daily_operating_brief_snapshot_history");
+  verifyMigration(database, 30, "telegram_delivery_reconciliation");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -1245,6 +1310,356 @@ function applyCompetitorIntelligencePackMigration(database: DatabaseSync): void 
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Competitor Intelligence Pack migration failed");
+  }
+}
+
+function applySupervisedOperationsRuntimeMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE operations_schedules (
+        schedule_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('DISABLED', 'ENABLED')),
+        next_run_at TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX operations_schedules_due
+        ON operations_schedules (workspace_id, status, next_run_at, schedule_id);
+
+      CREATE TABLE operations_jobs (
+        job_id TEXT PRIMARY KEY,
+        operation_identity TEXT NOT NULL,
+        workspace_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('CANCELLED', 'COMPLETED', 'DEAD_LETTER', 'FAILED', 'QUEUED', 'RETRY_SCHEDULED', 'RUNNING')),
+        priority INTEGER NOT NULL CHECK (priority >= 0 AND priority <= 100),
+        run_after TEXT NOT NULL,
+        lease_expires_at TEXT,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, operation_identity)
+      ) STRICT;
+      CREATE INDEX operations_jobs_next
+        ON operations_jobs (workspace_id, status, priority DESC, run_after, job_id);
+      CREATE INDEX operations_jobs_lease
+        ON operations_jobs (workspace_id, status, lease_expires_at, job_id);
+      CREATE INDEX operations_jobs_retention
+        ON operations_jobs (workspace_id, status, updated_at, job_id);
+
+      CREATE TABLE operations_job_attempts (
+        attempt_id TEXT PRIMARY KEY,
+        job_id TEXT NOT NULL REFERENCES operations_jobs(job_id) ON DELETE CASCADE,
+        workspace_id TEXT NOT NULL,
+        attempt INTEGER NOT NULL CHECK (attempt >= 1),
+        finished_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (job_id, attempt)
+      ) STRICT;
+      CREATE INDEX operations_job_attempts_job
+        ON operations_job_attempts (job_id, attempt);
+
+      CREATE TABLE operations_runtime_controls (
+        workspace_id TEXT PRIMARY KEY,
+        version INTEGER NOT NULL CHECK (version >= 1),
+        kill_switch TEXT NOT NULL CHECK (kill_switch IN ('ACTIVE', 'RELEASED')),
+        maintenance_mode TEXT NOT NULL CHECK (maintenance_mode IN ('DISABLED', 'ENABLED')),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+
+      CREATE TABLE operations_process_leases (
+        workspace_id TEXT NOT NULL,
+        lease_key TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('SCHEDULER', 'WORKER')),
+        instance_id TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        fencing_token INTEGER NOT NULL CHECK (fencing_token >= 1),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        PRIMARY KEY (workspace_id, lease_key)
+      ) WITHOUT ROWID, STRICT;
+      CREATE INDEX operations_process_leases_health
+        ON operations_process_leases (workspace_id, role, expires_at, lease_key);
+
+      CREATE TABLE operations_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT NOT NULL UNIQUE,
+        workspace_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        aggregate_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        entity_version INTEGER NOT NULL CHECK (entity_version >= 0),
+        occurred_at TEXT NOT NULL,
+        safe_summary_code TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX operations_events_cursor
+        ON operations_events (workspace_id, sequence);
+      CREATE INDEX operations_events_entity
+        ON operations_events (workspace_id, aggregate_type, entity_id, sequence);
+
+      INSERT INTO schema_migrations (version, name) VALUES (26, 'supervised_h24_operations_runtime');
+      PRAGMA user_version = 26;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite supervised Operations Runtime migration failed");
+  }
+}
+
+function applyFounderControlPlaneMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE production_controls (
+        production_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        state TEXT NOT NULL CHECK (state IN ('ACTIVE', 'CANCELLED', 'PAUSED', 'REVISION_REQUIRED')),
+        source_production_version INTEGER NOT NULL CHECK (source_production_version >= 0),
+        source_package_fingerprint TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX production_controls_workspace_state
+        ON production_controls (workspace_id, state, updated_at DESC, production_id);
+
+      CREATE TABLE operations_incidents (
+        incident_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('ACKNOWLEDGED', 'OPEN')),
+        severity TEXT NOT NULL CHECK (severity IN ('CRITICAL', 'HIGH', 'LOW', 'MEDIUM')),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX operations_incidents_workspace_status
+        ON operations_incidents (workspace_id, status, severity, updated_at DESC, incident_id);
+
+      CREATE TABLE control_action_proposals (
+        proposal_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        action TEXT NOT NULL CHECK (action IN ('REQUEST_PRODUCTION_REVISION', 'PAUSE_PRODUCTION', 'RESUME_PRODUCTION', 'CANCEL_PRODUCTION', 'RETRY_FAILED_JOB', 'REQUEUE_DEAD_LETTER_JOB', 'ACKNOWLEDGE_INCIDENT')),
+        state TEXT NOT NULL CHECK (state IN ('CONSUMED', 'EXPIRED', 'PENDING')),
+        expires_at TEXT NOT NULL,
+        idempotency_key TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, idempotency_key)
+      ) STRICT;
+      CREATE INDEX control_action_proposals_pending
+        ON control_action_proposals (workspace_id, state, expires_at, proposal_id);
+
+      CREATE TABLE control_action_receipts (
+        receipt_id TEXT PRIMARY KEY,
+        proposal_id TEXT NOT NULL UNIQUE REFERENCES control_action_proposals(proposal_id),
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        idempotency_key TEXT NOT NULL,
+        recorded_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, idempotency_key)
+      ) STRICT;
+      CREATE INDEX control_action_receipts_workspace_time
+        ON control_action_receipts (workspace_id, recorded_at DESC, receipt_id);
+
+      CREATE TABLE founder_workdays (
+        workday_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('AWAITING_FABIO', 'BLOCKED', 'RUNNING')),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json))
+      ) STRICT;
+      CREATE INDEX founder_workdays_workspace_status
+        ON founder_workdays (workspace_id, status, updated_at DESC, workday_id);
+
+      CREATE TABLE daily_operating_briefs (
+        brief_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        business_date TEXT NOT NULL,
+        generated_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, business_date)
+      ) STRICT;
+      CREATE INDEX daily_operating_briefs_workspace_date
+        ON daily_operating_briefs (workspace_id, business_date DESC, brief_id);
+
+      INSERT INTO schema_migrations (version, name) VALUES (27, 'durable_founder_operations_control_plane');
+      PRAGMA user_version = 27;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Founder Operations control-plane migration failed");
+  }
+}
+
+function applyOperationsRuntimeHardeningMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TEMP TABLE operations_job_attempts_v27 AS
+        SELECT attempt_id, job_id, workspace_id, attempt, finished_at, record_json
+        FROM operations_job_attempts;
+      DROP TABLE operations_job_attempts;
+
+      ALTER TABLE operations_jobs RENAME TO operations_jobs_v27;
+      CREATE TABLE operations_jobs (
+        job_id TEXT PRIMARY KEY,
+        operation_identity TEXT NOT NULL,
+        workspace_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('BLOCKED', 'CANCELLED', 'COMPLETED', 'DEAD_LETTER', 'FAILED', 'QUEUED', 'RETRY_SCHEDULED', 'RUNNING')),
+        priority INTEGER NOT NULL CHECK (priority >= 0 AND priority <= 100),
+        run_after TEXT NOT NULL,
+        lease_expires_at TEXT,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, operation_identity)
+      ) STRICT;
+      INSERT INTO operations_jobs (job_id, operation_identity, workspace_id, status, priority, run_after, lease_expires_at, version, updated_at, record_json)
+        SELECT job_id, operation_identity, workspace_id, status, priority, run_after, lease_expires_at, version, updated_at, record_json
+        FROM operations_jobs_v27;
+      DROP TABLE operations_jobs_v27;
+      CREATE INDEX operations_jobs_next
+        ON operations_jobs (workspace_id, status, priority DESC, run_after, job_id);
+      CREATE INDEX operations_jobs_lease
+        ON operations_jobs (workspace_id, status, lease_expires_at, job_id);
+      CREATE INDEX operations_jobs_retention
+        ON operations_jobs (workspace_id, status, updated_at, job_id);
+
+      CREATE TABLE operations_job_attempts (
+        attempt_id TEXT PRIMARY KEY,
+        job_id TEXT NOT NULL REFERENCES operations_jobs(job_id) ON DELETE CASCADE,
+        workspace_id TEXT NOT NULL,
+        attempt INTEGER NOT NULL CHECK (attempt >= 1),
+        finished_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (job_id, attempt)
+      ) STRICT;
+      INSERT INTO operations_job_attempts (attempt_id, job_id, workspace_id, attempt, finished_at, record_json)
+        SELECT attempt_id, job_id, workspace_id, attempt, finished_at, record_json
+        FROM operations_job_attempts_v27;
+      DROP TABLE operations_job_attempts_v27;
+      CREATE INDEX operations_job_attempts_job
+        ON operations_job_attempts (job_id, attempt);
+
+      CREATE TABLE operations_runtime_usage_rollups (
+        workspace_id TEXT PRIMARY KEY,
+        attempts INTEGER NOT NULL CHECK (attempts >= 0),
+        cost_cents INTEGER NOT NULL CHECK (cost_cents >= 0),
+        provider_calls INTEGER NOT NULL CHECK (provider_calls >= 0),
+        tool_calls INTEGER NOT NULL CHECK (tool_calls >= 0),
+        updated_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE operations_job_successors (
+        workspace_id TEXT NOT NULL,
+        predecessor_job_id TEXT NOT NULL,
+        successor_job_id TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (workspace_id, predecessor_job_id)
+      ) WITHOUT ROWID, STRICT;
+      CREATE INDEX operations_job_successors_successor
+        ON operations_job_successors (workspace_id, successor_job_id);
+      INSERT INTO operations_job_successors (workspace_id, predecessor_job_id, successor_job_id, created_at)
+        SELECT workspace_id, json_extract(record_json, '$.predecessorJobId'), job_id, json_extract(record_json, '$.createdAt')
+        FROM operations_jobs
+        WHERE json_type(record_json, '$.predecessorJobId') = 'text';
+
+      INSERT INTO schema_migrations (version, name) VALUES (28, 'operations_runtime_p1_hardening');
+      PRAGMA user_version = 28;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Operations Runtime P1 hardening migration failed");
+  }
+}
+
+function applyDailyOperatingBriefHistoryMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      ALTER TABLE daily_operating_briefs RENAME TO daily_operating_briefs_v28;
+      CREATE TABLE daily_operating_briefs (
+        brief_id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        business_date TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        generated_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, business_date, version)
+      ) STRICT;
+      INSERT INTO daily_operating_briefs (brief_id, workspace_id, actor_id, business_date, version, generated_at, fingerprint, record_json)
+        SELECT brief_id, workspace_id, actor_id, business_date, COALESCE(json_extract(record_json, '$.version'), 0), generated_at, fingerprint, record_json
+        FROM daily_operating_briefs_v28;
+      DROP TABLE daily_operating_briefs_v28;
+      CREATE INDEX daily_operating_briefs_workspace_date
+        ON daily_operating_briefs (workspace_id, business_date DESC, version DESC, brief_id);
+
+      INSERT INTO schema_migrations (version, name) VALUES (29, 'daily_operating_brief_snapshot_history');
+      PRAGMA user_version = 29;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Daily Operating Brief history migration failed");
+  }
+}
+
+function applyTelegramDeliveryReconciliationMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      ALTER TABLE telegram_inbound_receipts RENAME TO telegram_inbound_receipts_v29;
+      CREATE TABLE telegram_inbound_receipts (
+        update_id TEXT PRIMARY KEY,
+        action_fingerprint TEXT NOT NULL,
+        identity_binding TEXT NOT NULL,
+        action_kind TEXT NOT NULL,
+        processing_state TEXT NOT NULL CHECK (processing_state IN ('RECEIVED', 'DELIVERY_UNCERTAIN', 'COMPLETED', 'REJECTED')),
+        received_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        command_id TEXT
+      ) STRICT;
+      INSERT INTO telegram_inbound_receipts (update_id, action_fingerprint, identity_binding, action_kind, processing_state, received_at, expires_at, command_id)
+        SELECT receipt.update_id, receipt.action_fingerprint, receipt.identity_binding, receipt.action_kind,
+          CASE
+            WHEN receipt.processing_state = 'RECEIVED' AND EXISTS (
+              SELECT 1 FROM telegram_outbound_deliveries AS delivery WHERE delivery.update_id = receipt.update_id
+            ) THEN 'DELIVERY_UNCERTAIN'
+            ELSE receipt.processing_state
+          END,
+          receipt.received_at, receipt.expires_at, receipt.command_id
+        FROM telegram_inbound_receipts_v29 AS receipt;
+      DROP TABLE telegram_inbound_receipts_v29;
+      CREATE INDEX telegram_inbound_receipts_expiry ON telegram_inbound_receipts (expires_at, update_id);
+      CREATE INDEX telegram_outbound_deliveries_update ON telegram_outbound_deliveries (update_id, delivery_id);
+
+      INSERT INTO schema_migrations (version, name) VALUES (30, 'telegram_delivery_reconciliation');
+      PRAGMA user_version = 30;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Telegram delivery reconciliation migration failed");
   }
 }
 

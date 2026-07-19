@@ -6,7 +6,9 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
 import { createLocalRuntime, MetodoVeloceContentProductionPackageValidator, type LocalRuntime, type LocalRuntimeConfig, type LocalWorkflowCommand } from "../../src/index.js";
+import { SqliteRepositoryTransactionRunner } from "../../src/persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { FixedClock } from "../support/fixtures.js";
+import { downgradeTelegramDeliveryReconciliationSchemaToV29 } from "../support/sqlite-migration-fixtures.js";
 
 describe("Metodo Veloce durable content production command", () => {
   it("creates, replays, and recovers a preparation-only content package through the Core V1 command boundary", async () => withDatabase(async (path) => {
@@ -28,28 +30,34 @@ describe("Metodo Veloce durable content production command", () => {
     await reopened.close();
   }));
 
-  it("runs the durable Fabio-review, calendar, metric, and archive lifecycle without publishing", async () => withDatabase(async (path) => {
+  it("fails closed on an unbound approval while preserving the legacy record for inspection and archive", async () => withDatabase(async (path) => {
+    const initialRuntime = await createRuntime(path);
+    await run(initialRuntime, "PRODUCE_METODO_VELOCE_CONTENT", { brief: { ...brief(), productionId: "mv-content-factory-001" } }, "factory-create-001");
+
+    await expect(run(initialRuntime, "SCHEDULE_METODO_VELOCE_CONTENT", { expectedVersion: 0, productionId: "mv-content-factory-001", scheduledFor: "2026-07-21T10:00:00.000Z" }, "factory-schedule-too-early-001")).rejects.toMatchObject({ code: "repository_conflict" });
+    await expect(run(initialRuntime, "REVIEW_METODO_VELOCE_CONTENT", { decision: "APPROVED", expectedVersion: 0, note: "Tentativo privo di un binding visuale verificabile.", productionId: "mv-content-factory-001" }, "factory-review-unbound-001")).rejects.toThrow("Visual Gate bloccato");
+    const unchanged = await run(initialRuntime, "INSPECT_METODO_VELOCE_CONTENT", { productionId: "mv-content-factory-001" }, "factory-inspect-after-unbound-review");
+    expect(unchanged.result).toMatchObject({ status: "PENDING_FABIO_APPROVAL", version: 0 });
+    await initialRuntime.close();
+
+    const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+    await repositories.transaction(async ({ contentProductions }) => {
+      const current = await contentProductions.getById("mv-content-factory-001");
+      if (current === undefined) throw new Error("Expected pending content production");
+      const reviewedAt = "2026-07-14T12:00:00.000Z";
+      await contentProductions.update({ ...current, review: { decision: "APPROVED", note: "Approvazione legacy precedente all'introduzione della ricevuta visuale.", reviewedAt, reviewedBy: "actor-local" }, status: "APPROVED_FOR_SCHEDULING", updatedAt: reviewedAt, version: 1 }, { version: 0 });
+    });
+    await repositories.close();
+
     const runtime = await createRuntime(path);
-    await run(runtime, "PRODUCE_METODO_VELOCE_CONTENT", { brief: { ...brief(), productionId: "mv-content-factory-001" } }, "factory-create-001");
-
-    await expect(run(runtime, "SCHEDULE_METODO_VELOCE_CONTENT", { expectedVersion: 0, productionId: "mv-content-factory-001", scheduledFor: "2026-07-21T10:00:00.000Z" }, "factory-schedule-too-early-001")).rejects.toMatchObject({ code: "repository_conflict" });
-
-    const reviewed = await run(runtime, "REVIEW_METODO_VELOCE_CONTENT", { decision: "APPROVED", expectedVersion: 0, note: "Coerente con la direzione editoriale approvata.", productionId: "mv-content-factory-001" }, "factory-review-001");
-    expect(reviewed.result).toMatchObject({ review: { decision: "APPROVED" }, status: "APPROVED_FOR_SCHEDULING", version: 1 });
+    const legacy = await run(runtime, "INSPECT_METODO_VELOCE_CONTENT", { productionId: "mv-content-factory-001" }, "factory-inspect-legacy-review");
+    expect(legacy.result).toMatchObject({ review: { decision: "APPROVED" }, status: "APPROVED_FOR_SCHEDULING", version: 1 });
+    expect((legacy.result as { readonly review?: { readonly visualApprovalBindingFingerprint?: string } }).review?.visualApprovalBindingFingerprint).toBeUndefined();
 
     await expect(run(runtime, "SCHEDULE_METODO_VELOCE_CONTENT", { expectedVersion: 0, productionId: "mv-content-factory-001", scheduledFor: "2026-07-21T10:00:00.000Z" }, "factory-schedule-stale-001")).rejects.toMatchObject({ code: "repository_conflict" });
-    const scheduled = await run(runtime, "SCHEDULE_METODO_VELOCE_CONTENT", { expectedVersion: 1, productionId: "mv-content-factory-001", scheduledFor: "2026-07-21T10:00:00.000Z" }, "factory-schedule-001");
-    expect(scheduled.nextAction).toContain("separate publication decision");
-    expect(scheduled).toMatchObject({ result: { schedule: { scheduledFor: "2026-07-21T10:00:00.000Z" }, status: "SCHEDULED", version: 2 }, unauthorizedExternalEffectOccurred: false });
-
-    const metrics = await run(runtime, "RECORD_METODO_VELOCE_CONTENT_METRICS", { conversions: 2, costCents: 0, expectedVersion: 2, leadCount: 8, productionId: "mv-content-factory-001", saves: 32, views: 1_200 }, "factory-metrics-001");
-    expect(metrics).toMatchObject({ result: { metrics: { conversions: 2, costCents: 0, leadCount: 8, saves: 32, views: 1_200 }, status: "SCHEDULED", version: 3 }, unauthorizedExternalEffectOccurred: false });
-
-    const queued = await run(runtime, "LIST_METODO_VELOCE_CONTENT_QUEUE", { limit: 10 }, "factory-list-001");
-    expect(queued.result).toEqual([expect.objectContaining({ productionId: "mv-content-factory-001", status: "SCHEDULED", version: 3 })]);
-
-    const archived = await run(runtime, "ARCHIVE_METODO_VELOCE_CONTENT", { expectedVersion: 3, productionId: "mv-content-factory-001", reason: "MANUAL" }, "factory-archive-001");
-    expect(archived.result).toMatchObject({ archive: { reason: "MANUAL" }, metrics: { views: 1_200 }, status: "ARCHIVED", version: 4 });
+    await expect(run(runtime, "SCHEDULE_METODO_VELOCE_CONTENT", { expectedVersion: 1, productionId: "mv-content-factory-001", scheduledFor: "2026-07-21T10:00:00.000Z" }, "factory-schedule-unbound-001")).rejects.toMatchObject({ code: "repository_conflict" });
+    const archived = await run(runtime, "ARCHIVE_METODO_VELOCE_CONTENT", { expectedVersion: 1, productionId: "mv-content-factory-001", reason: "MANUAL" }, "factory-archive-legacy-001");
+    expect(archived.result).toMatchObject({ archive: { reason: "MANUAL" }, review: { decision: "APPROVED" }, status: "ARCHIVED", version: 2 });
     await runtime.close();
 
     const reopened = await createRuntime(path);
@@ -58,11 +66,21 @@ describe("Metodo Veloce durable content production command", () => {
     await reopened.close();
   }));
 
+  it("keeps Fabio rejection available without a Visual Gate receipt", async () => withDatabase(async (path) => {
+    const runtime = await createRuntime(path);
+    await run(runtime, "PRODUCE_METODO_VELOCE_CONTENT", { brief: { ...brief(), productionId: "mv-content-rejected-001" } }, "rejected-content-create-001");
+    const rejected = await run(runtime, "REVIEW_METODO_VELOCE_CONTENT", { decision: "REJECTED", expectedVersion: 0, note: "Rifiutato da Fabio senza autorizzare alcun effetto esterno.", productionId: "mv-content-rejected-001" }, "rejected-content-review-001");
+    expect(rejected.result).toMatchObject({ archive: { reason: "REJECTED_BY_FABIO" }, review: { decision: "REJECTED" }, status: "ARCHIVED", version: 1 });
+    expect((rejected.result as { readonly review?: { readonly visualApprovalBindingFingerprint?: string } }).review?.visualApprovalBindingFingerprint).toBeUndefined();
+    await runtime.close();
+  }));
+
   it("migrates a Core V1 version 16 database before it creates the production queue", async () => withDatabase(async (path) => {
     const current = await createRuntime(path);
     await current.close();
     const legacy = new DatabaseSync(path);
-    legacy.exec("DROP TABLE social_intelligence_live_records; DROP TABLE research_acquisition_snapshots; DROP TABLE authorized_research_missions; DROP TABLE agent_company_workdays; DROP TABLE business_mission_dossiers; DROP TABLE evidence_packs; DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DROP TABLE production_runtime_jobs; DROP TABLE metodo_veloce_content_productions; DELETE FROM schema_migrations WHERE version IN (17, 18, 19, 20, 21, 22, 23, 24, 25); PRAGMA user_version = 16;");
+    downgradeTelegramDeliveryReconciliationSchemaToV29(legacy);
+    legacy.exec("DROP TABLE control_action_receipts; DROP TABLE control_action_proposals; DROP TABLE daily_operating_briefs; DROP TABLE founder_workdays; DROP TABLE operations_incidents; DROP TABLE production_controls; DROP TABLE operations_job_successors; DROP TABLE operations_runtime_usage_rollups; DROP TABLE operations_job_attempts; DROP TABLE operations_jobs; DROP TABLE operations_events; DROP TABLE operations_process_leases; DROP TABLE operations_runtime_controls; DROP TABLE operations_schedules; DROP TABLE social_intelligence_live_records; DROP TABLE research_acquisition_snapshots; DROP TABLE authorized_research_missions; DROP TABLE agent_company_workdays; DROP TABLE business_mission_dossiers; DROP TABLE evidence_packs; DROP TABLE feedback_metric_snapshots; DROP TABLE publication_kill_switches; DROP TABLE publication_plans; DROP TABLE evidence_records; DROP TABLE source_registry_entries; DROP TABLE production_runtime_jobs; DROP TABLE metodo_veloce_content_productions; DELETE FROM schema_migrations WHERE version IN (17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30); PRAGMA user_version = 16;");
     legacy.close();
 
     const migrated = await createRuntime(path);

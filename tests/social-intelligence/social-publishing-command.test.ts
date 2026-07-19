@@ -1,20 +1,25 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { createLocalWorkflowCommandBoundary, SOCIAL_OPPORTUNITY_CRITERIA, SocialPublishingPackValidator } from "../../src/index.js";
+import { createLocalWorkflowCommandBoundary, SOCIAL_OPPORTUNITY_CRITERIA, SocialPublishingPackValidator, visualApprovalManifestFingerprint, type MetodoVeloceContentProductionRecord } from "../../src/index.js";
 import { SqliteRepositoryTransactionRunner } from "../../src/persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { CommandCenterQueryService } from "../../src/command-center/command-center-query-service.js";
+import { canonicalSha256 } from "../../src/contracts/canonical-fingerprint.js";
 import { FixedClock } from "../support/fixtures.js";
 
 const NOW = "2026-07-15T08:00:00.000Z";
 
 describe("Social Publishing Pack command boundary", () => {
   it("persists the Evidence-Pack-bound six-slide package without external action or invented timing", async () => withDatabase(async (path) => {
+    const directory = dirname(path);
+    const assetRoot = join(directory, "assets");
+    const manifestPath = join(assetRoot, "manifest.json");
     const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
-    const boundary = createLocalWorkflowCommandBoundary({ actorId: "actor-local", clock: new FixedClock(NOW), repositories, workspaceId: "workspace-local" });
+    const boundary = createLocalWorkflowCommandBoundary({ actorId: "actor-local", clock: new FixedClock(NOW), repositories, visualApproval: { assetRoot, manifestPath, repositoryRoot: directory }, workspaceId: "workspace-local" });
     await boundary.execute(command("social-source-command", "REGISTER_EVIDENCE_SOURCE", { canonicalReference: "https://example.org/social/", category: "OFFICIAL_SITE", maxFreshnessDays: 30, name: "Fonte social autorizzata", permittedRiskDomains: ["GENERAL"], publicCitationAllowed: true, reliability: "HIGH", requiresSecondSource: false, sourceId: "social-source", status: "AUTHORIZED" }));
     await boundary.execute(command("social-evidence-command", "RECORD_EVIDENCE", { claimMappings: [{ claimId: "social-claim", statement: "Il pubblico richiede passaggi pratici e verificabili." }], contentPublishedAt: "2026-07-14T08:00:00.000Z", corroboratingEvidenceIds: [], evidenceId: "social-evidence", excerpt: "Estratto strutturato da una fonte autorizzata.", fingerprint: "c".repeat(64), freshnessExpiresAt: "2026-07-30T08:00:00.000Z", limitations: ["Il dato non dimostra un risultato economico garantito."], riskDomain: "GENERAL", sourceId: "social-source", sourceReference: "https://example.org/social/report", status: "VERIFIED" }));
     await boundary.execute(command("social-pack-command", "CREATE_EVIDENCE_PACK", { evidenceIds: ["social-evidence"], packId: "social-pack" }));
@@ -31,7 +36,44 @@ describe("Social Publishing Pack command boundary", () => {
     expect(inspected.result).toEqual(response.result);
     const snapshot = await new CommandCenterQueryService({ clock: new FixedClock(NOW), repositories, workspaceId: "workspace-local" }).snapshot();
     expect(snapshot.socialIntelligence).toMatchObject({ blocked: 0, packs: [expect.objectContaining({ productionId: "social-production-001" })], readyForFabio: 1, requiresResearch: 0 });
+
+    await expect(boundary.execute(command("social-review-missing-manifest", "REVIEW_METODO_VELOCE_CONTENT", { decision: "APPROVED", expectedVersion: 0, note: "Approvazione diretta priva di un manifest verificabile.", productionId: "social-production-001" }))).rejects.toThrow("VISUAL_MANIFEST_MISSING");
+    const stillPending = await boundary.execute(command("social-inspect-after-block", "INSPECT_METODO_VELOCE_CONTENT", { productionId: "social-production-001" }));
+    expect(stillPending.result).toMatchObject({ status: "PENDING_FABIO_APPROVAL", version: 0 });
+    expect((stillPending.result as MetodoVeloceContentProductionRecord).review).toBeUndefined();
+
+    const production = response.result as MetodoVeloceContentProductionRecord;
+    const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
+    const assets = Object.freeze({ instagram: [Object.freeze({ height: 1, path: "assets/visual.png", sha256: createHash("sha256").update(image).digest("hex"), width: 1 })] });
+    const socialPublishingPack = production.package.socialPublishingPack;
+    if (socialPublishingPack === undefined) throw new Error("Expected a Social Publishing Pack");
+    const approvalBinding = Object.freeze({
+      assetSetFingerprint: canonicalSha256(assets),
+      contentPackageFingerprint: canonicalSha256(production.package),
+      masterContentPackFingerprint: socialPublishingPack.masterContentPack.fingerprint,
+      productionId: production.productionId,
+      productionVersion: production.version,
+      socialPublishingPackFingerprint: socialPublishingPack.fingerprint,
+      workspaceId: production.workspaceId,
+    });
+    const manifestPayload = Object.freeze({ approvalBinding, assets, visualReview: Object.freeze({ status: "READY_FOR_HUMAN_DECISION" }) });
+    const manifestFingerprint = visualApprovalManifestFingerprint(manifestPayload);
+    const bindingFingerprint = canonicalSha256({ ...approvalBinding, manifestFingerprint });
+    await mkdir(assetRoot, { recursive: true });
+    await writeFile(join(assetRoot, "visual.png"), image);
+    await writeFile(manifestPath, JSON.stringify({ ...manifestPayload, fingerprint: manifestFingerprint }));
+
+    const reviewed = await boundary.execute(command("social-review-exact-visual-binding", "REVIEW_METODO_VELOCE_CONTENT", { decision: "APPROVED", expectedVersion: 0, note: "Approvato sul master e sugli asset esatti del Visual Gate.", productionId: "social-production-001" }));
+    expect(reviewed.result).toMatchObject({ review: { decision: "APPROVED", visualApprovalBindingFingerprint: bindingFingerprint }, status: "APPROVED_FOR_SCHEDULING", version: 1 });
+    const scheduled = await boundary.execute(command("social-schedule-exact-visual-binding", "SCHEDULE_METODO_VELOCE_CONTENT", { expectedVersion: 1, productionId: "social-production-001", scheduledFor: "2026-07-16T09:00:00.000Z" }));
+    expect(scheduled).toMatchObject({ result: { review: { visualApprovalBindingFingerprint: bindingFingerprint }, status: "SCHEDULED", version: 2 }, unauthorizedExternalEffectOccurred: false });
     await repositories.close();
+
+    const reopened = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+    const recoveredBoundary = createLocalWorkflowCommandBoundary({ actorId: "actor-local", clock: new FixedClock(NOW), repositories: reopened, visualApproval: { assetRoot, manifestPath, repositoryRoot: directory }, workspaceId: "workspace-local" });
+    const recovered = await recoveredBoundary.execute(command("social-inspect-durable-visual-binding", "INSPECT_METODO_VELOCE_CONTENT", { productionId: "social-production-001" }));
+    expect(recovered.result).toMatchObject({ review: { visualApprovalBindingFingerprint: bindingFingerprint }, status: "SCHEDULED", version: 2 });
+    await reopened.close();
   }));
 });
 

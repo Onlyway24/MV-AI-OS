@@ -2,6 +2,9 @@ import { access, chmod, open, readFile, stat } from "node:fs/promises";
 import { dirname } from "node:path";
 
 import { LocalSecretResolver } from "../config/local-secret-resolver.js";
+import { DailyOperatingBriefService } from "../daily-brief/daily-operating-brief-service.js";
+import { RepositoryBackedDailyOperatingBriefSource } from "../daily-brief/repository-backed-daily-operating-brief-source.js";
+import { SqliteRepositoryTransactionRunner } from "../persistence/sqlite/sqlite-repository-transaction-runner.js";
 import type { Clock } from "../ports/clock.js";
 import { createLocalRuntime } from "../runtime/create-local-runtime.js";
 import type { LocalRuntimeConfig } from "../runtime/local-runtime-config.js";
@@ -13,6 +16,7 @@ import { TelegramSqliteStateStore } from "./telegram-sqlite-state-store.js";
 import { TelegramMissionDraftSessionCoordinator } from "./telegram-mission-draft-session-coordinator.js";
 import { TelegramOperatorProcessLock } from "./telegram-operator-lock.js";
 import { TelegramOperatorError } from "./telegram-operator-errors.js";
+import { TelegramDailyBriefConsole } from "./telegram-daily-brief-console.js";
 
 export interface TelegramApplicationConfig { readonly contractVersion: "1"; readonly runtime: LocalRuntimeConfig; readonly telegram: TelegramOperatorConfig; }
 export class TelegramApplicationConfigValidator {
@@ -48,8 +52,21 @@ export async function createTelegramOperatorConsole(candidate: unknown, override
   const lock = await TelegramOperatorProcessLock.acquire(validated.runtime.sqlite.path);
   let runtime: Awaited<ReturnType<typeof createLocalRuntime>> | undefined;
   let state: TelegramSqliteStateStore | undefined;
-  try { runtime = await createLocalRuntime(validated.runtime); state = new TelegramSqliteStateStore(validated.runtime.sqlite, clock); await chmod(validated.runtime.sqlite.path, 0o600); const api = new TelegramBotApiClient(validated.telegram, resolved.value.value, overrides.transport ?? new FetchTelegramBotApiTransport()); return new ControlledTelegramOperatorConsole({ actorId: validated.runtime.actorId, api, clock, config: validated.telegram, lock, missionDrafts: new TelegramMissionDraftSessionCoordinator(state), runtime, state, workspaceId: validated.runtime.workspaceId }); }
-  catch (error) { await Promise.allSettled([runtime?.close(), state?.close(), lock.close()]); if (error instanceof TelegramOperatorError) throw error; throw new TelegramOperatorError("DATABASE_UNAVAILABLE", "CONFIGURATION", false); }
+  let dailyBriefRepositories: SqliteRepositoryTransactionRunner | undefined;
+  try {
+    runtime = await createLocalRuntime(validated.runtime);
+    state = new TelegramSqliteStateStore(validated.runtime.sqlite, clock);
+    dailyBriefRepositories = new SqliteRepositoryTransactionRunner(validated.runtime.sqlite);
+    await chmod(validated.runtime.sqlite.path, 0o600);
+    const api = new TelegramBotApiClient(validated.telegram, resolved.value.value, overrides.transport ?? new FetchTelegramBotApiTransport());
+    const dailyBrief = new TelegramDailyBriefConsole({
+      chatId: validated.telegram.allowedChatId,
+      clock,
+      service: new DailyOperatingBriefService({ actorId: validated.runtime.actorId, clock, repositories: dailyBriefRepositories, source: new RepositoryBackedDailyOperatingBriefSource(), workspaceId: validated.runtime.workspaceId }),
+    });
+    return new ControlledTelegramOperatorConsole({ actorId: validated.runtime.actorId, api, clock, config: validated.telegram, dailyBrief, dailyBriefResource: dailyBriefRepositories, lock, missionDrafts: new TelegramMissionDraftSessionCoordinator(state), runtime, state, workspaceId: validated.runtime.workspaceId });
+  }
+  catch (error) { await Promise.allSettled([runtime?.close(), state?.close(), dailyBriefRepositories?.close(), lock.close()]); if (error instanceof TelegramOperatorError) throw error; throw new TelegramOperatorError("DATABASE_UNAVAILABLE", "CONFIGURATION", false); }
 }
 export async function readTelegramApplicationConfig(path: string): Promise<unknown> { return JSON.parse(await readFile(path, "utf8")) as unknown; }
 class TelegramSystemClock implements Clock { now(): Date { return new Date(); } }

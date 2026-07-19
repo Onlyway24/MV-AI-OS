@@ -80,10 +80,19 @@ export interface OperationalAgentGate {
   readonly status: "BLOCKED" | "PASSED";
 }
 
+export interface AgentCompanyWorkItemBlocker {
+  readonly evidence: readonly string[];
+  readonly missingInput: string;
+  readonly nextAction: string;
+  readonly owner: OperationalAgentId | "FABIO" | "OPERATIONS_RUNTIME";
+  readonly reasonCode: string;
+  readonly remediation: string;
+}
+
 export interface AgentCompanyWorkItem {
   readonly agentId: OperationalAgentId;
   readonly attempts: number;
-  readonly blocker?: string;
+  readonly blocker?: AgentCompanyWorkItemBlocker;
   readonly completedAt?: string;
   readonly costCents: number;
   readonly dependencies: readonly OperationalAgentId[];

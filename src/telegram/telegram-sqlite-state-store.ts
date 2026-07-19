@@ -22,20 +22,80 @@ export class TelegramSqliteStateStore {
   readonly #draftOperationValidator = new TelegramMissionDraftOperationValidator();
   readonly #draftEngine = new TelegramMissionDraftStateEngine();
   public constructor(config: SqliteConnectionConfig, private readonly clock: Clock, private readonly tokenSource: () => string = randomUUID, private readonly fault?: (point: "after-draft-write" | "after-start-draft-write") => void) { this.#database = openSqliteDatabase(config).database; }
-  public claim(action: TelegramOperatorAction, retentionSeconds: number): "CLAIMED" | "REPLAYED" {
-    this.#assertOpen(); const existing = this.#database.prepare("SELECT action_fingerprint FROM telegram_inbound_receipts WHERE update_id = ?").get(action.updateId);
-    if (existing !== undefined) { if (existing.action_fingerprint !== action.fingerprint) throw new Error("Telegram update identity conflicts with prior normalized action"); return "REPLAYED"; }
+  public claim(action: TelegramOperatorAction, retentionSeconds: number): "CLAIMED" | "DELIVERY_UNCERTAIN" | "RECOVERED" | "REPLAYED" {
+    this.#assertOpen(); const existing = this.#database.prepare("SELECT action_fingerprint, processing_state FROM telegram_inbound_receipts WHERE update_id = ?").get(action.updateId);
+    if (existing !== undefined) {
+      if (existing.action_fingerprint !== action.fingerprint) throw new Error("Telegram update identity conflicts with prior normalized action");
+      if (existing.processing_state === "RECEIVED") {
+        if (this.deliveryState(action.updateId) !== undefined) throw new Error("Telegram pre-delivery receipt conflicts with an outbound delivery intent");
+        return "RECOVERED";
+      }
+      if (existing.processing_state === "DELIVERY_UNCERTAIN") {
+        if (this.deliveryState(action.updateId) !== "UNCERTAIN") throw new Error("Telegram uncertain receipt has no matching outbound delivery intent");
+        return "DELIVERY_UNCERTAIN";
+      }
+      if (existing.processing_state !== "COMPLETED" && existing.processing_state !== "REJECTED") throw new Error("Telegram update receipt state is invalid");
+      return "REPLAYED";
+    }
     const now = this.clock.now(); const receipt = receiptFor(action, retentionSeconds, now);
     this.#database.prepare("INSERT INTO telegram_inbound_receipts (update_id, action_fingerprint, identity_binding, action_kind, processing_state, received_at, expires_at, command_id) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)").run(receipt.updateId, receipt.actionFingerprint, receipt.identityBinding, receipt.actionKind, receipt.processingState, receipt.receivedAt, receipt.expiresAt);
     return "CLAIMED";
   }
-  public complete(updateId: string, commandId?: string): void { this.#assertOpen(); this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = 'COMPLETED', command_id = ? WHERE update_id = ?").run(commandId ?? null, updateId); }
+  public complete(updateId: string, commandId?: string): void { this.#assertOpen(); const result = this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = 'COMPLETED', command_id = ? WHERE update_id = ? AND processing_state = 'RECEIVED'").run(commandId ?? null, updateId); if (result.changes !== 1) throw new Error("Telegram update receipt is unavailable for completion"); }
   /** Retains only a bounded failure state; it never stores raw updates or messages. */
-  public reject(updateId: string): void { this.#assertOpen(); this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = 'REJECTED' WHERE update_id = ?").run(updateId); }
+  public reject(updateId: string): void { this.#assertOpen(); const result = this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = 'REJECTED' WHERE update_id = ? AND processing_state = 'RECEIVED'").run(updateId); if (result.changes !== 1) throw new Error("Telegram update receipt is unavailable for rejection"); }
   /** Privacy-safe receipt state for reliability checks; no update content is returned. */
   public receiptState(updateId: string): TelegramInboundUpdateReceipt["processingState"] | undefined {
     this.#assertOpen(); const row = this.#database.prepare("SELECT processing_state FROM telegram_inbound_receipts WHERE update_id = ?").get(updateId);
-    return row?.processing_state === "COMPLETED" || row?.processing_state === "RECEIVED" || row?.processing_state === "REJECTED" ? row.processing_state : undefined;
+    return row?.processing_state === "COMPLETED" || row?.processing_state === "DELIVERY_UNCERTAIN" || row?.processing_state === "RECEIVED" || row?.processing_state === "REJECTED" ? row.processing_state : undefined;
+  }
+  /** Persists an opaque delivery intent before the first byte can leave the process. */
+  public beginDelivery(updateId: string): string {
+    this.#assertOpen(); assertUpdateId(updateId);
+    this.#database.exec("BEGIN IMMEDIATE");
+    try {
+      const receipt = this.#database.prepare("SELECT action_fingerprint, processing_state FROM telegram_inbound_receipts WHERE update_id = ?").get(updateId);
+      if (receipt?.processing_state !== "RECEIVED" || typeof receipt.action_fingerprint !== "string" || !/^[a-f0-9]{64}$/u.test(receipt.action_fingerprint)) throw new Error("Telegram update is not eligible for outbound delivery");
+      if (this.#database.prepare("SELECT 1 AS present FROM telegram_outbound_deliveries WHERE update_id = ? LIMIT 1").get(updateId) !== undefined) throw new Error("Telegram update already has an outbound delivery intent");
+      const deliveryId = `delivery-${hash(`${updateId}\n${receipt.action_fingerprint}`).slice(0, 48)}`;
+      const now = this.clock.now().toISOString();
+      this.#database.prepare("INSERT INTO telegram_outbound_deliveries (delivery_id, update_id, state, occurred_at) VALUES (?, ?, 'UNCERTAIN', ?)").run(deliveryId, updateId, now);
+      const changed = this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = 'DELIVERY_UNCERTAIN' WHERE update_id = ? AND processing_state = 'RECEIVED'").run(updateId);
+      if (changed.changes !== 1) throw new Error("Telegram delivery intent conflicted with receipt state");
+      this.#database.exec("COMMIT");
+      return deliveryId;
+    } catch (error) { this.#rollback(); throw error; }
+  }
+  public completeDeliveryAndAdvanceOffset(updateId: string, deliveryId: string, offset: string, processingState: "COMPLETED" | "REJECTED", commandId?: string): void {
+    this.#assertOpen(); assertUpdateId(updateId); assertDeliveryId(deliveryId);
+    this.#database.exec("BEGIN IMMEDIATE");
+    try {
+      this.#assertUncertainDelivery(updateId, deliveryId);
+      const delivered = this.#database.prepare("UPDATE telegram_outbound_deliveries SET state = 'DELIVERED', occurred_at = ? WHERE delivery_id = ? AND update_id = ? AND state = 'UNCERTAIN'").run(this.clock.now().toISOString(), deliveryId, updateId);
+      if (delivered.changes !== 1) throw new Error("Telegram outbound delivery finalization conflicted");
+      const receipt = this.#database.prepare("UPDATE telegram_inbound_receipts SET processing_state = ?, command_id = ? WHERE update_id = ? AND processing_state = 'DELIVERY_UNCERTAIN'").run(processingState, commandId ?? null, updateId);
+      if (receipt.changes !== 1) throw new Error("Telegram inbound delivery finalization conflicted");
+      this.#writeOffset(offset);
+      this.#database.exec("COMMIT");
+    } catch (error) { this.#rollback(); throw error; }
+  }
+  public advanceDeliveryUncertainOffset(updateId: string, offset: string, deliveryId?: string): void {
+    this.#assertOpen(); assertUpdateId(updateId);
+    this.#database.exec("BEGIN IMMEDIATE");
+    try {
+      const row = this.#database.prepare("SELECT delivery_id FROM telegram_outbound_deliveries WHERE update_id = ? AND state = 'UNCERTAIN' ORDER BY delivery_id LIMIT 2").all(updateId);
+      if (row.length !== 1 || typeof row[0]?.delivery_id !== "string" || (deliveryId !== undefined && row[0].delivery_id !== deliveryId)) throw new Error("Telegram uncertain delivery cannot be reconciled automatically");
+      this.#assertUncertainDelivery(updateId, row[0].delivery_id);
+      this.#writeOffset(offset);
+      this.#database.exec("COMMIT");
+    } catch (error) { this.#rollback(); throw error; }
+  }
+  public deliveryState(updateId: string): "DELIVERED" | "UNCERTAIN" | undefined {
+    this.#assertOpen(); assertUpdateId(updateId);
+    const rows = this.#database.prepare("SELECT state FROM telegram_outbound_deliveries WHERE update_id = ? ORDER BY delivery_id LIMIT 2").all(updateId);
+    if (rows.length === 0) return undefined;
+    if (rows.length !== 1 || (rows[0]?.state !== "DELIVERED" && rows[0]?.state !== "UNCERTAIN")) throw new Error("Telegram outbound delivery state is invalid");
+    return rows[0].state;
   }
   public startSession(identityBinding: string, actorId: string, workspaceId: string, retentionSeconds: number): TelegramOperatorSessionRecord {
     this.#assertOpen(); const existing = this.getSession(identityBinding); if (existing !== undefined) { if (existing.actorId !== actorId || existing.workspaceId !== workspaceId || existing.identityBinding !== identityBinding) throw new Error("Telegram session ownership conflicts with durable state"); return existing; }
@@ -126,11 +186,18 @@ export class TelegramSqliteStateStore {
     if (result.changes !== 1) throw new Error("Telegram session transition conflicted"); return next;
   }
   public offset(): TelegramPollingOffset | undefined { this.#assertOpen(); const row = this.#database.prepare("SELECT offset, updated_at FROM telegram_polling_state WHERE state_id = 1").get(); if (row === undefined || typeof row.offset !== "string" || typeof row.updated_at !== "string") return undefined; return Object.freeze({ contractVersion: "1", offset: row.offset, updatedAt: row.updated_at }); }
-  public saveOffset(offset: string): void { this.#assertOpen(); this.#database.prepare("INSERT INTO telegram_polling_state (state_id, offset, updated_at) VALUES (1, ?, ?) ON CONFLICT(state_id) DO UPDATE SET offset = excluded.offset, updated_at = excluded.updated_at").run(offset, this.clock.now().toISOString()); }
+  public saveOffset(offset: string): void { this.#assertOpen(); this.#writeOffset(offset); }
   public issueCallback(identityBinding: string, actionKind: TelegramCallbackToken["actionKind"], retentionSeconds: number, workflowId?: string, workflowVersion?: string): TelegramCallbackToken { this.#assertOpen(); const token = createHash("sha256").update(`${identityBinding}:${actionKind}:${this.tokenSource()}`, "utf8").digest("hex").slice(0, 32); const tokenHash = hash(token); const expiresAt = new Date(this.clock.now().getTime() + retentionSeconds * 1_000).toISOString(); this.#database.prepare("INSERT INTO telegram_callback_tokens (token_hash, identity_binding, action_kind, expires_at, workflow_id, workflow_version) VALUES (?, ?, ?, ?, ?, ?)").run(tokenHash, identityBinding, actionKind, expiresAt, workflowId ?? null, workflowVersion ?? null); return Object.freeze({ actionKind, contractVersion: "1", expiresAt, identityBinding, token: `cb_${token}`, tokenHash, ...(workflowId === undefined ? {} : { workflowId }), ...(workflowVersion === undefined ? {} : { workflowVersion }) }); }
   public consumeCallback(token: string, identityBinding: string, expectedActionKind?: TelegramCallbackToken["actionKind"]): TelegramCallbackToken | undefined { this.#assertOpen(); const tokenHash = hash(token.replace(/^cb_/u, "")); const row = this.#database.prepare("SELECT * FROM telegram_callback_tokens WHERE token_hash = ?").get(tokenHash); if (row === undefined || typeof row.identity_binding !== "string" || typeof row.action_kind !== "string" || typeof row.expires_at !== "string" || row.identity_binding !== identityBinding || row.expires_at <= this.clock.now().toISOString() || (expectedActionKind !== undefined && row.action_kind !== expectedActionKind)) return undefined; this.#database.prepare("DELETE FROM telegram_callback_tokens WHERE token_hash = ?").run(tokenHash); return Object.freeze({ actionKind: row.action_kind as TelegramCallbackToken["actionKind"], contractVersion: "1", expiresAt: row.expires_at, identityBinding: row.identity_binding, token, tokenHash, ...(typeof row.workflow_id === "string" ? { workflowId: row.workflow_id } : {}), ...(typeof row.workflow_version === "string" ? { workflowVersion: row.workflow_version } : {}) }); }
-  public purgeExpired(): void { this.#assertOpen(); const now = this.clock.now().toISOString(); const missionRows = this.#database.prepare("SELECT record_json FROM telegram_operator_sessions WHERE expires_at <= ? AND state IN ('COLLECTING_INPUT', 'REVIEWING_DRAFT', 'WAITING_CONFIRMATION', 'COMPLETED', 'RESULT_REVIEW')").all(now); for (const row of missionRows) { if (typeof row.record_json !== "string") throw new Error("Telegram session record is corrupt"); const session = parseSession(row.record_json, this.#sessionValidator); const draft = this.getMissionDraft(session.sessionId); if (draft === undefined) throw new Error("Expired Telegram Mission session draft reference is missing"); const operation = { actorId: session.actorId, authorizedIdentityHash: session.identityBinding, contractVersion: "1" as const, draftId: draft.draftId, expectedVersion: draft.version, kind: "EXPIRE_DRAFT" as const, operationId: `expire-${draft.draftId}-${String(draft.version)}`.slice(0, 128), sessionId: session.sessionId, workspaceId: session.workspaceId }; this.#applyCoordinated({ actorId: session.actorId, authorizedIdentityHash: session.identityBinding, contractVersion: "1", coordinationKind: "EXPIRE", expectedDraftVersion: draft.version, expectedSessionVersion: session.version, operation, sessionId: session.sessionId, workspaceId: session.workspaceId }, true); } const otherRows = this.#database.prepare("SELECT record_json FROM telegram_operator_sessions WHERE expires_at <= ? AND state NOT IN ('COLLECTING_INPUT', 'REVIEWING_DRAFT', 'WAITING_CONFIRMATION', 'COMPLETED', 'RESULT_REVIEW', 'EXPIRED', 'CANCELLED')").all(now); for (const row of otherRows) { if (typeof row.record_json !== "string") throw new Error("Telegram session record is corrupt"); const session = parseSession(row.record_json, this.#sessionValidator); this.#writeSession(validateSession({ ...session, navigationState: "IDLE", selectedAction: "EXPIRE", state: "EXPIRED", updatedAt: now, version: session.version + 1 }), session.version); } for (const table of ["telegram_callback_tokens", "telegram_inbound_receipts", "telegram_pending_confirmations"] as const) this.#database.prepare(`DELETE FROM ${table} WHERE expires_at <= ?`).run(now); }
+  public purgeExpired(): void { this.#assertOpen(); const now = this.clock.now().toISOString(); const missionRows = this.#database.prepare("SELECT record_json FROM telegram_operator_sessions WHERE expires_at <= ? AND state IN ('COLLECTING_INPUT', 'REVIEWING_DRAFT', 'WAITING_CONFIRMATION', 'COMPLETED', 'RESULT_REVIEW')").all(now); for (const row of missionRows) { if (typeof row.record_json !== "string") throw new Error("Telegram session record is corrupt"); const session = parseSession(row.record_json, this.#sessionValidator); const draft = this.getMissionDraft(session.sessionId); if (draft === undefined) throw new Error("Expired Telegram Mission session draft reference is missing"); const operation = { actorId: session.actorId, authorizedIdentityHash: session.identityBinding, contractVersion: "1" as const, draftId: draft.draftId, expectedVersion: draft.version, kind: "EXPIRE_DRAFT" as const, operationId: `expire-${draft.draftId}-${String(draft.version)}`.slice(0, 128), sessionId: session.sessionId, workspaceId: session.workspaceId }; this.#applyCoordinated({ actorId: session.actorId, authorizedIdentityHash: session.identityBinding, contractVersion: "1", coordinationKind: "EXPIRE", expectedDraftVersion: draft.version, expectedSessionVersion: session.version, operation, sessionId: session.sessionId, workspaceId: session.workspaceId }, true); } const otherRows = this.#database.prepare("SELECT record_json FROM telegram_operator_sessions WHERE expires_at <= ? AND state NOT IN ('COLLECTING_INPUT', 'REVIEWING_DRAFT', 'WAITING_CONFIRMATION', 'COMPLETED', 'RESULT_REVIEW', 'EXPIRED', 'CANCELLED')").all(now); for (const row of otherRows) { if (typeof row.record_json !== "string") throw new Error("Telegram session record is corrupt"); const session = parseSession(row.record_json, this.#sessionValidator); this.#writeSession(validateSession({ ...session, navigationState: "IDLE", selectedAction: "EXPIRE", state: "EXPIRED", updatedAt: now, version: session.version + 1 }), session.version); } this.#database.prepare("DELETE FROM telegram_outbound_deliveries WHERE update_id IN (SELECT update_id FROM telegram_inbound_receipts WHERE expires_at <= ?)").run(now); for (const table of ["telegram_callback_tokens", "telegram_inbound_receipts", "telegram_pending_confirmations"] as const) this.#database.prepare(`DELETE FROM ${table} WHERE expires_at <= ?`).run(now); }
   public close(): Promise<void> { if (!this.#closed) { this.#closed = true; this.#database.close(); } return Promise.resolve(); }
+  #assertUncertainDelivery(updateId: string, deliveryId: string): void { const receipt = this.#database.prepare("SELECT processing_state FROM telegram_inbound_receipts WHERE update_id = ?").get(updateId); const delivery = this.#database.prepare("SELECT state, update_id FROM telegram_outbound_deliveries WHERE delivery_id = ?").get(deliveryId); if (receipt?.processing_state !== "DELIVERY_UNCERTAIN" || delivery?.state !== "UNCERTAIN" || delivery.update_id !== updateId) throw new Error("Telegram uncertain delivery binding is invalid"); }
+  #writeOffset(offset: string): void {
+    if (!/^(?:0|[1-9][0-9]{0,18})$/u.test(offset) || !Number.isSafeInteger(Number(offset))) throw new Error("Telegram polling offset is invalid");
+    const existing = this.#database.prepare("SELECT offset FROM telegram_polling_state WHERE state_id = 1").get();
+    if (typeof existing?.offset === "string" && Number(existing.offset) > Number(offset)) return;
+    this.#database.prepare("INSERT INTO telegram_polling_state (state_id, offset, updated_at) VALUES (1, ?, ?) ON CONFLICT(state_id) DO UPDATE SET offset = excluded.offset, updated_at = excluded.updated_at").run(offset, this.clock.now().toISOString());
+  }
   #applyCoordinated(candidate: TelegramMissionDraftSessionCommand, manageTransaction: boolean): TelegramMissionDraftApplyResult {
     const command = validSessionCommand(candidate, this.#draftOperationValidator); const fingerprint = telegramMissionCommandFingerprint(command); const prior = this.#database.prepare("SELECT fingerprint, record_json FROM telegram_mission_draft_operations WHERE operation_id = ?").get(command.operation.operationId); if (prior !== undefined) { if (prior.fingerprint !== fingerprint || typeof prior.record_json !== "string") throw new Error("Telegram Mission coordination receipt conflicts"); return parseDraftResult(prior.record_json); }
     const session = this.getSession(command.authorizedIdentityHash); const draft = session === undefined ? undefined : this.getMissionDraft(command.sessionId); if (session === undefined || draft === undefined) throw new Error("Telegram Mission session/draft reference is missing"); this.#assertPair(session, draft, command.authorizedIdentityHash); if (command.sessionId !== session.sessionId || command.actorId !== session.actorId || command.workspaceId !== session.workspaceId || command.expectedSessionVersion !== session.version || command.expectedDraftVersion !== draft.version || command.operation.expectedVersion !== draft.version || JSON.stringify({ actorId: command.operation.actorId, authorizedIdentityHash: command.operation.authorizedIdentityHash, sessionId: command.operation.sessionId, workspaceId: command.operation.workspaceId }) !== JSON.stringify({ actorId: command.actorId, authorizedIdentityHash: command.authorizedIdentityHash, sessionId: command.sessionId, workspaceId: command.workspaceId })) throw new Error("Telegram Mission coordination snapshot is stale or mismatched");
@@ -146,6 +213,8 @@ export class TelegramSqliteStateStore {
 }
 
 function receiptFor(action: TelegramOperatorAction, retentionSeconds: number, now: Date): TelegramInboundUpdateReceipt { return Object.freeze({ actionFingerprint: action.fingerprint, actionKind: action.kind, contractVersion: "1", expiresAt: new Date(now.getTime() + retentionSeconds * 1_000).toISOString(), identityBinding: hash(`${action.userId}:${action.chatId}`), processingState: "RECEIVED", receivedAt: now.toISOString(), updateId: action.updateId }); }
+function assertUpdateId(value: string): void { if (!/^[A-Za-z0-9_-]{1,128}$/u.test(value)) throw new Error("Telegram update ID is invalid"); }
+function assertDeliveryId(value: string): void { if (!/^delivery-[a-f0-9]{48}$/u.test(value)) throw new Error("Telegram delivery ID is invalid"); }
 function hash(value: string): string { return createHash("sha256").update(value, "utf8").digest("hex"); }
 function number(value: unknown): number { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : 0; }
 function validateSession(value: unknown): TelegramOperatorSessionRecord { const result = new TelegramOperatorSessionValidator().validate(value); if (!result.ok) throw new Error("Telegram session failed validation"); return result.value; }

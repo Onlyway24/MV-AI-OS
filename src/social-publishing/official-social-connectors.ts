@@ -163,7 +163,9 @@ export class OfficialInstagramConnector {
   }
 
   public async authorizationUrl(): Promise<string> {
-    if ((await this.#store.loadPending("instagram")) !== undefined) throw new Error("DUPLICATE_CONNECT_BLOCKED");
+    const pending = await this.#store.loadPending("instagram");
+    if (pending !== undefined && Date.parse(pending.expiresAt) <= this.#clock.now().getTime()) await this.#store.deletePending("instagram");
+    else if (pending !== undefined) throw new Error("DUPLICATE_CONNECT_BLOCKED");
     const state = this.#randomId();
     await this.#store.savePending("instagram", createOAuthPendingSession({
       authorizationRequestId: this.#randomId(),
@@ -210,9 +212,8 @@ export class OfficialInstagramConnector {
 
   public async disconnect(): Promise<InstagramConnectorStatus> {
     const credential = await this.#store.loadCredential("instagram");
-    if (credential !== undefined) await this.#transport.revoke(credential.accessToken);
-    await this.#store.deleteCredential("instagram");
-    return instagramDisconnected("OAUTH_REQUIRED", socialReceipt("instagram", "DISCONNECT", "SUCCEEDED"));
+    const revocation = await forgetCredentialBeforeRevoke("instagram", credential, this.#store, this.#transport);
+    return instagramDisconnected("OAUTH_REQUIRED", socialReceipt("instagram", "DISCONNECT", revocation));
   }
 
   public publicationContainerDryRun(): { readonly externalCalls: 0; readonly state: "PUBLICATION_LOCKED" } {
@@ -233,15 +234,13 @@ export class OfficialInstagramConnector {
   async #verifyCredential(credential: OAuthCredentialRecord, operation: SocialConnectorReceipt["operation"]): Promise<InstagramConnectorStatus> {
     const identity = await this.#transport.identity(credential.accessToken);
     if (normalizeUsername(identity.username) !== INSTAGRAM_EXPECTED_USERNAME) {
-      await this.#transport.revoke(credential.accessToken);
-      await this.#store.deleteCredential("instagram");
-      return instagramDisconnected("WRONG_ACCOUNT", socialReceipt("instagram", operation, "BLOCKED", identity.accountId));
+      const revocation = await forgetCredentialBeforeRevoke("instagram", credential, this.#store, this.#transport);
+      return instagramDisconnected("WRONG_ACCOUNT", socialReceipt("instagram", operation, revocation === "SUCCEEDED" ? "BLOCKED" : "UNCERTAIN", identity.accountId));
     }
     if (identity.accountType === "PERSONAL" || identity.accountType === "UNKNOWN") {
-      await this.#transport.revoke(credential.accessToken);
-      await this.#store.deleteCredential("instagram");
+      const revocation = await forgetCredentialBeforeRevoke("instagram", credential, this.#store, this.#transport);
       return {
-        ...instagramDisconnected("ACCOUNT_TYPE_ACTION_REQUIRED", socialReceipt("instagram", operation, "BLOCKED", identity.accountId)),
+        ...instagramDisconnected("ACCOUNT_TYPE_ACTION_REQUIRED", socialReceipt("instagram", operation, revocation === "SUCCEEDED" ? "BLOCKED" : "UNCERTAIN", identity.accountId)),
         accountType: identity.accountType,
         username: `@${identity.username}`,
       };
@@ -250,11 +249,14 @@ export class OfficialInstagramConnector {
     const grantedScopes = unique([...credential.grantedScopes, ...inspected]);
     const missing = INSTAGRAM_REQUIRED_SCOPES.filter((scope) => !grantedScopes.includes(scope));
     const insights = await this.#transport.insightsPreflight({ accessToken: credential.accessToken, accountId: identity.accountId });
-    const state: InstagramConnectionState = insights.available ? "INSIGHTS_READY" : "CONNECTED_READ_ONLY";
+    const permissionsReady = missing.length === 0;
+    const state: InstagramConnectionState = permissionsReady && insights.available
+      ? "INSIGHTS_READY"
+      : "CONNECTED_READ_ONLY";
     return {
       accountIdRedacted: redactedIdentifier(identity.accountId),
       accountType: identity.accountType,
-      contentPermission: missing.length === 0 ? "CONTENT_PERMISSION_READY" : "SCOPE_APPROVAL_REQUIRED",
+      contentPermission: permissionsReady ? "CONTENT_PERMISSION_READY" : "SCOPE_APPROVAL_REQUIRED",
       expectedAccount: "@mr.metodo.veloce_official",
       grantedScopes,
       insights: insights.available ? "INSIGHTS_READY" : "INSIGHTS_UNAVAILABLE",
@@ -287,7 +289,9 @@ export class OfficialTikTokConnector {
   }
 
   public async authorizationUrl(): Promise<string> {
-    if ((await this.#store.loadPending("tiktok")) !== undefined) throw new Error("DUPLICATE_CONNECT_BLOCKED");
+    const pending = await this.#store.loadPending("tiktok");
+    if (pending !== undefined && Date.parse(pending.expiresAt) <= this.#clock.now().getTime()) await this.#store.deletePending("tiktok");
+    else if (pending !== undefined) throw new Error("DUPLICATE_CONNECT_BLOCKED");
     const state = this.#randomId();
     const verifier = generatePkceVerifier();
     await this.#store.savePending("tiktok", createOAuthPendingSession({ authorizationRequestId: this.#randomId(), codeVerifier: verifier, now: this.#clock.now(), redirectUri: TIKTOK_REDIRECT_URI, state }));
@@ -326,9 +330,8 @@ export class OfficialTikTokConnector {
 
   public async disconnect(): Promise<TikTokConnectorStatus> {
     const credential = await this.#store.loadCredential("tiktok");
-    if (credential !== undefined) await this.#transport.revoke(credential.accessToken);
-    await this.#store.deleteCredential("tiktok");
-    return tiktokDisconnected("OAUTH_REQUIRED", socialReceipt("tiktok", "DISCONNECT", "SUCCEEDED"));
+    const revocation = await forgetCredentialBeforeRevoke("tiktok", credential, this.#store, this.#transport);
+    return tiktokDisconnected("OAUTH_REQUIRED", socialReceipt("tiktok", "DISCONNECT", revocation));
   }
 
   public directPostDryRun(): { readonly externalCalls: 0; readonly state: "PUBLIC_POST_LOCKED" } { return { externalCalls: 0, state: "PUBLIC_POST_LOCKED" }; }
@@ -348,9 +351,8 @@ export class OfficialTikTokConnector {
   async #verifyCredential(credential: OAuthCredentialRecord, operation: SocialConnectorReceipt["operation"]): Promise<TikTokConnectorStatus> {
     const identity = await this.#transport.identity(credential.accessToken);
     if (identity.username === undefined || normalizeUsername(identity.username) !== TIKTOK_EXPECTED_USERNAME) {
-      await this.#transport.revoke(credential.accessToken);
-      await this.#store.deleteCredential("tiktok");
-      return tiktokDisconnected("WRONG_ACCOUNT", socialReceipt("tiktok", operation, "BLOCKED", identity.accountId));
+      const revocation = await forgetCredentialBeforeRevoke("tiktok", credential, this.#store, this.#transport);
+      return tiktokDisconnected("WRONG_ACCOUNT", socialReceipt("tiktok", operation, revocation === "SUCCEEDED" ? "BLOCKED" : "UNCERTAIN", identity.accountId));
     }
     const missing = TIKTOK_REQUIRED_SCOPES.filter((scope) => !credential.grantedScopes.includes(scope));
     if (missing.length > 0) {
@@ -378,6 +380,18 @@ export class OfficialTikTokConnector {
       username: `@${identity.username}`,
     };
   }
+}
+
+async function forgetCredentialBeforeRevoke(
+  platform: "instagram" | "tiktok",
+  credential: OAuthCredentialRecord | undefined,
+  store: OAuthSecureStore,
+  transport: Pick<InstagramConnectorTransport | TikTokConnectorTransport, "revoke">,
+): Promise<"SUCCEEDED" | "UNCERTAIN"> {
+  await store.deleteCredential(platform);
+  if (credential === undefined) return "SUCCEEDED";
+  try { await transport.revoke(credential.accessToken); return "SUCCEEDED"; }
+  catch { return "UNCERTAIN"; }
 }
 
 function instagramDisconnected(state: InstagramConnectionState, receipt = socialReceipt("instagram", "VERIFY", "BLOCKED")): InstagramConnectorStatus {

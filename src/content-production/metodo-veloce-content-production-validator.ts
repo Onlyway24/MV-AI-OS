@@ -107,7 +107,12 @@ function recordStatus(value: Record<string, unknown>): boolean {
   const metricsValue = value.metrics;
   const archiveValue = value.archive;
   if (!["APPROVED_FOR_SCHEDULING", "ARCHIVED", "BLOCKED", "PENDING_FABIO_APPROVAL", "SCHEDULED"].includes(status as string)) return false;
-  if (reviewValue !== undefined && (!record(reviewValue) || !keys(reviewValue, ["decision", "note", "reviewedAt", "reviewedBy"]) || !["APPROVED", "REJECTED"].includes(reviewValue.decision as string) || !text(reviewValue.note, 4, 600) || !timestamp(reviewValue.reviewedAt) || !identifier(reviewValue.reviewedBy))) return false;
+  if (reviewValue !== undefined) {
+    if (!record(reviewValue)) return false;
+    const reviewFields = ["decision", "note", "reviewedAt", "reviewedBy", ...(reviewValue.visualApprovalBindingFingerprint === undefined ? [] : ["visualApprovalBindingFingerprint"])];
+    if (!keys(reviewValue, reviewFields) || !["APPROVED", "REJECTED"].includes(reviewValue.decision as string) || !text(reviewValue.note, 4, 600) || !timestamp(reviewValue.reviewedAt) || !identifier(reviewValue.reviewedBy)) return false;
+    if (reviewValue.visualApprovalBindingFingerprint !== undefined && (reviewValue.decision !== "APPROVED" || typeof reviewValue.visualApprovalBindingFingerprint !== "string" || !/^[a-f0-9]{64}$/u.test(reviewValue.visualApprovalBindingFingerprint))) return false;
+  }
   if (scheduleValue !== undefined && (!record(scheduleValue) || !keys(scheduleValue, ["scheduledFor"]) || !timestamp(scheduleValue.scheduledFor))) return false;
   if (metricsValue !== undefined && (!record(metricsValue) || !keys(metricsValue, ["conversions", "costCents", "leadCount", "reportedAt", "reportedBy", "saves", "views"]) || !nonNegative(metricsValue.views) || !nonNegative(metricsValue.saves) || !nonNegative(metricsValue.leadCount) || !nonNegative(metricsValue.conversions) || !nonNegative(metricsValue.costCents) || !timestamp(metricsValue.reportedAt) || !identifier(metricsValue.reportedBy))) return false;
   if (archiveValue !== undefined && (!record(archiveValue) || !keys(archiveValue, ["archivedAt", "reason"]) || !timestamp(archiveValue.archivedAt) || !["MANUAL", "REJECTED_BY_FABIO"].includes(archiveValue.reason as string))) return false;

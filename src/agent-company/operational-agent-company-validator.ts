@@ -12,6 +12,8 @@ import {
 
 const ID = /^[a-zA-Z0-9@._:-]{1,128}$/u;
 const HASH = /^[a-f0-9]{64}$/u;
+const MAX_WORKDAY_BYTES = 1_048_576;
+const MAX_WORK_ITEM_OUTPUT_BYTES = 65_536;
 
 export class AgentCompanyWorkdayInputValidator implements Validator<AgentCompanyWorkdayInput> {
   readonly #business = new BusinessMissionExecutionInputValidator();
@@ -31,15 +33,15 @@ export class AgentCompanyWorkdayInputValidator implements Validator<AgentCompany
 export class AgentCompanyWorkdayValidator implements Validator<AgentCompanyWorkday> {
   readonly #input = new AgentCompanyWorkdayInputValidator();
   public validate(value: unknown): ValidationResult<AgentCompanyWorkday> {
-    if (!record(value) || value.contractVersion !== "1" || !id(value.workdayId) || !id(value.actorId) || !id(value.workspaceId) || !timestamp(value.createdAt) || !timestamp(value.updatedAt) || !integer(value.version, 0, Number.MAX_SAFE_INTEGER) || !["AWAITING_FABIO", "BLOCKED", "RUNNING"].includes(String(value.status)) || value.externalActionsExecuted !== false || !HASH.test(String(value.inputFingerprint)) || !this.#input.validate(value.input).ok || createAgentCompanyInputFingerprint(value.input as AgentCompanyWorkdayInput) !== value.inputFingerprint || !Array.isArray(value.tasks) || value.tasks.length !== OPERATIONAL_AGENT_IDS.length) return invalid("Agent Company workday is invalid");
+    if (!record(value) || !jsonBytesAtMost(value, MAX_WORKDAY_BYTES) || value.contractVersion !== "1" || !id(value.workdayId) || !id(value.actorId) || !id(value.workspaceId) || !timestamp(value.createdAt) || !timestamp(value.updatedAt) || !integer(value.version, 0, Number.MAX_SAFE_INTEGER) || !["AWAITING_FABIO", "BLOCKED", "RUNNING"].includes(String(value.status)) || value.externalActionsExecuted !== false || !HASH.test(String(value.inputFingerprint)) || !this.#input.validate(value.input).ok || createAgentCompanyInputFingerprint(value.input as AgentCompanyWorkdayInput) !== value.inputFingerprint || !Array.isArray(value.tasks) || value.tasks.length !== OPERATIONAL_AGENT_IDS.length) return invalid("Agent Company workday is invalid");
     const catalog = new Map(OPERATIONAL_AGENT_COMPANY_CATALOG.map((entry) => [entry.agentId, entry]));
     const seen = new Set<string>();
     for (const task of value.tasks) {
       if (!record(task) || !OPERATIONAL_AGENT_IDS.includes(task.agentId as never) || seen.has(String(task.agentId)) || !id(task.workItemId) || !id(task.executorId) || !["BLOCKED", "COMPLETED", "QUEUED", "RUNNING"].includes(String(task.status)) || !integer(task.attempts, 0, 100) || !integer(task.costCents, 0, 1_000_000_000) || !integer(task.durationMs, 0, 86_400_000) || !Array.isArray(task.dependencies) || !task.dependencies.every((dependency) => OPERATIONAL_AGENT_IDS.includes(dependency as never)) || !Array.isArray(task.gates) || (!["QUEUED", "RUNNING"].includes(String(task.status)) && !gates(task.gates)) || (["QUEUED", "RUNNING"].includes(String(task.status)) && task.gates.length !== 0)) return invalid("Agent Company work item is invalid");
       const entry = catalog.get(task.agentId as never);
       if (task.executorId !== entry?.executorId || task.taskType !== entry.supportedTasks[0]) return invalid("Agent Company executor binding is invalid");
-      if (task.status === "COMPLETED" && (!record(task.output) || !HASH.test(String(task.outputFingerprint)) || createAgentCompanyOutputFingerprint(task.output) !== task.outputFingerprint || !timestamp(task.startedAt) || !timestamp(task.completedAt) || task.blocker !== undefined)) return invalid("Completed Agent Company work item is invalid");
-      if (task.status === "BLOCKED" && (!text(task.blocker, 1, 2_000) || !timestamp(task.startedAt) || !timestamp(task.completedAt))) return invalid("Blocked Agent Company work item is invalid");
+      if (task.status === "COMPLETED" && (!record(task.output) || !jsonBytesAtMost(task.output, MAX_WORK_ITEM_OUTPUT_BYTES) || !HASH.test(String(task.outputFingerprint)) || createAgentCompanyOutputFingerprint(task.output) !== task.outputFingerprint || !timestamp(task.startedAt) || !timestamp(task.completedAt) || task.blocker !== undefined)) return invalid("Completed Agent Company work item is invalid");
+      if (task.status === "BLOCKED" && (!workItemBlocker(task.blocker) || !timestamp(task.startedAt) || !timestamp(task.completedAt))) return invalid("Blocked Agent Company work item is invalid");
       if ((task.status === "QUEUED" || task.status === "RUNNING") && (task.output !== undefined || task.outputFingerprint !== undefined || task.completedAt !== undefined || task.blocker !== undefined)) return invalid("Pending Agent Company work item is invalid");
       seen.add(String(task.agentId));
     }
@@ -67,4 +69,6 @@ function strings(value: unknown, min: number, max: number): value is readonly st
 function integer(value: unknown, min: number, max: number): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value >= min && value <= max; }
 function timestamp(value: unknown): value is string { return typeof value === "string" && Number.isFinite(Date.parse(value)); }
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean { const actual = Object.keys(value); return actual.length === keys.length && actual.every((key) => keys.includes(key)); }
+function workItemBlocker(value: unknown): boolean { return record(value) && exactKeys(value, ["evidence", "missingInput", "nextAction", "owner", "reasonCode", "remediation"]) && strings(value.evidence, 1, 20) && text(value.missingInput, 4, 1_000) && text(value.nextAction, 4, 1_000) && (OPERATIONAL_AGENT_IDS.includes(value.owner as never) || value.owner === "FABIO" || value.owner === "OPERATIONS_RUNTIME") && typeof value.reasonCode === "string" && /^[A-Z][A-Z0-9_]{2,63}$/u.test(value.reasonCode) && text(value.remediation, 4, 1_000); }
+function jsonBytesAtMost(value: unknown, maximum: number): boolean { try { return Buffer.byteLength(JSON.stringify(value), "utf8") <= maximum; } catch { return false; } }
 function deepFreeze<T>(value: T): T { if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value; Object.freeze(value); for (const child of Object.values(value)) deepFreeze(child); return value; }

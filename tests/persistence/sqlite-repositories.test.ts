@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { chmod, mkdtemp, rm, stat, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -48,6 +48,35 @@ runRepositoryConformance(
 );
 
 describe("SQLite repository transaction runner", () => {
+  it("creates and reopens only private regular database files", async () => {
+    await withTemporaryDatabase(async (databasePath) => {
+      const first = createRunner(databasePath);
+      await first.close();
+      expect((await stat(databasePath)).mode & 0o777).toBe(0o600);
+
+      await chmod(databasePath, 0o644);
+      const reopened = createRunner(databasePath);
+      await reopened.close();
+      expect((await stat(databasePath)).mode & 0o777).toBe(0o600);
+    });
+  });
+
+  it("refuses a symbolic-link database path", async () => {
+    await withTemporaryDatabase(async (databasePath) => {
+      const targetPath = `${databasePath}.target`;
+      const target = createRunner(targetPath);
+      await target.close();
+      await symlink(targetPath, databasePath);
+
+      try {
+        createRunner(databasePath);
+        throw new Error("Symbolic-link database path was accepted");
+      } catch (error) {
+        expect(error).toMatchObject({ code: "sqlite_repository_failed", details: { operation: "connection.permissions" } });
+      }
+    });
+  });
+
   it("rejects invalid connection configuration", () => {
     expect(
       () =>

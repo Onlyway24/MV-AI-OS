@@ -63,11 +63,28 @@ describe("official Instagram connector", () => {
     expect(personalTransport.revokeCalls).toBe(1);
   });
 
+  it("deletes a wrong Instagram credential even when provider revocation is uncertain", async () => {
+    const transport = new FakeInstagramTransport({ revokeFailure: true, username: "different.account" });
+    const result = await connectInstagram(transport);
+    expect(result.status).toMatchObject({ receipt: { status: "UNCERTAIN" }, state: "WRONG_ACCOUNT" });
+    expect(await result.store.loadCredential("instagram")).toBeUndefined();
+  });
+
   it("preserves denied or missing scopes and never invents Insights values", async () => {
     const transport = new FakeInstagramTransport({ grantedScopes: ["instagram_business_basic"], insights: false });
     const { status } = await connectInstagram(transport);
     expect(status).toMatchObject({ contentPermission: "SCOPE_APPROVAL_REQUIRED", insights: "INSIGHTS_UNAVAILABLE", state: "CONNECTED_READ_ONLY" });
     expect(status.grantedScopes).toEqual(["instagram_business_basic"]);
+  });
+
+  it("never declares Insights ready while a required scope is missing", async () => {
+    const transport = new FakeInstagramTransport({ grantedScopes: ["instagram_business_basic"], insights: true });
+    const { status } = await connectInstagram(transport);
+    expect(status).toMatchObject({
+      contentPermission: "SCOPE_APPROVAL_REQUIRED",
+      insights: "INSIGHTS_READY",
+      state: "CONNECTED_READ_ONLY",
+    });
   });
 
   it("refreshes an expired token, blocks refresh failure and treats revoked tokens as reauthorization", async () => {
@@ -126,6 +143,13 @@ describe("official TikTok connector", () => {
     expect(await result.store.loadCredential("tiktok")).toBeUndefined();
   });
 
+  it("deletes a wrong TikTok credential even when provider revocation is uncertain", async () => {
+    const transport = new FakeTikTokTransport({ revokeFailure: true, username: "wrong.account" });
+    const result = await connectTikTok(transport);
+    expect(result.status).toMatchObject({ receipt: { status: "UNCERTAIN" }, state: "WRONG_ACCOUNT" });
+    expect(await result.store.loadCredential("tiktok")).toBeUndefined();
+  });
+
   it("requires the exact minimal posting and username-binding scopes", async () => {
     const transport = new FakeTikTokTransport({ grantedScopes: ["user.info.basic"] });
     const { status } = await connectTikTok(transport);
@@ -175,6 +199,25 @@ describe("common OAuth, media and External Action Plane controls", () => {
     await expect(restarted.loadCredential("instagram")).rejects.toBeInstanceOf(OAuthSecurityError);
   });
 
+  it("serializes dual-platform mutations across store instances without losing OAuth state", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mv-social-vault-concurrent-"));
+    cleanup.push(async () => rm(directory, { force: true, recursive: true }));
+    const path = join(directory, "secure", "oauth.json");
+    const instagramStore = encryptedStore(path);
+    const tiktokStore = encryptedStore(path);
+    const instagramPending = { authorizationRequestId: "ig-request", createdAt: NOW.toISOString(), expiresAt: "2026-07-17T14:10:00.000Z", redirectUri: INSTAGRAM_REDIRECT_URI, state: "ig-state" };
+    const tiktokPending = { authorizationRequestId: "tt-request", codeVerifier: "v".repeat(64), createdAt: NOW.toISOString(), expiresAt: "2026-07-17T14:10:00.000Z", redirectUri: TIKTOK_REDIRECT_URI, state: "tt-state" };
+
+    await Promise.all([
+      instagramStore.savePending("instagram", instagramPending),
+      tiktokStore.savePending("tiktok", tiktokPending),
+    ]);
+
+    const restarted = encryptedStore(path);
+    expect(await restarted.loadPending("instagram")).toEqual(instagramPending);
+    expect(await restarted.loadPending("tiktok")).toEqual(tiktokPending);
+  });
+
   it("reports local-only, no URL, insecure URL, unverified domain, expiry and readiness", () => {
     const boundary = new MediaDeliveryBoundary();
     expect(boundary.evaluate({ localPath: "asset.png", now: NOW }).state).toBe("LOCAL_ONLY");
@@ -195,7 +238,7 @@ describe("common OAuth, media and External Action Plane controls", () => {
   });
 });
 
-interface FakeInstagramOptions { accountType?: "BUSINESS" | "CREATOR" | "PERSONAL" | "UNKNOWN"; exchangeFailure?: boolean; grantedScopes?: readonly string[]; identityFailure?: boolean; insights?: boolean; refreshFailure?: boolean; username?: string }
+interface FakeInstagramOptions { accountType?: "BUSINESS" | "CREATOR" | "PERSONAL" | "UNKNOWN"; exchangeFailure?: boolean; grantedScopes?: readonly string[]; identityFailure?: boolean; insights?: boolean; refreshFailure?: boolean; revokeFailure?: boolean; username?: string }
 
 class FakeInstagramTransport implements InstagramConnectorTransport {
   public exchangeCalls = 0;
@@ -215,10 +258,10 @@ class FakeInstagramTransport implements InstagramConnectorTransport {
   public insightsPreflight() { return Promise.resolve({ available: this.#options.insights ?? true, missingValuesPreserved: true as const }); }
   public inspectPermissions() { return Promise.resolve(this.#options.grantedScopes ?? ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_insights"]); }
   public refresh(): Promise<SocialTokenExchangeResult> { this.refreshCalls += 1; return this.#options.refreshFailure === true ? Promise.reject(new Error("refresh")) : Promise.resolve(token()); }
-  public revoke(): Promise<void> { this.revokeCalls += 1; return Promise.resolve(); }
+  public revoke(): Promise<void> { this.revokeCalls += 1; return this.#options.revokeFailure === true ? Promise.reject(new Error("revoke uncertain")) : Promise.resolve(); }
 }
 
-interface FakeTikTokOptions { grantedScopes?: readonly string[]; pkceVerified?: boolean; username?: string }
+interface FakeTikTokOptions { grantedScopes?: readonly string[]; pkceVerified?: boolean; revokeFailure?: boolean; username?: string }
 
 class FakeTikTokTransport implements TikTokConnectorTransport {
   public postCalls = 0;
@@ -229,7 +272,7 @@ class FakeTikTokTransport implements TikTokConnectorTransport {
   public exchangeCode(): Promise<SocialTokenExchangeResult> { return Promise.resolve({ ...token(this.#options.grantedScopes ?? ["user.info.basic", "user.info.profile", "video.publish"]), pkceVerified: this.#options.pkceVerified ?? true }); }
   public identity() { return Promise.resolve({ accountId: "tt-account-123", displayName: "Metodo Veloce", username: this.#options.username ?? "metodo_veloce.official" }); }
   public refresh(): Promise<SocialTokenExchangeResult> { return Promise.resolve({ ...token(["user.info.basic", "user.info.profile", "video.publish"]), pkceVerified: true }); }
-  public revoke(): Promise<void> { this.revokeCalls += 1; return Promise.resolve(); }
+  public revoke(): Promise<void> { this.revokeCalls += 1; return this.#options.revokeFailure === true ? Promise.reject(new Error("revoke uncertain")) : Promise.resolve(); }
 }
 
 function instagram(store: InMemoryOAuthSecureStore, transport = new FakeInstagramTransport()) {

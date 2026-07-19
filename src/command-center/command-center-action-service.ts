@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { RepositoryConflictError } from "../errors/core-error.js";
 import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { LocalWorkflowCommandBoundary, LocalWorkflowCommandResponse } from "../runtime/local-workflow-command.js";
+import type { CommandCenterContentApprovalGate } from "./visual-approval-gate.js";
 
 const ACTION_TTL_MS = 5 * 60_000;
 const ID = /^[a-z0-9][a-z0-9@._-]{0,127}$/u;
@@ -27,6 +28,7 @@ export interface CommandCenterActionProposal {
     readonly qualityScore: number;
     readonly riskStatus: string;
     readonly version: number;
+    readonly visualApprovalBindingFingerprint?: string;
   };
 }
 
@@ -75,6 +77,7 @@ export class CommandCenterActionService {
   readonly #actorId: string;
   readonly #clock: CommandCenterActionClock;
   readonly #commands: LocalWorkflowCommandBoundary;
+  readonly #contentApprovalGate: CommandCenterContentApprovalGate;
   readonly #repositories: RepositoryTransactionRunner;
   readonly #workspaceId: string;
 
@@ -82,12 +85,14 @@ export class CommandCenterActionService {
     readonly actorId: string;
     readonly clock?: CommandCenterActionClock;
     readonly commands: LocalWorkflowCommandBoundary;
+    readonly contentApprovalGate?: CommandCenterContentApprovalGate;
     readonly repositories: RepositoryTransactionRunner;
     readonly workspaceId: string;
   }) {
     this.#actorId = input.actorId;
     this.#clock = input.clock ?? systemClock;
     this.#commands = input.commands;
+    this.#contentApprovalGate = input.contentApprovalGate ?? FAIL_CLOSED_CONTENT_APPROVAL_GATE;
     this.#repositories = input.repositories;
     this.#workspaceId = input.workspaceId;
   }
@@ -98,19 +103,25 @@ export class CommandCenterActionService {
   }): Promise<CommandCenterActionProposal> {
     if (!ID.test(input.productionId)) throw new RepositoryConflictError("Identificativo della produzione non valido");
     this.#clearExpired();
-    const record = await this.#repositories.transaction(async ({ contentProductions }) => {
+    const { control, record } = await this.#repositories.transaction(async ({ contentProductions, operationsControls }) => {
       const found = await contentProductions.getById(input.productionId);
       if (found?.workspaceId !== this.#workspaceId || found.actorId !== this.#actorId) {
         throw new RepositoryConflictError("La produzione richiesta non è disponibile per questo operatore");
       }
-      return found;
+      const productionControl = await operationsControls.getProductionControl(input.productionId);
+      if (productionControl !== undefined && (productionControl.workspaceId !== this.#workspaceId || productionControl.actorId !== this.#actorId)) throw new RepositoryConflictError("Il controllo produzione non è disponibile per questo operatore");
+      return { control: productionControl, record: found };
     });
+    if (control !== undefined && control.state !== "ACTIVE") throw new RepositoryConflictError("L'approvazione precedente è invalidata dal controllo produzione corrente");
     if (record.status !== "PENDING_FABIO_APPROVAL") {
       throw new RepositoryConflictError("Il pacchetto non è nello stato corretto per la revisione di Fabio");
     }
     if (input.action === "APPROVE_CONTENT" && record.evidencePack === undefined) {
       throw new RepositoryConflictError("L'approvazione dal Centro di Comando richiede un Evidence Pack immutabile");
     }
+    const visualBinding = input.action === "APPROVE_CONTENT"
+      ? await this.#contentApprovalGate.verify({ production: record, stage: "PROPOSE" })
+      : undefined;
     const packageFingerprint = fingerprint(record);
     const proposal: CommandCenterActionProposal = Object.freeze({
       action: input.action,
@@ -127,6 +138,7 @@ export class CommandCenterActionService {
         qualityScore: record.package.quality.readinessScore,
         riskStatus: record.package.risk.status,
         version: record.version,
+        ...(visualBinding === undefined ? {} : { visualApprovalBindingFingerprint: visualBinding.bindingFingerprint }),
       }),
     });
     this.#actions.set(proposal.actionId, proposal);
@@ -167,17 +179,33 @@ export class CommandCenterActionService {
     if (!sameToken(proposal.summary.packageFingerprint, input.packageFingerprint)) {
       throw new RepositoryConflictError("Il fingerprint indicato per la conferma non è più valido");
     }
-    this.#actions.delete(proposal.actionId);
-    const current = await this.#repositories.transaction(async ({ contentProductions }) => {
+    const { control, current } = await this.#repositories.transaction(async ({ contentProductions, operationsControls }) => {
       const record = await contentProductions.getById(proposal.summary.productionId);
       if (record?.workspaceId !== this.#workspaceId || record.actorId !== this.#actorId) {
         throw new RepositoryConflictError("Il pacchetto non è più disponibile per questo operatore");
       }
-      return record;
+      const productionControl = await operationsControls.getProductionControl(proposal.summary.productionId);
+      if (productionControl !== undefined && (productionControl.workspaceId !== this.#workspaceId || productionControl.actorId !== this.#actorId)) throw new RepositoryConflictError("Il controllo produzione non è più disponibile per questo operatore");
+      return { control: productionControl, current: record };
     });
+    if (control !== undefined && control.state !== "ACTIVE") throw new RepositoryConflictError("La conferma è stata invalidata da un controllo produzione successivo");
     if (current.status !== "PENDING_FABIO_APPROVAL" || current.version !== proposal.summary.version || fingerprint(current) !== proposal.summary.packageFingerprint) {
       throw new RepositoryConflictError("Il pacchetto è cambiato: fingerprint o versione non sono più validi");
     }
+    if (proposal.action === "APPROVE_CONTENT") {
+      let currentBinding;
+      try {
+        currentBinding = await this.#contentApprovalGate.verify({ production: current, stage: "CONFIRM" });
+      } catch (error) {
+        this.#actions.delete(proposal.actionId);
+        throw error;
+      }
+      if (proposal.summary.visualApprovalBindingFingerprint === undefined || !sameToken(proposal.summary.visualApprovalBindingFingerprint, currentBinding.bindingFingerprint)) {
+        this.#actions.delete(proposal.actionId);
+        throw new RepositoryConflictError("Il binding del Visual Gate è cambiato dopo la proposta: è richiesta una nuova review");
+      }
+    }
+    this.#actions.delete(proposal.actionId);
     const command = await this.#commands.execute({
       actorId: this.#actorId,
       commandId: `cc-review-${proposal.actionId}`,
@@ -248,3 +276,7 @@ function sameToken(expected: string, received: string): boolean {
 }
 
 const systemClock: CommandCenterActionClock = Object.freeze({ now: () => new Date() });
+
+const FAIL_CLOSED_CONTENT_APPROVAL_GATE: CommandCenterContentApprovalGate = Object.freeze({
+  verify: () => Promise.reject(new RepositoryConflictError("Visual Gate bloccato: VISUAL_APPROVAL_GATE_NOT_CONFIGURED")),
+});

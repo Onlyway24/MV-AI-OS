@@ -5,6 +5,7 @@ import type { MetodoVeloceContentProductionRecord } from "../content-production/
 import { RepositoryConflictError, RepositoryValidationError } from "../errors/core-error.js";
 import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
 import type { Clock } from "../ports/clock.js";
+import { controlFingerprint } from "../operations-control/operations-control-validator.js";
 import type { EvidencePack, EvidencePackItem, EvidencePackRequest, EvidenceRecord, EvidenceRecordRequest, FeedbackAnalysis, FeedbackMetricImportRequest, FeedbackMetricSnapshot, PublicationAuthorizationRequest, PublicationDryRunRequest, PublicationKillSwitch, PublicationKillSwitchRequest, PublicationPlan, PublicationReceiptRequest, SourceRegistrationRequest, SourceRegistryEntry } from "./operational-plane.js";
 import type { OperationalPlaneRepository } from "./operational-plane-repository.js";
 
@@ -103,22 +104,26 @@ export class OperationalPlaneService {
   }
 
   public async createPublicationDryRun(input: PublicationDryRunRequest): Promise<PublicationPlan> {
-    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
       if (await operationalPlanes.getPublicationById(input.publicationId) !== undefined) throw new RepositoryConflictError("Publication plan already exists");
       const content = await this.#ownedContent(contentProductions, input.productionId);
       if (content.status !== "SCHEDULED" || content.version !== input.contentVersion || content.schedule?.scheduledFor !== input.scheduledFor) throw new RepositoryConflictError("Publication dry-run must bind the exact scheduled content version");
+      if (!hasVisualApprovalReceipt(content)) throw new RepositoryConflictError("Publication dry-run requires a Visual Gate approval receipt");
+      const productionControl = await operationsControls.getProductionControl(content.productionId);
+      if (productionControl !== undefined && productionControl.state !== "ACTIVE") throw new RepositoryConflictError("Publication dry-run is blocked by production control state");
       const now = this.#now();
-      const plan: PublicationPlan = { accountRef: input.accountRef, actorId: this.dependencies.actorId, contentPackageFingerprint: fingerprint(content.package), contentVersion: content.version, createdAt: now, dryRun: true, idempotencyKey: input.idempotencyKey, platform: input.platform, productionId: content.productionId, publicationId: input.publicationId, scheduledFor: input.scheduledFor, status: "DRY_RUN", updatedAt: now, version: 0, workspaceId: this.dependencies.workspaceId };
+      const plan: PublicationPlan = { accountRef: input.accountRef, actorId: this.dependencies.actorId, contentPackageFingerprint: fingerprint(content.package), contentVersion: content.version, createdAt: now, dryRun: true, idempotencyKey: input.idempotencyKey, platform: input.platform, productionControlBinding: { fingerprint: controlFingerprint(productionControl ?? content), kind: productionControl === undefined ? "CONTENT" : "CONTROL", version: productionControl?.version ?? content.version }, productionId: content.productionId, publicationId: input.publicationId, scheduledFor: input.scheduledFor, status: "DRY_RUN", updatedAt: now, version: 0, workspaceId: this.dependencies.workspaceId };
       await operationalPlanes.insertPublication(plan); return plan;
     });
   }
 
   public async authorizePublication(input: PublicationAuthorizationRequest): Promise<PublicationPlan> {
-    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
       const control = await operationalPlanes.getPublicationKillSwitch(this.dependencies.workspaceId);
       if (control?.enabled === true) throw new RepositoryConflictError("Global publication kill switch is enabled");
       const current = await this.#ownedPublication(operationalPlanes, input.publicationId);
       if (current.status !== "DRY_RUN" || current.version !== input.expectedVersion) throw new RepositoryConflictError("Publication plan is not eligible for final authorization");
+      await this.#assertCurrentPublicationBinding(current, contentProductions, operationsControls);
       const now = this.#now();
       const next: PublicationPlan = { ...current, authorization: { authorizedAt: now, authorizedBy: this.dependencies.actorId }, status: "AUTHORIZED", updatedAt: now, version: current.version + 1 };
       await operationalPlanes.updatePublication(next, { version: current.version }); return next;
@@ -126,9 +131,10 @@ export class OperationalPlaneService {
   }
 
   public async recordPublicationReceipt(input: PublicationReceiptRequest): Promise<PublicationPlan> {
-    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
       const current = await this.#ownedPublication(operationalPlanes, input.publicationId);
       if (current.status !== "AUTHORIZED" || current.version !== input.expectedVersion) throw new RepositoryConflictError("Publication plan is not eligible for a receipt");
+      await this.#assertCurrentPublicationBinding(current, contentProductions, operationsControls);
       const now = this.#now();
       const next: PublicationPlan = { ...current, receipt: { outcome: input.outcome, ...(input.platformContentRef === undefined ? {} : { platformContentRef: input.platformContentRef }), receiptFingerprint: input.receiptFingerprint, recordedAt: now }, status: input.outcome, updatedAt: now, version: current.version + 1 };
       await operationalPlanes.updatePublication(next, { version: current.version }); return next;
@@ -169,6 +175,19 @@ export class OperationalPlaneService {
   async #ownedSource(repository: OperationalPlaneRepository, sourceId: string): Promise<SourceRegistryEntry> { const source = await repository.getSourceById(sourceId); if (source?.workspaceId !== this.dependencies.workspaceId || source.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Evidence source is unavailable"); return source; }
   async #ownedEvidencePack(repository: OperationalPlaneRepository, packId: string): Promise<EvidencePack> { const pack = await repository.getEvidencePackById(packId); if (pack?.workspaceId !== this.dependencies.workspaceId || pack.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Evidence Pack is unavailable"); return pack; }
   async #ownedPublication(repository: OperationalPlaneRepository, publicationId: string): Promise<PublicationPlan> { const publication = await repository.getPublicationById(publicationId); if (publication?.workspaceId !== this.dependencies.workspaceId || publication.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Publication plan is unavailable"); return publication; }
+  async #assertCurrentPublicationBinding(plan: PublicationPlan, contentProductions: { getById(id: string): Promise<MetodoVeloceContentProductionRecord | undefined> }, operationsControls: { getProductionControl(productionId: string): Promise<import("../operations-control/operations-control.js").ProductionControlRecord | undefined> }): Promise<void> {
+    const binding = plan.productionControlBinding;
+    if (binding === undefined) throw new RepositoryConflictError("Publication plan predates production-control binding and must be recreated");
+    const content = await this.#ownedContent(contentProductions, plan.productionId);
+    if (!hasVisualApprovalReceipt(content)) throw new RepositoryConflictError("Publication authorization requires a Visual Gate approval receipt");
+    if (content.status !== "SCHEDULED" || content.version !== plan.contentVersion || content.schedule?.scheduledFor !== plan.scheduledFor || fingerprint(content.package) !== plan.contentPackageFingerprint) throw new RepositoryConflictError("Publication plan content binding is stale");
+    const control = await operationsControls.getProductionControl(plan.productionId);
+    if (control === undefined) {
+      if (binding.kind !== "CONTENT" || binding.version !== content.version || binding.fingerprint !== controlFingerprint(content)) throw new RepositoryConflictError("Publication plan production binding is stale");
+      return;
+    }
+    if (control.state !== "ACTIVE" || binding.kind !== "CONTROL" || binding.version !== control.version || binding.fingerprint !== controlFingerprint(control)) throw new RepositoryConflictError("Publication plan is blocked by changed production control state");
+  }
   async #ownedContent(repository: { getById(id: string): Promise<MetodoVeloceContentProductionRecord | undefined> }, productionId: string): Promise<MetodoVeloceContentProductionRecord> { const content = await repository.getById(productionId); if (content?.workspaceId !== this.dependencies.workspaceId || content.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Content production is unavailable"); return content; }
   #assertEvidencePolicy(evidence: EvidenceRecord, source: SourceRegistryEntry): void {
     if (source.status !== "AUTHORIZED" || source.category === "FORBIDDEN") throw new RepositoryConflictError("Evidence source is not authorized");
@@ -207,6 +226,10 @@ export class OperationalPlaneService {
     await this.#assertCorroboration(evidence, source, repository);
   }
   #now(): string { const value = this.dependencies.clock.now(); if (Number.isNaN(value.getTime())) throw new RepositoryValidationError("Operational plane clock is invalid"); return value.toISOString(); }
+}
+
+function hasVisualApprovalReceipt(content: MetodoVeloceContentProductionRecord): boolean {
+  return content.review?.decision === "APPROVED" && typeof content.review.visualApprovalBindingFingerprint === "string" && /^[a-f0-9]{64}$/u.test(content.review.visualApprovalBindingFingerprint);
 }
 
 function fingerprint(value: unknown): string { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }

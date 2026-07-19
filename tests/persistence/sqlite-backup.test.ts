@@ -3,6 +3,7 @@ import {
   mkdir,
   mkdtemp,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -104,6 +105,7 @@ describe("Controlled SQLite backup and restore", () => {
         sourcePath,
       });
       await expect(access(backupPath)).resolves.toBeUndefined();
+      expect((await stat(backupPath)).mode & 0o777).toBe(0o600);
       const state = await readDurableState(
         backupPath,
         request.requestId,
@@ -147,6 +149,7 @@ describe("Controlled SQLite backup and restore", () => {
           requestResponse: response,
           taskState: "completed",
         });
+      expect((await stat(restoredPath)).mode & 0o777).toBe(0o600);
 
       const executor = new CountingExecutor(
         new ContentAgent(new FixedClock(), new ContentOutputValidator()),

@@ -9,6 +9,8 @@ export interface MetodoVeloceContentProductionReview {
   readonly note: string;
   readonly reviewedAt: string;
   readonly reviewedBy: string;
+  /** Present on every new APPROVED review; optional only for legacy records. */
+  readonly visualApprovalBindingFingerprint?: string;
 }
 
 export interface MetodoVeloceContentProductionSchedule {

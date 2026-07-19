@@ -10,11 +10,105 @@ import { createLocalRuntime } from "../../src/runtime/create-local-runtime.js";
 import { SqliteRepositoryTransactionRunner } from "../../src/persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { CommandCenterQueryService } from "../../src/command-center/command-center-query-service.js";
 import { CommandCenterActionService } from "../../src/command-center/command-center-action-service.js";
+import { COMMAND_CENTER_CLIENT_JS } from "../../src/command-center/command-center-assets.js";
 import { PrivateCommandCenterServer } from "../../src/command-center/command-center-server.js";
+import { OperationsControlService } from "../../src/operations-control/operations-control-service.js";
 import { createLocalWorkflowCommandBoundary } from "../../src/runtime/create-local-workflow-command-boundary.js";
 import { FixedClock } from "../support/fixtures.js";
 
 describe("Private Command Center", () => {
+  it("marks the Decision Inbox as a lower bound when any canonical query reaches its cap", async () => {
+    await withDatabase(async (path) => {
+      const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+      const clock = new FixedClock("2026-07-14T12:00:00.000Z");
+      await seedReadyRuntimeLeases(repositories);
+      const boundary = createLocalWorkflowCommandBoundary({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
+      for (let index = 1; index <= 26; index += 1) {
+        const productionId = `mv-content-coverage-${String(index).padStart(3, "0")}`;
+        await boundary.execute({ actorId: "actor-local", commandId: `coverage-${String(index).padStart(3, "0")}`, contractVersion: "1", input: { brief: brief(productionId) }, operation: "PRODUCE_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
+      }
+      const snapshot = await new CommandCenterQueryService({ clock, repositories, workspaceId: "workspace-local" }).snapshot();
+      expect(snapshot.productions).toHaveLength(25);
+      expect(snapshot.overview).toMatchObject({
+        decisionInboxCoverage: "LIMIT_REACHED",
+        decisionsRequired: 25,
+        operationalWindow: {
+          agentCompanyWorkdays: { limit: 25, observed: 0, status: "COMPLETE" },
+          businessMissions: { limit: 25, observed: 0, status: "COMPLETE" },
+          productions: { limit: 25, observed: 25, status: "LIMIT_REACHED" },
+        },
+      });
+      expect(snapshot.overview.decisionInbox).toHaveLength(25);
+      expect(snapshot.overview.metrics).toContainEqual(expect.objectContaining({ id: "approval", value: "≥ 25" }));
+      expect(snapshot.overview.metrics.find(({ id }) => id === "quality")?.context).toContain("copertura parziale");
+      expect(snapshot.socialIntelligence.coverage).toBe("LIMIT_REACHED");
+      expect(snapshot.overview.system).toBe("ATTENTION_REQUIRED");
+      expect(snapshot.runtime.status).toBe("ATTENTION_REQUIRED");
+      await repositories.close();
+    });
+  });
+
+  it("fails readiness closed for a blocked production", async () => {
+    await withDatabase(async (path) => {
+      const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+      const clock = new FixedClock("2026-07-14T12:00:00.000Z");
+      await seedReadyRuntimeLeases(repositories);
+      const queryService = new CommandCenterQueryService({ clock, repositories, workspaceId: "workspace-local" });
+      await expect(queryService.snapshot()).resolves.toMatchObject({ overview: { system: "READY" }, runtime: { status: "READY" } });
+
+      const boundary = createLocalWorkflowCommandBoundary({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
+      await boundary.execute({
+        actorId: "actor-local",
+        commandId: "blocked-production-readiness",
+        contractVersion: "1",
+        input: { brief: { ...brief("mv-content-blocked-readiness"), offer: "guadagno garantito" } },
+        operation: "PRODUCE_METODO_VELOCE_CONTENT",
+        workspaceId: "workspace-local",
+      });
+
+      await expect(queryService.snapshot()).resolves.toMatchObject({
+        overview: { dailyBrief: { decision: "È richiesta la correzione del contenuto" }, system: "ATTENTION_REQUIRED" },
+        productions: [expect.objectContaining({ status: "BLOCKED" })],
+        runtime: { status: "ATTENTION_REQUIRED" },
+      });
+      await repositories.close();
+    });
+  });
+
+  it("fails readiness closed for an open operations incident", async () => {
+    await withDatabase(async (path) => {
+      const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+      const clock = new FixedClock("2026-07-14T12:00:00.000Z");
+      await seedReadyRuntimeLeases(repositories);
+      const queryService = new CommandCenterQueryService({ clock, repositories, workspaceId: "workspace-local" });
+      await expect(queryService.snapshot()).resolves.toMatchObject({ overview: { system: "READY" }, runtime: { status: "READY" } });
+
+      await new OperationsControlService({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" }).openIncident({
+        incidentId: "incident-readiness-open",
+        severity: "HIGH",
+        summaryCode: "OPERATOR_REVIEW_REQUIRED",
+      });
+
+      await expect(queryService.snapshot()).resolves.toMatchObject({
+        controls: { incidents: [expect.objectContaining({ status: "OPEN" })] },
+        overview: { system: "ATTENTION_REQUIRED" },
+        runtime: { status: "ATTENTION_REQUIRED" },
+      });
+      await repositories.close();
+    });
+  });
+
+  it("uses the non-mutating local social checkpoint and coverage-aware empty states", () => {
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('const connectorCheckpoint = "http://127.0.0.1:43123/"');
+    expect(COMMAND_CENTER_CLIENT_JS).not.toContain('"http://127.0.0.1:43123/oauth/" + platform + "/start"');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("Apri checkpoint locale");
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("questo link non ne esegue alcuna");
+    expect(COMMAND_CENTER_CLIENT_JS).not.toContain('"Disconnetti"');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("Nessuna decisione nella finestra osservata; la copertura è parziale");
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("Nessun Social Publishing Pack nella finestra osservata; la copertura è parziale");
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("Readiness bloccata: verificare blocker, incidenti, copertura e runtime");
+  });
+
   it("renders durable local state through a token-gated loopback API without exposing a mutation route", async () => {
     await withDatabase(async (path) => {
       const runtime = await createLocalRuntime(config(path), {
@@ -46,6 +140,15 @@ describe("Private Command Center", () => {
       expect(snapshot.overview.metrics).toContainEqual(
         expect.objectContaining({ id: "approval", value: 1 }),
       );
+      expect(snapshot.overview).toMatchObject({
+        decisionInboxCoverage: "COMPLETE",
+        decisionInbox: [expect.objectContaining({
+          decisionKey: "CONTENT_PRODUCTION:mv-content-command-center-001",
+          entityId: "mv-content-command-center-001",
+          entityType: "CONTENT_PRODUCTION",
+        })],
+        decisionsRequired: 1,
+      });
       expect(snapshot.productions).toHaveLength(1);
       expect(snapshot.business).toEqual([]);
       expect(snapshot.agentCompany).toEqual([]);
@@ -58,8 +161,28 @@ describe("Private Command Center", () => {
       ]));
       expect(snapshot.runtime).toMatchObject({
         continuousWorker: "NOT_REGISTERED",
+        jobs: [],
         killSwitch: "LOCKED",
+        usage: { attempts: 0, costCents: 0, externalEffectsExecuted: false, providerCalls: 0, toolCalls: 0 },
       });
+      expect(snapshot.dailyOperatingBriefs).toEqual([]);
+      expect(snapshot.founderWorkdays).toEqual([]);
+      expect(snapshot.controls).toMatchObject({ incidents: [], productionControls: [], receipts: [] });
+      expect(snapshot.controls.targets).toHaveLength(1);
+      expect(snapshot.controls.targets[0]).toMatchObject({
+        actions: ["REQUEST_PRODUCTION_REVISION", "PAUSE_PRODUCTION", "CANCEL_PRODUCTION"],
+        entityId: "mv-content-command-center-001",
+        kind: "PRODUCTION",
+        state: "ACTIVE",
+        version: 0,
+      });
+      expect(snapshot.controls.targets[0]?.fingerprint).toMatch(/^[a-f0-9]{64}$/u);
+      const productionEvents = await repositories.transaction(({ operationalEvents }) => operationalEvents.listAfter("workspace-local", 0, 10));
+      expect(productionEvents.map(({ eventType }) => eventType)).toEqual([
+        "PRODUCTION_STATUS_CHANGED",
+        "GATE_DECIDED",
+        "APPROVAL_REQUESTED",
+      ]);
 
       const server = new PrivateCommandCenterServer({
         accessToken: "1".repeat(64),
@@ -114,6 +237,7 @@ describe("Private Command Center", () => {
       expect(pageHtml).toContain("id=\"sidebar-toggle\"");
       expect(pageHtml).toContain("id=\"mobile-menu-toggle\"");
       expect(pageHtml).toContain("id=\"package-inspector\"");
+      expect(pageHtml).toContain("id=\"decision-inbox-list\"");
       expect(pageHtml).toContain("id=\"action-confirmation-timer\"");
       expect(pageHtml).not.toContain(["Only", "Way"].join(" "));
       expect(pageHtml).not.toContain("1111111111111111111111111111111111111111111111111111111111111111");
@@ -126,6 +250,7 @@ describe("Private Command Center", () => {
       expect(themeText).toContain("cursor:auto");
       expect(themeText).toContain("height:100dvh");
       expect(themeText).toContain("transform:none!important");
+      expect(themeText).toContain("scroll-behavior:auto!important");
       expect(themeText).toContain("@media (max-width:820px)");
       expect(themeText).toContain(".cc-approval-review-grid,.cc-visual-review-canvases{grid-template-columns:1fr}");
 
@@ -142,16 +267,32 @@ describe("Private Command Center", () => {
       expect(appText).not.toContain("agent.telemetry");
       expect(appText).toContain("Conferma scaduta: nessuna modifica eseguita.");
       expect(appText).toContain("REQUEST_BUSINESS_REVISION");
+      expect(appText).toContain("/api/control-actions/propose");
+      expect(appText).toContain("/api/control-actions/confirm");
+      expect(appText).toContain("FABIO_REVISION_REQUEST");
+      expect(appText).toContain("Riprova con job successore");
+      expect(appText).toContain("Riconosci incidente");
+      expect(appText).toContain("boundedAgentValue");
+      expect(appText).toContain("mobileReturnFocus");
+      expect(appText).toContain("returnFocus.focus()");
+      expect(appText).toContain('event.key === "Tab"');
+      expect(appText).toContain("confirmationInertedNodes");
+      expect(appText).toContain('if (!actionConfirmation.hidden) return;');
+      expect(appText).toContain('event.key !== "Enter" && event.key !== " "');
+      expect(appText).toContain("for (const button of [sidebarToggle, mobileMenuToggle])");
+      expect(appText).toContain('behavior: prefersReducedMotion() ? "auto" : "smooth"');
+      expect(appText).toContain('reducedMotionQuery.addEventListener("change", reset)');
+      expect(appText).toContain('snapshot.runtime.counts.running > 0 ? "active" : "idle"');
+      expect(appText).not.toContain("snapshot.runtime.counts.queued > 0 ? \"active\"");
       expect(appText).toContain("VISUAL GATE BLOCCATO");
       expect(appText).toContain("Approvazione bloccata: logo originale mancante");
       expect(appText).toContain("/api/brand-media-factory");
       expect(appText).toContain("Brand-Locked Media Factory");
       expect(appText).toContain("Conformità Responses");
       expect(appText).toContain("nessun body o segreto esposto");
-      expect(appText).toContain("Connetti");
-      expect(appText).toContain("Riconnetti");
-      expect(appText).toContain("Verifica stato");
-      expect(appText).toContain("Disconnetti");
+      expect(appText).toContain("Apri checkpoint locale");
+      expect(appText).toContain("questo link non ne esegue alcuna");
+      expect(appText).not.toContain('"Disconnetti"');
       expect(appText).not.toContain(">Pubblica<");
 
       const insightsTemplate = await fetch(`${origin}/downloads/metodo-veloce-insights-template.csv`, { headers: { Cookie: cookie ?? "" } });
@@ -289,7 +430,7 @@ describe("Private Command Center", () => {
   });
 });
 
-function brief() {
+function brief(productionId = "mv-content-command-center-001") {
   return {
     audience: "Founder che vogliono validare un'offerta prima di investire budget.",
     callToAction: "Salva il post e scegli un test piccolo per questa settimana.",
@@ -303,7 +444,7 @@ function brief() {
     missionReference: "mission-command-center-1",
     objective: "educate",
     offer: "un percorso per validare offerte digitali",
-    productionId: "mv-content-command-center-001",
+    productionId,
     topic: "come validare un'offerta prima di promuoverla",
   } as const;
 }
@@ -317,6 +458,33 @@ function config(path: string): LocalRuntimeConfig {
     sqlite: { path, timeoutMs: 1_000 },
     workspaceId: "workspace-local",
   };
+}
+
+async function seedReadyRuntimeLeases(repositories: SqliteRepositoryTransactionRunner): Promise<void> {
+  await repositories.transaction(async ({ operationsRuntime }) => {
+    await operationsRuntime.insertProcessLease({
+      contractVersion: "1",
+      expiresAt: "2026-07-14T12:05:00.000Z",
+      fencingToken: 1,
+      heartbeatAt: "2026-07-14T11:59:00.000Z",
+      instanceId: "scheduler-instance",
+      leaseKey: "scheduler",
+      role: "SCHEDULER",
+      version: 0,
+      workspaceId: "workspace-local",
+    });
+    await operationsRuntime.insertProcessLease({
+      contractVersion: "1",
+      expiresAt: "2026-07-14T12:05:00.000Z",
+      fencingToken: 1,
+      heartbeatAt: "2026-07-14T11:59:00.000Z",
+      instanceId: "worker-instance",
+      leaseKey: "worker-1",
+      role: "WORKER",
+      version: 0,
+      workspaceId: "workspace-local",
+    });
+  });
 }
 
 async function withDatabase(test: (path: string) => Promise<void>): Promise<void> {

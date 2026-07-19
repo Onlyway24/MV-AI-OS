@@ -103,6 +103,7 @@ export async function runLocalRuntimeCli(
     exitCode = LOCAL_CLI_EXIT_CODE.executionFailure;
     if (isLocalWorkflowCommand(request)) {
       if (runtime.executeWorkflowCommand === undefined) throw new CliBoundaryError("cli_workflow_commands_unavailable", "The local runtime does not support Workflow commands", "workflow_command", "internal");
+      if (request.operation === "REVIEW_METODO_VELOCE_CONTENT") throw new CliBoundaryError("cli_visual_gate_required", "Content review is available only through a Visual-Gate-bound approval surface", "workflow_command_visual_gate", "authorization");
       output = await runtime.executeWorkflowCommand(request);
     } else output = await runtime.execute(request);
     exitCode = LOCAL_CLI_EXIT_CODE.success;

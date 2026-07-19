@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   constants as fileConstants,
   copyFile,
+  chmod,
   lstat,
   rename,
   rm,
@@ -292,7 +293,9 @@ async function installTemporaryFile(
   temporaryPath: string,
   destinationPath: string,
 ): Promise<void> {
+  await chmod(temporaryPath, 0o600);
   await rename(temporaryPath, destinationPath);
+  await chmod(destinationPath, 0o600);
 }
 
 async function removeTemporaryFile(path: string): Promise<void> {

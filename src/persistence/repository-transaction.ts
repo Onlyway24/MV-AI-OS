@@ -9,6 +9,11 @@ import type { OperationalPlaneRepository } from "../operational-planes/operation
 import type { BusinessMissionRepository } from "../business/business-mission-repository.js";
 import type { AgentCompanyWorkdayRepository } from "../agent-company/agent-company-workday-repository.js";
 import type { AuthorizedResearchRepository } from "../research/authorized-research-repository.js";
+import type { OperationalEventRepository } from "../operations-runtime/operational-event-repository.js";
+import type { OperationsRuntimeRepository } from "../operations-runtime/operations-runtime-repository.js";
+import type { OperationsControlRepository } from "../operations-control/operations-control-repository.js";
+import type { FounderWorkdayRepository } from "../agent-company/founder-workday-repository.js";
+import type { DailyOperatingBriefRepository } from "../daily-brief/daily-operating-brief-repository.js";
 
 export interface RepositoryTransaction {
   readonly agentCompanyWorkdays: AgentCompanyWorkdayRepository;
@@ -16,6 +21,11 @@ export interface RepositoryTransaction {
   readonly audits: AuditRepository;
   readonly businessMissions: BusinessMissionRepository;
   readonly contentProductions: MetodoVeloceContentProductionRepository;
+  readonly dailyOperatingBriefs: DailyOperatingBriefRepository;
+  readonly founderWorkdays: FounderWorkdayRepository;
+  readonly operationalEvents: OperationalEventRepository;
+  readonly operationsControls: OperationsControlRepository;
+  readonly operationsRuntime: OperationsRuntimeRepository;
   readonly productionRuntimeJobs: ProductionRuntimeJobRepository;
   readonly operationalPlanes: OperationalPlaneRepository;
   readonly requests: RequestRepository;

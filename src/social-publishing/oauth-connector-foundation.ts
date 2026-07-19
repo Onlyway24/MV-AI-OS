@@ -54,6 +54,7 @@ export interface OAuthSecureStore {
     readonly state: string;
   }): Promise<OAuthPendingSession>;
   deleteCredential(platform: OfficialSocialPlatform): Promise<void>;
+  deletePending(platform: OfficialSocialPlatform): Promise<void>;
   loadCredential(platform: OfficialSocialPlatform): Promise<OAuthCredentialRecord | undefined>;
   loadPending(platform: OfficialSocialPlatform): Promise<OAuthPendingSession | undefined>;
   saveCredential(platform: OfficialSocialPlatform, credential: OAuthCredentialRecord): Promise<void>;
@@ -111,6 +112,14 @@ export class InMemoryOAuthSecureStore implements OAuthSecureStore {
     });
     return Promise.resolve();
   }
+  public deletePending(platform: OfficialSocialPlatform): Promise<void> {
+    const stored = this.#states.get(platform) ?? emptyState();
+    this.#states.set(platform, {
+      ...(stored.credential === undefined ? {} : { credential: stored.credential }),
+      usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints,
+    });
+    return Promise.resolve();
+  }
   public loadCredential(platform: OfficialSocialPlatform): Promise<OAuthCredentialRecord | undefined> {
     return Promise.resolve(this.#states.get(platform)?.credential);
   }
@@ -148,42 +157,58 @@ export class EncryptedFileOAuthSecureStore implements OAuthSecureStore {
     readonly platform: OfficialSocialPlatform;
     readonly state: string;
   }): Promise<OAuthPendingSession> {
-    const all = await this.#loadAll();
-    const stored = all[input.platform] ?? emptyState();
-    const pending = stored.pending;
-    if (pending === undefined) throw new OAuthSecurityError("CALLBACK_REPLAY");
-    if (!safeEqual(pending.state, input.state)) throw new OAuthSecurityError("OAUTH_STATE_MISMATCH");
-    if (Date.parse(pending.expiresAt) <= input.now.getTime()) throw new OAuthSecurityError("CALLBACK_EXPIRED");
-    const codeFingerprint = fingerprint(input.authorizationCode);
-    if (stored.usedAuthorizationCodeFingerprints.includes(codeFingerprint)) throw new OAuthSecurityError("AUTHORIZATION_CODE_REPLAY");
-    all[input.platform] = {
-      ...(stored.credential === undefined ? {} : { credential: stored.credential }),
-      usedAuthorizationCodeFingerprints: [...stored.usedAuthorizationCodeFingerprints, codeFingerprint],
-    };
-    await this.#saveAll(all);
-    return pending;
+    return withOAuthStoreMutationLock(this.#path, async () => {
+      const all = await this.#loadAll();
+      const stored = all[input.platform] ?? emptyState();
+      const pending = stored.pending;
+      if (pending === undefined) throw new OAuthSecurityError("CALLBACK_REPLAY");
+      if (!safeEqual(pending.state, input.state)) throw new OAuthSecurityError("OAUTH_STATE_MISMATCH");
+      if (Date.parse(pending.expiresAt) <= input.now.getTime()) throw new OAuthSecurityError("CALLBACK_EXPIRED");
+      const codeFingerprint = fingerprint(input.authorizationCode);
+      if (stored.usedAuthorizationCodeFingerprints.includes(codeFingerprint)) throw new OAuthSecurityError("AUTHORIZATION_CODE_REPLAY");
+      all[input.platform] = {
+        ...(stored.credential === undefined ? {} : { credential: stored.credential }),
+        usedAuthorizationCodeFingerprints: [...stored.usedAuthorizationCodeFingerprints, codeFingerprint],
+      };
+      await this.#saveAll(all);
+      return pending;
+    });
   }
 
   public async deleteCredential(platform: OfficialSocialPlatform): Promise<void> {
-    const all = await this.#loadAll();
-    const stored = all[platform] ?? emptyState();
-    all[platform] = { ...(stored.pending === undefined ? {} : { pending: stored.pending }), usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints };
-    await this.#saveAll(all);
+    await withOAuthStoreMutationLock(this.#path, async () => {
+      const all = await this.#loadAll();
+      const stored = all[platform] ?? emptyState();
+      all[platform] = { ...(stored.pending === undefined ? {} : { pending: stored.pending }), usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints };
+      await this.#saveAll(all);
+    });
+  }
+  public async deletePending(platform: OfficialSocialPlatform): Promise<void> {
+    await withOAuthStoreMutationLock(this.#path, async () => {
+      const all = await this.#loadAll();
+      const stored = all[platform] ?? emptyState();
+      all[platform] = { ...(stored.credential === undefined ? {} : { credential: stored.credential }), usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints };
+      await this.#saveAll(all);
+    });
   }
   public async loadCredential(platform: OfficialSocialPlatform): Promise<OAuthCredentialRecord | undefined> { return (await this.#loadAll())[platform]?.credential; }
   public async loadPending(platform: OfficialSocialPlatform): Promise<OAuthPendingSession | undefined> { return (await this.#loadAll())[platform]?.pending; }
   public async saveCredential(platform: OfficialSocialPlatform, credential: OAuthCredentialRecord): Promise<void> {
-    const all = await this.#loadAll();
-    const stored = all[platform] ?? emptyState();
-    all[platform] = { credential, ...(stored.pending === undefined ? {} : { pending: stored.pending }), usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints };
-    await this.#saveAll(all);
+    await withOAuthStoreMutationLock(this.#path, async () => {
+      const all = await this.#loadAll();
+      const stored = all[platform] ?? emptyState();
+      all[platform] = { credential, ...(stored.pending === undefined ? {} : { pending: stored.pending }), usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints };
+      await this.#saveAll(all);
+    });
   }
   public async savePending(platform: OfficialSocialPlatform, pending: OAuthPendingSession): Promise<void> {
-    const all = await this.#loadAll();
-    const stored = all[platform] ?? emptyState();
-    if (stored.pending !== undefined) throw new OAuthSecurityError("SECURE_STORE_INVALID");
-    all[platform] = { ...(stored.credential === undefined ? {} : { credential: stored.credential }), pending, usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints };
-    await this.#saveAll(all);
+    await withOAuthStoreMutationLock(this.#path, async () => {
+      const all = await this.#loadAll();
+      const stored = all[platform] ?? emptyState();
+      if (stored.pending !== undefined) throw new OAuthSecurityError("SECURE_STORE_INVALID");
+      all[platform] = { ...(stored.credential === undefined ? {} : { credential: stored.credential }), pending, usedAuthorizationCodeFingerprints: stored.usedAuthorizationCodeFingerprints };
+      await this.#saveAll(all);
+    });
   }
 
   async #loadAll(): Promise<Partial<Record<OfficialSocialPlatform, StoredPlatformState>>> {
@@ -218,13 +243,35 @@ export class EncryptedFileOAuthSecureStore implements OAuthSecureStore {
     const envelope = JSON.stringify({ ciphertext: ciphertext.toString("base64"), iv: iv.toString("base64"), tag: cipher.getAuthTag().toString("base64"), version: 1 });
     await mkdir(dirname(this.#path), { mode: 0o700, recursive: true });
     await chmod(dirname(this.#path), 0o700);
-    const temporary = `${this.#path}.${process.pid.toString()}.tmp`;
-    const handle = await open(temporary, "w", 0o600);
-    try { await handle.writeFile(envelope, "utf8"); await handle.sync(); }
-    finally { await handle.close(); }
-    await chmod(temporary, 0o600);
-    await rename(temporary, this.#path);
-    await chmod(this.#path, 0o600);
+    const temporary = `${this.#path}.${process.pid.toString()}.${randomBytes(12).toString("hex")}.tmp`;
+    try {
+      const handle = await open(temporary, "wx", 0o600);
+      try { await handle.writeFile(envelope, "utf8"); await handle.sync(); }
+      finally { await handle.close(); }
+      await chmod(temporary, 0o600);
+      await rename(temporary, this.#path);
+      await chmod(this.#path, 0o600);
+    } catch (error) {
+      try { await unlink(temporary); }
+      catch (cleanupError) { if (!record(cleanupError) || cleanupError.code !== "ENOENT") throw cleanupError; }
+      throw error;
+    }
+  }
+}
+
+const oauthStoreMutationTails = new Map<string, Promise<void>>();
+
+async function withOAuthStoreMutationLock<T>(path: string, operation: () => Promise<T>): Promise<T> {
+  const predecessor = oauthStoreMutationTails.get(path) ?? Promise.resolve();
+  let release = (): void => undefined;
+  const gate = new Promise<void>((resolveGate) => { release = resolveGate; });
+  const tail = predecessor.catch(() => undefined).then(() => gate);
+  oauthStoreMutationTails.set(path, tail);
+  await predecessor.catch(() => undefined);
+  try { return await operation(); }
+  finally {
+    release();
+    if (oauthStoreMutationTails.get(path) === tail) oauthStoreMutationTails.delete(path);
   }
 }
 

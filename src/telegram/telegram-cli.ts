@@ -13,8 +13,17 @@ async function main(): Promise<void> {
   if (action === "doctor" && path !== undefined) { await doctor(path, arguments_); return; }
   if (action === "release-check" && path !== undefined && arguments_.length === 1 && arguments_[0] === "--offline") { await releaseCheck(path); return; }
   if (action === "export-mission" && path !== undefined) { await exportMission(path, arguments_); return; }
+  if (action === "--config" && path !== undefined) {
+    if (arguments_.length > 1 || (arguments_[0] !== undefined && arguments_[0] !== "--diagnostics")) throw new Error("Usage: mv-ai-os-telegram --config <local-config.json> [--diagnostics]");
+    await runDaemon(path);
+    return;
+  }
   if (action === undefined || arguments_.length > 0 || (path !== undefined && path !== "--diagnostics")) throw new Error("Usage: mv-ai-os-telegram <local-config.json> [--diagnostics]");
-  const console_ = await createTelegramOperatorConsole(await readTelegramApplicationConfig(action));
+  await runDaemon(action);
+}
+
+async function runDaemon(configPath: string): Promise<void> {
+  const console_ = await createTelegramOperatorConsole(await readTelegramApplicationConfig(configPath));
   const lifecycle = new TelegramOperatorLifecycle(console_);
   const stop = (): void => { lifecycle.requestStop(); };
   process.once("SIGINT", stop); process.once("SIGTERM", stop);

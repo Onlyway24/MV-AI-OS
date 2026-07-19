@@ -33,9 +33,9 @@ export const COMMAND_CENTER_HTML = `
       <p>GOVERNANCE</p>
       <a href="#governance" data-label="Regole di sicurezza"><span class="cc-nav-icon" aria-hidden="true">⌾</span><span class="cc-nav-label">Regole di sicurezza</span></a>
     </nav>
-    <div class="cc-sidebar-foot">
+    <div class="cc-sidebar-foot" id="live-event-state" data-live-state="connecting">
       <span class="cc-live-dot" aria-hidden="true"></span>
-      <span class="cc-sidebar-foot-label">API privata locale</span>
+      <span class="cc-sidebar-foot-label" id="live-event-status" aria-live="polite">Eventi live · connessione</span>
     </div>
   </aside>
 
@@ -117,6 +117,14 @@ export const COMMAND_CENTER_HTML = `
           <p id="brief-priority">Nessuna raccomandazione è generata finché lo stato locale non è disponibile.</p>
         </article>
       </div>
+      <section class="cc-decision-inbox" aria-labelledby="decision-inbox-heading">
+        <div class="cc-daily-heading"><div><p class="cc-panel-label">DECISION INBOX</p><h3 id="decision-inbox-heading">Una voce per ogni decisione corrente</h3></div><span id="decision-inbox-meta">In caricamento</span></div>
+        <div id="decision-inbox-list" class="cc-decision-inbox-list" aria-live="polite"></div>
+      </section>
+      <section class="cc-daily-console" aria-labelledby="daily-operating-heading">
+        <div class="cc-daily-heading"><div><p class="cc-panel-label">DAILY OPERATING BRIEF</p><h3 id="daily-operating-heading">Stato operativo persistito</h3></div><span id="daily-operating-meta">In attesa del primo report</span></div>
+        <div id="daily-operating-sections" class="cc-daily-sections" aria-live="polite"></div>
+      </section>
     </section>
 
     <section class="cc-section" aria-labelledby="pipeline-heading">
@@ -178,7 +186,7 @@ export const COMMAND_CENTER_HTML = `
     <section class="cc-section cc-operations" id="runtime" aria-labelledby="runtime-heading">
       <div class="cc-section-heading"><div><p class="cc-kicker">OPERAZIONI</p><h2 id="runtime-heading">Runtime H24</h2></div><span class="cc-runtime-state" id="runtime-status">Caricamento</span></div>
       <div class="cc-runtime-grid">
-        <article class="cc-runtime-console"><p class="cc-panel-label">STATO DEL WORKER</p><strong id="worker-status">Verifica della registrazione del worker</strong><p id="worker-detail">Il runtime locale è in lettura.</p><div class="cc-runtime-rule"></div><dl><div><dt>Telegram</dt><dd id="telegram-status">Non osservato</dd></div><div><dt>Kill switch</dt><dd id="kill-switch-status">Bloccato</dd></div></dl></article>
+        <article class="cc-runtime-console"><p class="cc-panel-label">STATO SUPERVISIONE</p><strong id="worker-status">Verifica della registrazione del worker</strong><p id="worker-detail">Il runtime locale è in lettura.</p><div class="cc-runtime-rule"></div><dl><div><dt>Scheduler</dt><dd id="scheduler-status">Non registrato</dd></div><div><dt>Worker</dt><dd id="worker-lease-status">Non registrato</dd></div><div><dt>Maintenance</dt><dd id="maintenance-status">Disabilitata</dd></div><div><dt>Kill switch</dt><dd id="kill-switch-status">Rilasciato</dd></div><div><dt>Telegram</dt><dd id="telegram-status">Non osservato</dd></div><div><dt>Effetti esterni</dt><dd id="external-effects-status">Copertura globale non disponibile</dd></div></dl></article>
         <article class="cc-runtime-jobs"><p class="cc-panel-label">REGISTRO JOB</p><div id="runtime-bars" class="cc-runtime-bars" aria-live="polite"></div></article>
       </div>
     </section>
@@ -222,6 +230,10 @@ export const COMMAND_CENTER_HTML = `
             <div class="cc-workday-heading"><p class="cc-panel-label">MISSIONI DUREVOLI</p><h3 id="workday-heading">Giornata Agent Company</h3></div>
             <div class="cc-workday-list" id="agent-workday-list"></div>
             <div class="cc-workday-detail" id="agent-workday-detail"></div>
+          </section>
+          <section class="cc-workday-console cc-founder-workday" aria-labelledby="founder-workday-heading">
+            <div class="cc-workday-heading"><p class="cc-panel-label">WORKDAY #001 · FOUNDER DOSSIER</p><h3 id="founder-workday-heading">Piano trasversale verificabile</h3></div>
+            <div id="founder-workday-detail" aria-live="polite"></div>
           </section>
         </aside>
       </div>
@@ -315,7 +327,7 @@ html,body,button,a,input{cursor:auto}button,a,[role="button"]{cursor:pointer}
 .cc-app[data-section="overview"] .cc-world-image{background-position:50% 45%}.cc-app[data-section="production"] .cc-world-image{background-position:62% 50%}.cc-app[data-section="evidence"] .cc-world-image{background-position:75% 50%;filter:brightness(.53) contrast(1.08) saturate(.98)}.cc-app[data-section="runtime"] .cc-world-image{background-position:80% 42%;filter:brightness(.5) contrast(1.1) saturate(1.02)}.cc-app[data-section="approvals"] .cc-world-image{background-position:50% 35%;filter:brightness(.58) contrast(1.06) saturate(.88)}.cc-app[data-section="governance"] .cc-world-image{background-position:34% 48%;filter:brightness(.46) contrast(1.05) saturate(.62)}
 .cc-core-orbit,.cc-system-core:before{animation:none!important}.cc-app[data-runtime-activity="active"] .cc-core-orbit-a{animation:cc-orbit 18s linear infinite!important}.cc-app[data-runtime-activity="active"] .cc-core-orbit-b{animation:cc-orbit 29s linear infinite reverse!important}.cc-app[data-runtime-activity="active"] .cc-core-orbit-c{animation:cc-orbit 40s linear infinite!important}.cc-app[data-runtime-activity="active"] .cc-system-core:before{animation:cc-core-arc 22s linear infinite!important}
 @media (prefers-reduced-motion:no-preference){.cc-world-light{animation:cc-ambient-drift 28s ease-in-out infinite alternate}}@keyframes cc-ambient-drift{from{transform:translate3d(-6px,-3px,0) scale(1.01)}to{transform:translate3d(8px,5px,0) scale(1.04)}}
-@media (prefers-reduced-motion:reduce){.cc-world-image,.cc-world-light{animation:none!important;transform:none!important;transition:none!important}.cc-metric,.cc-production-card,.cc-evidence-panel,.cc-runtime-console,.cc-runtime-jobs,.cc-agent,.cc-approval-panel{transition:none!important}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}.cc-world-image,.cc-world-light{animation:none!important;transform:none!important;transition:none!important}.cc-metric,.cc-production-card,.cc-evidence-panel,.cc-runtime-console,.cc-runtime-jobs,.cc-agent,.cc-approval-panel{transition:none!important}}
 @media (max-width:820px){.cc-app{grid-template-columns:1fr}.cc-sidebar{background:linear-gradient(180deg,rgba(10,6,12,.88),rgba(3,2,5,.9));backdrop-filter:blur(20px)}.cc-main{padding:24px 20px 64px}.cc-world-image{opacity:.43;background-position:50% 50%!important}.cc-world-vignette{background:radial-gradient(ellipse at 50% 35%,rgba(4,2,6,.44),rgba(0,0,0,.84) 100%)}}
 
 /* Keep the source pixels intact: readability comes from separate overlays, never image filters. */
@@ -370,6 +382,20 @@ html,body,button,a,input{cursor:auto}button,a,[role="button"]{cursor:pointer}
 @media (max-width:820px){.cc-social-live-grid{grid-template-columns:1fr}.cc-social-live-head{display:grid}}
 @media (max-width:820px){.cc-approval-review,.cc-approval-review>*{max-width:100%;min-width:0}.cc-approval-review-head,.cc-approval-review-foot,.cc-visual-review-head,.cc-approval-review-grid{grid-template-columns:minmax(0,1fr);width:100%}.cc-social-block,.cc-social-block>*,.cc-approval-fingerprint,.cc-approval-fingerprint code{max-width:100%;min-width:0;overflow-wrap:anywhere}.cc-approval-fingerprint code{word-break:break-all}}
 @media (prefers-reduced-motion:reduce){.cc-app,.cc-sidebar,.cc-world-image,.cc-nav a:after,.cc-mobile-menu span{transition:none!important}.cc-world-light{animation:none!important}}
+.cc-sidebar-foot[data-live-state="connecting"] .cc-live-dot{background:var(--cc-muted);box-shadow:0 0 0 4px rgba(139,137,133,.08)}
+.cc-sidebar-foot[data-live-state="reconnecting"] .cc-live-dot{background:var(--cc-gold);box-shadow:0 0 0 4px rgba(209,171,92,.1)}
+.cc-sidebar-foot[data-live-state="unavailable"] .cc-live-dot{background:var(--cc-danger);box-shadow:0 0 0 4px rgba(212,93,93,.1)}
+.cc-daily-console{background:linear-gradient(145deg,rgba(16,11,23,.86),rgba(4,4,8,.78));border:1px solid rgba(231,200,146,.22);box-shadow:0 24px 72px rgba(0,0,0,.28);margin-top:13px;padding:22px}.cc-daily-heading{align-items:end;display:flex;gap:20px;justify-content:space-between}.cc-daily-heading h3{font:400 22px/1.15 Georgia,"Times New Roman",serif;margin:6px 0 0}.cc-daily-heading>span{color:var(--ow-chrome);font:9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;text-align:right}.cc-daily-sections{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:18px}.cc-daily-section{background:rgba(0,0,0,.2);border:1px solid rgba(226,220,229,.09);border-top:1px solid rgba(231,200,146,.32);display:grid;gap:7px;min-height:145px;padding:13px}.cc-daily-section[data-kind="UNAVAILABLE"]{border-top-color:rgba(201,86,94,.55)}.cc-daily-section[data-kind="ESTIMATE"],.cc-daily-section[data-kind="ASSUMPTION"]{border-top-color:rgba(222,169,82,.5)}.cc-daily-section>strong{color:var(--ow-chrome-white);font-size:9px;letter-spacing:.08em}.cc-daily-section p{color:var(--ow-chrome-bright);font-size:10px;line-height:1.5;margin:0;overflow-wrap:anywhere}.cc-daily-section small{color:var(--ow-bronze-dark);font-size:8px;line-height:1.5;margin-top:auto;overflow-wrap:anywhere}.cc-founder-workday{border-color:rgba(231,200,146,.25);box-shadow:0 22px 64px rgba(0,0,0,.28)}.cc-founder-summary{display:grid;gap:6px;grid-template-columns:repeat(3,minmax(0,1fr));margin:15px 0}.cc-founder-summary .cc-agent-stat{background:rgba(0,0,0,.18);border:1px solid rgba(226,220,229,.08);padding:9px}.cc-founder-objective{border-left:2px solid var(--ow-gold);color:var(--ow-chrome-bright);font:400 15px/1.5 Georgia,"Times New Roman",serif;margin:12px 0;padding-left:12px}.cc-founder-tasks{display:grid;gap:7px}.cc-founder-task{background:rgba(0,0,0,.18);border-left:2px solid rgba(226,220,229,.2);display:grid;gap:6px;padding:11px}.cc-founder-task[data-status="BLOCKED"]{border-left-color:var(--ow-danger)}.cc-founder-task[data-status="AWAITING_FABIO"]{border-left-color:var(--ow-gold)}.cc-founder-task b{color:var(--ow-chrome-white);font-size:10px;font-weight:500}.cc-founder-task p,.cc-founder-task small,.cc-founder-decisions p{color:var(--ow-chrome);font-size:8px;line-height:1.5;margin:0;overflow-wrap:anywhere}.cc-founder-decisions{border-top:1px solid rgba(226,220,229,.1);display:grid;gap:7px;margin-top:14px;padding-top:12px}
+@media (max-width:1280px){.cc-daily-sections{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:820px){.cc-daily-heading{align-items:start;display:grid}.cc-daily-heading>span{text-align:left}.cc-daily-sections{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.cc-daily-sections,.cc-founder-summary{grid-template-columns:1fr}}
+@media (max-width:820px){.cc-sidebar-foot{display:flex;margin-top:10px;padding:9px 8px 0;font-size:10px}}
+@media (prefers-reduced-motion:reduce){.cc-app[data-runtime-activity="active"] .cc-core-orbit,.cc-app[data-runtime-activity="active"] .cc-system-core:before{animation:none!important}}
+.cc-runtime-usage{border-bottom:1px solid rgba(226,220,229,.1);border-top:1px solid rgba(226,220,229,.1);display:grid;gap:7px;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:22px;padding:14px 0}.cc-runtime-usage div{display:grid;gap:3px;min-width:0}.cc-runtime-usage span{color:var(--ow-bronze);font-size:7px;letter-spacing:.06em;text-transform:uppercase}.cc-runtime-usage b{color:var(--ow-chrome-white);font-size:10px;font-weight:500;overflow-wrap:anywhere}.cc-runtime-ledger{display:grid;gap:8px;margin-top:22px}.cc-runtime-empty{color:var(--ow-chrome);font-size:9px;margin:0}.cc-runtime-job{background:rgba(0,0,0,.2);border:1px solid rgba(226,220,229,.09);border-left:2px solid rgba(231,200,146,.34);display:grid;gap:6px;padding:11px}.cc-runtime-job[data-status="FAILED"],.cc-runtime-job[data-status="DEAD_LETTER"],.cc-runtime-job[data-status="OPEN"]{border-left-color:var(--ow-danger)}.cc-runtime-job-head{align-items:baseline;display:flex;gap:12px;justify-content:space-between}.cc-runtime-job-head b{color:var(--ow-chrome-white);font-size:9px;font-weight:500;overflow-wrap:anywhere}.cc-runtime-job-head span,.cc-runtime-job small{color:var(--ow-chrome);font-size:8px;overflow-wrap:anywhere}.cc-runtime-job code{color:var(--ow-bronze);font:8px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}.cc-runtime-job .cc-control-button{justify-self:start;margin-top:4px}.cc-preview-actions .cc-panel-label{margin-top:12px}.cc-preview-actions .cc-panel-label:first-child{margin-top:0}
+@media (max-width:820px){.cc-runtime-usage{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.cc-runtime-job-head{align-items:start;display:grid}.cc-runtime-usage{grid-template-columns:1fr}}
+.cc-decision-inbox{background:linear-gradient(145deg,rgba(25,19,28,.76),rgba(8,6,10,.74));border:1px solid rgba(226,220,229,.18);box-shadow:0 24px 72px rgba(0,0,0,.28);margin-top:13px;padding:22px}.cc-decision-inbox-list{display:grid;gap:8px;margin-top:14px}.cc-decision-item{align-items:start;background:rgba(0,0,0,.2);border:1px solid rgba(226,220,229,.1);border-left:2px solid var(--ow-gold);display:grid;gap:7px;grid-template-columns:minmax(140px,.42fr) minmax(0,1.58fr);padding:12px 14px}.cc-decision-item[data-priority="HIGH"]{border-left-color:var(--ow-danger)}.cc-decision-item b{color:var(--ow-chrome-white);font-size:11px}.cc-decision-item p{color:var(--ow-chrome);font-size:10px;margin:0}.cc-decision-item small{color:var(--ow-cobalt-light);font:9px ui-monospace,SFMono-Regular,Menlo,monospace;grid-column:1/-1;overflow-wrap:anywhere}
+@media (max-width:520px){.cc-decision-item{grid-template-columns:1fr}}
 `;
 
 export const COMMAND_CENTER_CLIENT_JS = `
@@ -389,7 +415,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   const actionConfirmationDetails = document.getElementById("action-confirmation-details");
   const actionConfirmationSubmit = document.getElementById("action-confirmation-submit");
   const actionConfirmationTimer = document.getElementById("action-confirmation-timer");
-  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   const mobileSidebar = window.matchMedia ? window.matchMedia("(max-width: 820px)") : { matches: false };
   const AGENT_IDENTITIES = Object.freeze({
     "onlyway-assistant": { callSign: "NEXUS", glyph: "OW", squad: "COMMAND", squadLabel: "Mission Command" },
@@ -410,59 +436,155 @@ export const COMMAND_CENTER_CLIENT_JS = `
     "backup-guardian": { callSign: "VAULT", glyph: "BV", squad: "GUARDIANS", squadLabel: "Guardians" },
     "publisher-agent": { callSign: "LAUNCH", glyph: "LA", squad: "GROWTH", squadLabel: "Growth" },
   });
-  const state = { agentFilter: "ALL", confirmationInterval: null, csrfToken: null, pendingConfirmation: null, returnFocus: null, selectedAgentId: null, snapshot: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, visualReview: null, visualSlideIndex: 0, mediaFactory: null };
+  const state = { agentFilter: "ALL", confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, snapshot: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, visualReview: null, visualSlideIndex: 0, mediaFactory: null };
 
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
   function element(tag, className, value) { const node = document.createElement(tag); if (className) node.className = className; if (value !== undefined) node.textContent = value; return node; }
   function number(value) { return new Intl.NumberFormat("it-IT").format(value); }
+  function prefersReducedMotion() { return Boolean(reducedMotionQuery.matches); }
   function timestamp(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Data locale non disponibile" : new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeStyle: "short" }).format(date); }
-  function statusLabel(value) { const labels = { ACTIVE: "ATTIVO", ATTENTION_REQUIRED: "ATTENZIONE RICHIESTA", AVAILABLE: "DISPONIBILE", AWAITING_FABIO: "IN ATTESA DI FABIO", BLOCKED: "BLOCCATO", COMPLETED: "COMPLETATO", DEGRADED: "DEGRADATO", IMPLEMENTING: "IN IMPLEMENTAZIONE", LOCKED: "BLOCCATO", NOT_OBSERVED: "NON OSSERVATO", NOT_REGISTERED: "NON REGISTRATO", QUEUED: "IN CODA", READY: "PRONTO", RUNNING: "IN ESECUZIONE", SPECIFIED: "SPECIFICATO", TRIGGERED: "ATTIVATO" }; return labels[value] || value.replaceAll("_", " "); }
+  function statusLabel(value) { const labels = { ACTIVE: "ATTIVO", ATTENTION_REQUIRED: "ATTENZIONE RICHIESTA", AVAILABLE: "DISPONIBILE", AWAITING_DEPENDENCY: "IN ATTESA DI DIPENDENZA", AWAITING_FABIO: "IN ATTESA DI FABIO", BLOCKED: "BLOCCATO", COMPLETED: "COMPLETATO", DEGRADED: "DEGRADATO", DISABLED: "DISABILITATA", ENABLED: "ABILITATA", IMPLEMENTING: "IN IMPLEMENTAZIONE", LOCKED: "BLOCCATO", MEASURED: "MISURATO", MISSING: "NON REGISTRATO", NOT_OBSERVED: "NON OSSERVATO", NOT_REGISTERED: "NON REGISTRATO", QUEUED: "IN CODA", READY: "PRONTO", RUNNING: "IN ESECUZIONE", SPECIFIED: "SPECIFICATO", STALE: "SCADUTO", TRIGGERED: "ATTIVATO", UNAVAILABLE: "NON DISPONIBILE" }; return labels[value] || value.replaceAll("_", " "); }
   function statusLane(status) { if (status === "PENDING_FABIO_APPROVAL") return "REVISIONE FABIO"; if (status === "APPROVED_FOR_SCHEDULING") return "APPROVATI"; if (status === "SCHEDULED") return "CALENDARIO"; if (status === "BLOCKED") return "BLOCCATI DAL RISCHIO"; return "ARCHIVIATI"; }
   function agentIdentity(agentId) { return AGENT_IDENTITIES[agentId] || { callSign: agentId.toLocaleUpperCase("it-IT"), glyph: "AI", squad: "BUILD", squadLabel: "Build Lab" }; }
 
-  async function refresh() {
-    try {
-      const [response, visualResponse, mediaFactoryResponse] = await Promise.all([fetch("/api/overview", { cache: "no-store", credentials: "same-origin" }), fetch("/api/social-visual-review", { cache: "no-store", credentials: "same-origin" }), fetch("/api/brand-media-factory", { cache: "no-store", credentials: "same-origin" })]);
-      if (!response.ok) throw new Error("L'API locale del Centro di Comando non è disponibile.");
-      state.snapshot = await response.json();
-      state.visualReview = visualResponse.ok ? await visualResponse.json() : null;
-      state.mediaFactory = mediaFactoryResponse.ok ? await mediaFactoryResponse.json() : null;
-      render(state.snapshot);
-    } catch (error) {
-      root.dataset.apiState = "error";
-      text("system-status", "API LOCALE NON DISPONIBILE");
-      text("core-status", "IN ATTESA");
-      text("core-detail", "L'API locale non ha potuto leggere il sistema di registrazione.");
-      text("brief-decision", "È richiesta la connessione all'API locale");
-      text("brief-detail", error instanceof Error ? error.message : "L'API locale non è raggiungibile.");
+  function refresh() {
+    if (state.refreshInFlight) { state.refreshQueued = true; return state.refreshInFlight; }
+    const execution = (async () => {
+      try {
+        const [response, visualResponse, mediaFactoryResponse] = await Promise.all([fetch("/api/overview", { cache: "no-store", credentials: "same-origin" }), fetch("/api/social-visual-review", { cache: "no-store", credentials: "same-origin" }), fetch("/api/brand-media-factory", { cache: "no-store", credentials: "same-origin" })]);
+        if (!response.ok) throw new Error("L'API locale del Centro di Comando non è disponibile.");
+        state.snapshot = await response.json();
+        state.visualReview = visualResponse.ok ? await visualResponse.json() : null;
+        state.mediaFactory = mediaFactoryResponse.ok ? await mediaFactoryResponse.json() : null;
+        render(state.snapshot);
+      } catch (error) {
+        root.dataset.apiState = "error";
+        text("system-status", "API LOCALE NON DISPONIBILE");
+        text("core-status", "IN ATTESA");
+        text("core-detail", "L'API locale non ha potuto leggere il sistema di registrazione.");
+        text("brief-decision", "È richiesta la connessione all'API locale");
+        text("brief-detail", error instanceof Error ? error.message : "L'API locale non è raggiungibile.");
+      }
+    })();
+    state.refreshInFlight = execution;
+    void execution.finally(() => {
+      state.refreshInFlight = null;
+      if (state.refreshQueued) { state.refreshQueued = false; scheduleLiveRefresh(); }
+    });
+    return execution;
+  }
+
+  function setLiveEventState(status, label) {
+    const target = byId("live-event-state");
+    if (target) target.dataset.liveState = status;
+    text("live-event-status", label);
+  }
+
+  function scheduleLiveRefresh() {
+    if (state.liveRefreshTimer !== null) window.clearTimeout(state.liveRefreshTimer);
+    state.liveRefreshTimer = window.setTimeout(() => {
+      state.liveRefreshTimer = null;
+      void refresh();
+    }, 180);
+  }
+
+  function acceptLiveCursor(event) {
+    const id = event.lastEventId;
+    if (typeof id !== "string" || !/^(?:0|[1-9]\\d{0,15})$/.test(id)) return false;
+    const sequence = Number(id);
+    if (!Number.isSafeInteger(sequence) || sequence <= state.lastEventSequence) return false;
+    state.lastEventSequence = sequence;
+    return true;
+  }
+
+  function startLiveFallback() {
+    if (state.liveFallbackInterval !== null) return;
+    void refresh();
+    state.liveFallbackInterval = window.setInterval(() => { void refresh(); }, 30000);
+  }
+
+  function stopLiveFallback() {
+    if (state.liveFallbackInterval === null) return;
+    window.clearInterval(state.liveFallbackInterval);
+    state.liveFallbackInterval = null;
+  }
+
+  function connectLiveEvents() {
+    if (!("EventSource" in window)) {
+      setLiveEventState("unavailable", "Eventi live non supportati");
+      startLiveFallback();
+      return;
     }
+    setLiveEventState("connecting", "Eventi live · connessione");
+    const source = new EventSource("/api/events");
+    state.eventSource = source;
+    source.addEventListener("open", () => {
+      stopLiveFallback();
+      setLiveEventState("live", "Eventi live · connessi");
+      void refresh();
+    });
+    source.addEventListener("operational", (event) => {
+      if (!acceptLiveCursor(event)) return;
+      scheduleLiveRefresh();
+    });
+    source.addEventListener("cursor_reset", (event) => {
+      const id = event.lastEventId;
+      if (typeof id === "string" && /^(?:0|[1-9]\\d{0,15})$/.test(id)) {
+        const sequence = Number(id);
+        if (Number.isSafeInteger(sequence)) state.lastEventSequence = sequence;
+      }
+      setLiveEventState("live", "Eventi live · stato riallineato");
+      scheduleLiveRefresh();
+    });
+    source.addEventListener("source_unavailable", () => {
+      setLiveEventState("reconnecting", "Eventi live · riconnessione");
+      startLiveFallback();
+    });
+    source.addEventListener("shutdown", () => {
+      setLiveEventState("reconnecting", "Eventi live · arresto controllato");
+      startLiveFallback();
+    });
+    source.addEventListener("error", () => {
+      setLiveEventState("reconnecting", "Eventi live · riconnessione");
+      startLiveFallback();
+    });
   }
 
   function render(snapshot) {
+    const productionCoverage = snapshot.overview.operationalWindow && snapshot.overview.operationalWindow.productions ? snapshot.overview.operationalWindow.productions.status : "LIMIT_REACHED";
+    const approvalCoverageLimited = isApprovalCoverageLimited(snapshot);
     root.dataset.apiState = "ready";
-    root.dataset.runtimeActivity = snapshot.runtime.counts.running > 0 || snapshot.runtime.counts.queued > 0 ? "active" : "idle";
+    root.dataset.runtimeActivity = snapshot.runtime.counts.running > 0 ? "active" : "idle";
     text("system-status", statusLabel(snapshot.overview.system));
     text("autonomy-status", snapshot.overview.autonomy);
     text("runtime-location", "LOCALE");
-    text("decisions-required", number(snapshot.overview.decisionsRequired));
+    text("decisions-required", snapshot.overview.decisionInboxCoverage === "LIMIT_REACHED" ? "≥ " + number(snapshot.overview.decisionsRequired) : number(snapshot.overview.decisionsRequired));
     text("core-status", statusLabel(snapshot.overview.system));
-    text("core-detail", snapshot.runtime.continuousWorker === "NOT_REGISTERED" ? "Control plane durevole pronto; nessun worker continuativo registrato." : "Il control plane durevole è disponibile.");
+    text("core-detail", snapshot.overview.system === "ATTENTION_REQUIRED" ? "Readiness bloccata: verificare blocker, incidenti, copertura e runtime prima di procedere." : snapshot.runtime.continuousWorker === "NOT_REGISTERED" ? "Control plane durevole pronto; nessun worker continuativo registrato." : "Il control plane durevole è disponibile.");
     text("generated-at", "Aggiornato " + timestamp(snapshot.generatedAt));
     text("brief-decision", snapshot.overview.dailyBrief.decision);
     text("brief-detail", snapshot.overview.dailyBrief.detail);
     text("brief-priority", snapshot.overview.dailyBrief.priority);
     renderMetrics(snapshot.overview.metrics);
+    renderDecisionInbox(snapshot.overview.decisionInbox || [], snapshot.overview.decisionInboxCoverage || "LIMIT_REACHED");
+    renderDailyOperatingBrief(snapshot.dailyOperatingBriefs || []);
     renderPipeline(snapshot);
     renderBusiness(snapshot.business || []);
-    renderSocialIntelligence(snapshot.socialIntelligence || { blocked: 0, expiringWithin24Hours: 0, packs: [], readyForFabio: 0, requiresResearch: 0 }, snapshot.socialLive);
-    renderProductions(snapshot.productions);
+    renderSocialIntelligence(snapshot.socialIntelligence || { blocked: 0, coverage: "LIMIT_REACHED", expiringWithin24Hours: 0, packs: [], readyForFabio: 0, requiresResearch: 0 }, snapshot.socialLive);
+    renderProductions(snapshot.productions, productionCoverage);
     renderEvidence(snapshot.evidence);
-    renderRuntime(snapshot.runtime);
+    renderRuntime(snapshot.runtime, snapshot.controls || { incidents: [], targets: [] });
     renderTeamPulse(snapshot.agents);
     renderAgents(snapshot.agents);
     renderAgentWorkdays(snapshot.agentCompany || []);
-    renderApprovals(snapshot.productions, snapshot.business || [], snapshot.socialLive, state.visualReview, state.mediaFactory);
+    renderFounderWorkday(snapshot.founderWorkdays || []);
+    renderApprovals(snapshot.productions, snapshot.business || [], snapshot.socialLive, state.visualReview, state.mediaFactory, approvalCoverageLimited);
+  }
+
+  function isApprovalCoverageLimited(snapshot) {
+    const windows = snapshot && snapshot.overview ? snapshot.overview.operationalWindow : null;
+    return !windows || [windows.agentCompanyWorkdays, windows.businessMissions, windows.productions].some((window) => !window || window.status === "LIMIT_REACHED");
   }
 
   function renderMetrics(metrics) {
@@ -475,6 +597,26 @@ export const COMMAND_CENTER_CLIENT_JS = `
       const value = typeof metric.value === "number" ? number(metric.value) : metric.value;
       card.append(element("span", "cc-metric-label", metric.label), element("strong", "", value), element("p", "", metric.context));
       target.append(card);
+    }
+  }
+
+  function renderDecisionInbox(items, coverage) {
+    const target = byId("decision-inbox-list");
+    target.replaceChildren();
+    text("decision-inbox-meta", coverage === "LIMIT_REACHED" ? "Copertura parziale · almeno " + number(items.length) + " decisione/i" : items.length === 0 ? "Nessuna decisione corrente" : number(items.length) + " decisione/i correnti e deduplicate");
+    if (items.length === 0) {
+      target.append(element("div", "cc-list-empty", coverage === "LIMIT_REACHED" ? "Nessuna decisione nella finestra osservata; la copertura è parziale e il totale globale non è determinabile." : "Nessuna decisione operativa corrente. Gli snapshot storici non vengono ricontati."));
+      return;
+    }
+    for (const item of items) {
+      const row = element("article", "cc-decision-item");
+      row.dataset.priority = item.priority;
+      row.append(
+        element("b", "", statusLabel(item.entityType)),
+        element("p", "", item.question),
+        element("small", "", item.priority + " · " + item.reasonCode + " · " + item.entityId),
+      );
+      target.append(row);
     }
   }
 
@@ -547,9 +689,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
       card.append(element("span", "", entry[0]), element("strong", "", number(entry[1])), element("small", "", entry[2]));
       summary.append(card);
     }
-    text("social-daily-status", social.packs.length > 0 ? number(social.packs.length) + " pacchetto/i verificabile/i" : live && live.totalTrends > 0 ? number(live.totalTrends) + " segnali live · ciclo " + statusLabel(live.cycleReadiness.status) : "Dati social non ancora disponibili");
+    text("social-daily-status", social.coverage === "LIMIT_REACHED" ? "Copertura social parziale · segnali e readiness non conclusivi" : social.packs.length > 0 ? number(social.packs.length) + " pacchetto/i verificabile/i" : live && live.totalTrends > 0 ? number(live.totalTrends) + " segnali live · ciclo " + statusLabel(live.cycleReadiness.status) : "Dati social non ancora disponibili");
     if (social.packs.length === 0) {
-      list.append(element("div", "cc-list-empty", "Nessun Social Publishing Pack durevole. Trend, hashtag, audio e orari non vengono mostrati finché non esistono segnali autorizzati."));
+      list.append(element("div", "cc-list-empty", social.coverage === "LIMIT_REACHED" ? "Nessun Social Publishing Pack nella finestra osservata; la copertura è parziale e il totale globale non è determinabile." : "Nessun Social Publishing Pack durevole. Trend, hashtag, audio e orari non vengono mostrati finché non esistono segnali autorizzati."));
       return;
     }
     for (const pack of social.packs) {
@@ -639,30 +781,35 @@ export const COMMAND_CENTER_CLIENT_JS = `
     setStage("calendar", productions.filter((item) => item.status === "SCHEDULED").length);
   }
 
-  function renderProductions(productions) {
+  function renderProductions(productions, coverage) {
     const target = byId("production-lanes");
     target.replaceChildren();
     if (productions.length === 0) {
       const empty = element("div", "cc-list-empty");
-      empty.textContent = "Nessun pacchetto Metodo Veloce durevole è stato creato. Il primo apparirà qui solo dopo la persistenza del suo record di produzione reale.";
+      empty.textContent = coverage === "LIMIT_REACHED" ? "Nessun pacchetto nella finestra osservata; la copertura è parziale e il totale globale non è determinabile." : "Nessun pacchetto Metodo Veloce durevole è stato creato. Il primo apparirà qui solo dopo la persistenza del suo record di produzione reale.";
       target.append(empty);
       state.selectedProductionId = null;
       renderPreview(null);
       return;
     }
     if (!productions.some((item) => item.productionId === state.selectedProductionId)) state.selectedProductionId = productions[0].productionId;
-    const laneNames = ["REVISIONE FABIO", "APPROVATI", "CALENDARIO", "BLOCCATI DAL RISCHIO", "ARCHIVIATI"];
+    const laneNames = ["REVISIONE RICHIESTA", "REVISIONE FABIO", "APPROVATI", "CALENDARIO", "BLOCCATI DAL RISCHIO", "ARCHIVIATI"];
     for (const laneName of laneNames) {
-      const records = productions.filter((item) => statusLane(item.status) === laneName);
+      const records = productions.filter((item) => effectiveStatusLane(item) === laneName);
       const lane = element("section", "cc-lane");
       const heading = element("div", "cc-lane-head");
       heading.append(element("b", "", laneName), element("span", "", number(records.length)));
       lane.append(heading);
-      if (records.length === 0) lane.append(element("p", "cc-lane-empty", "Nessun dato persistito in questa fase."));
+      if (records.length === 0) lane.append(element("p", "cc-lane-empty", coverage === "LIMIT_REACHED" ? "Nessun dato in questa fase nella finestra osservata; copertura parziale." : "Nessun dato persistito in questa fase."));
       for (const record of records) lane.append(productionCard(record));
       target.append(lane);
     }
     renderPreview(productions.find((item) => item.productionId === state.selectedProductionId) || null);
+  }
+
+  function effectiveStatusLane(record) {
+    const control = productionControl(record);
+    return control && control.state === "REVISION_REQUIRED" ? "REVISIONE RICHIESTA" : statusLane(record.status);
   }
 
   function productionCard(record) {
@@ -673,9 +820,10 @@ export const COMMAND_CENTER_CLIENT_JS = `
     meta.append(element("span", "", record.productionId), element("span", "", "v" + String(record.version)));
     const title = element("h3", "", record.package.editorialPlan.selectedIdea);
     const signals = element("div", "cc-card-signals");
-    signals.append(signal("Qualità", String(record.package.quality.readinessScore) + "/100"), signal("Rischio", record.package.risk.status), signal("Evidenze", record.evidencePack ? "ALLEGATO" : "NON ALLEGATO"));
+    const control = productionControl(record);
+    signals.append(signal("Qualità", String(record.package.quality.readinessScore) + "/100"), signal("Rischio", record.package.risk.status), signal("Evidenze", record.evidencePack ? "ALLEGATO" : "NON ALLEGATO"), signal("Esecuzione", control ? statusLabel(control.state) : "ATTIVO"));
     button.append(meta, title, signals);
-    button.addEventListener("click", () => { state.selectedProductionId = record.productionId; state.slideIndex = 0; renderProductions(state.snapshot.productions); });
+    button.addEventListener("click", () => { state.selectedProductionId = record.productionId; state.slideIndex = 0; renderProductions(state.snapshot.productions, state.snapshot.overview.operationalWindow.productions.status); });
     return button;
   }
 
@@ -721,7 +869,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function previewDetails(record) {
     const details = element("div", "cc-preview-details");
-    details.append(detail("Controllo qualità", String(record.package.quality.readinessScore) + "/100"), detail("Controllo rischio", record.package.risk.status), detail("Evidence Pack", record.evidencePack ? record.evidencePack.packId : "Nessun pacchetto immutabile allegato"));
+    const control = productionControl(record);
+    details.append(detail("Controllo qualità", String(record.package.quality.readinessScore) + "/100"), detail("Controllo rischio", record.package.risk.status), detail("Evidence Pack", record.evidencePack ? record.evidencePack.packId : "Nessun pacchetto immutabile allegato"), detail("Controllo esecuzione", control ? statusLabel(control.state) + " · v" + String(control.version) : "ATTIVO · nessun override"));
     return details;
   }
 
@@ -739,6 +888,16 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const quality = inspectorRow("Quality Gate", String(record.package.quality.readinessScore) + "/100");
     const risk = inspectorRow("Risk Gate", record.package.risk.status);
     target.append(heading, version, status, quality, risk);
+    const control = productionControl(record);
+    if (control) {
+      target.append(inspectorRow("Controllo esecuzione", statusLabel(control.state) + " · v" + String(control.version)), inspectorCode("Fingerprint pacchetto sorgente", control.sourcePackageFingerprint));
+      const history = element("details", "cc-task-output");
+      history.append(element("summary", "", "Cronologia controlli e revisioni · " + String(control.history.length) + " evento/i"));
+      const historyBody = element("div", "cc-control-history");
+      for (const item of control.history) historyBody.append(element("p", "", "v" + String(item.version) + " · " + item.action + " · " + item.reasonCode + " · " + timestamp(item.occurredAt)));
+      for (const revision of control.revisions) historyBody.append(element("p", "", "Revisione " + revision.revisionId + " · " + revision.category + " / " + revision.priority + " · target " + revision.targets.map((item) => item.kind + ":" + item.reference).join(" · ")));
+      history.append(historyBody); target.append(history);
+    }
     if (record.package.socialPublishingPack) {
       const social = record.package.socialPublishingPack;
       target.append(inspectorRow("Decisione Social", statusLabel(social.decision)), inspectorRow("Opportunity Score", social.opportunity.score === undefined ? "DATO NON DISPONIBILE" : String(social.opportunity.score) + "/100"), inspectorRow("Audio", statusLabel(social.audioPlan.status)), inspectorRow("Orari", statusLabel(social.publicationWindows.status)), inspectorRow("Approvazione", social.approvalScope ? statusLabel(social.approvalScope.scope) : "PACCHETTO INTERNO"), inspectorCode("Fingerprint Social Pack", social.fingerprint));
@@ -758,16 +917,88 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function renderPackageActions(record) {
     const target = byId("package-actions"); target.replaceChildren();
-    if (!record || record.status !== "PENDING_FABIO_APPROVAL") return;
-    const label = element("p", "cc-panel-label", "AZIONI CONTROLLATE");
-    target.append(label);
-    const visualBlocked = record.package.socialPublishingPack && (!state.visualReview || state.visualReview.visualReview.status !== "READY_FOR_HUMAN_DECISION");
+    if (!record) return;
+    const control = productionControl(record);
+    const exactTarget = controlTarget("PRODUCTION", record.productionId);
+    if (exactTarget && exactTarget.actions.length > 0) {
+      target.append(element("p", "cc-panel-label", "CONTROLLO PRODUZIONE DUREVOLE"));
+      for (const action of exactTarget.actions) {
+        const label = action === "REQUEST_PRODUCTION_REVISION"
+          ? revisionButtonLabel(record)
+          : action === "PAUSE_PRODUCTION"
+            ? "Metti in pausa"
+            : action === "RESUME_PRODUCTION"
+              ? "Riprendi produzione"
+              : "Annulla produzione";
+        target.append(controlActionButton(label, action, exactTarget, record));
+      }
+    }
+    if (record.status !== "PENDING_FABIO_APPROVAL") return;
+    target.append(element("p", "cc-panel-label", "DECISIONE DI APPROVAZIONE"));
+    if (control && control.state !== "ACTIVE") {
+      const blocked = element("button", "cc-control-button", "Approvazione invalidata · " + statusLabel(control.state));
+      blocked.type = "button"; blocked.disabled = true; target.append(blocked); return;
+    }
+    const visualBlocked = record.package.socialPublishingPack && !visualReviewBoundToRecord(state.visualReview, record);
     if (record.evidencePack && !visualBlocked) target.append(actionButton("Approva pacchetto", "APPROVE_CONTENT", record));
     if (visualBlocked) {
       const blocked = element("button", "cc-control-button", "Approvazione bloccata: logo originale mancante");
       blocked.type = "button"; blocked.disabled = true; target.append(blocked);
     }
     target.append(actionButton("Rifiuta pacchetto", "REJECT_CONTENT", record));
+  }
+
+  function productionControl(record) {
+    const controls = state.snapshot && state.snapshot.controls && Array.isArray(state.snapshot.controls.productionControls) ? state.snapshot.controls.productionControls : [];
+    return controls.find((control) => control.productionId === record.productionId) || null;
+  }
+
+  function visualReviewBoundToRecord(review, production) {
+    const social = production && production.package && production.package.socialPublishingPack;
+    const binding = review && review.approvalBinding;
+    const target = production ? controlTarget("PRODUCTION", production.productionId) : null;
+    const hash = (value) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+    return Boolean(
+      review && review.visualReview && review.visualReview.status === "READY_FOR_HUMAN_DECISION" &&
+      binding && social && social.masterContentPack &&
+      binding.workspaceId === production.workspaceId &&
+      binding.productionId === production.productionId &&
+      binding.productionVersion === production.version &&
+      target && hash(target.contentPackageFingerprint) &&
+      binding.contentPackageFingerprint === target.contentPackageFingerprint &&
+      hash(binding.assetSetFingerprint) &&
+      binding.socialPublishingPackFingerprint === social.fingerprint &&
+      binding.masterContentPackFingerprint === social.masterContentPack.fingerprint
+    );
+  }
+
+  function controlTarget(kind, entityId) {
+    const targets = state.snapshot && state.snapshot.controls && Array.isArray(state.snapshot.controls.targets) ? state.snapshot.controls.targets : [];
+    return targets.find((target) => target.kind === kind && target.entityId === entityId) || null;
+  }
+
+  function revisionTarget(record) {
+    const assets = record.package && record.package.assets;
+    const social = record.package && record.package.socialPublishingPack;
+    const slides = assets && Array.isArray(assets.carousel) ? assets.carousel : social && Array.isArray(social.carousel) ? social.carousel : [];
+    if (slides.length > 0) {
+      const index = Math.max(0, Math.min(state.slideIndex, slides.length - 1));
+      return { category: "SLIDE", priority: "HIGH", targets: [{ kind: "SLIDE", reference: "slide-" + String(index + 1).padStart(2, "0") }] };
+    }
+    if (assets && assets.tiktok) return { category: "CAPTION", priority: "HIGH", targets: [{ kind: "CAPTION", reference: "tiktok-caption" }] };
+    return { category: "ASSET", priority: "HIGH", targets: [{ kind: "ASSET", reference: "package-master" }] };
+  }
+
+  function revisionButtonLabel(record) {
+    const target = revisionTarget(record).targets[0];
+    return target.kind === "SLIDE" ? "Richiedi revisione " + target.reference : target.kind === "CAPTION" ? "Richiedi revisione caption" : "Richiedi revisione master asset";
+  }
+
+  function controlActionButton(label, action, exactTarget, context) {
+    const button = element("button", "cc-control-button", label); button.type = "button";
+    button.dataset.action = action;
+    button.addEventListener("click", () => { void proposeControlAction(action, exactTarget, context, button); });
+    return button;
   }
 
   function actionButton(label, action, record) {
@@ -812,8 +1043,64 @@ export const COMMAND_CENTER_CLIENT_JS = `
     } finally { button.disabled = false; }
   }
 
+  function nextIdempotencyKey(action, entityId) {
+    let nonce;
+    if (window.crypto && typeof window.crypto.randomUUID === "function") nonce = window.crypto.randomUUID();
+    else {
+      const bytes = new Uint32Array(4);
+      window.crypto.getRandomValues(bytes);
+      nonce = Array.from(bytes).map((value) => value.toString(16).padStart(8, "0")).join("-");
+    }
+    return ("ui-" + action.toLowerCase().replaceAll("_", "-") + "-" + entityId + "-" + nonce).slice(0, 128);
+  }
+
+  function controlReason(action) {
+    const reasons = {
+      ACKNOWLEDGE_INCIDENT: { code: "FABIO_INCIDENT_ACK", detail: "Incidente verificato e riconosciuto dal Centro di Comando locale." },
+      CANCEL_PRODUCTION: { code: "FABIO_PRODUCTION_CANCEL", detail: "Annullamento controllato richiesto dal Package Viewer locale." },
+      PAUSE_PRODUCTION: { code: "FABIO_PRODUCTION_PAUSE", detail: "Pausa controllata richiesta dal Package Viewer locale." },
+      REQUEST_PRODUCTION_REVISION: { code: "FABIO_REVISION_REQUEST", detail: "Revisione mirata richiesta dal Package Viewer locale." },
+      REQUEUE_DEAD_LETTER_JOB: { code: "FABIO_DEAD_LETTER_REQUEUE", detail: "Successore controllato richiesto per un job dead-letter ispezionato." },
+      RESUME_PRODUCTION: { code: "FABIO_PRODUCTION_RESUME", detail: "Ripresa controllata richiesta dal Package Viewer locale." },
+      RETRY_FAILED_JOB: { code: "FABIO_FAILED_JOB_RETRY", detail: "Successore controllato richiesto per un job locale fallito." },
+    };
+    return reasons[action];
+  }
+
+  async function proposeControlAction(action, exactTarget, context, button) {
+    try {
+      button.disabled = true;
+      const payload = { action, contractVersion: "1", entityId: exactTarget.entityId, entityVersion: exactTarget.version, fingerprint: exactTarget.fingerprint, idempotencyKey: nextIdempotencyKey(action, exactTarget.entityId), reason: controlReason(action) };
+      if (action === "REQUEST_PRODUCTION_REVISION") payload.revision = revisionTarget(context);
+      const proposal = await actionPost("/api/control-actions/propose", payload);
+      openActionConfirmation(action, proposal);
+    } catch (error) {
+      commandResult.textContent = error instanceof Error ? error.message : "Comando operativo non eseguito.";
+    } finally { button.disabled = false; }
+  }
+
   function openActionConfirmation(action, proposal) {
     state.returnFocus = document.activeElement;
+    if (proposal && proposal.proposal) {
+      if (proposal.receipt) {
+        commandResult.textContent = "Comando già registrato. Ricevuta durevole: " + proposal.receipt.receiptId + ".";
+        return;
+      }
+      const record = proposal.proposal;
+      const labels = { ACKNOWLEDGE_INCIDENT: "Riconoscere l'incidente", CANCEL_PRODUCTION: "Annullare la produzione", PAUSE_PRODUCTION: "Mettere in pausa la produzione", REQUEST_PRODUCTION_REVISION: "Richiedere la revisione mirata", REQUEUE_DEAD_LETTER_JOB: "Accodare un successore del dead-letter", RESUME_PRODUCTION: "Riprendere la produzione", RETRY_FAILED_JOB: "Accodare un successore del job fallito" };
+      state.pendingConfirmation = { action, control: true, proposal };
+      actionConfirmationTitle.textContent = labels[action] || "Confermare il comando operativo";
+      actionConfirmationDetail.textContent = "La conferma è monouso e vincolata a identità, versione e fingerprint esatti. L'azione produce audit e ricevuta durevoli.";
+      actionConfirmationSubmit.textContent = "Conferma comando";
+      actionConfirmationSubmit.dataset.action = action;
+      actionConfirmationDetails.replaceChildren();
+      const target = record.target;
+      const revision = record.revision ? record.revision.category + " · " + record.revision.priority + " · " + record.revision.targets.map((item) => item.kind + ":" + item.reference).join(" · ") : "NON APPLICABILE";
+      const entries = [["Azione", action], ["Entità", target.kind + " · " + target.entityId], ["Versione", "v" + String(target.entityVersion)], ["Fingerprint", target.entityFingerprint], ["Reason code", record.reason.code], ["Motivazione", record.reason.detail], ["Target revisione", revision], ["Effetti esterni", "ZERO · PUBLICATION LOCKED"]];
+      for (const [label, value] of entries) { const row = document.createElement("div"); row.append(element("dt", "", label), element("dd", "", value)); actionConfirmationDetails.append(row); }
+      showActionConfirmation(record.expiresAt);
+      return;
+    }
     const isBusiness = action === "APPROVE_BUSINESS" || action === "REJECT_BUSINESS" || action === "REQUEST_BUSINESS_REVISION";
     if (isBusiness) {
       const title = action === "APPROVE_BUSINESS" ? "Approvare questo dossier Business" : action === "REJECT_BUSINESS" ? "Rifiutare questo dossier Business" : "Richiedere la revisione del dossier";
@@ -826,9 +1113,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       actionConfirmationDetails.replaceChildren();
       const entries = [["Missione", proposal.summary.missionId], ["Versione", "v" + String(proposal.summary.version)], ["Fingerprint dossier", proposal.summary.dossierFingerprint], ["Fingerprint pacchetto", proposal.summary.packageFingerprint], ["Opportunità selezionata", proposal.summary.selectedOpportunityId], ["Evidence Pack", proposal.summary.evidencePackIds.join(" · ")], ["Gate", proposal.summary.gates.map((gate) => gate.name + " " + gate.status + " " + String(gate.score) + "/100").join(" · ")], ["Conseguenza", consequence]];
       for (const [label, value] of entries) { const row = document.createElement("div"); row.append(element("dt", "", label), element("dd", "", value)); actionConfirmationDetails.append(row); }
-      actionConfirmation.hidden = false;
-      startConfirmationTimer(proposal.expiresAt);
-      actionConfirmationSubmit.focus();
+      showActionConfirmation(proposal.expiresAt);
       return;
     }
     const isApproval = action === "APPROVE_CONTENT";
@@ -846,8 +1131,15 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const entries = [["Produzione", proposal.summary.productionId], ["Versione", "v" + String(proposal.summary.version)], ["Fingerprint pacchetto", proposal.summary.packageFingerprint], ["Evidence Pack", proposal.summary.evidencePackId || "NON ALLEGATO"], ["Qualità", String(proposal.summary.qualityScore) + "/100"], ["Rischio", proposal.summary.riskStatus], ["Conseguenza", consequence]];
     if (proposal.summary.evidencePackFingerprint) entries.splice(4, 0, ["Fingerprint evidenze", proposal.summary.evidencePackFingerprint]);
     for (const [label, value] of entries) { const row = document.createElement("div"); row.append(element("dt", "", label), element("dd", "", value)); actionConfirmationDetails.append(row); }
+    showActionConfirmation(proposal.expiresAt);
+  }
+
+  function showActionConfirmation(expiresAt) {
+    const background = Array.from(root.children).filter((node) => node !== actionConfirmation);
+    state.confirmationInertedNodes = background.filter((node) => !node.hasAttribute("inert"));
+    for (const node of background) node.setAttribute("inert", "");
     actionConfirmation.hidden = false;
-    startConfirmationTimer(proposal.expiresAt);
+    startConfirmationTimer(expiresAt);
     actionConfirmationSubmit.focus();
   }
 
@@ -858,6 +1150,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
     state.pendingConfirmation = null;
     state.returnFocus = null;
     actionConfirmation.hidden = true;
+    for (const node of state.confirmationInertedNodes) node.removeAttribute("inert");
+    state.confirmationInertedNodes = [];
     if (message) commandResult.textContent = message;
     if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
   }
@@ -880,8 +1174,10 @@ export const COMMAND_CENTER_CLIENT_JS = `
     try {
       actionConfirmationSubmit.disabled = true;
       const proposal = pending.proposal;
-      const receipt = await actionPost("/api/actions/confirm", { actionId: proposal.actionId, confirmationToken: proposal.confirmationToken, packageFingerprint: proposal.summary.packageFingerprint });
-      closeActionConfirmation("Azione registrata. Ricevuta durevole: " + receipt.command.commandId + ".");
+      const receipt = pending.control
+        ? await actionPost("/api/control-actions/confirm", { confirmationToken: proposal.confirmationToken, contractVersion: "1", entityFingerprint: proposal.proposal.target.entityFingerprint, proposalId: proposal.proposal.proposalId })
+        : await actionPost("/api/actions/confirm", { actionId: proposal.actionId, confirmationToken: proposal.confirmationToken, packageFingerprint: proposal.summary.packageFingerprint });
+      closeActionConfirmation("Azione registrata. Ricevuta durevole: " + (pending.control ? receipt.receiptId : receipt.command.commandId) + ".");
       await refresh();
     } catch (error) {
       closeActionConfirmation(error instanceof Error ? error.message : "Azione non eseguita.");
@@ -910,21 +1206,139 @@ export const COMMAND_CENTER_CLIENT_JS = `
     }
   }
 
-  function renderRuntime(runtime) {
+  function renderDailyOperatingBrief(briefs) {
+    const target = byId("daily-operating-sections");
+    target.replaceChildren();
+    if (briefs.length === 0) {
+      text("daily-operating-meta", "Nessun brief durevole");
+      target.append(element("div", "cc-list-empty", "Il Daily Operating Brief apparirà soltanto dopo una generazione locale da stato persistito."));
+      return;
+    }
+    const brief = briefs[0];
+    text("daily-operating-meta", brief.businessDate + " · " + timestamp(brief.generatedAt) + " · " + brief.fingerprint.slice(0, 16) + "…");
+    const labels = { approvalsRequired: "Approvazioni", backupState: "Backup", blockedTasks: "Task bloccati", businessMissions: "Business Mission", costsAndBudgets: "Costi e budget", evidenceFreshness: "Freshness evidenze", externalActionsPerformed: "Azioni esterne", incidents: "Incidenti", productionQueue: "Coda produzione", recommendedFounderDecisions: "Decisioni Fabio", socialIntelligence: "Social Intelligence", systemHealth: "Salute sistema", workCompleted: "Lavoro completato", workInProgress: "Lavoro in corso" };
+    for (const [key, datum] of Object.entries(brief.sections)) {
+      const card = element("article", "cc-daily-section");
+      card.dataset.kind = datum.kind;
+      card.append(element("span", "cc-panel-label", labels[key] || key), element("strong", "", statusLabel(datum.kind)), element("p", "", dailyDatumSummary(key, datum.value)));
+      const provenance = datum.provenance.length === 0 ? "Provenienza non disponibile" : "Provenienza: " + datum.provenance.join(" · ");
+      card.append(element("small", "", datum.limitation ? provenance + " · Limite: " + datum.limitation : provenance));
+      target.append(card);
+    }
+  }
+
+  function dailyDatumSummary(key, value) {
+    if (Array.isArray(value)) {
+      if (key === "recommendedFounderDecisions") return value.length === 0 ? "Nessuna decisione aperta." : value.map((item) => item.priority + " · " + item.question).join(" | ");
+      if (key === "blockedTasks") return value.length === 0 ? "Nessun task bloccato misurato." : value.map((item) => item.taskId + " · " + item.reasonCode + " · " + item.owner).join(" | ");
+      if (key === "approvalsRequired") return value.length === 0 ? "Nessuna approvazione richiesta." : value.map((item) => item.entityType + " · " + item.entityId + " · " + statusLabel(item.status)).join(" | ");
+      if (key === "businessMissions") return value.length === 0 ? "Nessuna Business Mission persistita." : value.map((item) => item.missionId + " · " + statusLabel(item.status)).join(" | ");
+      if (key === "incidents") return value.length === 0 ? "Nessun incidente aperto." : value.map((item) => item.incidentId + " · " + item.severity + " · " + statusLabel(item.status)).join(" | ");
+      if (key === "workCompleted") return value.length === 0 ? "Nessun completamento nel perimetro misurato." : value.map((item) => item.kind + " · " + item.identity).join(" | ");
+      if (key === "workInProgress") return value.length === 0 ? "Nessun lavoro in corso nel perimetro misurato." : value.map((item) => item.kind + " · " + item.identity + " · " + statusLabel(item.status)).join(" | ");
+      return String(value.length) + " record persistiti.";
+    }
+    if (!value || typeof value !== "object") return String(value);
+    if (key === "systemHealth") return "Sistema " + statusLabel(value.status) + " · scheduler " + statusLabel(value.scheduler) + " · worker " + statusLabel(value.worker) + " · kill switch " + statusLabel(value.killSwitch) + " · maintenance " + statusLabel(value.maintenanceMode);
+    if (key === "productionQueue") return String(value.active) + " attivi · " + String(value.pendingFabio) + " in revisione Fabio · " + String(value.deadLetter) + " dead-letter";
+    if (key === "socialIntelligence") return String(value.records) + " segnali · " + String(value.analyticsRecords) + " record analytics · " + statusLabel(value.status);
+    if (key === "evidenceFreshness") return String(value.fresh) + " freschi · " + String(value.stale) + " scaduti · " + String(value.total) + " totali";
+    if (key === "costsAndBudgets") return "Misurato " + euro(value.measuredCostCents) + " · stimato " + euro(value.estimatedCostCents) + " · budget " + (value.budgetCents === "NOT_CONFIGURED" ? "non configurato" : euro(value.budgetCents)) + " · " + statusLabel(value.reconciliation);
+    if (key === "externalActionsPerformed") return "Pubblicazioni " + String(value.publications) + " · messaggi " + String(value.messages) + " · paid call " + String(value.paidCalls) + " · deploy " + String(value.deployments) + " · acquisti " + String(value.purchases);
+    if (key === "backupState") return statusLabel(value.status) + (value.lastVerifiedAt ? " · verificato " + timestamp(value.lastVerifiedAt) : " · ultima verifica non disponibile");
+    return "Dato operativo persistito.";
+  }
+
+  function renderFounderWorkday(records) {
+    const target = byId("founder-workday-detail");
+    target.replaceChildren();
+    if (records.length === 0) {
+      target.append(element("div", "cc-list-empty", "Workday #001 non ancora materializzato. Nessuna attività agente viene simulata."));
+      return;
+    }
+    const workday = records[0];
+    const summary = element("div", "cc-founder-summary");
+    const completed = workday.tasks.filter((task) => task.status === "COMPLETED").length;
+    const blocked = workday.tasks.filter((task) => task.status === "BLOCKED").length;
+    const waitingFabio = workday.tasks.filter((task) => task.status === "AWAITING_FABIO").length;
+    summary.append(agentStat("Stato", statusLabel(workday.status)), agentStat("Task", String(workday.tasks.length)), agentStat("Completati", String(completed)), agentStat("Bloccati", String(blocked)), agentStat("Attesa Fabio", String(waitingFabio)), agentStat("Copertura costi/effetti", "SOLO PREFLIGHT"), agentStat("Costo preflight", euro(workday.artifacts.costSummary.measuredCostCents)), agentStat("Paid call preflight", String(workday.artifacts.externalEffectsSummary.paidCalls)), agentStat("Pubblicazioni preflight", String(workday.artifacts.externalEffectsSummary.publications)), agentStat("Fingerprint", workday.fingerprint.slice(0, 16) + "…"));
+    const objective = element("p", "cc-founder-objective", workday.objective);
+    const tasks = element("div", "cc-founder-tasks");
+    for (const task of workday.tasks) {
+      const row = element("article", "cc-founder-task");
+      row.dataset.status = task.status;
+      row.append(element("span", "cc-panel-label", task.department + " · " + task.agentId), element("b", "", task.assignment), element("p", "", statusLabel(task.status) + " · Gate " + statusLabel(task.gateStatus) + " · tentativi " + String(task.attempts) + " · " + task.costClass));
+      if (task.blocker) row.append(element("small", "", "Blocco: " + task.blocker.missingInput + " · evidenza " + task.blocker.evidence.join(" / ") + " · rimedio " + task.blocker.remediation + " · owner " + task.blocker.owner + " · prossima azione " + task.blocker.nextAction));
+      else if (task.receipt) row.append(element("small", "", "Ricevuta " + task.receipt.receiptId + " · output " + task.receipt.outputFingerprint.slice(0, 16) + "… · effetti esterni " + String(task.receipt.externalEffects)));
+      else row.append(element("small", "", "Nessuna attività dichiarata senza executor e ricevuta durevole."));
+      tasks.append(row);
+    }
+    const decisions = element("div", "cc-founder-decisions");
+    decisions.append(element("p", "cc-panel-label", "DECISIONI APERTE"));
+    if (workday.artifacts.decisionList.length === 0) decisions.append(element("p", "", "Nessuna decisione aperta."));
+    for (const decision of workday.artifacts.decisionList) decisions.append(element("p", "", decision.priority + " · " + decision.question + " · evidenze " + decision.evidence.join(" / ")));
+    target.append(summary, objective, tasks, decisions);
+  }
+
+  function renderRuntime(runtime, controls) {
     text("runtime-status", statusLabel(runtime.status));
-    text("worker-status", runtime.continuousWorker === "NOT_REGISTERED" ? "Nessun worker continuativo registrato" : "Worker continuativo registrato");
-    text("worker-detail", runtime.continuousWorker === "NOT_REGISTERED" ? "Esistono coda, lease, retry e recupero. Un processo H24 supervisionato non è stato registrato, quindi non è dichiarato alcun uptime." : "Lo stato del worker runtime è visibile tramite il control plane locale.");
+    text("worker-status", runtime.continuousWorker === "READY" ? "Runtime H24 supervisionato" : runtime.continuousWorker === "STALE" ? "Lease worker scaduta" : "Nessun worker continuativo registrato");
+    text("worker-detail", runtime.continuousWorker === "READY" ? String(runtime.workers.active) + " worker con lease attiva; scheduler " + statusLabel(runtime.scheduler) + "." : runtime.continuousWorker === "STALE" ? "Il processo non è dichiarato attivo: riconciliare la lease prima di avviare nuovo lavoro." : "Esistono coda, lease, retry e recupero. Nessun uptime viene dichiarato senza una lease attiva.");
+    text("scheduler-status", statusLabel(runtime.scheduler));
+    text("worker-lease-status", statusLabel(runtime.continuousWorker) + " · " + String(runtime.workers.active) + " attivi / " + String(runtime.workers.stale) + " stale");
+    text("maintenance-status", statusLabel(runtime.maintenanceMode));
     text("telegram-status", runtime.telegram === "NOT_OBSERVED" ? "Nessuna telemetria di ciclo di vita esposta" : statusLabel(runtime.telegram));
+    text("external-effects-status", runtime.usage && runtime.usage.externalEffectsExecuted === false ? "Runtime H24: zero · copertura non globale" : "Copertura globale non disponibile");
     text("kill-switch-status", statusLabel(runtime.killSwitch));
     const target = byId("runtime-bars"); target.replaceChildren();
-    const items = [["In coda", runtime.counts.queued, "normal"], ["In esecuzione", runtime.counts.running, "normal"], ["Retry pianificati", runtime.counts.retryScheduled, "normal"], ["Completati", runtime.counts.completed, "normal"], ["Dead-letter", runtime.counts.deadLetter, "danger"]];
+    const items = [["In coda", runtime.counts.queued, "normal"], ["In esecuzione", runtime.counts.running, "normal"], ["Retry pianificati", runtime.counts.retryScheduled, "normal"], ["Completati", runtime.counts.completed, "normal"], ["Falliti", runtime.counts.failed, "danger"], ["Dead-letter", runtime.counts.deadLetter, "danger"]];
     const max = Math.max(1, ...items.map((item) => item[1]));
     for (const [label, value, tone] of items) {
       const row = element("div", "cc-runtime-bar"); row.dataset.tone = tone;
       const track = element("div", "cc-runtime-track"); const fill = element("div", "cc-runtime-fill"); fill.style.width = String((value / max) * 100) + "%"; track.append(fill);
       row.append(element("span", "", label), track, element("b", "", number(value))); target.append(row);
     }
+    const usage = element("div", "cc-runtime-usage");
+    usage.append(
+      runtimeDatum("Tentativi misurati", number(runtime.usage ? runtime.usage.attempts : 0)),
+      runtimeDatum("Costo misurato", euro(runtime.usage ? runtime.usage.costCents : 0)),
+      runtimeDatum("Provider call", number(runtime.usage ? runtime.usage.providerCalls : 0)),
+      runtimeDatum("Tool call", number(runtime.usage ? runtime.usage.toolCalls : 0)),
+      runtimeDatum("Effetti esterni", runtime.usage && runtime.usage.externalEffectsExecuted ? "ERRORE" : "Runtime H24: zero · non globale"),
+    );
+    target.append(usage);
+    const jobs = element("div", "cc-runtime-ledger");
+    jobs.append(element("p", "cc-panel-label", "JOB DUREVOLI · ULTIMI " + String(Math.min((runtime.jobs || []).length, 12))));
+    if (!runtime.jobs || runtime.jobs.length === 0) jobs.append(element("p", "cc-runtime-empty", "Nessun job durevole registrato."));
+    for (const job of (runtime.jobs || []).slice(0, 12)) {
+      const card = element("article", "cc-runtime-job"); card.dataset.status = job.status;
+      const head = element("div", "cc-runtime-job-head");
+      head.append(element("b", "", job.jobType), element("span", "", statusLabel(job.status) + " · v" + String(job.version)));
+      card.append(head, element("code", "", job.jobId), element("small", "", "Owner " + job.owner + " · tentativo " + String(job.attempt) + " · aggiornato " + timestamp(job.updatedAt) + (job.failureCode ? " · " + job.failureCode : "")));
+      const exactTarget = controlTarget("JOB", job.jobId);
+      if (exactTarget) {
+        const action = exactTarget.actions[0];
+        card.append(controlActionButton(action === "RETRY_FAILED_JOB" ? "Riprova con job successore" : "Riaccoda con job successore", action, exactTarget, job));
+      }
+      jobs.append(card);
+    }
+    target.append(jobs);
+    const incidents = element("div", "cc-runtime-ledger");
+    incidents.append(element("p", "cc-panel-label", "INCIDENTI OPERATIVI"));
+    const records = Array.isArray(controls.incidents) ? controls.incidents.slice(0, 12) : [];
+    if (records.length === 0) incidents.append(element("p", "cc-runtime-empty", "Nessun incidente durevole registrato."));
+    for (const incident of records) {
+      const card = element("article", "cc-runtime-job"); card.dataset.status = incident.status;
+      card.append(element("div", "cc-runtime-job-head", undefined), element("code", "", incident.incidentId), element("small", "", incident.severity + " · " + incident.summaryCode + " · " + statusLabel(incident.status)));
+      card.firstChild.append(element("b", "", "Incidente"), element("span", "", "v" + String(incident.version)));
+      const exactTarget = controlTarget("INCIDENT", incident.incidentId);
+      if (exactTarget) card.append(controlActionButton("Riconosci incidente", "ACKNOWLEDGE_INCIDENT", exactTarget, incident));
+      incidents.append(card);
+    }
+    target.append(incidents);
   }
+
+  function runtimeDatum(label, value) { const item = element("div"); item.append(element("span", "", label), element("b", "", value)); return item; }
 
   function renderAgents(agents) {
     const target = byId("agent-grid");
@@ -935,7 +1349,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const visible = agents.filter((agent) => state.agentFilter === "ALL" || agentIdentity(agent.agentId).squad === state.agentFilter);
     target.replaceChildren();
     document.querySelectorAll("[data-agent-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.agentFilter === state.agentFilter)));
-    text("agent-filter-summary", String(visible.length) + " specialista/i visibili · metriche solo da task durevoli");
+    const partialCoverage = agents.some((agent) => agent.coverage === "LIMIT_REACHED");
+    const observedWorkdays = agents.reduce((maximum, agent) => Math.max(maximum, Number(agent.observedWorkdays || 0)), 0);
+    text("agent-filter-summary", String(visible.length) + " specialista/i visibili · metriche da task durevoli" + (partialCoverage ? " · finestra ultimi " + String(observedWorkdays) + " workday, copertura parziale" : " · copertura completa su " + String(observedWorkdays) + " workday"));
     if (!visible.some((agent) => agent.agentId === state.selectedAgentId)) state.selectedAgentId = visible[0] ? visible[0].agentId : null;
     for (const agent of visible) {
       const visual = agentIdentity(agent.agentId);
@@ -960,15 +1376,21 @@ export const COMMAND_CENTER_CLIENT_JS = `
       mission.append(element("span", "", "MISSIONE"), element("p", "", agent.role));
       const stats = element("div", "cc-agent-card-stats");
       stats.append(
-        agentCardMetric("Completati", number(agent.completedTasks)),
-        agentCardMetric("First pass", number(agent.acceptedFirstPassTasks)),
-        agentCardMetric("Bloccati", number(agent.blockedTasks)),
+        agentCardMetric("Completati", boundedAgentValue(agent, agent.completedTasks)),
+        agentCardMetric("First pass", boundedAgentValue(agent, agent.acceptedFirstPassTasks)),
+        agentCardMetric("Bloccati", boundedAgentValue(agent, agent.blockedTasks)),
         agentCardMetric("Qualità", agent.averageQualityScore === "NOT_AVAILABLE" ? "—" : number(agent.averageQualityScore) + "/100"),
       );
       const power = element("div", "cc-agent-power");
       power.append(element("span", "", "CAPACITÀ"), element("code", "", agent.supportedTasks.join(" · ")), element("b", "", "Apri dossier →"));
       card.append(head, mission, stats, power);
-      card.addEventListener("click", () => { state.selectedAgentId = agent.agentId; renderAgents(agents); });
+      const selectAgent = () => { state.selectedAgentId = agent.agentId; renderAgents(agents); };
+      card.addEventListener("click", selectAgent);
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        selectAgent();
+      });
       target.append(card);
     }
     const selected = agents.find((agent) => agent.agentId === state.selectedAgentId);
@@ -989,7 +1411,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     text("team-total", number(agents.length));
     text("team-ready", number(ready));
     text("team-active", number(active));
-    text("team-completed", number(completed));
+    text("team-completed", agents.some((agent) => agent.coverage === "LIMIT_REACHED") ? "≥ " + number(completed) : number(completed));
     text("apex-total", number(agents.length));
     text("apex-squads", number(squads));
     text("apex-guardians", number(guardians));
@@ -1015,13 +1437,13 @@ export const COMMAND_CENTER_CLIENT_JS = `
     for (const task of agent.supportedTasks) capability.append(element("code", "", task));
     const telemetry = element("div", "cc-agent-dossier-grid");
     telemetry.append(
-      agentStat("Task completati", number(agent.completedTasks)),
-      agentStat("First pass", number(agent.acceptedFirstPassTasks)),
-      agentStat("Task bloccati", number(agent.blockedTasks)),
-      agentStat("Revisioni", number(agent.revisionsRequired)),
-      agentStat("Qualità media", agent.averageQualityScore === "NOT_AVAILABLE" ? "Dato non disponibile" : number(agent.averageQualityScore) + "/100"),
-      agentStat("Tempo misurato", duration(agent.measuredDurationMs)),
-      agentStat("Costo misurato", euro(agent.measuredCostCents)),
+      agentStat("Task completati · finestra", boundedAgentValue(agent, agent.completedTasks)),
+      agentStat("First pass · finestra", boundedAgentValue(agent, agent.acceptedFirstPassTasks)),
+      agentStat("Task bloccati · finestra", boundedAgentValue(agent, agent.blockedTasks)),
+      agentStat("Revisioni · finestra", boundedAgentValue(agent, agent.revisionsRequired)),
+      agentStat("Qualità media · finestra", agent.averageQualityScore === "NOT_AVAILABLE" ? "Dato non disponibile" : number(agent.averageQualityScore) + "/100"),
+      agentStat("Tempo misurato · finestra", (agent.coverage === "LIMIT_REACHED" ? "≥ " : "") + duration(agent.measuredDurationMs)),
+      agentStat("Costo misurato · finestra", (agent.coverage === "LIMIT_REACHED" ? "≥ " : "") + euro(agent.measuredCostCents)),
       agentStat("Autonomia", agent.autonomy),
     );
     const guardrail = element("div", "cc-agent-guardrail");
@@ -1030,6 +1452,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function agentCardMetric(label, value) { const item = element("div"); item.append(element("span", "", label), element("strong", "", value)); return item; }
+
+  function boundedAgentValue(agent, value) { return (agent.coverage === "LIMIT_REACHED" ? "≥ " : "") + number(value); }
 
   function renderAgentWorkdays(workdays) {
     const list = byId("agent-workday-list");
@@ -1089,7 +1513,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
         element("b", "", task.taskType),
         element("p", "", statusLabel(task.status) + " · gate " + String(passedGates) + "/" + String(task.gates.length) + " · tentativi " + String(task.attempts) + " · " + duration(task.durationMs) + " · " + euro(task.costCents)),
         element("p", "", task.dependencies.length === 0 ? "Nessuna dipendenza" : "Dipendenze: " + task.dependencies.join(", ")),
-        element("small", "", task.blocker || (task.outputFingerprint ? "Fingerprint " + task.outputFingerprint.slice(0, 16) + "…" : "Output non ancora disponibile")),
+        element("small", "", task.blocker ? agentBlockerText(task.blocker) : task.outputFingerprint ? "Fingerprint " + task.outputFingerprint.slice(0, 16) + "…" : "Output non ancora disponibile"),
       );
       if (task.output) {
         const output = element("details", "cc-task-output");
@@ -1101,18 +1525,20 @@ export const COMMAND_CENTER_CLIENT_JS = `
     detail.append(summary, taskList);
   }
 
+  function agentBlockerText(blocker) { return "Blocco " + blocker.reasonCode + " · input " + blocker.missingInput + " · evidenza " + blocker.evidence.join(" / ") + " · rimedio " + blocker.remediation + " · owner " + blocker.owner + " · prossima azione " + blocker.nextAction; }
+
   function agentStat(label, value) { const item = element("div", "cc-agent-stat"); item.append(element("span", "", label), element("b", "", value)); return item; }
   function duration(milliseconds) { if (!Number.isFinite(milliseconds)) return "—"; if (milliseconds < 1000) return number(milliseconds) + " ms"; return new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 }).format(milliseconds / 1000) + " s"; }
 
-  function renderApprovals(productions, business, live, visualReview, mediaFactory) {
+  function renderApprovals(productions, business, live, visualReview, mediaFactory, coverageLimited) {
     const pending = productions.filter((item) => item.status === "PENDING_FABIO_APPROVAL");
     const pendingBusiness = business.filter((item) => item.status === "PENDING_FABIO_APPROVAL");
     const reviewList = byId("approval-review-list");
     reviewList.replaceChildren();
     if (mediaFactory) reviewList.append(mediaFactoryApprovalCard(mediaFactory));
     if (pending.length === 0 && pendingBusiness.length === 0) {
-      text("approval-title", mediaFactory ? "Pilot Live AI in attesa di Fabio" : "Nessun pacchetto richiede la decisione di Fabio");
-      text("approval-detail", mediaFactory ? "Il factory mostra lo stato reale di budget, asset e gate. Non approva, programma o pubblica nulla." : "Un futuro pacchetto contenuti o dossier Business apparirà qui con versione esatta, fingerprint, evidenze e gate.");
+      text("approval-title", mediaFactory ? "Pilot Live AI in attesa di Fabio" : coverageLimited ? "Nessuna richiesta nella finestra osservata" : "Nessun pacchetto richiede la decisione di Fabio");
+      text("approval-detail", mediaFactory ? "Il factory mostra lo stato reale di budget, asset e gate. Non approva, programma o pubblica nulla." + (coverageLimited ? " La copertura delle approvazioni è parziale: il totale globale non è determinabile." : "") : coverageLimited ? "La copertura è parziale: riconciliare l'intera finestra prima di concludere che non esistano richieste." : "Un futuro pacchetto contenuti o dossier Business apparirà qui con versione esatta, fingerprint, evidenze e gate.");
       return;
     }
     const evidenceAttested = pending.filter((item) => item.evidencePack).length;
@@ -1122,8 +1548,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
       const social = record.package.socialPublishingPack;
       if (!social || !record.evidencePack || record.package.risk.status !== "CLEAR") continue;
       const master = social.masterContentPack;
+      const boundVisualReview = visualReviewBoundToRecord(visualReview, record) ? visualReview : null;
       const card = element("article", "cc-approval-review");
-      const visualBlocked = !visualReview || visualReview.visualReview.status !== "READY_FOR_HUMAN_DECISION";
+      const visualBlocked = !boundVisualReview;
       card.dataset.visualStatus = visualBlocked ? "blocked" : "ready";
       const head = element("div", "cc-approval-review-head");
       const identity = element("div");
@@ -1132,15 +1559,15 @@ export const COMMAND_CENTER_CLIENT_JS = `
       gates.append(element("span", "", "QUALITY " + String(record.package.quality.readinessScore) + "/100"), element("span", "", "RISK CLEAR"), element("span", "", "EVIDENCE PACK ALLEGATO"));
       const visualGate = element("span", "", visualBlocked ? "VISUAL GATE BLOCCATO" : "VISUAL GATE PRONTO"); visualGate.dataset.gate = visualBlocked ? "blocked" : "ready"; gates.append(visualGate);
       head.append(identity, gates);
-      const visual = visualReviewGallery(visualReview);
+      const visual = visualReviewGallery(boundVisualReview);
       const grid = element("div", "cc-approval-review-grid");
       const evidenceStatements = record.package.evidence.items.slice(0, 2).map((item) => item.statement);
       const insights = live && live.baseline.postCount > 0 ? String(live.baseline.postCount) + " snapshot importati" : "INSUFFICIENT_DATA · Insights dettagliati mancanti";
-      const instagramCaption = visualReview ? visualReview.captions.instagram : (master ? master.nativeVariants.instagram.caption : "Caption non disponibile");
-      const tiktokCaption = visualReview ? visualReview.captions.tiktok : "Caption TikTok non disponibile";
-      const hashtagDetail = visualReview ? "Instagram: " + visualReview.hashtags.instagram.join(" ") + " · TikTok: " + visualReview.hashtags.tiktok.join(" ") : "Main: " + (social.hashtagSets.main.join(" ") || "—") + " · Alternative: " + (social.hashtagSets.alternate.join(" ") || "—") + " · Test: " + (social.hashtagSets.experimental.join(" ") || "—");
-      const audioDetail = visualReview ? "Nessun audio selezionato. Audio originale Metodo Veloce solo dopo attestazione; altrimenti nessun audio." : (social.audioPlan.status === "AUDIO_NON_AUTORIZZATO" ? "Usare audio originale Metodo Veloce oppure nessun audio; nessuna traccia è programmabile." : (social.audioPlan.selected ? social.audioPlan.selected.title : "Nessun audio selezionato"));
-      const windowDetail = visualReview ? visualReview.publicationWindows.windows.map((window) => window.platform + " " + window.variant + " · " + window.label + " · " + window.localTime).join(" | ") : social.publicationWindows.windows.map((window) => window.label + ": " + timestamp(window.startAt)).join(" · ");
+      const instagramCaption = boundVisualReview ? boundVisualReview.captions.instagram : (master ? master.nativeVariants.instagram.caption : "Caption non disponibile");
+      const tiktokCaption = boundVisualReview ? boundVisualReview.captions.tiktok : "Caption TikTok non disponibile";
+      const hashtagDetail = boundVisualReview ? "Instagram: " + boundVisualReview.hashtags.instagram.join(" ") + " · TikTok: " + boundVisualReview.hashtags.tiktok.join(" ") : "Main: " + (social.hashtagSets.main.join(" ") || "—") + " · Alternative: " + (social.hashtagSets.alternate.join(" ") || "—") + " · Test: " + (social.hashtagSets.experimental.join(" ") || "—");
+      const audioDetail = boundVisualReview ? "Nessun audio selezionato. Audio originale Metodo Veloce solo dopo attestazione; altrimenti nessun audio." : (social.audioPlan.status === "AUDIO_NON_AUTORIZZATO" ? "Usare audio originale Metodo Veloce oppure nessun audio; nessuna traccia è programmabile." : (social.audioPlan.selected ? social.audioPlan.selected.title : "Nessun audio selezionato"));
+      const windowDetail = boundVisualReview ? boundVisualReview.publicationWindows.windows.map((window) => window.platform + " " + window.variant + " · " + window.label + " · " + window.localTime).join(" | ") : social.publicationWindows.windows.map((window) => window.label + ": " + timestamp(window.startAt)).join(" · ");
       grid.append(
         socialBlock("Perché questo trend", statusLabel(social.trendAnalysis.phase), social.audienceDemand.intents.join(" · ") || "Segnale compatibile attestato, velocità non misurata."),
         socialBlock("Due evidenze", String(evidenceStatements.length) + "/2", evidenceStatements.join(" · ")),
@@ -1151,12 +1578,12 @@ export const COMMAND_CENTER_CLIENT_JS = `
         socialBlock("Caption Instagram", "DISTINTA", instagramCaption),
         socialBlock("Caption TikTok", "DISTINTA", tiktokCaption),
         socialBlock("Hashtag pack", statusLabel(social.hashtagSets.status), hashtagDetail),
-        socialBlock("Audio", visualReview ? statusLabel(visualReview.audio.status) : statusLabel(social.audioPlan.status), audioDetail),
-        socialBlock("Quattro finestre sperimentali", visualReview ? "NON SONO ORARI OTTIMALI" : statusLabel(social.publicationWindows.status), windowDetail),
+        socialBlock("Audio", boundVisualReview ? statusLabel(boundVisualReview.audio.status) : statusLabel(social.audioPlan.status), audioDetail),
+        socialBlock("Quattro finestre sperimentali", boundVisualReview ? "NON SONO ORARI OTTIMALI" : statusLabel(social.publicationWindows.status), windowDetail),
         socialBlock("Versione esatta", "SOCIAL + MASTER", "Social " + social.fingerprint.slice(0, 16) + "… · Master " + (master ? master.fingerprint.slice(0, 16) + "…" : "NON DISPONIBILE")),
         socialBlock("Conseguenze", statusLabel(social.approvalScope.scope), social.approvalScope.consequences.join(" "))
       );
-      const fingerprint = element("code", "cc-approval-review-code", "Visual Asset Set V3 " + (visualReview ? visualReview.fingerprint : "NON DISPONIBILE") + "\\nSocial Pack " + social.fingerprint + "\\nMaster Content Pack " + (master ? master.fingerprint : "NON DISPONIBILE") + "\\nEvidence Pack " + record.evidencePack.fingerprint);
+      const fingerprint = element("code", "cc-approval-review-code", "Visual Asset Set V3 " + (boundVisualReview ? boundVisualReview.fingerprint : "NON DISPONIBILE O NON LEGATO") + "\\nSocial Pack " + social.fingerprint + "\\nMaster Content Pack " + (master ? master.fingerprint : "NON DISPONIBILE") + "\\nEvidence Pack " + record.evidencePack.fingerprint);
       const foot = element("div", "cc-approval-review-foot");
       foot.append(element("p", "", visualBlocked ? "Il Visual Gate non è superato: l'approvazione interna non viene proposta. Programmazione e pubblicazione restano separate e bloccate." : "L'approvazione autorizza soltanto questo pacchetto interno. Programmazione e pubblicazione restano separate e bloccate."), element("a", "cc-text-action", "Apri asset e azioni controllate →"));
       foot.lastChild.href = "#production";
@@ -1178,8 +1605,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const previous = element("button", "", "← Precedente"); previous.type = "button";
     const position = element("strong", "", String(state.visualSlideIndex + 1) + " / 6");
     const next = element("button", "", "Successiva →"); next.type = "button";
-    previous.addEventListener("click", () => { state.visualSlideIndex -= 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview, state.mediaFactory); });
-    next.addEventListener("click", () => { state.visualSlideIndex += 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview, state.mediaFactory); });
+    previous.addEventListener("click", () => { state.visualSlideIndex -= 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview, state.mediaFactory, isApprovalCoverageLimited(state.snapshot)); });
+    next.addEventListener("click", () => { state.visualSlideIndex += 1; renderApprovals(state.snapshot.productions, state.snapshot.business || [], state.snapshot.socialLive, state.visualReview, state.mediaFactory, isApprovalCoverageLimited(state.snapshot)); });
     nav.append(previous, position, next); head.append(nav); shell.append(head);
     const canvases = element("div", "cc-visual-review-canvases");
     for (const platform of ["instagram", "tiktok"]) {
@@ -1285,6 +1712,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     }
     const connections = factory.socialConnections || {};
     const connectorPanel = element("section", "cc-approval-review-grid");
+    const connectorCheckpoint = "http://127.0.0.1:43123/";
     for (const [platform, label] of [["instagram", "Instagram"], ["tiktok", "TikTok"]]) {
       const status = connections[platform] || {};
       const shell = element("div", "cc-approval-review-code");
@@ -1292,16 +1720,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
         element("strong", "", label + " · " + statusLabel(status.state || "APP_CONFIGURATION_REQUIRED")),
         element("p", "", (status.expectedAccount || (platform === "instagram" ? "@mr.metodo.veloce_official" : "@metodo_veloce.official")) + " · PUBBLICAZIONE LOCKED")
       );
-      for (const [action, href] of [
-        ["Connetti", "http://127.0.0.1:43123/oauth/" + platform + "/start"],
-        ["Riconnetti", "http://127.0.0.1:43123/oauth/" + platform + "/start"],
-        ["Verifica stato", "http://127.0.0.1:43123/"],
-        ["Disconnetti", "http://127.0.0.1:43123/"]
-      ]) {
-        const link = element("a", "cc-control-button", action);
-        link.href = href; link.target = "_blank"; link.rel = "noopener noreferrer";
-        shell.append(link);
-      }
+      const link = element("a", "cc-control-button", "Apri checkpoint locale");
+      link.href = connectorCheckpoint; link.target = "_blank"; link.rel = "noopener noreferrer";
+      shell.append(link, element("p", "", "Connessione, verifica, riconnessione e revoca restano operazioni esplicite nel runtime locale; questo link non ne esegue alcuna."));
       connectorPanel.append(shell);
     }
     card.append(connectorPanel);
@@ -1314,7 +1735,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const mapping = [["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["business", "business"], ["opportun", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
     const found = mapping.find(([keyword]) => normalized.includes(keyword));
     if (!found) { commandResult.textContent = "Usa un termine come Social, trend, Business, approvazioni, evidenze, runtime, agenti o produzioni."; return; }
-    const target = byId(found[1]); if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    const target = byId(found[1]); if (target) target.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
     commandResult.textContent = "Aperta la sezione richiesta.";
   }
 
@@ -1344,7 +1765,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function setMobileSidebar(open) {
+    const wasOpen = root.dataset.mobileSidebar === "open";
     const drawerOpen = mobileSidebar.matches && open;
+    if (drawerOpen && !wasOpen) state.mobileReturnFocus = document.activeElement;
     root.dataset.mobileSidebar = drawerOpen ? "open" : "closed";
     mobileMenuToggle.setAttribute("aria-expanded", String(drawerOpen));
     mobileMenuToggle.setAttribute("aria-label", drawerOpen ? "Chiudi il menu del Centro di Comando" : "Apri il menu del Centro di Comando");
@@ -1359,6 +1782,14 @@ export const COMMAND_CENTER_CLIENT_JS = `
       else main.removeAttribute("aria-hidden");
     }
     document.body.style.overflow = drawerOpen ? "hidden" : "";
+    if (drawerOpen && !wasOpen) {
+      const first = sidebar.querySelector('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])');
+      if (first) first.focus();
+    } else if (!drawerOpen && wasOpen) {
+      const returnFocus = state.mobileReturnFocus && typeof state.mobileReturnFocus.focus === "function" ? state.mobileReturnFocus : mobileMenuToggle;
+      state.mobileReturnFocus = null;
+      returnFocus.focus();
+    }
   }
 
   function toggleSidebar() {
@@ -1371,6 +1802,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
     setMobileSidebar(false);
     sidebarToggle.addEventListener("click", toggleSidebar);
     mobileMenuToggle.addEventListener("click", toggleSidebar);
+    for (const button of [sidebarToggle, mobileMenuToggle]) button.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      toggleSidebar();
+    });
     sidebarBackdrop.addEventListener("click", () => setMobileSidebar(false));
     sidebar.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => { if (mobileSidebar.matches) setMobileSidebar(false); }));
     if (typeof mobileSidebar.addEventListener === "function") {
@@ -1389,23 +1825,32 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function prepareAmbientMotion() {
-    if (reduceMotion) return;
     const reset = () => { root.style.setProperty("--cc-parallax-x", "0px"); root.style.setProperty("--cc-parallax-y", "0px"); };
     root.addEventListener("pointermove", (event) => {
+      if (prefersReducedMotion()) { reset(); return; }
       const x = Math.round(((event.clientX / Math.max(window.innerWidth, 1)) - .5) * 12);
       const y = Math.round(((event.clientY / Math.max(window.innerHeight, 1)) - .5) * 8);
       root.style.setProperty("--cc-parallax-x", String(x) + "px");
       root.style.setProperty("--cc-parallax-y", String(y) + "px");
     });
     root.addEventListener("pointerleave", reset);
-    window.addEventListener("scroll", () => { root.style.setProperty("--cc-scroll-shift", String(Math.min(8, Math.round(window.scrollY * .018))) + "px"); }, { passive: true });
+    window.addEventListener("scroll", () => { root.style.setProperty("--cc-scroll-shift", prefersReducedMotion() ? "0px" : String(Math.min(8, Math.round(window.scrollY * .018))) + "px"); }, { passive: true });
+    if (typeof reducedMotionQuery.addEventListener === "function") reducedMotionQuery.addEventListener("change", reset);
   }
 
   commandForm.addEventListener("submit", (event) => { event.preventDefault(); navigate(commandInput.value.trim()); });
   document.addEventListener("keydown", (event) => {
+    if (!actionConfirmation.hidden) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); commandInput.focus(); }
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") { event.preventDefault(); toggleSidebar(); }
-    if (event.key === "Escape" && mobileSidebar.matches && root.dataset.mobileSidebar === "open") setMobileSidebar(false);
+    if (event.key === "Escape" && mobileSidebar.matches && root.dataset.mobileSidebar === "open") { event.preventDefault(); setMobileSidebar(false); return; }
+    if (event.key === "Tab" && mobileSidebar.matches && root.dataset.mobileSidebar === "open") {
+      const controls = Array.from(sidebar.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+      if (controls.length === 0) { event.preventDefault(); mobileMenuToggle.focus(); return; }
+      const first = controls[0]; const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
   });
   document.querySelectorAll("[data-confirmation-close]").forEach((button) => button.addEventListener("click", () => closeActionConfirmation("Azione annullata: nessuna modifica eseguita.")));
   actionConfirmationSubmit.addEventListener("click", () => { void confirmPendingAction(); });
@@ -1427,7 +1872,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
   initializeAgentControls();
   syncVisualContext();
   prepareAmbientMotion();
-  refresh();
-  window.setInterval(refresh, 30000);
+  connectLiveEvents();
+  window.addEventListener("beforeunload", () => {
+    if (state.eventSource) state.eventSource.close();
+    if (state.liveFallbackInterval !== null) window.clearInterval(state.liveFallbackInterval);
+    if (state.liveRefreshTimer !== null) window.clearTimeout(state.liveRefreshTimer);
+  });
 })();
 `;

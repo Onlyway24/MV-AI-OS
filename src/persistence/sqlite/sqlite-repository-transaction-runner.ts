@@ -32,6 +32,11 @@ import { SqliteOperationalPlaneRepository } from "./sqlite-operational-plane-rep
 import { SqliteBusinessMissionRepository } from "./sqlite-business-mission-repository.js";
 import { SqliteAgentCompanyWorkdayRepository } from "./sqlite-agent-company-workday-repository.js";
 import { SqliteAuthorizedResearchRepository } from "./sqlite-authorized-research-repository.js";
+import { SqliteOperationalEventRepository } from "./sqlite-operational-event-repository.js";
+import { SqliteOperationsRuntimeRepository } from "./sqlite-operations-runtime-repository.js";
+import { SqliteOperationsControlRepository } from "./sqlite-operations-control-repository.js";
+import { SqliteFounderWorkdayRepository } from "./sqlite-founder-workday-repository.js";
+import { SqliteDailyOperatingBriefRepository } from "./sqlite-daily-operating-brief-repository.js";
 
 export class SqliteRepositoryTransactionRunner
   implements RepositoryTransactionRunner
@@ -78,6 +83,11 @@ export class SqliteRepositoryTransactionRunner
         ),
         businessMissions: new SqliteBusinessMissionRepository(this.#database, scope),
         contentProductions: new SqliteMetodoVeloceContentProductionRepository(this.#database, scope),
+        dailyOperatingBriefs: new SqliteDailyOperatingBriefRepository(this.#database, scope),
+        founderWorkdays: new SqliteFounderWorkdayRepository(this.#database, scope),
+        operationalEvents: new SqliteOperationalEventRepository(this.#database, scope),
+        operationsControls: new SqliteOperationsControlRepository(this.#database, scope),
+        operationsRuntime: new SqliteOperationsRuntimeRepository(this.#database, scope),
         productionRuntimeJobs: new SqliteProductionRuntimeJobRepository(this.#database, scope),
         operationalPlanes: new SqliteOperationalPlaneRepository(this.#database, scope),
         requests: new SqliteRequestRepository(

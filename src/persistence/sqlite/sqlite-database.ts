@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import { closeSync, constants, fchmodSync, fstatSync, openSync, rmSync } from "node:fs";
 
 import {
   SqliteConnectionConfigValidator,
@@ -23,6 +24,7 @@ export function openSqliteDatabase(config: unknown): OpenedSqliteDatabase {
   const validatedConfig = Object.freeze({ ...validation.value });
 
   let database: DatabaseSync;
+  const privateFile = validatedConfig.path === ":memory:" ? undefined : preparePrivateDatabaseFile(validatedConfig.path);
   try {
     database = new DatabaseSync(validatedConfig.path, {
       allowExtension: false,
@@ -33,6 +35,7 @@ export function openSqliteDatabase(config: unknown): OpenedSqliteDatabase {
       timeout: validatedConfig.timeoutMs,
     });
   } catch {
+    if (privateFile?.created === true) rmSync(validatedConfig.path, { force: true });
     throw new SqliteRepositoryError(
       "Unable to open the configured SQLite database",
       "connection.open",
@@ -51,4 +54,31 @@ export function openSqliteDatabase(config: unknown): OpenedSqliteDatabase {
     config: validatedConfig,
     database,
   });
+}
+
+function preparePrivateDatabaseFile(path: string): Readonly<{ readonly created: boolean }> {
+  let descriptor: number | undefined;
+  let created = false;
+  try {
+    try {
+      descriptor = openSync(path, constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | constants.O_NOFOLLOW, 0o600);
+      created = true;
+    } catch (error) {
+      if (!hasCode(error, "EEXIST")) throw error;
+      descriptor = openSync(path, constants.O_RDWR | constants.O_NOFOLLOW);
+    }
+    const details = fstatSync(descriptor);
+    if (!details.isFile() || (typeof process.getuid === "function" && details.uid !== process.getuid())) throw new Error("SQLite database ownership is invalid");
+    fchmodSync(descriptor, 0o600);
+    return Object.freeze({ created });
+  } catch {
+    if (created) rmSync(path, { force: true });
+    throw new SqliteRepositoryError("Unable to secure the configured SQLite database", "connection.permissions");
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
+}
+
+function hasCode(error: unknown, code: string): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
 }

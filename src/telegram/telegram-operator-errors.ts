@@ -8,6 +8,7 @@ export const TELEGRAM_OPERATOR_ERROR_CODES = Object.freeze([
   "POLLING_TRANSIENT_FAILURE",
   "UPDATE_PROCESSING_FAILED",
   "OUTBOUND_DELIVERY_FAILED",
+  "DELIVERY_RECONCILIATION_REQUIRED",
   "OPERATOR_SHUTDOWN_FAILED",
   "INTERNAL_OPERATOR_FAILURE",
 ] as const);
@@ -25,6 +26,7 @@ const REMEDIATION: Readonly<Record<TelegramOperatorErrorCode, string>> = Object.
   POLLING_TRANSIENT_FAILURE: "The bounded polling retry budget was exhausted; restart the local operator when Telegram is reachable.",
   UPDATE_PROCESSING_FAILED: "The affected update was isolated; send a new supported command if needed.",
   OUTBOUND_DELIVERY_FAILED: "The affected response could not be delivered; send a new supported command if needed.",
+  DELIVERY_RECONCILIATION_REQUIRED: "A Telegram delivery may have succeeded before local confirmation; reconcile it manually and do not retry the same update.",
   OPERATOR_SHUTDOWN_FAILED: "Confirm the process has stopped before starting another operator.",
   INTERNAL_OPERATOR_FAILURE: "Run the documented preflight and doctor checks before retrying.",
 });

@@ -1,3 +1,7 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { RepositoryConflictError } from "../../src/errors/core-error.js";
@@ -15,10 +19,37 @@ import { parseCompetitorObservationsCsv } from "../../src/social-intelligence-li
 import { parseAudioRightsCsv } from "../../src/social-intelligence-live/social-audio-rights-csv-adapter.js";
 import { OperationalPlaneService } from "../../src/operational-planes/operational-plane-service.js";
 import { InMemoryRepositoryTransactionRunner } from "../support/in-memory-repositories.js";
+import { SqliteRepositoryTransactionRunner } from "../../src/persistence/sqlite/sqlite-repository-transaction-runner.js";
 
 class FixedClock { public constructor(private readonly value = "2026-07-15T10:00:00.000Z") {} public now(): Date { return new Date(this.value); } }
 
 describe("Social Intelligence Live activation", () => {
+  it("returns the newest bounded SQLite window when more than 500 records exist", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-social-window-"));
+    const repositories = new SqliteRepositoryTransactionRunner({ path: join(directory, "runtime.sqlite"), timeoutMs: 1_000 });
+    try {
+      const service = new SocialIntelligenceLiveService({ actorId: "fabio", clock: new FixedClock(), repositories, workspaceId: "onlyway" });
+      const records = Array.from({ length: 501 }, (_, index) => service.createRecord({
+        accountRef: `account-${String(index).padStart(3, "0")}`,
+        country: "IT",
+        kind: "ACCOUNT",
+        ownership: "OWNED",
+        platform: "INSTAGRAM",
+        recordId: `social-window-${String(index).padStart(3, "0")}`,
+      }));
+      await expect(service.importBatch({ batchId: "social-window-first-500", records: records.slice(0, 500) })).resolves.toMatchObject({ status: "COMMITTED" });
+      await service.importRecord(records[500]);
+      const latest = await repositories.transaction(({ operationalPlanes }) => operationalPlanes.listSocialLiveRecordsByWorkspaceId("onlyway", 500));
+      expect(latest).toHaveLength(500);
+      expect(latest[0]?.recordId).toBe("social-window-001");
+      expect(latest.at(-1)?.recordId).toBe("social-window-500");
+      expect(latest.some(({ recordId }) => recordId === "social-window-000")).toBe(false);
+    } finally {
+      await repositories.close();
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
   it("persists replay-safe real imports and refuses fingerprint conflicts", async () => {
     const { service } = await fixture();
     const account = service.createRecord({ accountRef: "mr.metodo.veloce_official", country: "IT", kind: "ACCOUNT", ownership: "OWNED", platform: "INSTAGRAM", recordId: "social-account-mv-001" } as const);

@@ -23,9 +23,21 @@ import type { CommandCenterQueryService } from "./command-center-query-service.j
 import { socialAnalyticsCsvTemplate } from "../social-intelligence-live/social-analytics-csv-adapter.js";
 import { competitorObservationsCsvTemplate } from "../social-intelligence-live/social-competitor-observation-csv-adapter.js";
 import { audioRightsCsvTemplate } from "../social-intelligence-live/social-audio-rights-csv-adapter.js";
+import type { OperationalEvent } from "../operations-runtime/operational-event.js";
+import type { OperationsControlService } from "../operations-control/operations-control-service.js";
+import type {
+  CommandCenterEventPlaneOptions,
+  CommandCenterEventSource,
+} from "./command-center-event-source.js";
 
 const LOCAL_HOST = "127.0.0.1";
 const SESSION_COOKIE_NAME = "mv_ai_os_cc";
+const DEFAULT_EVENT_CONNECTION_LIMIT = 8;
+const DEFAULT_EVENT_HEARTBEAT_MS = 15_000;
+const DEFAULT_EVENT_MAX_REPLAY = 500;
+const DEFAULT_EVENT_POLL_INTERVAL_MS = 750;
+const EVENT_BATCH_SIZE = 100;
+const MAX_EVENT_STREAM_BUFFER_BYTES = 262_144;
 const ORIGINAL_BRAND_ASSET_PATH = fileURLToPath(new URL("../../assets/brand/onlyway-obsidian-chrome-original.png", import.meta.url));
 const SOCIAL_VISUAL_PACK_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/social-pack-five-items-v3/", import.meta.url));
 const SOCIAL_VISUAL_PACK_MANIFEST_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/social-pack-five-items-v3/manifest.json", import.meta.url));
@@ -42,8 +54,10 @@ const SOCIAL_CONNECTOR_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-
 export interface CommandCenterServerOptions {
   readonly accessToken?: string;
   readonly actionService?: CommandCenterActionService;
+  readonly eventPlane?: CommandCenterEventPlaneOptions;
+  readonly operationsControlService?: Pick<OperationsControlService, "confirmForOperator" | "proposeForOperator">;
   readonly port?: number;
-  readonly queryService: CommandCenterQueryService;
+  readonly queryService: Pick<CommandCenterQueryService, "snapshot">;
 }
 
 export interface StartedCommandCenter {
@@ -52,16 +66,31 @@ export interface StartedCommandCenter {
   close(): Promise<void>;
 }
 
+interface EventStreamConnection {
+  cursor: number;
+  readonly response: ServerResponse;
+}
+
 /**
- * A loopback-only surface. Its two narrow mutations can only delegate to the
- * existing command and approval boundaries; browser requests never write SQLite.
+ * A loopback-only surface. Mutations delegate to explicit application-service
+ * boundaries; browser request handlers never write SQLite directly.
  */
 export class PrivateCommandCenterServer {
   readonly #accessToken: Buffer;
   readonly #actionService: CommandCenterActionService | undefined;
   readonly #csrfToken: string;
+  readonly #eventConnectionLimit: number;
+  readonly #eventHeartbeatMs: number;
+  readonly #eventMaxReplay: number;
+  readonly #eventPollIntervalMs: number;
+  readonly #eventSource: CommandCenterEventSource | undefined;
+  readonly #operationsControlService: Pick<OperationsControlService, "confirmForOperator" | "proposeForOperator"> | undefined;
   readonly #port: number;
-  readonly #queryService: CommandCenterQueryService;
+  readonly #queryService: Pick<CommandCenterQueryService, "snapshot">;
+  readonly #eventConnections = new Set<EventStreamConnection>();
+  #eventHeartbeatTimer: ReturnType<typeof setInterval> | undefined;
+  #eventPollTimer: ReturnType<typeof setInterval> | undefined;
+  #eventPumpRunning = false;
   #server: Server | undefined;
   #started: StartedCommandCenter | undefined;
 
@@ -69,6 +98,12 @@ export class PrivateCommandCenterServer {
     this.#accessToken = tokenBytes(options.accessToken);
     this.#actionService = options.actionService;
     this.#csrfToken = randomBytes(32).toString("hex");
+    this.#eventSource = options.eventPlane?.source;
+    this.#eventConnectionLimit = boundedInteger(options.eventPlane?.connectionLimit, DEFAULT_EVENT_CONNECTION_LIMIT, 1, 32, "limite connessioni SSE");
+    this.#eventHeartbeatMs = boundedInteger(options.eventPlane?.heartbeatMs, DEFAULT_EVENT_HEARTBEAT_MS, 10, 60_000, "intervallo heartbeat SSE");
+    this.#eventMaxReplay = boundedInteger(options.eventPlane?.maxReplayEvents, DEFAULT_EVENT_MAX_REPLAY, 1, 2_000, "limite replay SSE");
+    this.#eventPollIntervalMs = boundedInteger(options.eventPlane?.pollIntervalMs, DEFAULT_EVENT_POLL_INTERVAL_MS, 10, 10_000, "intervallo event plane");
+    this.#operationsControlService = options.operationsControlService;
     this.#port = options.port ?? 0;
     this.#queryService = options.queryService;
   }
@@ -99,6 +134,7 @@ export class PrivateCommandCenterServer {
           const active = this.#server;
           this.#server = undefined;
           this.#started = undefined;
+          this.#shutdownEventPlane();
           await closeServer(active);
         }
       },
@@ -138,6 +174,10 @@ export class PrivateCommandCenterServer {
       }
       if (!hasSession(request, this.#accessToken)) {
         send(response, 401, "text/plain; charset=utf-8", "È richiesto l'accesso locale privato");
+        return;
+      }
+      if (requestUrl.pathname === "/api/events") {
+        await this.#handleEventStream(request, response, started.address.port);
         return;
       }
       if (request.method === "POST") {
@@ -225,6 +265,10 @@ export class PrivateCommandCenterServer {
       }
       send(response, 404, "text/plain; charset=utf-8", "Risorsa non trovata");
     } catch (error) {
+      if (response.headersSent) {
+        response.end();
+        return;
+      }
       if (error instanceof RepositoryConflictError) {
         send(response, 409, "text/plain; charset=utf-8", error.message);
         return;
@@ -237,31 +281,242 @@ export class PrivateCommandCenterServer {
     }
   }
 
+  async #handleEventStream(
+    request: IncomingMessage,
+    response: ServerResponse,
+    port: number,
+  ): Promise<void> {
+    if (request.method !== "GET") {
+      send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", { Allow: "GET" });
+      return;
+    }
+    if (this.#eventSource === undefined) {
+      send(response, 503, "text/plain; charset=utf-8", "Event plane locale non disponibile", { "Retry-After": "3" });
+      return;
+    }
+    if (!hasTrustedOptionalOrigin(request, port)) {
+      send(response, 403, "text/plain; charset=utf-8", "Stream locale non autorizzato");
+      return;
+    }
+    if (!acceptsEventStream(request)) {
+      send(response, 406, "text/plain; charset=utf-8", "È richiesto text/event-stream");
+      return;
+    }
+    if (this.#eventConnections.size >= this.#eventConnectionLimit) {
+      send(response, 429, "text/plain; charset=utf-8", "Limite connessioni live raggiunto", { "Retry-After": "3" });
+      return;
+    }
+    const requestedCursor = lastEventCursor(request);
+    if (requestedCursor === false) {
+      send(response, 400, "text/plain; charset=utf-8", "Last-Event-ID non valido");
+      return;
+    }
+
+    const window = await this.#eventSource.cursorWindow();
+    let cursor = requestedCursor ?? window.latestSequence;
+    let resetReason: EventCursorResetReason | undefined;
+    if (requestedCursor !== undefined && cursor > window.latestSequence) {
+      resetReason = "EVENT_CURSOR_AHEAD";
+    } else if (requestedCursor !== undefined && window.oldestSequence !== undefined && cursor < window.oldestSequence - 1) {
+      resetReason = "EVENT_CURSOR_EXPIRED";
+    }
+    let resetRequired = resetReason !== undefined;
+    let replay: readonly OperationalEvent[] = [];
+    if (!resetRequired && requestedCursor !== undefined) {
+      const loaded = await this.#loadReplay(cursor, window.latestSequence);
+      if (loaded === undefined) {
+        resetRequired = true;
+        resetReason = "EVENT_REPLAY_LIMIT_EXCEEDED";
+      }
+      else replay = loaded;
+    }
+
+    response.writeHead(200, securityHeaders({
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      Connection: "keep-alive",
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "X-Accel-Buffering": "no",
+    }));
+    response.flushHeaders();
+    if (!writeEventStream(response, "retry: 2000\n\n")) {
+      response.end();
+      return;
+    }
+
+    if (resetRequired) {
+      cursor = window.latestSequence;
+      if (!writeEventStream(response, cursorResetFrame(cursor, resetReason ?? "EVENT_CURSOR_EXPIRED"))) {
+        response.end();
+        return;
+      }
+    } else {
+      for (const event of replay) {
+        if (event.sequence <= cursor) continue;
+        if (!writeEventStream(response, operationalEventFrame(event))) {
+          response.end();
+          return;
+        }
+        cursor = event.sequence;
+      }
+    }
+
+    const connection: EventStreamConnection = { cursor, response };
+    this.#eventConnections.add(connection);
+    request.once("close", () => { this.#removeEventConnection(connection); });
+    response.once("close", () => { this.#removeEventConnection(connection); });
+    this.#startEventPlane();
+    void this.#pumpEvents();
+  }
+
+  async #loadReplay(
+    afterSequence: number,
+    initialHighWatermark: number,
+  ): Promise<readonly OperationalEvent[] | undefined> {
+    const source = this.#eventSource;
+    if (source === undefined) return [];
+    const events: OperationalEvent[] = [];
+    let cursor = afterSequence;
+    while (cursor < initialHighWatermark) {
+      const remaining = this.#eventMaxReplay - events.length;
+      if (remaining <= 0) return undefined;
+      const cursorBeforeBatch = cursor;
+      const batch = await source.listAfter(cursor, Math.min(EVENT_BATCH_SIZE, remaining + 1));
+      for (const event of batch) {
+        if (event.sequence <= cursor) continue;
+        events.push(event);
+        cursor = event.sequence;
+        if (events.length > this.#eventMaxReplay) return undefined;
+      }
+      if (cursor === cursorBeforeBatch || batch.length < Math.min(EVENT_BATCH_SIZE, remaining + 1)) break;
+    }
+    return Object.freeze(events);
+  }
+
+  #startEventPlane(): void {
+    if (this.#eventPollTimer === undefined) {
+      this.#eventPollTimer = setInterval(() => { void this.#pumpEvents(); }, this.#eventPollIntervalMs);
+    }
+    if (this.#eventHeartbeatTimer === undefined) {
+      this.#eventHeartbeatTimer = setInterval(() => { this.#heartbeatEventConnections(); }, this.#eventHeartbeatMs);
+    }
+  }
+
+  async #pumpEvents(): Promise<void> {
+    const source = this.#eventSource;
+    if (source === undefined || this.#eventConnections.size === 0 || this.#eventPumpRunning) return;
+    this.#eventPumpRunning = true;
+    try {
+      const window = await source.cursorWindow();
+      for (const connection of [...this.#eventConnections]) {
+        if (window.oldestSequence === undefined || connection.cursor >= window.oldestSequence - 1) continue;
+        connection.cursor = window.latestSequence;
+        if (!writeEventStream(connection.response, cursorResetFrame(connection.cursor, "EVENT_CURSOR_EXPIRED"))) {
+          this.#removeEventConnection(connection);
+        }
+      }
+      if (this.#eventConnections.size === 0) return;
+      const after = Math.min(...[...this.#eventConnections].map(({ cursor }) => cursor));
+      const events = await source.listAfter(after, EVENT_BATCH_SIZE);
+      for (const event of events) {
+        for (const connection of [...this.#eventConnections]) {
+          if (event.sequence <= connection.cursor) continue;
+          if (!writeEventStream(connection.response, operationalEventFrame(event))) {
+            this.#removeEventConnection(connection);
+            continue;
+          }
+          connection.cursor = event.sequence;
+        }
+      }
+    } catch {
+      for (const connection of [...this.#eventConnections]) {
+        writeEventStream(connection.response, "event: source_unavailable\ndata: {\"reasonCode\":\"EVENT_SOURCE_UNAVAILABLE\"}\n\n");
+        this.#removeEventConnection(connection);
+      }
+    } finally {
+      this.#eventPumpRunning = false;
+    }
+  }
+
+  #heartbeatEventConnections(): void {
+    const frame = `event: heartbeat\ndata: ${JSON.stringify({ contractVersion: "1", generatedAt: new Date().toISOString() })}\n\n`;
+    for (const connection of [...this.#eventConnections]) {
+      if (!writeEventStream(connection.response, frame)) this.#removeEventConnection(connection);
+    }
+  }
+
+  #removeEventConnection(connection: EventStreamConnection): void {
+    if (!this.#eventConnections.delete(connection)) return;
+    if (!connection.response.writableEnded) connection.response.end();
+    if (this.#eventConnections.size === 0) {
+      if (this.#eventPollTimer !== undefined) clearInterval(this.#eventPollTimer);
+      if (this.#eventHeartbeatTimer !== undefined) clearInterval(this.#eventHeartbeatTimer);
+      this.#eventPollTimer = undefined;
+      this.#eventHeartbeatTimer = undefined;
+    }
+  }
+
+  #shutdownEventPlane(): void {
+    if (this.#eventPollTimer !== undefined) clearInterval(this.#eventPollTimer);
+    if (this.#eventHeartbeatTimer !== undefined) clearInterval(this.#eventHeartbeatTimer);
+    this.#eventPollTimer = undefined;
+    this.#eventHeartbeatTimer = undefined;
+    for (const connection of [...this.#eventConnections]) {
+      writeEventStream(connection.response, "event: shutdown\ndata: {\"reasonCode\":\"COMMAND_CENTER_SHUTDOWN\"}\n\n");
+      this.#eventConnections.delete(connection);
+      if (!connection.response.writableEnded) connection.response.end();
+    }
+  }
+
   async #handleAction(
     request: IncomingMessage,
     response: ServerResponse,
     requestUrl: URL,
     port: number,
   ): Promise<void> {
-    if (requestUrl.pathname !== "/api/actions/propose" && requestUrl.pathname !== "/api/actions/confirm") {
+    const legacyAction = requestUrl.pathname === "/api/actions/propose" || requestUrl.pathname === "/api/actions/confirm";
+    const operationsControlAction = requestUrl.pathname === "/api/control-actions/propose" || requestUrl.pathname === "/api/control-actions/confirm";
+    if (!legacyAction && !operationsControlAction) {
       send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", { Allow: "GET, HEAD" });
       return;
     }
     const csrfHeader = request.headers["x-onlyway-csrf"];
-    if (this.#actionService === undefined || !hasTrustedOrigin(request, port) || !sameTextToken(this.#csrfToken, typeof csrfHeader === "string" ? csrfHeader : "")) {
+    const actionService = this.#actionService;
+    const operationsControlService = this.#operationsControlService;
+    if (!hasTrustedOrigin(request, port) || !sameTextToken(this.#csrfToken, typeof csrfHeader === "string" ? csrfHeader : "")) {
       send(response, 403, "text/plain; charset=utf-8", "Azione locale non autorizzata");
       return;
     }
+    if (operationsControlAction && operationsControlService === undefined) {
+      send(response, 503, "text/plain; charset=utf-8", "Control action boundary non disponibile");
+      return;
+    }
+    if (legacyAction && actionService === undefined) {
+      send(response, 503, "text/plain; charset=utf-8", "Action boundary non disponibile");
+      return;
+    }
     const body = await parseJsonBody(request);
+    if (requestUrl.pathname === "/api/control-actions/propose") {
+      if (operationsControlService === undefined) throw new Error("Control action boundary unavailable after authorization");
+      const proposal = await operationsControlService.proposeForOperator(body);
+      send(response, 200, "application/json; charset=utf-8", JSON.stringify(proposal));
+      return;
+    }
+    if (requestUrl.pathname === "/api/control-actions/confirm") {
+      if (operationsControlService === undefined) throw new Error("Control action boundary unavailable after authorization");
+      const receipt = await operationsControlService.confirmForOperator(body);
+      send(response, 200, "application/json; charset=utf-8", JSON.stringify(receipt));
+      return;
+    }
+    if (actionService === undefined) throw new Error("Action boundary unavailable after authorization");
     if (requestUrl.pathname === "/api/actions/propose") {
       if (!record(body)) {
         send(response, 400, "text/plain; charset=utf-8", "Richiesta di azione non valida");
         return;
       }
       const proposal = isContentAction(body.action) && typeof body.productionId === "string"
-        ? await this.#proposeContentReview(body.action, body.productionId, response)
+        ? await this.#proposeContentReview(body.action, body.productionId)
         : isBusinessAction(body.action) && typeof body.missionId === "string"
-          ? await this.#actionService.proposeBusinessReview({ action: body.action, missionId: body.missionId })
+          ? await actionService.proposeBusinessReview({ action: body.action, missionId: body.missionId })
           : undefined;
       if (proposal === undefined) {
         if (!response.headersSent) send(response, 400, "text/plain; charset=utf-8", "Richiesta di azione non valida");
@@ -270,14 +525,14 @@ export class PrivateCommandCenterServer {
       send(response, 200, "application/json; charset=utf-8", JSON.stringify(proposal));
       return;
     }
-      if (!record(body) || typeof body.actionId !== "string" || typeof body.confirmationToken !== "string" || typeof body.packageFingerprint !== "string") {
+    if (!record(body) || typeof body.actionId !== "string" || typeof body.confirmationToken !== "string" || typeof body.packageFingerprint !== "string") {
       send(response, 400, "text/plain; charset=utf-8", "Conferma dell'azione non valida");
       return;
     }
-    const receipt = await this.#actionService.confirmReview({
-        actionId: body.actionId,
-        confirmationToken: body.confirmationToken,
-        packageFingerprint: body.packageFingerprint,
+    const receipt = await actionService.confirmReview({
+      actionId: body.actionId,
+      confirmationToken: body.confirmationToken,
+      packageFingerprint: body.packageFingerprint,
     });
     send(response, 200, "application/json; charset=utf-8", JSON.stringify(receipt));
   }
@@ -285,19 +540,7 @@ export class PrivateCommandCenterServer {
   async #proposeContentReview(
     action: CommandCenterContentAction,
     productionId: string,
-    response: ServerResponse,
   ): Promise<Awaited<ReturnType<CommandCenterActionService["proposeContentReview"]>> | undefined> {
-    if (action === "APPROVE_CONTENT") {
-      const snapshot = await this.#queryService.snapshot();
-      const production = snapshot.productions.find((candidate) => candidate.productionId === productionId);
-      if (production?.package.socialPublishingPack !== undefined) {
-        const visualReview = await socialVisualReview();
-        if (visualReview === undefined || visualReviewStatus(visualReview) !== "READY_FOR_HUMAN_DECISION") {
-          send(response, 409, "text/plain; charset=utf-8", "Review visuale bloccata: serve il logo Metodo Veloce originale e la decisione estetica di Fabio");
-          return undefined;
-        }
-      }
-    }
     return this.#actionService?.proposeContentReview({ action, productionId });
   }
 }
@@ -395,11 +638,6 @@ async function brandMediaFactoryVisualAsset(pathname: string): Promise<Buffer | 
   return readFile(`${BRAND_MEDIA_FACTORY_ROOT}${match[1]}.png`);
 }
 
-function visualReviewStatus(value: unknown): string | undefined {
-  if (!record(value) || !record(value.visualReview)) return undefined;
-  return typeof value.visualReview.status === "string" ? value.visualReview.status : undefined;
-}
-
 function tokenBytes(input: string | undefined): Buffer {
   if (input === undefined) return randomBytes(32);
   if (!/^[a-f0-9]{64}$/u.test(input)) {
@@ -432,6 +670,73 @@ function hasSession(request: IncomingMessage, token: Buffer): boolean {
 
 function hasTrustedOrigin(request: IncomingMessage, port: number): boolean {
   return request.headers.origin === `http://${LOCAL_HOST}:${String(port)}`;
+}
+
+function hasTrustedOptionalOrigin(request: IncomingMessage, port: number): boolean {
+  const origin = request.headers.origin;
+  return origin === undefined || origin === `http://${LOCAL_HOST}:${String(port)}`;
+}
+
+function acceptsEventStream(request: IncomingMessage): boolean {
+  const accept = request.headers.accept;
+  return typeof accept === "string" && accept.split(",").some((value) => value.trim().split(";", 1)[0] === "text/event-stream");
+}
+
+function lastEventCursor(request: IncomingMessage): number | undefined | false {
+  const value = request.headers["last-event-id"];
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !/^(?:0|[1-9]\d{0,15})$/u.test(value)) return false;
+  const cursor = Number(value);
+  return Number.isSafeInteger(cursor) ? cursor : false;
+}
+
+function operationalEventFrame(event: OperationalEvent): string {
+  return `id: ${String(event.sequence)}\nevent: operational\ndata: ${JSON.stringify(event)}\n\n`;
+}
+
+type EventCursorResetReason =
+  | "EVENT_CURSOR_AHEAD"
+  | "EVENT_CURSOR_EXPIRED"
+  | "EVENT_REPLAY_LIMIT_EXCEEDED";
+
+function cursorResetFrame(cursor: number, reasonCode: EventCursorResetReason): string {
+  return `id: ${String(cursor)}\nevent: cursor_reset\ndata: ${JSON.stringify({ contractVersion: "1", reasonCode })}\n\n`;
+}
+
+export interface EventStreamWritable {
+  readonly destroyed: boolean;
+  readonly writableEnded: boolean;
+  readonly writableLength: number;
+  write(frame: string): boolean;
+}
+
+/**
+ * `ServerResponse.write()` returning false signals backpressure, not failure.
+ * Keep the already-buffered frame and let Node drain it; disconnect only when
+ * the explicitly bounded per-connection buffer would be exceeded. The client
+ * then resumes through Last-Event-ID without an unbounded heap queue.
+ */
+export function writeEventStream(response: EventStreamWritable, frame: string): boolean {
+  if (response.destroyed || response.writableEnded) return false;
+  if (response.writableLength + Buffer.byteLength(frame, "utf8") > MAX_EVENT_STREAM_BUFFER_BYTES) return false;
+  response.write(frame);
+  return eventStreamOpen(response);
+}
+
+function eventStreamOpen(response: EventStreamWritable): boolean {
+  return !response.destroyed && !response.writableEnded;
+}
+
+function boundedInteger(
+  candidate: number | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+  label: string,
+): number {
+  const value = candidate ?? fallback;
+  if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error(`Configurazione ${label} non valida`);
+  return value;
 }
 
 async function parseJsonBody(request: IncomingMessage): Promise<unknown> {

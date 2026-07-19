@@ -97,6 +97,11 @@ export interface PublicationPlan {
   readonly dryRun: true;
   readonly idempotencyKey: string;
   readonly platform: PublicationPlatform;
+  readonly productionControlBinding?: {
+    readonly fingerprint: string;
+    readonly kind: "CONTENT" | "CONTROL";
+    readonly version: number;
+  };
   readonly productionId: string;
   readonly publicationId: string;
   readonly receipt?: PublicationReceipt;

@@ -38,9 +38,9 @@ describe("Telegram Bot API authorization", () => {
   it("uses only the allowlisted update types and outbound chat", async () => {
     const calls: string[] = [];
     const client = new TelegramBotApiClient(config, "token-not-logged", { request: ({ method, body }) => { calls.push(method); if (method === "getUpdates") expect(body.allowed_updates).toEqual(["message", "callback_query"]); return Promise.resolve({ ok: true, result: [] }); } });
-    await client.bootstrap(); await client.poll("0");
+    expect(await client.bootstrap()).toBe("0"); await client.poll("0");
     await expect(client.deliver({ chatId: "201", contractVersion: "1", text: "no" })).rejects.toThrow(/OUTBOUND_DELIVERY_FAILED/u);
-    expect(calls).toEqual(["deleteWebhook", "getUpdates", "getUpdates"]);
+    expect(calls).toEqual(["deleteWebhook", "getUpdates"]);
   });
   it("accepts the public risk-review template identifier while rejecting token-shaped output", async () => {
     const client = new TelegramBotApiClient(config, "token-not-logged", transport);

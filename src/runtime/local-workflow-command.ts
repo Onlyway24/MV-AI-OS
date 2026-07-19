@@ -36,6 +36,12 @@ import { parseSocialAnalyticsCsv } from "../social-intelligence-live/social-anal
 import { authorizeInitialSocialCompetitors, authorizeSocialCompetitorReplacement } from "../social-intelligence-live/social-competitor-authorization.js";
 import { parseCompetitorObservationsCsv } from "../social-intelligence-live/social-competitor-observation-csv-adapter.js";
 import { parseAudioRightsCsv } from "../social-intelligence-live/social-audio-rights-csv-adapter.js";
+import type { CommandCenterContentApprovalGate } from "../command-center/visual-approval-gate.js";
+import {
+  OPERATIONAL_EVENT_SEMANTICS,
+  type OperationalEventType,
+} from "../operations-runtime/operational-event.js";
+import type { OperationalEventRepository } from "../operations-runtime/operational-event-repository.js";
 
 export const LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION = "1" as const;
 export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "RUN_AUTHORIZED_RESEARCH_MISSION", "INSPECT_AUTHORIZED_RESEARCH_MISSION", "LIST_AUTHORIZED_RESEARCH_MISSIONS", "RUN_AGENT_COMPANY_WORKDAY", "INSPECT_AGENT_COMPANY_WORKDAY", "LIST_AGENT_COMPANY_WORKDAYS", "GET_AGENT_COMPANY_CATALOG", "GET_AGENT_COMPANY_METRICS", "CREATE_BUSINESS_MISSION_DOSSIER", "INSPECT_BUSINESS_MISSION_DOSSIER", "LIST_BUSINESS_MISSION_DOSSIERS", "REVIEW_BUSINESS_MISSION_DOSSIER", "REGISTER_SOCIAL_OFFICIAL_SOURCES", "ACQUIRE_GOOGLE_TRENDS_LIVE", "CLASSIFY_SOCIAL_TREND", "IMPORT_SOCIAL_ANALYTICS_CSV", "AUTHORIZE_SOCIAL_COMPETITOR_SET", "REPLACE_SOCIAL_COMPETITOR", "MATERIALIZE_COMPETITOR_INTELLIGENCE_PACK", "IMPORT_SOCIAL_COMPETITOR_OBSERVATIONS_CSV", "IMPORT_SOCIAL_AUDIO_RIGHTS_CSV", "IMPORT_SOCIAL_LIVE_RECORD", "PREVIEW_SOCIAL_LIVE_BATCH", "IMPORT_SOCIAL_LIVE_BATCH", "GET_SOCIAL_LIVE_REPORT", "CREATE_FIRST_SOCIAL_EXPERIMENT", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
@@ -53,6 +59,7 @@ export interface LocalWorkflowCommandDependencies {
   readonly workspaceId: string;
   readonly missionPlanning: LocalMissionPlanningDryRun;
   readonly contentProduction: { produce(candidate: MetodoVeloceContentProductionBrief): MetodoVeloceContentProductionPackage };
+  readonly contentApprovalGate: CommandCenterContentApprovalGate;
   readonly socialContentProduction?: { produce(brief: MetodoVeloceContentProductionBrief, intelligence: MetodoVeloceSocialIntelligenceRequest): MetodoVeloceContentProductionPackage };
   readonly socialIntelligenceLive?: SocialIntelligenceLiveService;
   readonly productionRuntime: ProductionRuntimeService;
@@ -279,9 +286,10 @@ export class LocalWorkflowCommandBoundary {
   }
 
   async #insertContentProduction(record: MetodoVeloceContentProductionRecord): Promise<MetodoVeloceContentProductionRecord> {
-    return this.dependencies.repositories.transaction(async ({ contentProductions }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalEvents }) => {
       if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
       await contentProductions.insert(record);
+      await appendProductionCreationEvents(operationalEvents, record);
       return record;
     });
   }
@@ -297,11 +305,12 @@ export class LocalWorkflowCommandBoundary {
     const evidencePackId = input.evidencePackId;
     if (!keys(input, ["brief", "evidencePackId"]) || !safeId(evidencePackId)) throw new RepositoryValidationError("Evidence Pack content production request is invalid");
     const brief = validate(input.brief, this.#contentBriefValidator, "Metodo Veloce Evidence Pack content production brief");
-    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalEvents, operationalPlanes }) => {
       const pack = await this.dependencies.operationalPlanes.assertEvidencePackForContentInTransaction(operationalPlanes, evidencePackId, brief.evidence);
       const record = this.#contentProductionRecord(brief, { fingerprint: pack.fingerprint, minFreshnessExpiresAt: pack.minFreshnessExpiresAt, packId: pack.packId, verifiedAt: this.dependencies.clock.now().toISOString() });
       if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
       await contentProductions.insert(record);
+      await appendProductionCreationEvents(operationalEvents, record);
       return record;
     });
   }
@@ -313,12 +322,13 @@ export class LocalWorkflowCommandBoundary {
     const intelligence = validate(input.socialIntelligence, this.#socialIntelligenceValidator, "Metodo Veloce Social Intelligence request");
     const production = this.dependencies.socialContentProduction;
     if (production === undefined) throw new RepositoryConflictError("Social content production service is not configured");
-    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalEvents, operationalPlanes }) => {
       const pack = await this.dependencies.operationalPlanes.assertEvidencePackForContentInTransaction(operationalPlanes, evidencePackId, brief.evidence);
       const preparedPackage = production.produce(brief, intelligence);
       const record = this.#contentProductionRecord(brief, { fingerprint: pack.fingerprint, minFreshnessExpiresAt: pack.minFreshnessExpiresAt, packId: pack.packId, verifiedAt: this.dependencies.clock.now().toISOString() }, preparedPackage);
       if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
       await contentProductions.insert(record);
+      await appendProductionCreationEvents(operationalEvents, record);
       return record;
     });
   }
@@ -326,23 +336,36 @@ export class LocalWorkflowCommandBoundary {
   async #inspectContentProduction(productionId: string): Promise<MetodoVeloceContentProductionRecord> { return this.dependencies.repositories.transaction(({ contentProductions }) => this.#ownedContentProduction(contentProductions, productionId)); }
   async #reviewContentProduction(input: Readonly<Record<string, unknown>>): Promise<MetodoVeloceContentProductionRecord> {
     const request = validate(input, this.#contentReviewValidator, "Metodo Veloce content review request");
-    return this.dependencies.repositories.transaction(async ({ contentProductions }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalEvents, operationsControls }) => {
       const current = await this.#ownedContentProduction(contentProductions, request.productionId);
+      const control = await operationsControls.getProductionControl(request.productionId);
+      if (control !== undefined && (control.actorId !== this.dependencies.actorId || control.workspaceId !== this.dependencies.workspaceId || control.state !== "ACTIVE")) throw new RepositoryConflictError("Metodo Veloce content production is blocked by its durable execution control");
       if (current.status !== "PENDING_FABIO_APPROVAL" || current.version !== request.expectedVersion) throw new RepositoryConflictError("Metodo Veloce content production is not eligible for review");
       const reviewedAt = this.dependencies.clock.now().toISOString();
-      const next: MetodoVeloceContentProductionRecord = request.decision === "APPROVED" ? { ...current, review: { decision: request.decision, note: request.note, reviewedAt, reviewedBy: this.dependencies.actorId }, status: "APPROVED_FOR_SCHEDULING", updatedAt: reviewedAt, version: current.version + 1 } : { ...current, archive: { archivedAt: reviewedAt, reason: "REJECTED_BY_FABIO" }, review: { decision: request.decision, note: request.note, reviewedAt, reviewedBy: this.dependencies.actorId }, status: "ARCHIVED", updatedAt: reviewedAt, version: current.version + 1 };
+      let next: MetodoVeloceContentProductionRecord;
+      if (request.decision === "APPROVED") {
+        const visualBinding = await this.dependencies.contentApprovalGate.verify({ production: current, stage: "CONFIRM" });
+        next = { ...current, review: { decision: request.decision, note: request.note, reviewedAt, reviewedBy: this.dependencies.actorId, visualApprovalBindingFingerprint: visualBinding.bindingFingerprint }, status: "APPROVED_FOR_SCHEDULING", updatedAt: reviewedAt, version: current.version + 1 };
+      } else {
+        next = { ...current, archive: { archivedAt: reviewedAt, reason: "REJECTED_BY_FABIO" }, review: { decision: request.decision, note: request.note, reviewedAt, reviewedBy: this.dependencies.actorId }, status: "ARCHIVED", updatedAt: reviewedAt, version: current.version + 1 };
+      }
       await contentProductions.update(next, { version: current.version });
+      await operationalEvents.append(operationalEvent("APPROVAL_RECORDED", next.productionId, next.version, next.workspaceId, reviewedAt));
+      await operationalEvents.append(operationalEvent("PRODUCTION_STATUS_CHANGED", next.productionId, next.version, next.workspaceId, reviewedAt));
       return next;
     });
   }
   async #scheduleContentProduction(input: Readonly<Record<string, unknown>>): Promise<MetodoVeloceContentProductionRecord> {
     const request = validate(input, this.#contentScheduleValidator, "Metodo Veloce content schedule request");
     if (Date.parse(request.scheduledFor) <= this.dependencies.clock.now().getTime()) throw new RepositoryValidationError("Metodo Veloce content schedule must be in the future");
-    return this.dependencies.repositories.transaction(async ({ contentProductions }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalEvents, operationsControls }) => {
       const current = await this.#ownedContentProduction(contentProductions, request.productionId);
-      if (current.status !== "APPROVED_FOR_SCHEDULING" || current.version !== request.expectedVersion) throw new RepositoryConflictError("Metodo Veloce content production is not eligible for scheduling");
+      const control = await operationsControls.getProductionControl(request.productionId);
+      if (control !== undefined && (control.actorId !== this.dependencies.actorId || control.workspaceId !== this.dependencies.workspaceId || control.state !== "ACTIVE")) throw new RepositoryConflictError("Metodo Veloce content production scheduling is blocked by its durable execution control");
+      if (current.status !== "APPROVED_FOR_SCHEDULING" || current.version !== request.expectedVersion || current.review?.decision !== "APPROVED" || !visualApprovalFingerprint(current.review.visualApprovalBindingFingerprint)) throw new RepositoryConflictError("Metodo Veloce content production is not eligible for scheduling without a Visual Gate approval receipt");
       const next = { ...current, schedule: { scheduledFor: request.scheduledFor }, status: "SCHEDULED" as const, updatedAt: this.dependencies.clock.now().toISOString(), version: current.version + 1 };
       await contentProductions.update(next, { version: current.version });
+      await operationalEvents.append(operationalEvent("PRODUCTION_STATUS_CHANGED", next.productionId, next.version, next.workspaceId, next.updatedAt));
       return next;
     });
   }
@@ -359,12 +382,13 @@ export class LocalWorkflowCommandBoundary {
   }
   async #archiveContentProduction(input: Readonly<Record<string, unknown>>): Promise<MetodoVeloceContentProductionRecord> {
     const request = validate(input, this.#contentArchiveValidator, "Metodo Veloce content archive request");
-    return this.dependencies.repositories.transaction(async ({ contentProductions }) => {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalEvents }) => {
       const current = await this.#ownedContentProduction(contentProductions, request.productionId);
       if (!["PENDING_FABIO_APPROVAL", "APPROVED_FOR_SCHEDULING", "SCHEDULED"].includes(current.status) || current.version !== request.expectedVersion) throw new RepositoryConflictError("Metodo Veloce content production is not eligible for archive");
       const archivedAt = this.dependencies.clock.now().toISOString();
       const next = { ...current, archive: { archivedAt, reason: request.reason }, status: "ARCHIVED" as const, updatedAt: archivedAt, version: current.version + 1 };
       await contentProductions.update(next, { version: current.version });
+      await operationalEvents.append(operationalEvent("PRODUCTION_STATUS_CHANGED", next.productionId, next.version, next.workspaceId, archivedAt));
       return next;
     });
   }
@@ -466,7 +490,20 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   return `Request the Operator Workflow Report for Workflow ${instanceId}.`;
 }
 function id(value: unknown): string { return typeof value === "string" ? value : "unknown"; }
+function visualApprovalFingerprint(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value); }
 function productionRuntimeCommandId(jobId: string): string { return `runtime-produce-${createHash("sha256").update(jobId, "utf8").digest("hex").slice(0, 24)}`; }
+async function appendProductionCreationEvents(repository: OperationalEventRepository, production: MetodoVeloceContentProductionRecord): Promise<void> {
+  await repository.append(operationalEvent("PRODUCTION_STATUS_CHANGED", production.productionId, production.version, production.workspaceId, production.updatedAt));
+  await repository.append(operationalEvent("GATE_DECIDED", production.productionId, production.version, production.workspaceId, production.updatedAt));
+  if (production.status === "PENDING_FABIO_APPROVAL") {
+    await repository.append(operationalEvent("APPROVAL_REQUESTED", production.productionId, production.version, production.workspaceId, production.updatedAt));
+  }
+}
+function operationalEvent(eventType: OperationalEventType, entityId: string, entityVersion: number, workspaceId: string, occurredAt: string) {
+  const semantics = OPERATIONAL_EVENT_SEMANTICS[eventType];
+  const eventId = `evt-${createHash("sha256").update(`${eventType}\n${entityId}\n${String(entityVersion)}`, "utf8").digest("hex").slice(0, 48)}`;
+  return { aggregateType: semantics.aggregateType, contractVersion: "1" as const, entityId, entityVersion, eventId, eventType, occurredAt, safeSummaryCode: semantics.safeSummaryCode, workspaceId };
+}
 function number(value: unknown): string { return typeof value === "number" ? String(value) : "unknown"; }
 function nestedId(input: Readonly<Record<string, unknown>>, parent: string, child: string): string | undefined { const value = input[parent]; return record(value) && typeof value[child] === "string" ? value[child] : undefined; }
 function nestedNumber(input: Readonly<Record<string, unknown>>, parent: string, child: string): string { const value = input[parent]; return record(value) && typeof value[child] === "number" ? String(value[child]) : "unknown"; }

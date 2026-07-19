@@ -1,6 +1,7 @@
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 
 import { describe, expect, it } from "vitest";
 
@@ -23,7 +24,9 @@ import {
   type TelegramMissionTemplate,
 } from "../../src/index.js";
 import type { TelegramBotApiRequest } from "../../src/telegram/telegram-bot-api.js";
+import type { TelegramOutboundMessageIntent } from "../../src/telegram/telegram-contracts.js";
 import type { TelegramPollingConsole } from "../../src/telegram/telegram-operator-lifecycle.js";
+import { SqliteRepositoryTransactionRunner } from "../../src/persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { FixedClock } from "../support/fixtures.js";
 
 const identity = "d0e6e6c1b23da7a181b04b62212a5b2018d9c2b77ebd1c2a1152a4534b1ed8fb";
@@ -77,6 +80,19 @@ describe("Telegram operator lifecycle reliability", () => {
     await expect(access(`${path}.telegram-operator.lock`)).rejects.toMatchObject({ code: "ENOENT" });
   }));
 
+  it("recovers a stale PID owner while preserving active-owner exclusion", async () => withDatabase(async (path) => {
+    const lockPath = `${path}.telegram-operator.lock`;
+    await writeFile(lockPath, `${JSON.stringify({ contractVersion: "1", createdAt: "2026-07-01T00:00:00.000Z", instanceId: "telegram-stale", pid: 2_147_483_647, role: "telegram", token: "lock-stale-owner" })}\n`, { encoding: "utf8", mode: 0o600 });
+
+    const recovered = await TelegramOperatorProcessLock.acquire(path);
+    const record = JSON.parse(await readFile(lockPath, "utf8")) as { readonly pid: number; readonly role: string; readonly token: string };
+    expect(record).toMatchObject({ pid: process.pid, role: "telegram" });
+    expect(record.token).not.toBe("lock-stale-owner");
+    await expect(TelegramOperatorProcessLock.acquire(path)).rejects.toMatchObject({ code: "OPERATOR_LOCK_HELD" });
+    await recovered.close();
+    await expect(access(lockPath)).rejects.toMatchObject({ code: "ENOENT" });
+  }));
+
   it("releases the lock after bootstrap and polling failures", async () => withDatabase(async (path) => {
     const bootstrapTransport = new ScriptedTransport();
     bootstrapTransport.failIdentity = true;
@@ -93,28 +109,191 @@ describe("Telegram operator lifecycle reliability", () => {
 });
 
 describe("Telegram update isolation and Mission quick", () => {
-  it("keeps the offset and later updates when a template-list delivery fails", async () => withDatabase(async (path) => {
+  it("processes pending updates from offset zero on first boot instead of discarding them", async () => withDatabase(async (path) => {
+    const transport = new ScriptedTransport([message(7, "/status")]);
+    const console = await application(path, transport);
+    await console.bootstrap();
+    await console.pollOnce();
+    await console.close();
+
+    const pollingCalls = transport.calls.filter(({ method }) => method === "getUpdates");
+    expect(pollingCalls).toHaveLength(1);
+    expect(pollingCalls[0]?.body.offset).toBe(0);
+    expect(transport.calls.filter(({ method }) => method === "sendMessage")).toHaveLength(1);
+
+    const verifier = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    try {
+      expect(verifier.receiptState("7")).toBe("COMPLETED");
+      expect(verifier.offset()?.offset).toBe("8");
+    } finally { await verifier.close(); }
+  }));
+
+  it("reprocesses a durably claimed update after a crash and advances only with its terminal receipt", async () => withDatabase(async (path) => {
+    const crashState = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    const api = new TelegramBotApiClient(telegramConfig(), "test-token", new ScriptedTransport());
+    const action = api.normalize(message(1, "/status")).action;
+    if (action === undefined) throw new Error("Expected a normalized test action");
+    crashState.saveOffset("1");
+    expect(crashState.claim(action, telegramConfig().polling.updateReceiptRetentionSeconds)).toBe("CLAIMED");
+    expect(crashState.receiptState("1")).toBe("RECEIVED");
+    expect(crashState.offset()?.offset).toBe("1");
+    await crashState.close();
+
+    const restartedTransport = new ScriptedTransport([message(1, "/status")]);
+    const restartedConsole = await application(path, restartedTransport);
+    await restartedConsole.bootstrap();
+    await restartedConsole.pollOnce();
+    expect(restartedTransport.calls.filter(({ method }) => method === "sendMessage")).toHaveLength(1);
+    await restartedConsole.close();
+
+    const verifier = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    try {
+      expect(verifier.receiptState("1")).toBe("COMPLETED");
+      expect(verifier.offset()?.offset).toBe("2");
+    } finally { await verifier.close(); }
+  }));
+
+  it("never redelivers after send succeeds but durable finalization crashes", async () => withDatabase(async (path) => {
+    const firstTransport = new ScriptedTransport([message(1, "/status")]);
+    const runtime = await createLocalRuntime(runtimeConfig(path), { clock: new FixedClock() });
+    const state = new CrashAfterDeliveryStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    const firstConsole = new ControlledTelegramOperatorConsole({
+      actorId: "actor-local",
+      api: new TelegramBotApiClient(telegramConfig(), "test-token", firstTransport),
+      clock: new FixedClock(),
+      config: telegramConfig(),
+      missionDrafts: new TelegramMissionDraftSessionCoordinator(state),
+      runtime,
+      state,
+      workspaceId: "workspace-local",
+    });
+    await firstConsole.bootstrap();
+    await expect(firstConsole.pollOnce()).rejects.toMatchObject({ code: "DATABASE_UNAVAILABLE" });
+    expect(firstTransport.calls.filter(({ method }) => method === "sendMessage")).toHaveLength(1);
+    await firstConsole.close();
+
+    const afterCrash = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    try {
+      expect(afterCrash.receiptState("1")).toBe("DELIVERY_UNCERTAIN");
+      expect(afterCrash.deliveryState("1")).toBe("UNCERTAIN");
+      expect(afterCrash.offset()?.offset).toBe("0");
+    } finally { await afterCrash.close(); }
+
+    const restartedTransport = new ScriptedTransport([message(1, "/status")]);
+    const restartedConsole = await application(path, restartedTransport);
+    await restartedConsole.bootstrap();
+    await expect(restartedConsole.pollOnce()).rejects.toMatchObject({ code: "DELIVERY_RECONCILIATION_REQUIRED" });
+    expect(restartedTransport.calls.filter(({ method }) => method === "sendMessage")).toHaveLength(0);
+    await restartedConsole.close();
+
+    const reconciled = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    try {
+      expect(reconciled.receiptState("1")).toBe("DELIVERY_UNCERTAIN");
+      expect(reconciled.deliveryState("1")).toBe("UNCERTAIN");
+      expect(reconciled.offset()?.offset).toBe("2");
+    } finally { await reconciled.close(); }
+  }));
+
+  it("migrates v29 receipts with an outbound intent to delivery-uncertain without losing their binding", async () => withDatabase(async (path) => {
+    const current = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    await current.close();
+
+    const legacy = new DatabaseSync(path);
+    legacy.exec(`
+      DROP INDEX telegram_inbound_receipts_expiry;
+      DROP INDEX telegram_outbound_deliveries_update;
+      ALTER TABLE telegram_inbound_receipts RENAME TO telegram_inbound_receipts_v30;
+      CREATE TABLE telegram_inbound_receipts (
+        update_id TEXT PRIMARY KEY,
+        action_fingerprint TEXT NOT NULL,
+        identity_binding TEXT NOT NULL,
+        action_kind TEXT NOT NULL,
+        processing_state TEXT NOT NULL CHECK (processing_state IN ('RECEIVED', 'COMPLETED', 'REJECTED')),
+        received_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        command_id TEXT
+      ) STRICT;
+      DROP TABLE telegram_inbound_receipts_v30;
+      CREATE INDEX telegram_inbound_receipts_expiry ON telegram_inbound_receipts (expires_at, update_id);
+    `);
+    legacy.prepare("INSERT INTO telegram_inbound_receipts (update_id, action_fingerprint, identity_binding, action_kind, processing_state, received_at, expires_at, command_id) VALUES (?, ?, ?, 'STATUS', 'RECEIVED', ?, ?, NULL)")
+      .run("29", "a".repeat(64), "b".repeat(64), "2026-07-02T10:00:00.000Z", "2026-07-02T11:00:00.000Z");
+    legacy.prepare("INSERT INTO telegram_outbound_deliveries (delivery_id, update_id, state, occurred_at) VALUES (?, ?, 'UNCERTAIN', ?)")
+      .run("delivery-v29-reconciliation", "29", "2026-07-02T10:00:00.000Z");
+    legacy.exec("DELETE FROM schema_migrations WHERE version = 30; PRAGMA user_version = 29;");
+    legacy.close();
+
+    const migrated = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    try {
+      expect(migrated.receiptState("29")).toBe("DELIVERY_UNCERTAIN");
+      expect(migrated.deliveryState("29")).toBe("UNCERTAIN");
+    } finally { await migrated.close(); }
+  }));
+
+  it("composes /daily_brief with durable SQLite state and replays it after runtime restart", async () => withDatabase(async (path) => {
+    const firstTransport = new ScriptedTransport([message(1, "/daily_brief")]);
+    const firstConsole = await application(path, firstTransport);
+    await firstConsole.bootstrap();
+    await firstConsole.pollOnce();
+    await firstConsole.close();
+    const firstMessage = firstTransport.calls.find((entry) => entry.method === "sendMessage");
+    expect(firstMessage?.body.text).toContain("Daily Operating Brief — 2026-07-02");
+    expect(firstMessage?.body.text).toContain("INTERNAL_ONLY");
+
+    const restartedTransport = new ScriptedTransport([message(2, "/daily_brief")]);
+    const restartedConsole = await application(path, restartedTransport);
+    await restartedConsole.bootstrap();
+    await restartedConsole.pollOnce();
+    await restartedConsole.close();
+    expect(restartedTransport.calls.find((entry) => entry.method === "sendMessage")?.body.text).toBe(firstMessage?.body.text);
+
+    const verifier = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+    const durable = await verifier.transaction(async ({ dailyOperatingBriefs, operationalEvents }) => ({
+      briefs: await dailyOperatingBriefs.listByWorkspaceId("workspace-local", 10),
+      events: await operationalEvents.listAfter("workspace-local", 0, 10),
+    }));
+    expect(durable.briefs).toHaveLength(1);
+    expect(durable.events.filter(({ eventType }) => eventType === "DAILY_BRIEF_GENERATED")).toHaveLength(1);
+    await verifier.close();
+  }));
+
+  it("advances past an ambiguous delivery without processing later updates or retrying it", async () => withDatabase(async (path) => {
     const transport = new ScriptedTransport([message(1, "/mission quick"), message(2, "/status")]);
     transport.failNextDelivery = true;
     const console = await application(path, transport);
     await console.bootstrap();
-    await console.pollOnce();
+    await expect(console.pollOnce()).rejects.toMatchObject({ code: "DELIVERY_RECONCILIATION_REQUIRED" });
 
     const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
     try {
-      expect(state.offset()?.offset).toBe("3");
-      expect(state.receiptState("1")).toBe("REJECTED");
-      expect(state.receiptState("2")).toBe("COMPLETED");
+      expect(state.offset()?.offset).toBe("2");
+      expect(state.receiptState("1")).toBe("DELIVERY_UNCERTAIN");
+      expect(state.deliveryState("1")).toBe("UNCERTAIN");
+      expect(state.receiptState("2")).toBeUndefined();
     } finally { await state.close(); }
-    expect(transport.calls.filter((entry) => entry.method === "sendMessage")).toHaveLength(3);
+    expect(transport.calls.filter((entry) => entry.method === "sendMessage")).toHaveLength(1);
     await console.close();
+
+    const restartedTransport = new ScriptedTransport([message(2, "/status")]);
+    const restartedConsole = await application(path, restartedTransport);
+    await restartedConsole.bootstrap();
+    await restartedConsole.pollOnce();
+    await restartedConsole.close();
+    expect(restartedTransport.calls.filter((entry) => entry.method === "sendMessage")).toHaveLength(1);
+
+    const restartedState = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());
+    try {
+      expect(restartedState.offset()?.offset).toBe("3");
+      expect(restartedState.receiptState("1")).toBe("DELIVERY_UNCERTAIN");
+      expect(restartedState.receiptState("2")).toBe("COMPLETED");
+    } finally { await restartedState.close(); }
   }));
 
-  it("does not leak the process lock when a delivery failure is isolated", async () => withDatabase(async (path) => {
+  it("does not leak the process lock when an ambiguous delivery stops the lifecycle", async () => withDatabase(async (path) => {
     const transport = new ScriptedTransport([message(1, "/mission quick"), message(2, "/status")]);
     transport.failNextDelivery = true;
     const console = await application(path, transport);
-    await new TelegramOperatorLifecycle(console, { stopping: () => transport.pollRequests >= 1 }).run();
+    await expect(new TelegramOperatorLifecycle(console, { stopping: () => transport.pollRequests >= 1 }).run()).rejects.toMatchObject({ code: "DELIVERY_RECONCILIATION_REQUIRED" });
     await expect(access(`${path}.telegram-operator.lock`)).rejects.toMatchObject({ code: "ENOENT" });
   }));
 
@@ -217,12 +396,23 @@ class ScriptedTransport implements TelegramBotApiTransport {
 
 class InvalidFirstDeliveryApi extends TelegramBotApiClient {
   #invalid = true;
-  public override async deliver(intent: { readonly chatId: string; readonly contractVersion: "1"; readonly text: string }): Promise<void> {
+  public override validateDeliveryIntent(intent: TelegramOutboundMessageIntent): TelegramOutboundMessageIntent {
     if (this.#invalid) {
       this.#invalid = false;
-      return super.deliver({ ...intent, text: "token" });
+      return super.validateDeliveryIntent({ ...intent, text: "token" });
     }
-    return super.deliver(intent);
+    return super.validateDeliveryIntent(intent);
+  }
+}
+
+class CrashAfterDeliveryStateStore extends TelegramSqliteStateStore {
+  #crash = true;
+  public override completeDeliveryAndAdvanceOffset(updateId: string, deliveryId: string, offset: string, processingState: "COMPLETED" | "REJECTED", commandId?: string): void {
+    if (this.#crash) {
+      this.#crash = false;
+      throw new Error("simulated durable finalization crash");
+    }
+    super.completeDeliveryAndAdvanceOffset(updateId, deliveryId, offset, processingState, commandId);
   }
 }
 

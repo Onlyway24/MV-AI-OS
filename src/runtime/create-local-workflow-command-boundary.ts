@@ -33,8 +33,15 @@ import { NodeRestrictedHttpsClient } from "../research/restricted-https-client.j
 import { DeterministicMetodoVeloceSocialProductionLine } from "../social-intelligence/deterministic-metodo-veloce-social-production-line.js";
 import { SocialIntelligenceLiveService } from "../social-intelligence-live/social-intelligence-live-service.js";
 import { GoogleTrendsLiveAcquisitionService } from "../social-intelligence-live/google-trends-live-acquisition-service.js";
+import { FileSocialVisualApprovalGate, type FileSocialVisualApprovalGateConfig } from "../command-center/visual-approval-gate.js";
 
-export function createLocalWorkflowCommandBoundary(input: { readonly actorId: string; readonly workspaceId: string; readonly clock: Clock; readonly repositories: RepositoryTransactionRunner }): LocalWorkflowCommandBoundary {
+export function createLocalWorkflowCommandBoundary(input: {
+  readonly actorId: string;
+  readonly clock: Clock;
+  readonly repositories: RepositoryTransactionRunner;
+  readonly visualApproval?: Readonly<FileSocialVisualApprovalGateConfig>;
+  readonly workspaceId: string;
+}): LocalWorkflowCommandBoundary {
   const specifications = new ImmutableAgentSpecificationRegistry([CONTENT_DIRECTOR_SPECIFICATION], new AgentSpecificationValidator());
   const executor = new DeterministicContentDirectorExecutor();
   const catalog = new ImmutableAgentRuntimeCatalog([{ descriptor: DETERMINISTIC_CONTENT_DIRECTOR_DESCRIPTOR, executor }], [DETERMINISTIC_CONTENT_DIRECTOR_BINDING], specifications);
@@ -53,6 +60,7 @@ export function createLocalWorkflowCommandBoundary(input: { readonly actorId: st
     businessMissions,
     candidates: boundary,
     clock: input.clock,
+    contentApprovalGate: new FileSocialVisualApprovalGate(input.visualApproval),
     contentProduction: new DeterministicMetodoVeloceContentProductionLine(input.clock),
     controls: createWorkflowControlCheckpointService({ eventIds: { nextWorkflowControlCheckpointEventId: () => randomId() }, guardianAuthorities: { operator_safety: "operator_safety-guardian", quality: "quality-guardian" }, operatorActorId: input.actorId, repositories: input.repositories }),
     googleTrendsLive: new GoogleTrendsLiveAcquisitionService({ actorId: input.actorId, clock: input.clock, https, live: socialIntelligenceLive, repositories: input.repositories, workspaceId: input.workspaceId }),

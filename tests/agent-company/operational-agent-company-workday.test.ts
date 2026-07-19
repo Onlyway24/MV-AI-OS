@@ -4,9 +4,11 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import type { AgentCompanyWorkdayInput } from "../../src/agent-company/operational-agent-company.js";
+import type { AgentCompanyWorkday, AgentCompanyWorkdayInput } from "../../src/agent-company/operational-agent-company.js";
+import { AgentCompanyWorkdayValidator, createAgentCompanyOutputFingerprint } from "../../src/agent-company/operational-agent-company-validator.js";
 import type { BusinessMissionExecutionInput, BusinessScoreCriterion } from "../../src/business/business-mission.js";
 import { CommandCenterQueryService } from "../../src/command-center/command-center-query-service.js";
+import { canonicalSha256 } from "../../src/contracts/canonical-fingerprint.js";
 import { OperationalPlaneService } from "../../src/operational-planes/operational-plane-service.js";
 import { SqliteRepositoryTransactionRunner } from "../../src/persistence/sqlite/sqlite-repository-transaction-runner.js";
 import type { RestrictedHttpsAcquisition } from "../../src/research/authorized-research.js";
@@ -22,41 +24,95 @@ describe("Onlyway Agent Company Operational V1", () => {
     const boundary = createLocalWorkflowCommandBoundary({ actorId: "fabio", clock, repositories: first, workspaceId: "onlyway" });
     const command = { actorId: "fabio", commandId: "agent-company-day-one-command", contractVersion: "1" as const, input: { workday: workdayInput() }, operation: "RUN_AGENT_COMPANY_WORKDAY" as const, workspaceId: "onlyway" };
     const completed = await boundary.execute(command);
-    expect(completed).toMatchObject({ replayed: false, result: { externalActionsExecuted: false, status: "AWAITING_FABIO", workdayId: "onlyway-workday-001" }, unauthorizedExternalEffectOccurred: false });
-    const workday = completed.result as { readonly tasks: readonly { readonly agentId: string; readonly costCents: number; readonly gates: readonly { readonly status: string }[]; readonly output?: Record<string, unknown>; readonly status: string }[]; readonly version: number };
+    expect(completed).toMatchObject({ replayed: false, result: { externalActionsExecuted: false, status: "BLOCKED", workdayId: "onlyway-workday-001" }, unauthorizedExternalEffectOccurred: false });
+    const workday = completed.result as { readonly tasks: readonly { readonly agentId: string; readonly blocker?: { readonly reasonCode: string }; readonly costCents: number; readonly gates: readonly { readonly status: string }[]; readonly output?: Record<string, unknown>; readonly status: string }[]; readonly version: number };
     expect(workday.tasks).toHaveLength(17);
-    expect(workday.tasks.every(({ status }) => status === "COMPLETED")).toBe(true);
-    expect(workday.tasks.every(({ gates }) => gates.length === 3 && gates.every(({ status }) => status === "PASSED"))).toBe(true);
+    expect(workday.tasks.filter(({ status }) => status === "COMPLETED")).toHaveLength(16);
+    expect(workday.tasks.find(({ agentId }) => agentId === "backup-guardian")).toMatchObject({ blocker: { reasonCode: "BACKUP_RESTORE_RECEIPT_REQUIRED" }, status: "BLOCKED" });
+    expect(workday.tasks.filter(({ status }) => status === "COMPLETED").every(({ gates }) => gates.length === 3 && gates.every(({ status }) => status === "PASSED"))).toBe(true);
     expect(workday.tasks.every(({ costCents }) => costCents === 0)).toBe(true);
     expect(workday.tasks.find(({ agentId }) => agentId === "research-agent")?.output).toMatchObject({ acquisitionMode: "RESTRICTED_AUTHORIZED_HTTPS", researchMissionId: "authorized-research-day-one", unrestrictedWebAccess: false });
     expect(workday.tasks.find(({ agentId }) => agentId === "publisher-agent")?.output).toMatchObject({ dryRun: true, externalActionsExecuted: false });
     expect(workday.tasks.find(({ agentId }) => agentId === "developer-agent")?.output).toMatchObject({ implementationExecuted: false, mergeExecuted: false, scope: "CHANGE_PLAN_ONLY" });
     expect(workday.version).toBeGreaterThan(30);
+    const durableWorkday = completed.result as AgentCompanyWorkday;
+    const oversizedOutput = { payload: "x".repeat(65_537) };
+    const oversizedWorkday = {
+      ...durableWorkday,
+      tasks: durableWorkday.tasks.map((task) => task.status === "COMPLETED" && task.agentId === "onlyway-assistant"
+        ? { ...task, output: oversizedOutput, outputFingerprint: createAgentCompanyOutputFingerprint(oversizedOutput) }
+        : task),
+    };
+    expect(new AgentCompanyWorkdayValidator().validate(oversizedWorkday).ok).toBe(false);
+    const cyclicOutput: Record<string, unknown> = {};
+    cyclicOutput.self = cyclicOutput;
+    const cyclicWorkday = {
+      ...durableWorkday,
+      tasks: durableWorkday.tasks.map((task) => task.status === "COMPLETED" && task.agentId === "onlyway-assistant"
+        ? { ...task, output: cyclicOutput }
+        : task),
+    };
+    expect(new AgentCompanyWorkdayValidator().validate(cyclicWorkday).ok).toBe(false);
     const state = await first.transaction(async ({ businessMissions, contentProductions, operationalPlanes }) => ({ business: await businessMissions.getById("business-day-one"), content: await contentProductions.getById("content-day-one"), packs: await Promise.all(["day-one-pack-a", "day-one-pack-b", "day-one-pack-c"].map((id) => operationalPlanes.getEvidencePackById(id))) }));
     expect(state.business).toMatchObject({ selectedOpportunityId: "opportunity-a", status: "PENDING_FABIO_APPROVAL" });
     expect(state.content).toMatchObject({ evidencePack: { packId: "day-one-pack-a" }, status: "PENDING_FABIO_APPROVAL" });
+    if (state.content === undefined) throw new Error("Expected a durable content package");
+    expect(workday.tasks.find(({ agentId }) => agentId === "publisher-agent")?.output).toMatchObject({ packageFingerprint: canonicalSha256(state.content.package) });
     expect(state.packs.every((pack) => pack?.status === "READY")).toBe(true);
     await first.close();
 
     const restarted = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
     const restartedBoundary = createLocalWorkflowCommandBoundary({ actorId: "fabio", clock, repositories: restarted, workspaceId: "onlyway" });
     const inspected = await restartedBoundary.execute({ actorId: "fabio", commandId: "agent-company-inspect-after-restart", contractVersion: "1", input: { workdayId: "onlyway-workday-001" }, operation: "INSPECT_AGENT_COMPANY_WORKDAY", workspaceId: "onlyway" });
-    expect(inspected).toMatchObject({ result: { status: "AWAITING_FABIO", tasks: { length: 17 } } });
+    expect(inspected).toMatchObject({ result: { status: "BLOCKED", tasks: { length: 17 } } });
     const replay = await restartedBoundary.execute(command);
-    expect(replay).toMatchObject({ replayed: true, result: { status: "AWAITING_FABIO" } });
+    expect(replay).toMatchObject({ replayed: true, result: { status: "BLOCKED" } });
     const metrics = await restartedBoundary.execute({ actorId: "fabio", commandId: "agent-company-metrics-after-restart", contractVersion: "1", input: {}, operation: "GET_AGENT_COMPANY_METRICS", workspaceId: "onlyway" });
     const measured = metrics.result as readonly { readonly blockedTasks: number; readonly completedTasks: number; readonly measuredCostCents: number }[];
     expect(measured).toHaveLength(17);
-    expect(measured.every((entry) => entry.completedTasks === 1 && entry.blockedTasks === 0 && entry.measuredCostCents === 0)).toBe(true);
+    expect(measured.filter(({ completedTasks }) => completedTasks === 1)).toHaveLength(16);
+    expect(measured.filter(({ blockedTasks }) => blockedTasks === 1)).toHaveLength(1);
+    expect(measured.every((entry) => entry.measuredCostCents === 0)).toBe(true);
     const commandCenter = await new CommandCenterQueryService({ clock, repositories: restarted, workspaceId: "onlyway" }).snapshot();
     expect(commandCenter.agentCompany).toHaveLength(1);
     expect(commandCenter.agents).toHaveLength(17);
-    expect(commandCenter.agents.every(({ completedTasks }) => completedTasks === 1)).toBe(true);
+    expect(commandCenter.agents.filter(({ completedTasks }) => completedTasks === 1)).toHaveLength(16);
+    expect(commandCenter.agents.find(({ agentId }) => agentId === "backup-guardian")).toMatchObject({ blockedTasks: 1, state: "DEGRADED" });
     expect(commandCenter.overview).toMatchObject({
       decisionsRequired: 3,
-      dailyBrief: { decision: "È richiesta la revisione della giornata Agent Company" },
+      dailyBrief: { decision: "Una giornata Agent Company è bloccata" },
     });
     await restarted.close();
+  }));
+
+  it("blocks reuse of a production ID when the exact content brief no longer matches", async () => withDatabase(async (path) => {
+    const clock = new FixedClock("2026-07-15T08:00:00.000Z");
+    const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+    await seedAuthorizedEvidence(repositories, clock);
+    const boundary = createLocalWorkflowCommandBoundary({ actorId: "fabio", clock, repositories, workspaceId: "onlyway" });
+    const original = workdayInput();
+    await boundary.execute({ actorId: "fabio", commandId: "agent-company-original-content", contractVersion: "1", input: { workday: original }, operation: "RUN_AGENT_COMPANY_WORKDAY", workspaceId: "onlyway" });
+    const originalRecord = await repositories.transaction(({ contentProductions }) => contentProductions.getById(original.content.brief.productionId));
+    if (originalRecord === undefined) throw new Error("Expected the original durable content package");
+    const originalFingerprint = canonicalSha256(originalRecord.package);
+    const conflicting: AgentCompanyWorkdayInput = {
+      ...original,
+      content: { ...original.content, brief: { ...original.content.brief, callToAction: "Prenota una consulenza diversa" } },
+      workdayId: "onlyway-workday-002",
+    };
+
+    const result = await boundary.execute({ actorId: "fabio", commandId: "agent-company-conflicting-content", contractVersion: "1", input: { workday: conflicting }, operation: "RUN_AGENT_COMPANY_WORKDAY", workspaceId: "onlyway" });
+    expect(result).toMatchObject({ result: { status: "BLOCKED" } });
+    const blocked = result.result as AgentCompanyWorkday;
+    const contentTask = blocked.tasks.find(({ agentId }) => agentId === "content-producer");
+    expect(contentTask).toMatchObject({
+      blocker: { reasonCode: "EXECUTOR_OUTPUT_UNVERIFIED" },
+      status: "BLOCKED",
+    });
+    expect(contentTask?.gates.find(({ gate }) => gate === "QUALITY")).toMatchObject({ findings: ["Existing content package does not match the workday"], status: "BLOCKED" });
+    const preserved = await repositories.transaction(({ contentProductions }) => contentProductions.getById(original.content.brief.productionId));
+    expect(preserved === undefined ? undefined : canonicalSha256(preserved.package)).toBe(originalFingerprint);
+    await repositories.close();
   }));
 });
 

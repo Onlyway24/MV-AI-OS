@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.onlyway.mv-ai-os.worker</string>
+  <key>ProgramArguments</key><array><string>__NODE__</string><string>__REPO__/dist/operations-runtime/operations-runtime-cli.js</string><string>--config</string><string>__CONFIG__</string><string>--role</string><string>worker</string><string>--backup-directory</string><string>__BACKUP_DIR__</string></array>
+  <key>WorkingDirectory</key><string>__REPO__</string>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict><key>ThrottleInterval</key><integer>10</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>__LOG_DIR__/worker.log</string><key>StandardErrorPath</key><string>__LOG_DIR__/worker.error.log</string>
+</dict></plist>

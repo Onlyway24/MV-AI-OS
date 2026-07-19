@@ -18,6 +18,7 @@ export interface OperationalPlaneRepository {
   listEvidenceByWorkspaceId(workspaceId: string, limit: number): Promise<readonly EvidenceRecord[]>;
   listEvidencePacksByWorkspaceId(workspaceId: string, limit: number): Promise<readonly EvidencePack[]>;
   listFeedbackSnapshots(publicationId: string): Promise<readonly FeedbackMetricSnapshot[]>;
+  listOpenPublicationsByProductionId(productionId: string, limit: number): Promise<readonly PublicationPlan[]>;
   listSourcesByWorkspaceId(workspaceId: string, limit: number): Promise<readonly SourceRegistryEntry[]>;
   listSocialLiveRecordsByWorkspaceId(workspaceId: string, limit: number): Promise<readonly SocialLiveRecord[]>;
   updatePublication(record: PublicationPlan, expectation: { readonly version: number }): Promise<void>;

@@ -43,10 +43,63 @@ export { TelegramOperatorLifecycle, type TelegramOperatorLifecycleOptions, type 
 export { TELEGRAM_OPERATOR_ERROR_CODES, TelegramOperatorError, isRetryablePollingFailure, safeTelegramOperatorDiagnostic, type TelegramOperatorErrorCode, type TelegramOperatorLifecycleStage } from "./telegram/telegram-operator-errors.js";
 export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
 export {
+  TelegramDailyBriefConsole,
+  formatDailyBriefDetail,
+  formatDailyBriefSummary,
+  type TelegramDailyBriefReader,
+} from "./telegram/telegram-daily-brief-console.js";
+export {
+  DAILY_OPERATING_BRIEF_CONTRACT_VERSION,
+  type DailyOperatingBriefRecord,
+  type DailyOperatingBriefSections,
+  type DailyOperatingDecision,
+  type OperatingDataKind,
+  type OperatingDatum,
+} from "./daily-brief/daily-operating-brief.js";
+export type { DailyOperatingBriefRepository } from "./daily-brief/daily-operating-brief-repository.js";
+export {
+  DailyOperatingBriefService,
+  type DailyOperatingBriefSource,
+  type DailyOperatingBriefSourceSnapshot,
+} from "./daily-brief/daily-operating-brief-service.js";
+export {
+  DailyOperatingBriefRecordValidator,
+  dailyOperatingBriefFingerprint,
+} from "./daily-brief/daily-operating-brief-validator.js";
+export { RepositoryBackedDailyOperatingBriefSource } from "./daily-brief/repository-backed-daily-operating-brief-source.js";
+export {
+  FOUNDER_WORKDAY_CONTRACT_VERSION,
+  FOUNDER_WORKDAY_OBJECTIVE,
+  type FounderDataKind,
+  type FounderWorkdayArtifacts,
+  type FounderWorkdayBlocker,
+  type FounderWorkdayDecision,
+  type FounderWorkdayManifest,
+  type FounderWorkdayRecord,
+  type FounderWorkdayStatus,
+  type FounderWorkdayTask,
+  type FounderWorkdayTaskReceipt,
+  type FounderWorkdayTaskStatus,
+} from "./agent-company/founder-workday.js";
+export type { FounderWorkdayRepository } from "./agent-company/founder-workday-repository.js";
+export {
+  FounderWorkdayService,
+  type FounderWorkdayStateSnapshot,
+  type FounderWorkdayStateSource,
+} from "./agent-company/founder-workday-service.js";
+export {
+  FounderWorkdayRecordValidator,
+  founderWorkdayFingerprint,
+} from "./agent-company/founder-workday-validator.js";
+export { RepositoryBackedFounderWorkdayStateSource } from "./agent-company/repository-backed-founder-workday-state-source.js";
+export {
   COMMAND_CENTER_CONTRACT_VERSION,
   CommandCenterQueryService,
   type CommandCenterAgentSummary,
   type CommandCenterClock,
+  type CommandCenterControlSummary,
+  type CommandCenterControlTarget,
+  type CommandCenterDecisionInboxItem,
   type CommandCenterEvidenceSummary,
   type CommandCenterMetric,
   type CommandCenterOverview,
@@ -58,6 +111,29 @@ export {
   type CommandCenterServerOptions,
   type StartedCommandCenter,
 } from "./command-center/command-center-server.js";
+export {
+  RepositoryBackedCommandCenterEventSource,
+  type CommandCenterEventPlaneOptions,
+  type CommandCenterEventSource,
+} from "./command-center/command-center-event-source.js";
+export {
+  OPERATIONAL_EVENT_AGGREGATE_TYPES,
+  OPERATIONAL_EVENT_CONTRACT_VERSION,
+  OPERATIONAL_EVENT_SEMANTICS,
+  OPERATIONAL_EVENT_SUMMARY_CODES,
+  OPERATIONAL_EVENT_TYPES,
+  type OperationalEvent,
+  type OperationalEventAggregateType,
+  type OperationalEventCursorWindow,
+  type OperationalEventDraft,
+  type OperationalEventSummaryCode,
+  type OperationalEventType,
+} from "./operations-runtime/operational-event.js";
+export type { OperationalEventRepository } from "./operations-runtime/operational-event-repository.js";
+export {
+  OperationalEventDraftValidator,
+  OperationalEventValidator,
+} from "./operations-runtime/operational-event-validator.js";
 export { TelegramMissionDraftSessionCoordinator, telegramMissionCommandFingerprint, type TelegramMissionDraftCallback, type TelegramMissionDraftSessionCommand, type TelegramMissionDraftSessionSnapshot } from "./telegram/telegram-mission-draft-session-coordinator.js";
 export { TelegramMissionPlanningConsole } from "./telegram/telegram-mission-planning-console.js";
 export { TelegramWorkflowOperatorConsole } from "./telegram/telegram-workflow-operator-console.js";
@@ -1297,6 +1373,28 @@ export {
 } from "./social-publishing/official-social-http-transports.js";
 export { runSocialConnectorCli } from "./social-publishing/social-connector-cli.js";
 export {
+  LocalSocialConnectorServer,
+  META_APP_DASHBOARD_URL,
+  SOCIAL_CONNECTOR_APP_NAME,
+  SOCIAL_CONNECTOR_RUNTIME_CONTRACT_VERSION,
+  SocialConnectorConfigValidator,
+  TIKTOK_APP_DASHBOARD_URL,
+  TIKTOK_USERNAME_BINDING_RATIONALE,
+  buildSocialConnectorBrowserCheckpoint,
+  createSocialConnectorStatusArtifact,
+  persistSocialConnectorStatusAtomically,
+  preflightSocialConnectors,
+  type LocalSocialConnectorConfig,
+  type SocialConnectorBrowserCheckpoint,
+  type SocialConnectorClient,
+  type SocialConnectorConfigurationValidation,
+  type SocialConnectorPlatformCheckpoint,
+  type SocialConnectorPreflightCheck,
+  type SocialConnectorPreflightReport,
+  type SocialConnectorStatusArtifact,
+  type SocialConnectorStatuses,
+} from "./social-publishing/social-connector-runtime.js";
+export {
   instagramContainerDryRun,
   SocialExternalActionPlane,
   tiktokDirectPostDryRun,
@@ -1890,3 +1988,12 @@ export {
   type CommandCenterBusinessActionReceipt,
   type CommandCenterContentAction,
 } from "./command-center/command-center-action-service.js";
+export {
+  FileSocialVisualApprovalGate,
+  SOCIAL_VISUAL_PACK_MANIFEST_PATH,
+  verifyVisualApprovalBinding,
+  visualApprovalManifestFingerprint,
+  type CommandCenterContentApprovalGate,
+  type FileSocialVisualApprovalGateConfig,
+  type VisualApprovalBindingReceipt,
+} from "./command-center/visual-approval-gate.js";

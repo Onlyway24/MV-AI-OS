@@ -8,7 +8,8 @@
   "types": "./dist/index.d.ts",
   "bin": {
     "mv-ai-os": "./dist/cli/local-runtime-cli.js",
-    "mv-ai-os-command-center": "./dist/command-center/command-center-cli.js"
+    "mv-ai-os-command-center": "./dist/command-center/command-center-cli.js",
+    "mv-ai-os-operations": "./dist/operations-runtime/operations-runtime-cli.js"
   },
   "files": [
     "dist"
@@ -26,6 +27,7 @@
     "image-recovery": "node ./dist/media-factory/image-recovery-cli.js",
     "openai-responses-conformance": "node ./dist/media-factory/openai-responses-conformance-cli.js",
     "openai-text-diagnosis": "node ./dist/media-factory/openai-text-failure-diagnosis-cli.js",
+    "operations": "node ./dist/operations-runtime/operations-runtime-cli.js",
     "social-connectors": "node ./dist/social-publishing/social-connector-cli.js",
     "lint": "eslint . --max-warnings 0",
     "telegram": "node ./dist/telegram/telegram-cli.js",

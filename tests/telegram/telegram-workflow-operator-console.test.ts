@@ -5,7 +5,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { createLocalRuntime, TelegramMissionDraftSessionCoordinator, TelegramMissionPlanningConsole, TelegramSqliteStateStore, TelegramWorkflowOperatorConsole, type LocalRuntimeConfig } from "../../src/index.js";
+import { createLocalRuntime, TelegramMissionDraftSessionCoordinator, TelegramMissionPlanningConsole, TelegramSqliteStateStore, TelegramWorkflowOperatorConsole, type CommandCenterContentApprovalGate, type LocalRuntimeConfig, type VisualApprovalBindingReceipt } from "../../src/index.js";
+import { canonicalSha256 } from "../../src/contracts/canonical-fingerprint.js";
 import { FixedClock } from "../support/fixtures.js";
 
 const clock = new FixedClock("2026-07-14T10:05:00.000Z");
@@ -57,10 +58,11 @@ describe("Telegram Workflow Operator Console", () => {
     await state.close();
   }));
 
-  it("shows the private content queue and requires a one-use Telegram confirmation before Fabio approval", async () => withDatabase(async (path) => {
+  it("never lets an adapter-local Visual Gate substitute bypass the central file-backed gate", async () => withDatabase(async (path) => {
     const runtime = await createLocalRuntime(config(path), { clock });
     const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
-    const workflow = new TelegramWorkflowOperatorConsole({ actorId: "actor-local", chatId: "200", clock, confirmationRetentionSeconds: 600, runtime, state, workspaceId: "workspace-local" });
+    const stages: string[] = [];
+    const workflow = new TelegramWorkflowOperatorConsole({ actorId: "actor-local", chatId: "200", clock, confirmationRetentionSeconds: 600, contentApprovalGate: testVisualGate(stages), runtime, state, workspaceId: "workspace-local" });
     if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow command boundary unavailable");
     await createEvidenceBoundTelegramContent(runtime, "mv-content-telegram-001");
 
@@ -70,9 +72,49 @@ describe("Telegram Workflow Operator Console", () => {
     expect(preview.text).toContain("Evidence Pack: telegram-pack-001");
     expect(preview.buttons?.[0]?.text).toBe("Approva per calendario");
     expect((await workflow.handle(identity, "/evidencepack telegram-pack-001")).text).toContain("Fonte Telegram");
-    const approved = await workflow.handleCallback(identity, preview.buttons?.[0]?.callbackData ?? "");
-    expect(approved?.text).toContain("approvato per il calendario interno");
-    expect(approved?.text).toContain("Non è stato pubblicato");
+    const blocked = await workflow.handleCallback(identity, preview.buttons?.[0]?.callbackData ?? "");
+    expect(blocked?.text).toContain("bloccata dal Visual Gate");
+    expect(blocked?.text).toContain("Nessuna approvazione è stata applicata");
+    expect(stages).toEqual(["PROPOSE", "CONFIRM"]);
+    const inspected = await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "inspect-central-visual-gate-block", contractVersion: "1", input: { productionId: "mv-content-telegram-001" }, operation: "INSPECT_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
+    expect(inspected.result).toMatchObject({ status: "PENDING_FABIO_APPROVAL", version: 0 });
+
+    await runtime.close();
+    await state.close();
+  }));
+
+  it("fails closed without an exact Visual Gate and never offers the Telegram approval callback", async () => withDatabase(async (path) => {
+    const runtime = await createLocalRuntime(config(path), { clock });
+    const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
+    const workflow = new TelegramWorkflowOperatorConsole({ actorId: "actor-local", chatId: "200", clock, confirmationRetentionSeconds: 600, runtime, state, workspaceId: "workspace-local" });
+    if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow command boundary unavailable");
+    await createEvidenceBoundTelegramContent(runtime, "mv-content-telegram-visual-blocked");
+
+    const preview = await workflow.handle(identity, "/production mv-content-telegram-visual-blocked");
+    expect(preview.text).toContain("Visual Gate: BLOCCATO");
+    expect(preview.buttons).toBeUndefined();
+    const inspected = await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "inspect-visual-blocked", contractVersion: "1", input: { productionId: "mv-content-telegram-visual-blocked" }, operation: "INSPECT_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
+    expect(inspected.result).toMatchObject({ status: "PENDING_FABIO_APPROVAL", version: 0 });
+
+    await runtime.close();
+    await state.close();
+  }));
+
+  it("consumes but does not apply approval when the Visual Gate binding changes before callback", async () => withDatabase(async (path) => {
+    const runtime = await createLocalRuntime(config(path), { clock });
+    const state = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, clock, () => "fixed-token");
+    const workflow = new TelegramWorkflowOperatorConsole({ actorId: "actor-local", chatId: "200", clock, confirmationRetentionSeconds: 600, contentApprovalGate: testVisualGate([], "e".repeat(64)), runtime, state, workspaceId: "workspace-local" });
+    if (runtime.executeWorkflowCommand === undefined) throw new Error("Workflow command boundary unavailable");
+    await createEvidenceBoundTelegramContent(runtime, "mv-content-telegram-stale-visual");
+
+    const preview = await workflow.handle(identity, "/production mv-content-telegram-stale-visual");
+    expect(preview.buttons?.[0]?.text).toBe("Approva per calendario");
+    const blocked = await workflow.handleCallback(identity, preview.buttons?.[0]?.callbackData ?? "");
+    expect(blocked?.text).toContain("binding del Visual Gate è cambiato");
+    const replay = await workflow.handleCallback(identity, preview.buttons?.[0]?.callbackData ?? "");
+    expect(replay).toBeUndefined();
+    const inspected = await runtime.executeWorkflowCommand({ actorId: "actor-local", commandId: "inspect-stale-visual", contractVersion: "1", input: { productionId: "mv-content-telegram-stale-visual" }, operation: "INSPECT_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
+    expect(inspected.result).toMatchObject({ status: "PENDING_FABIO_APPROVAL", version: 0 });
 
     await runtime.close();
     await state.close();
@@ -119,4 +161,25 @@ async function approvalReadyMission(console: TelegramMissionPlanningConsole): Pr
 
 function config(path: string): LocalRuntimeConfig { return { actorId: "actor-local", contentAgentMode: "deterministic", contractVersion: "1", permissions: { actorGrants: [], policyGrants: [], taskGrants: [] }, sqlite: { path, timeoutMs: 1_000 }, workspaceId: "workspace-local" }; }
 function contentBrief(productionId: string) { return { audience: "Persone che vogliono testare un'offerta prima di investire budget.", callToAction: "Salva il post e scegli un test piccolo per questa settimana.", contractVersion: "1", evidence: [{ evidenceId: "telegram-evidence", sourceRef: "telegram-source", statement: "Le persone chiedono esempi concreti prima di valutare l'offerta." }], language: "it", missionReference: "mission-draft-1", objective: "educate", offer: "un percorso per validare offerte digitali", productionId, topic: "come validare un'offerta prima di promuoverla" } as const; }
+function testVisualGate(stages: string[], confirmFingerprint = "c".repeat(64)): CommandCenterContentApprovalGate {
+  return Object.freeze({
+    verify: (input: Parameters<CommandCenterContentApprovalGate["verify"]>[0]) => {
+      const { production, stage } = input;
+      stages.push(stage);
+      const bindingFingerprint = stage === "PROPOSE" ? "c".repeat(64) : confirmFingerprint;
+      const receipt: VisualApprovalBindingReceipt = Object.freeze({
+        assetSetFingerprint: "a".repeat(64),
+        bindingFingerprint,
+        contentPackageFingerprint: canonicalSha256(production.package),
+        manifestFingerprint: "b".repeat(64),
+        masterContentPackFingerprint: production.package.socialPublishingPack?.masterContentPack.fingerprint ?? "0".repeat(64),
+        productionId: production.productionId,
+        productionVersion: production.version,
+        socialPublishingPackFingerprint: production.package.socialPublishingPack?.fingerprint ?? "0".repeat(64),
+        workspaceId: production.workspaceId,
+      });
+      return Promise.resolve(receipt);
+    },
+  });
+}
 async function withDatabase(test: (path: string) => Promise<void>): Promise<void> { const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-telegram-workflow-")); try { await test(join(directory, "runtime.sqlite")); } finally { await rm(directory, { force: true, recursive: true }); } }
