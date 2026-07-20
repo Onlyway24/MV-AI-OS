@@ -17,6 +17,28 @@ import { createLocalWorkflowCommandBoundary } from "../../src/runtime/create-loc
 import { FixedClock } from "../support/fixtures.js";
 
 describe("Private Command Center", () => {
+  it("degrades a failed Reference Vault read without exposing the error or dropping the Command Center", async () => {
+    await withDatabase(async (path) => {
+      const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+      const queryService = new CommandCenterQueryService({
+        actorId: "actor-local",
+        clock: new FixedClock("2026-07-14T12:00:00.000Z"),
+        referenceVault: { snapshot: () => Promise.reject(new Error("private path and metadata must stay redacted")) },
+        repositories,
+        workspaceId: "workspace-local",
+      });
+      await expect(queryService.snapshot()).resolves.toMatchObject({
+        referenceVault: {
+          assets: [],
+          coverage: "NOT_AVAILABLE",
+          queryStatus: "UNAVAILABLE",
+        },
+      });
+      expect((await queryService.snapshot()).referenceVault.missingInputs.join(" ")).not.toContain("private path");
+      await repositories.close();
+    });
+  });
+
   it("marks the Decision Inbox as a lower bound when any canonical query reaches its cap", async () => {
     await withDatabase(async (path) => {
       const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
@@ -27,7 +49,7 @@ describe("Private Command Center", () => {
         const productionId = `mv-content-coverage-${String(index).padStart(3, "0")}`;
         await boundary.execute({ actorId: "actor-local", commandId: `coverage-${String(index).padStart(3, "0")}`, contractVersion: "1", input: { brief: brief(productionId) }, operation: "PRODUCE_METODO_VELOCE_CONTENT", workspaceId: "workspace-local" });
       }
-      const snapshot = await new CommandCenterQueryService({ clock, repositories, workspaceId: "workspace-local" }).snapshot();
+      const snapshot = await new CommandCenterQueryService({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" }).snapshot();
       expect(snapshot.productions).toHaveLength(25);
       expect(snapshot.overview).toMatchObject({
         decisionInboxCoverage: "LIMIT_REACHED",
@@ -53,7 +75,7 @@ describe("Private Command Center", () => {
       const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
       const clock = new FixedClock("2026-07-14T12:00:00.000Z");
       await seedReadyRuntimeLeases(repositories);
-      const queryService = new CommandCenterQueryService({ clock, repositories, workspaceId: "workspace-local" });
+      const queryService = new CommandCenterQueryService({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
       await expect(queryService.snapshot()).resolves.toMatchObject({ overview: { system: "READY" }, runtime: { status: "READY" } });
 
       const boundary = createLocalWorkflowCommandBoundary({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
@@ -80,7 +102,7 @@ describe("Private Command Center", () => {
       const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
       const clock = new FixedClock("2026-07-14T12:00:00.000Z");
       await seedReadyRuntimeLeases(repositories);
-      const queryService = new CommandCenterQueryService({ clock, repositories, workspaceId: "workspace-local" });
+      const queryService = new CommandCenterQueryService({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
       await expect(queryService.snapshot()).resolves.toMatchObject({ overview: { system: "READY" }, runtime: { status: "READY" } });
 
       await new OperationsControlService({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" }).openIncident({
@@ -132,6 +154,7 @@ describe("Private Command Center", () => {
         timeoutMs: 1_000,
       });
       const queryService = new CommandCenterQueryService({
+        actorId: "actor-local",
         clock: new FixedClock("2026-07-14T12:05:00.000Z"),
         repositories,
         workspaceId: "workspace-local",

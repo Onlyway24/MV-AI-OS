@@ -45,6 +45,7 @@ import {
 import { ValidatedLlmGateway } from "../models/validated-llm-gateway.js";
 import { SqliteKnowledgeRepository } from "../persistence/sqlite/sqlite-knowledge-repository.js";
 import { SqliteMemoryRepository } from "../persistence/sqlite/sqlite-memory-repository.js";
+import { SqliteReferenceVaultTransactionRunner } from "../persistence/sqlite/sqlite-reference-vault-transaction-runner.js";
 import { SqliteRepositoryTransactionRunner } from "../persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { DefaultDenyPolicyEvaluator } from "../policy/default-deny-policy-evaluator.js";
 import type {
@@ -76,6 +77,8 @@ import {
   type LocalRuntimeResource,
 } from "./local-runtime.js";
 import { createLocalWorkflowCommandBoundary } from "./create-local-workflow-command-boundary.js";
+import { ReferenceVaultQueryAgent } from "../reference-vault/reference-vault-query-agent.js";
+import { ReferenceVaultCommandBoundary } from "../reference-vault/reference-vault-command-boundary.js";
 
 export interface LocalRuntimeOverrides {
   readonly clock?: Clock;
@@ -128,6 +131,8 @@ export async function createLocalRuntime(
   try {
     const repositories = new SqliteRepositoryTransactionRunner(config.sqlite);
     openedResources.push(repositories);
+    const referenceVaultRepositories = new SqliteReferenceVaultTransactionRunner(config.sqlite);
+    openedResources.push(referenceVaultRepositories);
     const memoryRepository = new SqliteMemoryRepository(config.sqlite);
     openedResources.push(memoryRepository);
     const knowledgeRepository = new SqliteKnowledgeRepository(config.sqlite);
@@ -170,7 +175,28 @@ export async function createLocalRuntime(
       router: new RegistryRouter(agentRegistry, clock, identifiers),
       taskResponseValidator: new TaskResponseValidator(),
     });
-    const workflowCommands = createLocalWorkflowCommandBoundary({ actorId: config.actorId, clock, repositories, workspaceId: config.workspaceId });
+    const referenceVault = new ReferenceVaultQueryAgent({
+      actorId: config.actorId,
+      clock,
+      repositories: referenceVaultRepositories,
+      workspaceId: config.workspaceId,
+    });
+    const referenceVaultCommands = new ReferenceVaultCommandBoundary({
+      actorId: config.actorId,
+      ...(config.referenceVaultApprovalAuthority === undefined
+        ? {}
+        : { approvalAuthority: config.referenceVaultApprovalAuthority }),
+      clock,
+      repositories: referenceVaultRepositories,
+      workspaceId: config.workspaceId,
+    });
+    const workflowCommands = createLocalWorkflowCommandBoundary({
+      actorId: config.actorId,
+      clock,
+      referenceVault,
+      repositories,
+      workspaceId: config.workspaceId,
+    });
 
     return new ComposedLocalRuntime(
       coreBrain,
@@ -181,6 +207,7 @@ export async function createLocalRuntime(
         workspaceId: config.workspaceId,
       },
       workflowCommands,
+      referenceVaultCommands,
     );
   } catch (error) {
     await closeResources(openedResources);
@@ -432,6 +459,13 @@ function freezeConfig(config: LocalRuntimeConfig): LocalRuntimeConfig {
     ...(config.modelProvider === undefined
       ? {}
       : { modelProvider: Object.freeze({ ...config.modelProvider }) }),
+    ...(config.referenceVaultApprovalAuthority === undefined
+      ? {}
+      : {
+          referenceVaultApprovalAuthority: Object.freeze({
+            ...config.referenceVaultApprovalAuthority,
+          }),
+        }),
     ...(config.modelBudget === undefined
       ? {}
       : {

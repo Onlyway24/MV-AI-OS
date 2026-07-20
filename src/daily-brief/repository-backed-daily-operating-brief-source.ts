@@ -22,14 +22,15 @@ const WORK_ITEM_LIMIT = 500;
  * than being presented as a measured total.
  */
 export class RepositoryBackedDailyOperatingBriefSource implements DailyOperatingBriefSource {
-  public async snapshot(repositories: RepositoryTransaction, workspaceId: string, asOf: Date, businessDate: string): Promise<DailyOperatingBriefSourceSnapshot> {
+  public async snapshot(repositories: RepositoryTransaction, identity: { readonly actorId: string; readonly workspaceId: string }, asOf: Date, businessDate: string): Promise<DailyOperatingBriefSourceSnapshot> {
+    const { workspaceId } = identity;
     const [businessMissions, contentProductions, evidencePacks, socialRecords, founderWorkdays, agentCompanyWorkdays, productionCounts, incidents, runtimeControl, schedulers, workers, jobs] = await Promise.all([
       repositories.businessMissions.listByWorkspaceId(workspaceId, BUSINESS_LIMIT),
       repositories.contentProductions.listByWorkspaceId(workspaceId, CONTENT_LIMIT),
       repositories.operationalPlanes.listEvidencePacksByWorkspaceId(workspaceId, EVIDENCE_LIMIT),
       repositories.operationalPlanes.listSocialLiveRecordsByWorkspaceId(workspaceId, SOCIAL_LIMIT),
       repositories.founderWorkdays.listByWorkspaceId(workspaceId, WORKDAY_LIMIT),
-      repositories.agentCompanyWorkdays.listByWorkspaceId(workspaceId, WORKDAY_LIMIT),
+      repositories.agentCompanyWorkdays.listByOwner(identity, WORKDAY_LIMIT),
       repositories.productionRuntimeJobs.summarize(workspaceId),
       repositories.operationsControls.listIncidents(workspaceId, INCIDENT_LIMIT),
       repositories.operationsRuntime.getControl(workspaceId),

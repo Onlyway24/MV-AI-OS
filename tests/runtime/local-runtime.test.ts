@@ -9,6 +9,7 @@ import {
   CONTENT_AGENT_MANIFEST,
   ContentOutputValidator,
   createLocalRuntime,
+  referenceInputFingerprint,
   SqliteKnowledgeRepository,
   SqliteMemoryRepository,
   type AgentExecutor,
@@ -35,6 +36,99 @@ const FULL_PERMISSIONS: readonly EffectivePermission[] = Object.freeze([
 ]);
 
 describe("Validated local runtime composition", () => {
+  it("exposes the durable Reference Vault command boundary through the composed runtime", async () => {
+    await withTemporaryDatabase(async (databasePath) => {
+      const runtime = await createLocalRuntime(createConfig(databasePath, "deterministic", []), { clock: new FixedClock() });
+      if (runtime.executeReferenceVaultCommand === undefined) throw new Error("Reference Vault commands must be available");
+      const input = { purpose: "CREATIVE_DIRECTION" };
+      await expect(runtime.executeReferenceVaultCommand({
+        actorId: "actor-local",
+        commandId: "runtime-reference-brief",
+        contractVersion: "1",
+        expectedVersion: "NOT_APPLICABLE",
+        idempotencyKey: "runtime-reference-brief-idempotency",
+        input,
+        inputFingerprint: referenceInputFingerprint(input),
+        operation: "GET_REFERENCE_BRIEF",
+        targetFingerprint: "NOT_AVAILABLE",
+        targetId: "runtime-reference-brief",
+        workspaceId: "workspace-local",
+      })).resolves.toMatchObject({
+        operation: "GET_REFERENCE_BRIEF",
+        replayed: false,
+        result: { assetCount: 0, externalEffectsExecuted: false, kind: "REFERENCE_BRIEF_SUMMARY", purpose: "CREATIVE_DIRECTION" },
+        unauthorizedExternalEffectOccurred: false,
+      });
+      const authorityInput = { assetId: "missing-reference", findings: [], reason: "Identity alone must not grant approval authority." };
+      expect(() => runtime.executeReferenceVaultCommand?.({
+        actorId: "actor-local",
+        commandId: "runtime-reference-review-without-confirmation",
+        contractVersion: "1",
+        expectedVersion: 0,
+        idempotencyKey: "runtime-reference-review-without-confirmation-idempotency",
+        input: authorityInput,
+        inputFingerprint: referenceInputFingerprint(authorityInput),
+        operation: "REVIEW_REFERENCE_ASSET",
+        targetFingerprint: "a".repeat(64),
+        targetId: "missing-reference",
+        workspaceId: "workspace-local",
+      })).toThrow(/explicit configured Fabio approval authority confirmation/iu);
+      await runtime.close();
+    });
+  });
+
+  it("uses only an explicit workspace-bound Fabio approval confirmation", async () => {
+    await withTemporaryDatabase(async (databasePath) => {
+      const config: LocalRuntimeConfig = {
+        ...createConfig(databasePath, "deterministic", []),
+        referenceVaultApprovalAuthority: {
+          authorityId: "actor-local",
+          confirmedByFabio: true,
+          contractVersion: "1",
+          scope: "REFERENCE_VAULT_AUTHORITY_OPERATIONS",
+          workspaceId: "workspace-local",
+        },
+      };
+      const runtime = await createLocalRuntime(config, { clock: new FixedClock() });
+      if (runtime.executeReferenceVaultCommand === undefined) throw new Error("Reference Vault commands must be available");
+      const input = { assetId: "missing-reference", findings: [], reason: "Explicit authority reaches the protected operation." };
+      await expect(runtime.executeReferenceVaultCommand({
+        actorId: "actor-local",
+        commandId: "runtime-reference-review-with-confirmation",
+        contractVersion: "1",
+        expectedVersion: 0,
+        idempotencyKey: "runtime-reference-review-with-confirmation-idempotency",
+        input,
+        inputFingerprint: referenceInputFingerprint(input),
+        operation: "REVIEW_REFERENCE_ASSET",
+        targetFingerprint: "a".repeat(64),
+        targetId: "missing-reference",
+        workspaceId: "workspace-local",
+      })).rejects.toMatchObject({ code: "reference_vault_not_found" });
+      await runtime.close();
+    });
+  });
+
+  it("rejects malformed or cross-workspace Fabio approval confirmation before opening storage", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-invalid-authority-"));
+    const databasePath = join(directory, "invalid.sqlite");
+    try {
+      await expect(createLocalRuntime({
+        ...createConfig(databasePath, "deterministic", []),
+        referenceVaultApprovalAuthority: {
+          authorityId: "actor-local",
+          confirmedByFabio: false,
+          contractVersion: "1",
+          scope: "REFERENCE_VAULT_AUTHORITY_OPERATIONS",
+          workspaceId: "workspace-other",
+        },
+      })).rejects.toMatchObject({ code: "local_runtime_configuration_invalid" });
+      await expect(access(databasePath)).rejects.toMatchObject({ code: "ENOENT" });
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
   it("executes through the deterministic Content Agent and closes idempotently", async () => {
     await withTemporaryDatabase(async (databasePath) => {
       const runtime = await createLocalRuntime(

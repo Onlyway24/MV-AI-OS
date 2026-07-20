@@ -131,7 +131,7 @@ async function withHarness(
       severity: "HIGH",
       summaryCode: "OPERATOR_REVIEW_REQUIRED",
     });
-    const queryService = new CommandCenterQueryService({ clock, repositories, workspaceId: WORKSPACE_ID });
+    const queryService = new CommandCenterQueryService({ actorId: ACTOR_ID, clock, repositories, workspaceId: WORKSPACE_ID });
     const server = new PrivateCommandCenterServer({
       accessToken: ACCESS_TOKEN,
       ...(installBoundary ? { operationsControlService } : {}),

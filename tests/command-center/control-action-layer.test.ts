@@ -121,7 +121,7 @@ async function withHarness(test: (harness: Harness) => Promise<void>): Promise<v
     });
     await runtime.close();
     repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
-    const query = new CommandCenterQueryService({ clock, repositories, workspaceId: "workspace-local" });
+    const query = new CommandCenterQueryService({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
     const actions = new CommandCenterActionService({
       actorId: "actor-local",
       clock,

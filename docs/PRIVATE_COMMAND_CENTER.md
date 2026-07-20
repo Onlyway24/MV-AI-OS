@@ -97,6 +97,50 @@ esiste lavoro corrente reale. Il dossier selezionabile espone i confini dell'age
 la telemetria disponibile, mentre i filtri cambiano solo la visualizzazione. Nessuna
 azione del roster autorizza spesa, pubblicazione o mutazioni del workflow.
 
+## Architettura dell'informazione Focus V1
+
+L'interfaccia principale è organizzata in quattro sole destinazioni. `Oggi` concentra
+le decisioni e le revisioni che richiedono Fabio; `Studio` raccoglie Produzione,
+Social, Business, Evidenze e Intelligence Creativa; `Squadra` mostra gli specialisti
+operativi; `Sistema` contiene pipeline, runtime e regole di governance. Le aree
+specialistiche non sono più una sequenza di pagine concorrenti: un controllo
+segmentato mantiene un solo contesto Studio visibile alla volta.
+
+La navigazione è una proiezione di sola lettura. Ricerca, filtri, selezione delle card
+e apertura dei dettagli cambiano soltanto il contesto visivo e dichiarano
+esplicitamente che nessuna azione è stata eseguita. Le informazioni secondarie di
+Social, approvazioni e provenienza sono raccolte in disclosure progressive; i valori
+essenziali restano visibili senza obbligare Fabio a scorrere tutti i dettagli.
+
+Su desktop la navigazione è un dock superiore compatto. A 390 px diventa un dock
+inferiore a quattro elementi con target tattili di almeno 44 px, mentre metriche,
+card e sequenze diventano raccolte orizzontali controllate. Non esiste un menu mobile
+nascosto né una seconda tassonomia da imparare.
+
+## Intelligence Creativa
+
+La quinta area dello Studio è la proiezione redatta del Reference Vault autorevole.
+Mostra soltanto record persistiti e actor/workspace-scoped: versioni correnti, stato di review, ruoli,
+provenienza, diritti, privacy/retention, idoneità per purpose, reason code, scadenza, scopo commerciale e fingerprint. Non serve byte o
+path locali degli asset e non offre pulsanti di importazione o approvazione privi di
+un'operazione durevole.
+
+La gallery include un confronto affiancato tra decisioni approvate e rifiutate e le
+sequenze carosello ordinate registrate nelle collection. Il confronto resta sui
+metadati verificati: gli originali privati non vengono serviti dal browser.
+
+Il pannello include inoltre Visual Fingerprint, Writing Fingerprint, Business
+Context, Decision Memory e Outcome Link. In assenza di decisioni o dati reali espone
+`NOT_AVAILABLE`, sample count e confidence reali; non deduce il gusto di Fabio, non
+inventa economics e non trasforma i riferimenti competitor in asset di output.
+Diritti `UNKNOWN`, `BLOCKED`, scaduti, `FABIO_SUPPLIED` o `PUBLIC_ANALYSIS_ONLY`,
+privacy non cleared, retention scaduta e CAS non riconciliato restano fail-closed.
+Le metriche dichiarano esplicitamente quando la finestra bounded è parziale o la
+query non è disponibile. L'uso da parte degli agenti è limitato a versioni correnti
+`APPROVED`, nello stesso actor/workspace, con purpose, piattaforma, privacy, CAS,
+diritti e ruolo compatibili; ogni brief riporta separatamente ID disponibili e ID
+effettivamente applicati.
+
 Il Control Action Layer permette di approvare o rifiutare un pacchetto Metodo
 Veloce e di approvare, rifiutare o richiedere revisione per un dossier Business
 in attesa di Fabio. Ogni azione mostra prima versione, gate, Evidence Pack e

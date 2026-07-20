@@ -20,7 +20,13 @@ import {
   type EffectivePermission,
 } from "../policy/effective-permissions.js";
 import {
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION,
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE,
+  type ReferenceVaultApprovalAuthority,
+} from "../reference-vault/reference-vault-approval-authority.js";
+import {
   readOptionalString,
+  readRequiredBoolean,
   readRequiredString,
   readRequiredStringArray,
 } from "../validation/field-readers.js";
@@ -46,8 +52,16 @@ const MODEL_PROVIDER_KEYS = new Set([
   "projectId",
   "providerId",
 ]);
+const REFERENCE_VAULT_APPROVAL_AUTHORITY_KEYS = new Set([
+  "authorityId",
+  "confirmedByFabio",
+  "contractVersion",
+  "scope",
+  "workspaceId",
+]);
 const SECRET_ID_PATTERN = /^[a-z][a-z0-9._:-]{2,127}$/u;
 const HEADER_VALUE_PATTERN = /^[A-Za-z0-9_.:-]{1,256}$/u;
+const LOCAL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9@._:-]{0,127}$/u;
 
 export class LocalRuntimeConfigValidator
   implements Validator<LocalRuntimeConfig>
@@ -83,7 +97,13 @@ export class LocalRuntimeConfigValidator
       "contentAgentMode",
       issues,
     );
+    const workspaceId = readRequiredString(record, "workspaceId", issues);
     const permissions = readPermissions(record.permissions, issues);
+    const referenceVaultApprovalAuthority = readReferenceVaultApprovalAuthority(
+      record.referenceVaultApprovalAuthority,
+      workspaceId,
+      issues,
+    );
     const modelProvider = readModelProvider(
       record.modelProvider,
       contentAgentMode,
@@ -106,7 +126,6 @@ export class LocalRuntimeConfigValidator
             record.modelUsageAccounting,
           );
     const sqliteValidation = this.#sqliteValidator.validate(record.sqlite);
-    const workspaceId = readRequiredString(record, "workspaceId", issues);
     if (!sqliteValidation.ok) {
       issues.push(
         ...sqliteValidation.issues.map(({ code, message, path }) => ({
@@ -191,6 +210,7 @@ export class LocalRuntimeConfigValidator
       ) ||
       permissions === undefined ||
       modelProvider === false ||
+      referenceVaultApprovalAuthority === false ||
       (modelBudgetValidation !== undefined &&
         !modelBudgetValidation.ok) ||
       (modelOperationLimitsValidation !== undefined &&
@@ -226,10 +246,128 @@ export class LocalRuntimeConfigValidator
               modelUsageAccountingValidation.value,
           }),
       permissions,
+      ...(referenceVaultApprovalAuthority === undefined
+        ? {}
+        : { referenceVaultApprovalAuthority }),
       sqlite: sqliteValidation.value,
       workspaceId,
     });
   }
+}
+
+function readReferenceVaultApprovalAuthority(
+  value: unknown,
+  runtimeWorkspaceId: string | undefined,
+  issues: ValidationIssue[],
+): ReferenceVaultApprovalAuthority | false | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value);
+  if (record === undefined) {
+    issues.push({
+      code: "invalid_type",
+      message: "referenceVaultApprovalAuthority must be an object",
+      path: "referenceVaultApprovalAuthority",
+    });
+    return false;
+  }
+
+  rejectUnknownKeys(
+    record,
+    REFERENCE_VAULT_APPROVAL_AUTHORITY_KEYS,
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const authorityId = readRequiredString(
+    record,
+    "authorityId",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const confirmedByFabio = readRequiredBoolean(
+    record,
+    "confirmedByFabio",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const contractVersion = readRequiredString(
+    record,
+    "contractVersion",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const scope = readRequiredString(
+    record,
+    "scope",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const workspaceId = readRequiredString(
+    record,
+    "workspaceId",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+
+  if (authorityId !== undefined && !LOCAL_ID_PATTERN.test(authorityId)) {
+    issues.push({
+      code: "invalid_format",
+      message: "referenceVaultApprovalAuthority.authorityId must be an opaque local actor identifier",
+      path: "referenceVaultApprovalAuthority.authorityId",
+    });
+  }
+  if (confirmedByFabio !== undefined && !confirmedByFabio) {
+    issues.push({
+      code: "invalid_value",
+      message: "referenceVaultApprovalAuthority.confirmedByFabio must be true",
+      path: "referenceVaultApprovalAuthority.confirmedByFabio",
+    });
+  }
+  if (
+    contractVersion !== undefined &&
+    contractVersion !== REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION
+  ) {
+    issues.push({
+      code: "unsupported_version",
+      message: `referenceVaultApprovalAuthority.contractVersion must be ${REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION}`,
+      path: "referenceVaultApprovalAuthority.contractVersion",
+    });
+  }
+  if (scope !== undefined && scope !== REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE) {
+    issues.push({
+      code: "invalid_value",
+      message: `referenceVaultApprovalAuthority.scope must be ${REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE}`,
+      path: "referenceVaultApprovalAuthority.scope",
+    });
+  }
+  if (
+    workspaceId !== undefined &&
+    runtimeWorkspaceId !== undefined &&
+    workspaceId !== runtimeWorkspaceId
+  ) {
+    issues.push({
+      code: "invalid_value",
+      message: "referenceVaultApprovalAuthority.workspaceId must match the runtime workspaceId",
+      path: "referenceVaultApprovalAuthority.workspaceId",
+    });
+  }
+
+  if (
+    authorityId === undefined ||
+    !LOCAL_ID_PATTERN.test(authorityId) ||
+    confirmedByFabio !== true ||
+    contractVersion !== REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION ||
+    scope !== REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE ||
+    workspaceId === undefined ||
+    workspaceId !== runtimeWorkspaceId
+  ) return false;
+
+  return {
+    authorityId,
+    confirmedByFabio,
+    contractVersion,
+    scope,
+    workspaceId,
+  };
 }
 
 function readModelProvider(

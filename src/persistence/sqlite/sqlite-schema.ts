@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 30;
+export const SQLITE_SCHEMA_VERSION = 31;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -90,6 +90,13 @@ const VERSION_TWENTY_EIGHT_TABLES = Object.freeze([
 ]);
 const VERSION_TWENTY_NINE_TABLES = VERSION_TWENTY_EIGHT_TABLES;
 const VERSION_THIRTY_TABLES = VERSION_TWENTY_NINE_TABLES;
+const VERSION_THIRTY_ONE_TABLES = Object.freeze([
+  ...VERSION_THIRTY_TABLES,
+  "reference_vault_audit_events",
+  "reference_vault_blobs",
+  "reference_vault_command_receipts",
+  "reference_vault_records",
+]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
   const version = readPragmaInteger(database, "user_version");
@@ -323,6 +330,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 29, "daily_operating_brief_snapshot_history");
     applyTelegramDeliveryReconciliationMigration(database);
   }
+  const referenceVaultVersion = readPragmaInteger(database, "user_version");
+  if (referenceVaultVersion === 30) {
+    verifyDatabaseIdentity(database, 30);
+    verifyExpectedTables(database, VERSION_THIRTY_TABLES);
+    verifyMigration(database, 30, "telegram_delivery_reconciliation");
+    applyReferenceVaultMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -345,7 +359,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_THIRTY_TABLES);
+  verifyExpectedTables(database, VERSION_THIRTY_ONE_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -376,6 +390,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 28, "operations_runtime_p1_hardening");
   verifyMigration(database, 29, "daily_operating_brief_snapshot_history");
   verifyMigration(database, 30, "telegram_delivery_reconciliation");
+  verifyMigration(database, 31, "creative_business_intelligence_reference_vault");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -1660,6 +1675,102 @@ function applyTelegramDeliveryReconciliationMigration(database: DatabaseSync): v
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Telegram delivery reconciliation migration failed");
+  }
+}
+
+function applyReferenceVaultMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE reference_vault_blobs (
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        sha256 TEXT NOT NULL CHECK (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9a-f]*'),
+        byte_length INTEGER NOT NULL CHECK (byte_length >= 1 AND byte_length <= 52428800),
+        mime_type TEXT NOT NULL,
+        stored_at TEXT NOT NULL,
+        content BLOB NOT NULL CHECK (length(content) = byte_length),
+        PRIMARY KEY (workspace_id, actor_id, sha256)
+      ) WITHOUT ROWID, STRICT;
+
+      CREATE TABLE reference_vault_records (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        record_type TEXT NOT NULL CHECK (record_type IN ('AUDIENCE_SIGNAL', 'BUSINESS_CONTEXT', 'CREATIVE_DECISION', 'CREATIVE_FINGERPRINT', 'CUSTOMER_LANGUAGE_REFERENCE', 'NEGATIVE_REFERENCE', 'OFFER_REFERENCE', 'OUTCOME_LINK', 'REFERENCE_ASSET', 'REFERENCE_BLOB_TOMBSTONE', 'REFERENCE_COLLECTION', 'REFERENCE_COMMAND_RESULT', 'REFERENCE_IMPORT_RECEIPT', 'REFERENCE_REVIEW')),
+        entity_id TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        content_sha256 TEXT CHECK (content_sha256 IS NULL OR (length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*')),
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        CHECK ((record_type = 'REFERENCE_ASSET' AND content_sha256 IS NOT NULL) OR (record_type <> 'REFERENCE_ASSET' AND content_sha256 IS NULL)),
+        UNIQUE (workspace_id, actor_id, record_type, entity_id, version)
+      ) STRICT;
+      CREATE INDEX reference_vault_records_identity_type_sequence
+        ON reference_vault_records (workspace_id, actor_id, record_type, sequence DESC);
+      CREATE UNIQUE INDEX reference_vault_asset_content_dedup
+        ON reference_vault_records (workspace_id, actor_id, content_sha256)
+        WHERE record_type = 'REFERENCE_ASSET' AND version = 0;
+      CREATE TRIGGER reference_vault_asset_requires_blob
+        BEFORE INSERT ON reference_vault_records
+        WHEN NEW.record_type = 'REFERENCE_ASSET'
+      BEGIN
+        SELECT CASE WHEN NOT EXISTS (
+          SELECT 1 FROM reference_vault_blobs
+          WHERE workspace_id = NEW.workspace_id AND actor_id = NEW.actor_id AND sha256 = NEW.content_sha256
+        ) THEN RAISE(ABORT, 'reference vault asset blob is missing') END;
+      END;
+
+      CREATE TRIGGER reference_vault_blob_delete_requires_tombstone
+        BEFORE DELETE ON reference_vault_blobs
+      BEGIN
+        SELECT CASE WHEN NOT EXISTS (
+          SELECT 1 FROM reference_vault_records
+          WHERE workspace_id = OLD.workspace_id
+            AND actor_id = OLD.actor_id
+            AND record_type = 'REFERENCE_BLOB_TOMBSTONE'
+            AND json_extract(record_json, '$.contentSha256') = OLD.sha256
+            AND json_extract(record_json, '$.byteContentStatus') = 'PURGED'
+            AND json_extract(record_json, '$.metadataStatus') = 'IMMUTABLE_RETAINED'
+        ) THEN RAISE(ABORT, 'reference vault blob tombstone is missing') END;
+      END;
+
+      CREATE TABLE reference_vault_command_receipts (
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        command_id TEXT NOT NULL,
+        idempotency_key TEXT NOT NULL,
+        request_fingerprint TEXT NOT NULL CHECK (length(request_fingerprint) = 64 AND request_fingerprint NOT GLOB '*[^0-9a-f]*'),
+        recorded_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        PRIMARY KEY (workspace_id, actor_id, idempotency_key),
+        UNIQUE (workspace_id, actor_id, command_id)
+      ) WITHOUT ROWID, STRICT;
+
+      CREATE TABLE reference_vault_audit_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        event_id TEXT NOT NULL,
+        command_id TEXT NOT NULL,
+        occurred_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, actor_id, event_id),
+        UNIQUE (workspace_id, actor_id, command_id)
+      ) STRICT;
+      CREATE INDEX reference_vault_audit_identity_sequence
+        ON reference_vault_audit_events (workspace_id, actor_id, sequence DESC);
+
+      INSERT INTO schema_migrations (version, name)
+      VALUES (31, 'creative_business_intelligence_reference_vault');
+      PRAGMA user_version = 31;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Reference Vault migration failed");
   }
 }
 

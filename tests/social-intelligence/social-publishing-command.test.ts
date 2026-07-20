@@ -34,7 +34,7 @@ describe("Social Publishing Pack command boundary", () => {
 
     const inspected = await boundary.execute(command("social-inspect-command", "INSPECT_METODO_VELOCE_CONTENT", { productionId: "social-production-001" }));
     expect(inspected.result).toEqual(response.result);
-    const snapshot = await new CommandCenterQueryService({ clock: new FixedClock(NOW), repositories, workspaceId: "workspace-local" }).snapshot();
+    const snapshot = await new CommandCenterQueryService({ actorId: "actor-local", clock: new FixedClock(NOW), repositories, workspaceId: "workspace-local" }).snapshot();
     expect(snapshot.socialIntelligence).toMatchObject({ blocked: 0, packs: [expect.objectContaining({ productionId: "social-production-001" })], readyForFabio: 1, requiresResearch: 0 });
 
     await expect(boundary.execute(command("social-review-missing-manifest", "REVIEW_METODO_VELOCE_CONTENT", { decision: "APPROVED", expectedVersion: 0, note: "Approvazione diretta priva di un manifest verificabile.", productionId: "social-production-001" }))).rejects.toThrow("VISUAL_MANIFEST_MISSING");

@@ -113,7 +113,7 @@ class LocalOperationalInspectionHandler implements OperationsJobHandler {
         return localResult(job.jobType, { fresh: packs.filter(({ minFreshnessExpiresAt }) => Date.parse(minFreshnessExpiresAt) > now).length, stale: packs.filter(({ minFreshnessExpiresAt }) => Date.parse(minFreshnessExpiresAt) <= now).length, total: packs.length });
       }
       if (job.jobType === "PENDING_APPROVAL_REMINDER") {
-        const [company, founder, missions, productions] = await Promise.all([repositories.agentCompanyWorkdays.listByWorkspaceId(job.workspaceId, 25), repositories.founderWorkdays.listByWorkspaceId(job.workspaceId, 25), repositories.businessMissions.listByWorkspaceId(job.workspaceId, 25), repositories.contentProductions.listByWorkspaceId(job.workspaceId, 25)]);
+        const [company, founder, missions, productions] = await Promise.all([repositories.agentCompanyWorkdays.listByOwner({ actorId: job.actorId, workspaceId: job.workspaceId }, 25), repositories.founderWorkdays.listByWorkspaceId(job.workspaceId, 25), repositories.businessMissions.listByWorkspaceId(job.workspaceId, 25), repositories.contentProductions.listByWorkspaceId(job.workspaceId, 25)]);
         if ([company, founder, missions, productions].some(({ length }) => length === 25)) return blockedResult("APPROVAL_REMINDER_COVERAGE_REQUIRED");
         return localResult(job.jobType, { pending: company.filter(({ status }) => status === "AWAITING_FABIO").length + founder.filter(({ status }) => status === "AWAITING_FABIO").length + missions.filter(({ status }) => status === "PENDING_FABIO_APPROVAL").length + productions.filter(({ status }) => status === "PENDING_FABIO_APPROVAL").length });
       }

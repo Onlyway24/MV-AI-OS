@@ -1,49 +1,43 @@
 export const COMMAND_CENTER_HTML = `
-<div class="cc-app" id="command-center" data-sidebar-state="expanded">
-  <a class="cc-skip-link" href="#overview">Vai al quadro operativo</a>
+<div class="cc-app" id="command-center" data-sidebar-state="expanded" data-navigation="dock" data-active-view="today" data-active-studio="production">
+  <a class="cc-skip-link" href="#workspace-title">Vai al contenuto principale</a>
   <div class="cc-world" aria-hidden="true">
     <div class="cc-world-image"></div>
     <div class="cc-world-vignette"></div>
     <div class="cc-world-light"></div>
   </div>
-  <button class="cc-mobile-menu" id="mobile-menu-toggle" type="button" aria-controls="command-sidebar" aria-expanded="false" aria-label="Apri il menu del Centro di Comando"><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
+  <button class="cc-mobile-menu" id="mobile-menu-toggle" type="button" aria-controls="command-sidebar" aria-expanded="false" aria-label="Apri il menu del Centro di Comando" hidden><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
   <div class="cc-sidebar-backdrop" id="sidebar-backdrop" hidden></div>
-  <aside class="cc-sidebar" id="command-sidebar" aria-label="Navigazione del Centro di Comando">
+  <header class="cc-sidebar" id="command-sidebar" aria-label="Navigazione principale del Centro di Comando">
     <div class="cc-sidebar-head">
-      <a class="cc-brand" href="#overview" aria-label="Panoramica del Centro di Comando Onlyway">
+      <a class="cc-brand" href="#today" aria-label="Panoramica del Centro di Comando Onlyway">
         <span class="cc-brand-mark" aria-hidden="true">OW</span>
-        <span class="cc-brand-copy"><b>ONLYWAY</b><small>MISSION CONTROL</small></span>
+        <span class="cc-brand-copy"><b>ONLYWAY</b><small>CONTROL</small></span>
       </a>
-      <button class="cc-sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="command-sidebar" aria-expanded="true" aria-label="Compatta il pannello laterale"><span aria-hidden="true">‹</span></button>
+      <button class="cc-sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="command-sidebar" aria-expanded="true" aria-label="Compatta il pannello laterale" hidden><span aria-hidden="true">‹</span></button>
     </div>
-    <nav class="cc-nav">
-      <p>PANORAMICA</p>
-      <a class="is-active" href="#overview" data-label="Quadro operativo"><span class="cc-nav-icon" aria-hidden="true">⌂</span><span class="cc-nav-label">Quadro operativo</span></a>
-      <p>BUSINESS</p>
-      <a href="#business" data-label="Missioni Business"><span class="cc-nav-icon" aria-hidden="true">◫</span><span class="cc-nav-label">Missioni Business</span></a>
-      <a href="#social" data-label="Intelligence Social"><span class="cc-nav-icon" aria-hidden="true">✦</span><span class="cc-nav-label">Intelligence Social</span></a>
-      <a href="#production" data-label="Centro Produzione"><span class="cc-nav-icon" aria-hidden="true">◇</span><span class="cc-nav-label">Centro Produzione</span></a>
-      <a href="#approvals" data-label="Centro Approvazioni"><span class="cc-nav-icon" aria-hidden="true">◆</span><span class="cc-nav-label">Centro Approvazioni</span></a>
-      <p>COMPAGNIA AGENTI</p>
-      <a href="#agents" data-label="Squadra Apex"><span class="cc-nav-icon" aria-hidden="true">◎</span><span class="cc-nav-label">Squadra Apex</span></a>
-      <p>CONOSCENZA</p>
-      <a href="#evidence" data-label="Centro Evidenze"><span class="cc-nav-icon" aria-hidden="true">◈</span><span class="cc-nav-label">Centro Evidenze</span></a>
-      <p>OPERAZIONI</p>
-      <a href="#runtime" data-label="Runtime H24"><span class="cc-nav-icon" aria-hidden="true">⌁</span><span class="cc-nav-label">Runtime H24</span></a>
-      <p>GOVERNANCE</p>
-      <a href="#governance" data-label="Regole di sicurezza"><span class="cc-nav-icon" aria-hidden="true">⌾</span><span class="cc-nav-label">Regole di sicurezza</span></a>
+    <nav class="cc-nav" aria-label="Aree principali">
+      <a class="is-active" href="#today" data-label="Oggi" data-view-target="today"><span class="cc-nav-icon" aria-hidden="true">●</span><span class="cc-nav-label">Oggi</span></a>
+      <a href="#studio" data-label="Studio" data-view-target="studio"><span class="cc-nav-icon" aria-hidden="true">◇</span><span class="cc-nav-label">Studio</span></a>
+      <a href="#agents" data-label="Squadra" data-view-target="team"><span class="cc-nav-icon" aria-hidden="true">◎</span><span class="cc-nav-label">Squadra</span></a>
+      <a href="#system" data-label="Sistema" data-view-target="system"><span class="cc-nav-icon" aria-hidden="true">⌁</span><span class="cc-nav-label">Sistema</span></a>
     </nav>
     <div class="cc-sidebar-foot" id="live-event-state" data-live-state="connecting">
       <span class="cc-live-dot" aria-hidden="true"></span>
-      <span class="cc-sidebar-foot-label" id="live-event-status" aria-live="polite">Eventi live · connessione</span>
+      <span class="cc-sidebar-foot-label" id="live-event-status" aria-live="polite">Live · connessione</span>
     </div>
-  </aside>
+    <div class="cc-operator" aria-label="Operatore Fabio">
+      <span class="cc-avatar" aria-hidden="true">F</span>
+      <span><b>Fabio</b><small>Operatore</small></span>
+    </div>
+  </header>
 
   <main class="cc-main">
-    <header class="cc-topbar">
+    <header class="cc-topbar" id="workspace-title" tabindex="-1">
       <div class="cc-command-title">
-        <p class="cc-eyebrow">ONLYWAY TOWER</p>
-        <h1>Mission Control</h1>
+        <p class="cc-eyebrow">CENTRO DI COMANDO</p>
+        <h1>Buongiorno, Fabio.</h1>
+        <p class="cc-topbar-subtitle">Qui trovi soltanto ciò che richiede attenzione.</p>
       </div>
       <div class="cc-status-rail" aria-label="Quadro operativo corrente">
         <span><i class="cc-status-dot" data-status-dot aria-hidden="true"></i>Sistema <b id="system-status">Caricamento</b></span>
@@ -52,21 +46,17 @@ export const COMMAND_CENTER_HTML = `
         <span>Runtime <b id="runtime-location">LOCALE</b></span>
         <span>Decisioni richieste <b id="decisions-required">—</b></span>
       </div>
-      <div class="cc-operator" aria-label="Operatore Fabio">
-        <span class="cc-avatar" aria-hidden="true">F</span>
-        <span><b>Fabio</b><small>Operatore</small></span>
-      </div>
     </header>
 
     <form class="cc-command" id="command-form" role="search">
       <label class="sr-only" for="command-input">Chiedi a Onlyway</label>
       <span aria-hidden="true">⌘</span>
-      <input id="command-input" autocomplete="off" placeholder="Chiedi a Onlyway… cerca nello stato operativo" />
+      <input id="command-input" autocomplete="off" placeholder="Cerca decisioni, contenuti, agenti o sistema…" />
       <kbd>⌘ K</kbd>
     </form>
     <p class="cc-command-result" id="command-result" aria-live="polite"></p>
 
-    <section class="cc-tower-intro" aria-labelledby="tower-heading">
+    <section class="cc-tower-intro" id="today" data-primary-view="today" aria-labelledby="tower-heading">
       <div class="cc-tower-copy">
         <p class="cc-kicker">OPERATIONAL AGENT COMPANY</p>
         <h2 id="tower-heading">Non diciassette chatbot.<br /><em>Una squadra coordinata.</em></h2>
@@ -86,7 +76,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section cc-overview" id="overview" aria-labelledby="overview-heading">
+    <section class="cc-section cc-overview" id="overview" data-primary-view="today" aria-labelledby="overview-heading">
       <div class="cc-section-heading cc-overview-heading">
         <div><p class="cc-kicker">PANORAMICA OPERATIVA</p><h2 id="overview-heading">Decisioni e produzione</h2></div>
         <time id="generated-at"></time>
@@ -127,7 +117,7 @@ export const COMMAND_CENTER_HTML = `
       </section>
     </section>
 
-    <section class="cc-section" aria-labelledby="pipeline-heading">
+    <section class="cc-section" id="system" data-primary-view="system" aria-labelledby="pipeline-heading" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">FLUSSO DI CONTROLLO</p><h2 id="pipeline-heading">Percorso produttivo durevole</h2></div><p class="cc-section-note">Sono conteggiate solo le fasi con un segnale persistito.</p></div>
       <div class="cc-pipeline" aria-label="Pipeline di produzione">
         <div class="cc-pipeline-node" data-stage="evidence"><span>01</span><b>Evidenze</b><strong>0</strong><small>pacchetti immutabili</small></div>
@@ -142,7 +132,22 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="business" aria-labelledby="business-heading">
+    <section class="cc-studio-switcher" id="studio" data-primary-view="studio" aria-label="Strumenti dello Studio" hidden aria-hidden="true">
+      <div>
+        <p class="cc-kicker">STUDIO ONLYWAY</p>
+        <h2>Un solo spazio. Cinque strumenti.</h2>
+        <p>Scegli il contesto; il dettaglio si apre soltanto quando serve.</p>
+      </div>
+      <div class="cc-segmented-control" role="tablist" aria-label="Aree dello Studio">
+        <button id="studio-tab-production" type="button" role="tab" data-studio-target="production" aria-controls="production" aria-selected="true">Produzione</button>
+        <button id="studio-tab-social" type="button" role="tab" data-studio-target="social" aria-controls="social" aria-selected="false" aria-label="Intelligence Social">Social</button>
+        <button id="studio-tab-business" type="button" role="tab" data-studio-target="business" aria-controls="business" aria-selected="false" aria-label="Missioni Business">Business</button>
+        <button id="studio-tab-evidence" type="button" role="tab" data-studio-target="evidence" aria-controls="evidence" aria-selected="false">Evidenze</button>
+        <button id="studio-tab-vault" type="button" role="tab" data-studio-target="vault" aria-controls="vault" aria-selected="false">Intelligence Creativa</button>
+      </div>
+    </section>
+
+    <section class="cc-section" id="business" data-primary-view="studio" data-studio-panel="business" role="tabpanel" aria-labelledby="studio-tab-business" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">BUSINESS MISSION V1</p><h2 id="business-heading">Decisioni commerciali verificabili</h2></div><span class="cc-section-note">Tre opportunità → una decisione → dossier completo</span></div>
       <div class="cc-business-shell">
         <aside class="cc-business-list" id="business-mission-list"><div class="cc-list-empty">Nessuna Business Mission durevole disponibile.</div></aside>
@@ -153,14 +158,14 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="social" aria-labelledby="social-heading">
+    <section class="cc-section" id="social" data-primary-view="studio" data-studio-panel="social" role="tabpanel" aria-labelledby="studio-tab-social" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">METODO VELOCE · SOCIAL INTELLIGENCE</p><h2 id="social-heading">Report operativo giornaliero</h2></div><span class="cc-section-note" id="social-daily-status">Nessun segnale inventato</span></div>
       <div class="cc-social-live" id="social-live-panel" aria-live="polite"></div>
       <div class="cc-social-summary" id="social-summary-grid" aria-live="polite"></div>
       <div class="cc-social-pack-list" id="social-pack-list" aria-live="polite"><div class="cc-list-empty">Nessun Social Publishing Pack durevole disponibile.</div></div>
     </section>
 
-    <section class="cc-section" id="production" aria-labelledby="production-heading">
+    <section class="cc-section" id="production" data-primary-view="studio" data-studio-panel="production" role="tabpanel" aria-labelledby="studio-tab-production" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">METODO VELOCE</p><h2 id="production-heading">Centro Produzione</h2></div><p class="cc-section-note">Seleziona un record per ispezionare gli asset esatti del pacchetto.</p></div>
       <div class="cc-production-layout">
         <div class="cc-kanban" id="production-lanes" aria-live="polite"></div>
@@ -173,7 +178,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="evidence" aria-labelledby="evidence-heading">
+    <section class="cc-section" id="evidence" data-primary-view="studio" data-studio-panel="evidence" role="tabpanel" aria-labelledby="studio-tab-evidence" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">CONOSCENZA</p><h2 id="evidence-heading">Centro Evidenze</h2></div><p class="cc-section-note">Supporto ai claim, provenienza e freshness dalla fonte di registrazione.</p></div>
       <div class="cc-evidence-grid">
         <article class="cc-evidence-panel"><p class="cc-panel-label">RESEARCH MISSION</p><div id="research-mission-list" class="cc-list"></div></article>
@@ -183,7 +188,46 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section cc-operations" id="runtime" aria-labelledby="runtime-heading">
+    <section class="cc-section cc-vault" id="vault" data-primary-view="studio" data-studio-panel="vault" role="tabpanel" aria-labelledby="studio-tab-vault" hidden aria-hidden="true">
+      <div class="cc-section-heading">
+        <div><p class="cc-kicker">CREATIVE &amp; BUSINESS INTELLIGENCE VAULT</p><h2 id="vault-heading">Intelligence Creativa</h2></div>
+        <p class="cc-section-note">Solo riferimenti approvati, con diritti e provenienza verificabili.</p>
+      </div>
+      <div class="cc-vault-metrics" aria-label="Stato del Reference Vault">
+        <article><span>Riferimenti</span><strong id="vault-total">—</strong><small>versioni correnti</small></article>
+        <article><span>Approvati</span><strong id="vault-approved">—</strong><small>utilizzabili dagli agenti</small></article>
+        <article><span>Da rivedere</span><strong id="vault-review">—</strong><small>decisione esplicita di Fabio</small></article>
+        <article><span>Diritti bloccati</span><strong id="vault-rights-blocked">—</strong><small>mai usati come asset finale</small></article>
+      </div>
+      <div class="cc-vault-shell">
+        <div class="cc-vault-gallery-panel">
+          <div class="cc-vault-toolbar">
+            <div class="cc-vault-filters" role="group" aria-label="Filtra i riferimenti">
+              <button type="button" data-vault-filter="ALL" aria-pressed="true">Tutti</button>
+              <button type="button" data-vault-filter="APPROVED" aria-pressed="false">Approvati</button>
+              <button type="button" data-vault-filter="REJECTED" aria-pressed="false">Rifiutati</button>
+              <button type="button" data-vault-filter="RIGHTS_BLOCKED" aria-pressed="false">Diritti bloccati</button>
+            </div>
+            <span id="vault-gallery-summary" aria-live="polite">Vault in caricamento</span>
+          </div>
+          <div class="cc-vault-gallery" id="reference-vault-gallery" aria-live="polite"></div>
+        </div>
+        <aside class="cc-vault-detail" id="reference-vault-detail" aria-label="Metadati del riferimento selezionato" aria-live="polite"></aside>
+      </div>
+      <div class="cc-vault-secondary-grid">
+        <article class="cc-vault-intelligence" aria-labelledby="vault-comparison-label"><p class="cc-panel-label" id="vault-comparison-label">APPROVATI VS RIFIUTATI</p><div id="approved-rejected-comparison"></div></article>
+        <article class="cc-vault-intelligence" aria-labelledby="vault-sequences-label"><p class="cc-panel-label" id="vault-sequences-label">SEQUENZE CAROSELLO</p><div id="carousel-sequence-panel"></div></article>
+      </div>
+      <div class="cc-vault-intelligence-grid">
+        <article class="cc-vault-intelligence"><p class="cc-panel-label">FABIO VISUAL FINGERPRINT</p><div id="visual-fingerprint-panel"></div></article>
+        <article class="cc-vault-intelligence"><p class="cc-panel-label">FABIO WRITING FINGERPRINT</p><div id="writing-fingerprint-panel"></div></article>
+        <article class="cc-vault-intelligence"><p class="cc-panel-label">BUSINESS CONTEXT</p><div id="business-context-panel"></div></article>
+        <article class="cc-vault-intelligence"><p class="cc-panel-label">DECISION MEMORY &amp; OUTCOMES</p><div id="decision-memory-panel"></div></article>
+      </div>
+      <div class="cc-vault-alerts" id="vault-missing-inputs" aria-live="polite"></div>
+    </section>
+
+    <section class="cc-section cc-operations" id="runtime" data-primary-view="system" aria-labelledby="runtime-heading" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">OPERAZIONI</p><h2 id="runtime-heading">Runtime H24</h2></div><span class="cc-runtime-state" id="runtime-status">Caricamento</span></div>
       <div class="cc-runtime-grid">
         <article class="cc-runtime-console"><p class="cc-panel-label">STATO SUPERVISIONE</p><strong id="worker-status">Verifica della registrazione del worker</strong><p id="worker-detail">Il runtime locale è in lettura.</p><div class="cc-runtime-rule"></div><dl><div><dt>Scheduler</dt><dd id="scheduler-status">Non registrato</dd></div><div><dt>Worker</dt><dd id="worker-lease-status">Non registrato</dd></div><div><dt>Maintenance</dt><dd id="maintenance-status">Disabilitata</dd></div><div><dt>Kill switch</dt><dd id="kill-switch-status">Rilasciato</dd></div><div><dt>Telegram</dt><dd id="telegram-status">Non osservato</dd></div><div><dt>Effetti esterni</dt><dd id="external-effects-status">Copertura globale non disponibile</dd></div></dl></article>
@@ -191,7 +235,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section cc-agent-section" id="agents" aria-labelledby="agents-heading">
+    <section class="cc-section cc-agent-section" id="agents" data-primary-view="team" aria-labelledby="agents-heading" hidden aria-hidden="true">
       <div class="cc-agent-hero">
         <div>
           <p class="cc-kicker">COMPAGNIA AGENTI · APEX</p>
@@ -239,13 +283,13 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="approvals" aria-labelledby="approvals-heading">
+    <section class="cc-section" id="approvals" data-primary-view="today" aria-labelledby="approvals-heading">
       <div class="cc-section-heading"><div><p class="cc-kicker">GOVERNANCE</p><h2 id="approvals-heading">Centro Approvazioni</h2></div></div>
       <div class="cc-approval-panel"><div><p class="cc-panel-label">CONTROLLO FABIO</p><h3 id="approval-title">Lettura dello stato di approvazione</h3><p id="approval-detail">Il registro delle approvazioni supportate da evidenze è in caricamento.</p></div><a class="cc-text-action" href="#production">Ispeziona i pacchetti <span aria-hidden="true">→</span></a></div>
       <div class="cc-approval-review-list" id="approval-review-list"></div>
     </section>
 
-    <section class="cc-section" id="governance" aria-labelledby="governance-heading">
+    <section class="cc-section" id="governance" data-primary-view="system" aria-labelledby="governance-heading" hidden aria-hidden="true">
       <div class="cc-governance"><span class="cc-lock-glyph" aria-hidden="true">⌁</span><div><p class="cc-kicker">PIANO DELLE AZIONI ESTERNE</p><h2 id="governance-heading">La pubblicazione resta bloccata per progettazione.</h2><p>Nessun controllo dal browser può pubblicare, spendere, contattare clienti, modificare un CRM o fare deploy. Ogni futura azione autorizzata dovrà attraversare i confini esistenti di dry-run, approvazione, ricevuta e kill switch.</p></div></div>
     </section>
   </main>
@@ -396,6 +440,32 @@ html,body,button,a,input{cursor:auto}button,a,[role="button"]{cursor:pointer}
 @media (max-width:520px){.cc-runtime-job-head{align-items:start;display:grid}.cc-runtime-usage{grid-template-columns:1fr}}
 .cc-decision-inbox{background:linear-gradient(145deg,rgba(25,19,28,.76),rgba(8,6,10,.74));border:1px solid rgba(226,220,229,.18);box-shadow:0 24px 72px rgba(0,0,0,.28);margin-top:13px;padding:22px}.cc-decision-inbox-list{display:grid;gap:8px;margin-top:14px}.cc-decision-item{align-items:start;background:rgba(0,0,0,.2);border:1px solid rgba(226,220,229,.1);border-left:2px solid var(--ow-gold);display:grid;gap:7px;grid-template-columns:minmax(140px,.42fr) minmax(0,1.58fr);padding:12px 14px}.cc-decision-item[data-priority="HIGH"]{border-left-color:var(--ow-danger)}.cc-decision-item b{color:var(--ow-chrome-white);font-size:11px}.cc-decision-item p{color:var(--ow-chrome);font-size:10px;margin:0}.cc-decision-item small{color:var(--ow-cobalt-light);font:9px ui-monospace,SFMono-Regular,Menlo,monospace;grid-column:1/-1;overflow-wrap:anywhere}
 @media (max-width:520px){.cc-decision-item{grid-template-columns:1fr}}
+
+/* Onlyway Focus UI V1 — one calm workspace, four contexts, progressive detail. */
+[hidden]{display:none!important}
+:root{--focus-bg:#070708;--focus-surface:#121214;--focus-surface-2:#19191c;--focus-text:#f5f5f7;--focus-secondary:#a1a1a6;--focus-line:rgba(255,255,255,.1);--focus-blue:#2997ff;--focus-radius:22px;--focus-shadow:0 18px 55px rgba(0,0,0,.24)}
+html{background:var(--focus-bg);scroll-behavior:auto}body{background:var(--focus-bg);color:var(--focus-text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,"Segoe UI",sans-serif;font-size:15px;letter-spacing:-.006em}.cc-world{opacity:.055;transition:opacity .45s ease}.cc-app[data-active-view="team"] .cc-world{opacity:.14}.cc-world-image{background-size:cover;opacity:1}.cc-world-light{display:none}.cc-world-vignette{background:linear-gradient(180deg,rgba(7,7,8,.72),rgba(7,7,8,.94));box-shadow:none}
+.cc-app,.cc-app[data-sidebar-state="compact"]{display:block;height:100dvh;min-height:100svh;overflow:hidden}.cc-sidebar{align-items:center;background:rgba(18,18,20,.74);border:0;border-bottom:1px solid var(--focus-line);box-shadow:none;display:grid;gap:24px;grid-template-columns:auto minmax(360px,1fr) auto auto;height:72px;inset:0 0 auto;padding:10px max(24px,calc((100vw - 1240px)/2));position:fixed;transform:none;width:auto;z-index:50;backdrop-filter:saturate(160%) blur(24px)}.cc-sidebar-head{min-height:0}.cc-brand{gap:9px;margin:0;padding:0}.cc-brand-mark{background:#f5f5f7;border:0;border-radius:11px;box-shadow:none;color:#050505;font:700 10px/1 -apple-system,BlinkMacSystemFont,sans-serif;height:34px;letter-spacing:-.02em;text-shadow:none;width:34px}.cc-brand b{background:none;color:var(--focus-text);font:650 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.02em}.cc-brand small{color:var(--focus-secondary);font-size:9px;letter-spacing:.08em;margin-top:3px}.cc-sidebar-toggle,.cc-mobile-menu,.cc-sidebar-backdrop{display:none!important}
+.cc-nav,.cc-app[data-sidebar-state="compact"] .cc-nav{background:rgba(118,118,128,.16);border:1px solid rgba(255,255,255,.07);border-radius:15px;display:grid;gap:2px;grid-template-columns:repeat(4,minmax(80px,1fr));justify-self:center;margin:0;max-width:520px;padding:3px;width:100%}.cc-nav p{display:none}.cc-nav a,.cc-app[data-sidebar-state="compact"] .cc-nav a{align-items:center;background:transparent;border:0;border-radius:11px;color:var(--focus-secondary);display:flex;gap:7px;justify-content:center;min-height:36px;padding:7px 13px;position:relative;text-align:center;transition:background .18s ease,color .18s ease;white-space:nowrap}.cc-nav a:before,.cc-nav a:after{display:none!important}.cc-nav a:hover{background:rgba(255,255,255,.055);color:var(--focus-text)}.cc-nav a.is-active{background:rgba(255,255,255,.13);box-shadow:0 1px 5px rgba(0,0,0,.18);color:var(--focus-text)}.cc-nav-icon{color:currentColor;font-size:10px}.cc-nav-label,.cc-app[data-sidebar-state="compact"] .cc-nav-label{display:block;font-size:12px;font-weight:560;overflow:visible}.cc-sidebar-foot{border:0;color:var(--focus-secondary);font-size:11px;gap:7px;margin:0;padding:0;white-space:nowrap}.cc-live-dot{height:6px;width:6px}.cc-sidebar>.cc-operator{border:0;padding:0}.cc-sidebar .cc-avatar{background:rgba(255,255,255,.1);border:0;color:var(--focus-text);font-family:inherit;height:32px;width:32px}.cc-sidebar .cc-operator b{font-size:11px}.cc-sidebar .cc-operator small{font-size:9px}
+.cc-main{height:100dvh;margin:0 auto;max-width:1240px;overflow-x:hidden;overflow-y:auto;padding:112px 30px 96px;scrollbar-gutter:stable;width:100%}.cc-topbar{align-items:end;border:0;display:grid;gap:28px;grid-template-columns:minmax(280px,1fr) minmax(520px,1.25fr);padding:0}.cc-command-title .cc-eyebrow{color:var(--focus-secondary);font-family:inherit;font-size:11px;font-weight:650;letter-spacing:.08em}.cc-command-title h1,.cc-topbar h1{background:none;color:var(--focus-text);font-family:inherit;font-size:clamp(38px,4.6vw,58px);font-weight:650;letter-spacing:-.055em;line-height:.96;margin:9px 0 0;text-shadow:none}.cc-topbar-subtitle{color:var(--focus-secondary);font-size:14px;line-height:1.45;margin:13px 0 0}.cc-status-rail{background:transparent;border:0;box-shadow:none;display:grid;gap:8px;grid-template-columns:repeat(5,minmax(0,1fr))}.cc-status-rail span{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:14px;color:var(--focus-secondary);font-size:10px;min-height:60px;padding:11px 12px}.cc-status-rail b{color:var(--focus-text);font-size:11px;margin-top:5px}.cc-status-rail .cc-lock{color:#ff9f0a}.cc-command{background:rgba(28,28,30,.8);border:1px solid var(--focus-line);border-radius:17px;box-shadow:none;margin:26px 0 0;min-height:52px;padding:0 16px}.cc-command:after{display:none}.cc-command:focus-within{border-color:rgba(41,151,255,.65);box-shadow:0 0 0 4px rgba(41,151,255,.12)}.cc-command input{font-size:14px;height:50px}.cc-command kbd{background:rgba(255,255,255,.06);border:0;border-radius:6px;color:var(--focus-secondary);padding:3px 7px}.cc-command-result{color:var(--focus-secondary);font-size:12px;margin:7px 4px 0;min-height:16px}
+.cc-main>[data-primary-view]{animation:cc-view-in .32s cubic-bezier(.2,.75,.25,1) both}.cc-section,.cc-overview{margin-top:34px}.cc-section-heading{align-items:end;margin-bottom:18px}.cc-section-heading h2,.cc-studio-switcher h2,.cc-agent-hero h2{background:none;color:var(--focus-text);font-family:inherit;font-size:clamp(28px,3vw,40px);font-weight:650;letter-spacing:-.045em;line-height:1.02;margin:6px 0 0}.cc-kicker,.cc-panel-label,.cc-brief-label,.cc-eyebrow{color:var(--focus-secondary);font-weight:650;letter-spacing:.09em}.cc-section-note,.cc-section-heading time{color:var(--focus-secondary);font-size:12px}
+.cc-tower-intro{background:linear-gradient(145deg,rgba(29,29,31,.92),rgba(15,15,17,.9));border:1px solid var(--focus-line);border-radius:30px;box-shadow:var(--focus-shadow);grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);margin-top:26px;min-height:300px}.cc-tower-intro:before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent)}.cc-tower-intro:after{display:none}.cc-tower-copy{padding:clamp(34px,5vw,60px)}.cc-tower-copy h2{color:var(--focus-text);font-family:inherit;font-size:clamp(36px,4.8vw,58px);font-weight:650;letter-spacing:-.055em;line-height:.98;margin:15px 0 20px}.cc-tower-copy h2 em{color:var(--focus-text)}.cc-tower-copy>p:not(.cc-kicker){color:var(--focus-secondary);font-size:15px;line-height:1.55;max-width:620px}.cc-tower-pacts{gap:7px;margin-top:24px}.cc-tower-pacts span{background:rgba(255,255,255,.055);border:0;border-radius:999px;color:#d1d1d6;font-size:10px;letter-spacing:0;padding:8px 11px;text-transform:none}.cc-tower-command{border-left:1px solid var(--focus-line);grid-template-columns:120px 1fr;padding:34px}.cc-tower-seal{border-color:rgba(255,255,255,.2);max-width:118px}.cc-tower-seal span{font-family:inherit;font-size:34px;font-weight:650}.cc-tower-seal i{border-color:rgba(41,151,255,.22)}.cc-tower-rail div{border-bottom-color:var(--focus-line);padding:11px 0 11px 18px}.cc-tower-rail span,.cc-tower-rail small{font-size:10px;letter-spacing:0}.cc-tower-rail strong{font-family:inherit;font-size:22px;font-weight:620}
+.cc-metrics{gap:9px;grid-template-columns:repeat(6,minmax(0,1fr));margin:0}.cc-metric,.cc-system-core,.cc-brief,.cc-decision-inbox,.cc-daily-console,.cc-evidence-panel,.cc-runtime-console,.cc-runtime-jobs,.cc-approval-panel,.cc-governance,.cc-preview,.cc-package-inspector,.cc-social-live,.cc-social-summary article,.cc-social-pack,.cc-approval-review,.cc-workday-console,.cc-agent-dossier{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:var(--focus-radius);box-shadow:none;backdrop-filter:none}.cc-metric{border-left:1px solid var(--focus-line);min-height:104px;padding:15px}.cc-metric:after{display:none}.cc-metric .cc-metric-label{font-size:11px}.cc-metric strong{font-family:inherit;font-size:26px;font-weight:620;margin:12px 0 7px}.cc-metric p{font-size:10px}.cc-hero-grid{gap:12px;grid-template-columns:minmax(280px,.7fr) minmax(360px,1.3fr);margin-top:12px}.cc-system-core{min-height:250px}.cc-brief{padding:30px}.cc-brief h2{background:none;color:var(--focus-text);font-family:inherit;font-size:27px;font-weight:620}.cc-brief strong{color:var(--focus-text);font-family:inherit;font-size:21px;font-weight:600}.cc-brief p{color:var(--focus-secondary);font-size:13px}.cc-decision-inbox,.cc-daily-console{margin-top:12px;padding:22px}.cc-decision-item{background:var(--focus-surface-2);border:0;border-radius:14px;grid-template-columns:minmax(150px,.4fr) minmax(0,1.6fr);padding:14px 16px}.cc-decision-item b{font-size:12px}.cc-decision-item p{color:var(--focus-secondary);font-size:12px}.cc-daily-sections{gap:9px}.cc-daily-section{background:var(--focus-surface-2);border:0;border-radius:14px;min-height:132px}.cc-daily-section p{font-size:11px}.cc-daily-section small{font-size:10px}
+.cc-studio-switcher{align-items:end;background:linear-gradient(145deg,rgba(28,28,30,.96),rgba(17,17,19,.94));border:1px solid var(--focus-line);border-radius:28px;display:grid;gap:30px;grid-template-columns:1fr auto;margin-top:26px;padding:32px}.cc-studio-switcher h2{margin-top:8px}.cc-studio-switcher>div>p:not(.cc-kicker){color:var(--focus-secondary);font-size:13px;margin:12px 0 0}.cc-segmented-control{background:rgba(118,118,128,.18);border-radius:13px;display:flex;gap:2px;padding:3px}.cc-segmented-control button{background:transparent;border:0;border-radius:10px;color:var(--focus-secondary);font:560 12px/1 -apple-system,BlinkMacSystemFont,sans-serif;min-height:38px;padding:10px 14px}.cc-segmented-control button:hover{color:var(--focus-text)}.cc-segmented-control button[aria-selected="true"]{background:rgba(255,255,255,.14);box-shadow:0 1px 5px rgba(0,0,0,.22);color:var(--focus-text)}
+.cc-production-layout{gap:14px;grid-template-columns:minmax(260px,.72fr) minmax(360px,1.28fr)}.cc-package-inspector{grid-column:1/-1;position:static}.cc-lane{border-top-color:var(--focus-line)}.cc-production-card{background:var(--focus-surface);border:1px solid var(--focus-line);border-left:1px solid var(--focus-line);border-radius:17px;box-shadow:none;padding:16px;transform:none}.cc-production-card:hover,.cc-production-card[aria-pressed="true"]{background:var(--focus-surface-2);border-color:rgba(41,151,255,.48);transform:none}.cc-preview{overflow:hidden;position:sticky;top:20px}.cc-preview-heading{border-bottom-color:var(--focus-line)}.cc-asset-frame{border-radius:18px}.cc-control-button,.cc-modal-button{background:#f5f5f7;border:0;border-radius:999px;box-shadow:none;color:#050505;font:600 12px/1 -apple-system,BlinkMacSystemFont,sans-serif;min-height:42px;padding:11px 16px}.cc-control-button:hover,.cc-modal-button:hover{filter:none;opacity:.88;transform:none}.cc-control-button[data-action="REJECT_CONTENT"]{background:#3a181c;color:#ffb4ba}.cc-control-button[data-action="APPROVE_CONTENT"],.cc-modal-button--approve{background:var(--focus-blue);color:white}.cc-modal-button--quiet{background:rgba(255,255,255,.1);color:var(--focus-text)}
+.cc-social-live,.cc-social-pack,.cc-approval-review{padding:22px}.cc-social-live-head h3,.cc-social-pack-head h3,.cc-approval-review-head h3{color:var(--focus-text);font-family:inherit;font-size:24px;font-weight:620;letter-spacing:-.025em}.cc-social-live-grid div,.cc-social-block{background:var(--focus-surface-2);border:0;border-radius:13px;padding:12px}.cc-social-live-grid span,.cc-social-block span,.cc-social-summary span{font-size:10px;letter-spacing:0}.cc-social-block b{font-size:12px}.cc-social-block small,.cc-social-summary small,.cc-social-pack-head small{color:var(--focus-secondary);font-size:10px}.cc-social-summary{gap:8px}.cc-social-summary article{min-height:90px}.cc-social-pack{display:block}.cc-social-pack-head{border:0;padding:0}.cc-progressive-details{border-top:1px solid var(--focus-line);margin-top:17px;padding-top:4px}.cc-progressive-details>summary{align-items:center;color:var(--focus-blue);cursor:pointer;display:flex;font-size:12px;font-weight:580;justify-content:space-between;list-style:none;min-height:44px}.cc-progressive-details>summary::-webkit-details-marker{display:none}.cc-progressive-details>summary:after{content:"+";font-size:20px;font-weight:300}.cc-progressive-details[open]>summary:after{content:"−"}.cc-progressive-details-body{display:grid;gap:14px;padding-top:12px}.cc-progressive-details:not([open]) .cc-progressive-details-body{display:none}.cc-approval-review-head{border:0;padding:0}.cc-approval-gates span{border-radius:999px;font-size:10px;letter-spacing:0;padding:7px 10px}.cc-approval-review-grid{gap:9px}.cc-approval-review-code{background:var(--focus-surface-2);border:0;border-radius:12px;font-size:10px}.cc-visual-canvas{border:0;border-radius:16px;overflow:hidden}.cc-visual-canvas img{height:min(60vh,650px)}
+.cc-evidence-grid{gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.cc-evidence-panel{min-height:220px;padding:22px}.cc-list-item p{font-size:11px}.cc-runtime-grid{gap:12px}.cc-runtime-console,.cc-runtime-jobs{padding:25px}.cc-pipeline{gap:7px;grid-template-columns:repeat(5,minmax(0,1fr))}.cc-pipeline-link{display:none}.cc-pipeline-node{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:17px;min-height:120px;padding:16px}.cc-pipeline-node:before{border-radius:3px;left:15px;top:0;width:36px}
+.cc-agent-hero{background:linear-gradient(145deg,rgba(29,29,31,.96),rgba(15,15,17,.92));border:1px solid var(--focus-line);border-radius:30px;grid-template-columns:minmax(0,1.4fr) minmax(320px,.6fr);padding:40px}.cc-agent-hero:after{display:none}.cc-agent-hero>div>p:not(.cc-kicker){color:var(--focus-secondary);font-size:14px}.cc-agent-hero-stats{gap:8px}.cc-agent-hero-stats div{background:rgba(255,255,255,.055);border:0;border-radius:14px;min-height:88px}.cc-agent-hero-stats strong{color:var(--focus-text);font-family:inherit;font-size:27px;font-weight:620}.cc-agent-toolbar{border-bottom-color:var(--focus-line)}.cc-agent-filters button{background:transparent;border:1px solid var(--focus-line);border-radius:999px;color:var(--focus-secondary);font-size:10px;min-height:36px;padding:8px 12px}.cc-agent-filters button[aria-pressed="true"]{background:#f5f5f7;border-color:#f5f5f7;color:#050505}.cc-agent-company-layout--apex{gap:14px;grid-template-columns:minmax(0,1.45fr) minmax(350px,.55fr)}.cc-agent-company-layout--apex .cc-agent-grid{gap:9px;grid-template-columns:repeat(3,minmax(0,1fr))}.cc-agent-company-layout--apex .cc-agent{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:18px;gap:12px;min-height:220px;padding:16px}.cc-agent-company-layout--apex .cc-agent:hover,.cc-agent-company-layout--apex .cc-agent:focus-visible,.cc-agent-company-layout--apex .cc-agent[aria-pressed="true"]{border-color:color-mix(in srgb,var(--apex-accent) 58%,white 2%);box-shadow:none}.cc-agent-emblem{border-radius:12px;width:40px}.cc-agent-emblem:after{display:none}.cc-agent-company-layout--apex .cc-agent h3{font-family:inherit;font-size:17px;font-weight:620}.cc-agent-mission{padding:10px 0}.cc-agent-mission p{font-size:11px!important}.cc-agent-card-stats{gap:5px}.cc-agent-card-stats div{min-height:34px}.cc-agent-power{display:none}.cc-agent-dossier{border-radius:22px;padding:20px}.cc-agent-dossier-head h3{font-family:inherit;font-size:23px;font-weight:620}.cc-workday-console{border-radius:22px;padding:20px}
+.cc-governance{align-items:center;border-radius:22px;padding:24px}.cc-governance h2{background:none;color:var(--focus-text);font-family:inherit;font-size:25px;font-weight:620}.cc-lock-glyph{background:rgba(255,159,10,.1);border:0;color:#ff9f0a}.cc-authorization-dialog{background:#1c1c1e;border:1px solid var(--focus-line);border-radius:24px;max-width:580px}.cc-authorization-dialog:before{display:none}.cc-authorization-dialog h2{color:var(--focus-text);font-family:inherit;font-weight:650}
+.cc-vault-metrics{display:grid;gap:9px;grid-template-columns:repeat(4,minmax(0,1fr))}.cc-vault-metrics article,.cc-vault-intelligence{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:18px;display:grid;gap:6px;padding:18px}.cc-vault-metrics span{color:var(--focus-secondary);font-size:11px}.cc-vault-metrics strong{font-size:27px;font-weight:620}.cc-vault-metrics small{color:var(--focus-secondary);font-size:10px}.cc-vault-shell{align-items:start;display:grid;gap:13px;grid-template-columns:minmax(0,1.45fr) minmax(320px,.55fr);margin-top:13px}.cc-vault-gallery-panel,.cc-vault-detail{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:22px;padding:20px}.cc-vault-toolbar{align-items:center;display:flex;gap:14px;justify-content:space-between}.cc-vault-toolbar>span{color:var(--focus-secondary);font-size:11px}.cc-vault-filters{display:flex;flex-wrap:wrap;gap:6px}.cc-vault-filters button{background:transparent;border:1px solid var(--focus-line);border-radius:999px;color:var(--focus-secondary);font:560 10px/1 -apple-system,BlinkMacSystemFont,sans-serif;min-height:34px;padding:8px 11px}.cc-vault-filters button[aria-pressed="true"]{background:#f5f5f7;border-color:#f5f5f7;color:#050505}.cc-vault-gallery{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:16px}.cc-reference-card{background:var(--focus-surface-2);border:1px solid transparent;border-radius:16px;color:var(--focus-text);display:grid;gap:7px;min-height:164px;padding:15px;text-align:left}.cc-reference-card:hover,.cc-reference-card:focus-visible,.cc-reference-card[aria-pressed="true"]{border-color:rgba(41,151,255,.55);outline:0}.cc-reference-card[data-status="RIGHTS_BLOCKED"]{border-color:rgba(255,69,58,.35)}.cc-reference-kind{color:var(--focus-blue);font-size:10px;font-weight:650;text-transform:uppercase}.cc-reference-card strong{font-size:14px;line-height:1.25}.cc-reference-card small,.cc-reference-card p{color:var(--focus-secondary);font-size:10px;margin:0}.cc-vault-detail{position:sticky;top:20px}.cc-reference-detail-head{display:grid;gap:7px;grid-template-columns:1fr auto}.cc-reference-detail-head .cc-panel-label,.cc-reference-detail-head h3{grid-column:1}.cc-reference-detail-head .cc-agent-state{grid-column:2;grid-row:1/3}.cc-reference-detail-head h3{font-size:24px;letter-spacing:-.03em;margin:0}.cc-reference-purpose{color:var(--focus-secondary);font-size:12px;line-height:1.5;margin:15px 0 7px}.cc-vault-detail>small{color:var(--focus-secondary);font-size:10px}.cc-reference-metadata{display:grid;gap:1px;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden}.cc-vault-datum{background:var(--focus-surface-2);display:grid;gap:5px;min-width:0;padding:11px}.cc-vault-datum span{color:var(--focus-secondary);font-size:9px;text-transform:none}.cc-vault-datum b{font-size:11px;font-weight:570;overflow-wrap:anywhere}.cc-vault-intelligence-grid{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:13px}.cc-vault-intelligence{min-height:190px}.cc-fingerprint-summary{display:grid;gap:1px;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:10px}.cc-vault-empty{color:var(--focus-secondary);font-size:12px;line-height:1.5}.cc-vault-decision-list{display:grid;gap:1px;margin-top:10px}.cc-vault-alerts{display:grid;gap:8px;margin-top:13px}.cc-vault-alert,.cc-vault-ok{background:rgba(255,159,10,.09);border:1px solid rgba(255,159,10,.18);border-radius:16px;padding:15px}.cc-vault-alert strong{color:#ffc56b;font-size:12px}.cc-vault-alert p,.cc-vault-ok{color:var(--focus-secondary);font-size:11px;margin:5px 0 0}.cc-vault-ok{background:rgba(48,209,88,.08);border-color:rgba(48,209,88,.17);margin:0}
+.cc-vault-secondary-grid{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:13px}.cc-vault-compare-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:10px}.cc-vault-compare-column{background:var(--focus-surface-2);border-radius:14px;display:grid;gap:7px;min-width:0;padding:13px}.cc-vault-compare-column>span{color:var(--focus-secondary);font-size:9px}.cc-vault-compare-column strong{font-size:12px;overflow-wrap:anywhere}.cc-vault-sequence-list{display:grid;gap:8px;margin-top:10px}.cc-vault-sequence{background:var(--focus-surface-2);border-radius:14px;padding:13px}.cc-vault-sequence summary{cursor:pointer;font-size:12px;font-weight:600;min-height:28px}.cc-vault-sequence ol{color:var(--focus-secondary);font-size:10px;margin:8px 0 0;padding-left:22px}.cc-vault-sequence li{padding:3px 0}
+@keyframes cc-view-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.cc-main>[data-primary-view]{animation:none!important}}
+@media (max-width:1100px){.cc-sidebar{grid-template-columns:auto minmax(340px,1fr) auto}.cc-sidebar>.cc-operator{display:none}.cc-topbar{grid-template-columns:1fr}.cc-status-rail{grid-template-columns:repeat(5,minmax(0,1fr))}.cc-tower-intro{grid-template-columns:1fr}.cc-tower-command{border-left:0;border-top:1px solid var(--focus-line)}.cc-agent-company-layout--apex{grid-template-columns:1fr}.cc-agent-side{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-company-layout--apex .cc-agent-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-vault-shell{grid-template-columns:1fr}.cc-vault-detail{position:static}}
+@media (max-width:820px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}.cc-app,.cc-app[data-sidebar-state="compact"]{height:auto;min-height:100svh;overflow:visible}.cc-sidebar{background:rgba(18,18,20,.88);display:flex;height:56px!important;justify-content:space-between;padding:8px 16px;position:fixed;transform:none!important;width:100%}.cc-sidebar-head{display:flex}.cc-brand-mark{border-radius:10px;height:32px;width:32px}.cc-brand-copy small{display:none}.cc-sidebar-foot{font-size:0}.cc-sidebar-foot-label{display:none!important}.cc-sidebar>.cc-operator{display:none}.cc-nav,.cc-app[data-sidebar-state="compact"] .cc-nav{background:rgba(24,24,26,.94);border:1px solid rgba(255,255,255,.12);border-radius:20px;bottom:calc(8px + env(safe-area-inset-bottom));box-shadow:0 16px 44px rgba(0,0,0,.38);display:grid;grid-template-columns:repeat(4,1fr);left:10px;margin:0;max-width:none;padding:4px;position:fixed;right:10px;width:auto;z-index:70;backdrop-filter:saturate(160%) blur(24px)}.cc-nav a,.cc-app[data-sidebar-state="compact"] .cc-nav a{display:grid;gap:2px;grid-template-columns:1fr;justify-items:center;min-height:54px;padding:6px 4px}.cc-nav-icon{font-size:11px}.cc-nav-label,.cc-app[data-sidebar-state="compact"] .cc-nav-label{font-size:10px}.cc-main{height:auto;min-height:100svh;overflow:visible;padding:82px 16px 110px}.cc-topbar{display:block}.cc-command-title h1,.cc-topbar h1{font-size:38px}.cc-topbar-subtitle{font-size:13px}.cc-status-rail{display:flex;gap:7px;margin-top:20px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.cc-status-rail span{flex:0 0 142px;min-height:58px;scroll-snap-align:start}.cc-command{margin-top:18px}.cc-tower-intro{border-radius:24px;margin-top:20px;min-height:0}.cc-tower-copy{padding:28px 22px}.cc-tower-copy h2{font-size:38px}.cc-tower-command{display:grid;grid-template-columns:72px minmax(0,1fr);padding:22px}.cc-tower-seal{max-width:72px}.cc-tower-seal span{font-size:22px}.cc-tower-rail{grid-template-columns:repeat(2,minmax(0,1fr));margin:0}.cc-tower-rail div{border:0;padding:9px 0 9px 14px}.cc-metrics{display:flex;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.cc-metric{flex:0 0 154px;scroll-snap-align:start}.cc-hero-grid,.cc-runtime-grid{grid-template-columns:1fr}.cc-system-core{display:none}.cc-section{margin-top:28px}.cc-section-heading{align-items:start;display:grid;gap:8px}.cc-decision-item{grid-template-columns:1fr}.cc-daily-sections{grid-template-columns:1fr}.cc-studio-switcher{align-items:start;border-radius:24px;display:grid;grid-template-columns:1fr;padding:24px 20px}.cc-segmented-control{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow-x:auto;width:100%}.cc-segmented-control button{min-width:0;padding:10px 6px}.cc-production-layout,.cc-app[data-sidebar-state="compact"] .cc-production-layout{grid-template-columns:1fr}.cc-preview,.cc-package-inspector{position:static}.cc-social-summary{display:flex;overflow-x:auto}.cc-social-summary article{flex:0 0 158px}.cc-social-live-grid,.cc-social-grid,.cc-approval-review-grid{grid-template-columns:1fr}.cc-visual-review-canvases{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.cc-visual-canvas{flex:0 0 88%;scroll-snap-align:center}.cc-evidence-grid{grid-template-columns:1fr}.cc-pipeline{display:flex;overflow-x:auto}.cc-pipeline-node{flex:0 0 170px}.cc-agent-hero{border-radius:24px;grid-template-columns:1fr;padding:26px 20px}.cc-agent-company-layout--apex .cc-agent-grid{display:flex;overflow-x:auto;scroll-snap-type:x proximity}.cc-agent-company-layout--apex .cc-agent{flex:0 0 82%;min-height:210px;scroll-snap-align:start}.cc-agent-side{grid-template-columns:1fr}.cc-authorization{padding:12px}.cc-authorization-dialog{border-radius:22px;height:auto;max-height:calc(100dvh - 24px);overflow:auto}.cc-control-button{min-height:44px}.cc-progressive-details>summary{min-height:48px}}
+@media (max-width:820px){.cc-vault-metrics{display:flex;overflow-x:auto}.cc-vault-metrics article{flex:0 0 170px}.cc-vault-toolbar{align-items:start;display:grid}.cc-vault-filters{flex-wrap:nowrap;max-width:100%;overflow-x:auto}.cc-vault-filters button{white-space:nowrap}.cc-vault-gallery{display:flex;overflow-x:auto;scroll-snap-type:x proximity}.cc-reference-card{flex:0 0 72%;scroll-snap-align:start}.cc-vault-intelligence-grid{grid-template-columns:1fr}.cc-reference-metadata{grid-template-columns:1fr}}
+@media (max-width:820px){.cc-sidebar{backdrop-filter:none!important;overflow:visible!important}.cc-nav,.cc-app[data-sidebar-state="compact"] .cc-nav{justify-self:stretch;width:calc(100vw - 20px)}.cc-agent-company-layout--apex{grid-template-columns:minmax(0,1fr)}.cc-agent-roster,.cc-agent-company-layout--apex .cc-agent-grid,.cc-agent-company-layout--apex .cc-agent,.cc-agent-card-head,.cc-agent-identity{min-width:0}.cc-agent-company-layout--apex .cc-agent{max-width:100%;overflow:hidden}.cc-vault-secondary-grid{grid-template-columns:1fr}.cc-vault-filters button{min-height:44px}}
+@media (max-width:430px){.cc-status-rail span{flex-basis:132px}.cc-tower-copy h2{font-size:34px}.cc-tower-command{grid-template-columns:1fr}.cc-tower-seal{display:none}.cc-segmented-control{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-approval-review-head,.cc-approval-review-foot,.cc-visual-review-head{display:grid}.cc-visual-canvas{flex-basis:92%}.cc-agent-company-layout--apex .cc-agent{flex-basis:90%}.cc-agent-hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-reference-card{flex-basis:88%}.cc-fingerprint-summary{grid-template-columns:1fr}.cc-vault-compare-grid{grid-template-columns:1fr}}
 `;
 
 export const COMMAND_CENTER_CLIENT_JS = `
@@ -436,7 +506,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     "backup-guardian": { callSign: "VAULT", glyph: "BV", squad: "GUARDIANS", squadLabel: "Guardians" },
     "publisher-agent": { callSign: "LAUNCH", glyph: "LA", squad: "GROWTH", squadLabel: "Growth" },
   });
-  const state = { agentFilter: "ALL", confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, snapshot: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, visualReview: null, visualSlideIndex: 0, mediaFactory: null };
+  const state = { agentFilter: "ALL", confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mediaFactory: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedReferenceId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, snapshot: null, vaultFilter: "ALL", visualReview: null, visualSlideIndex: 0 };
 
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
@@ -574,6 +644,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     renderSocialIntelligence(snapshot.socialIntelligence || { blocked: 0, coverage: "LIMIT_REACHED", expiringWithin24Hours: 0, packs: [], readyForFabio: 0, requiresResearch: 0 }, snapshot.socialLive);
     renderProductions(snapshot.productions, productionCoverage);
     renderEvidence(snapshot.evidence);
+    renderReferenceVault(snapshot.referenceVault || { assets: [], businessContext: null, decisions: [], missingInputs: ["Nessun riferimento importato"], outcomeLinks: [], rightsBlockers: [], visualFingerprint: null, writingFingerprint: null });
     renderRuntime(snapshot.runtime, snapshot.controls || { incidents: [], targets: [] });
     renderTeamPulse(snapshot.agents);
     renderAgents(snapshot.agents);
@@ -722,7 +793,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
           socialBlock("Ambito approvazione", statusLabel(pack.approvalScope.scope), pack.approvalScope.consequences.join(" "))
         );
       }
-      card.append(head, grid); list.append(card);
+      const disclosure = element("details", "cc-progressive-details");
+      disclosure.append(element("summary", "", "Apri analisi completa"), grid);
+      card.append(head, disclosure); list.append(card);
     }
   }
 
@@ -761,7 +834,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const downloads = element("div", "cc-social-downloads");
     const download = (label, href, filename) => { const link = element("a", "cc-social-download", label); link.href = href; link.setAttribute("download", filename); return link; };
     downloads.append(download("Modello Insights", "/downloads/metodo-veloce-insights-template.csv", "metodo-veloce-insights-template.csv"), download("Modello competitor", "/downloads/metodo-veloce-competitor-observations-template.csv", "metodo-veloce-competitor-observations-template.csv"), download("Modello diritti audio", "/downloads/metodo-veloce-audio-rights-template.csv", "metodo-veloce-audio-rights-template.csv"));
-    target.append(head, grid, candidate, competitorPack, element("p", "cc-social-missing", missing + experiment + cycle), downloads);
+    const disclosure = element("details", "cc-progressive-details");
+    const disclosureBody = element("div", "cc-progressive-details-body");
+    disclosureBody.append(grid, candidate, competitorPack, element("p", "cc-social-missing", missing + experiment + cycle), downloads);
+    disclosure.append(element("summary", "", "Dati, fonti e piano sperimentale"), disclosureBody);
+    target.append(head, disclosure);
   }
 
   function socialBlock(label, value, detail) { const block = element("div", "cc-social-block"); block.append(element("span", "", label), element("b", "", value), element("small", "", detail)); return block; }
@@ -1195,6 +1272,197 @@ export const COMMAND_CENTER_CLIENT_JS = `
     renderList("evidence-list", evidence.evidence, (record) => ({ title: record.evidenceId, meta: record.status + " · " + record.riskDomain, detail: record.claimMappings.length > 0 ? record.claimMappings.map((claim) => claim.statement).join(" · ") : "Nessuna mappatura claim registrata." }));
   }
 
+  function renderReferenceVault(vault) {
+    const assets = Array.isArray(vault.assets) ? vault.assets : [];
+    const current = assets.filter((asset) => asset.current !== false);
+    const approved = current.filter((asset) => asset.status === "APPROVED" && !isVaultRightsBlocked(asset));
+    const pending = current.filter((asset) => asset.status === "PENDING_FABIO_REVIEW" || asset.status === "IMPORTED");
+    const rightsBlocked = current.filter(isVaultRightsBlocked);
+    text("vault-total", number(current.length));
+    text("vault-approved", number(approved.length));
+    text("vault-review", number(pending.length));
+    text("vault-rights-blocked", number(rightsBlocked.length));
+    const gallery = byId("reference-vault-gallery");
+    const detailPanel = byId("reference-vault-detail");
+    gallery.replaceChildren(); detailPanel.replaceChildren();
+    const visible = current.filter((asset) => state.vaultFilter === "ALL" || (state.vaultFilter === "RIGHTS_BLOCKED" ? isVaultRightsBlocked(asset) : asset.status === state.vaultFilter));
+    document.querySelectorAll("[data-vault-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.vaultFilter === state.vaultFilter)));
+    const coverage = vault.coverage === "LIMIT_REACHED" ? " · finestra parziale" : vault.coverage === "NOT_AVAILABLE" ? " · copertura non disponibile" : "";
+    text("vault-gallery-summary", (visible.length === 0 ? "Nessun riferimento in questa vista" : number(visible.length) + " riferimento/i verificabili") + coverage);
+    if (!visible.some((asset) => asset.referenceId === state.selectedReferenceId)) state.selectedReferenceId = visible[0] ? visible[0].referenceId : null;
+    if (visible.length === 0) {
+      gallery.append(element("div", "cc-list-empty", current.length === 0 ? "Il Vault è pronto. Nessun file viene importato automaticamente: usa il Fabio Input Pack e una preview durevole." : "Nessun riferimento corrisponde al filtro selezionato."));
+      detailPanel.append(element("div", "cc-list-empty", "Seleziona un riferimento per vedere metadati, diritti, scopo e collegamenti."));
+    } else {
+      for (const asset of visible) {
+        const card = element("button", "cc-reference-card"); card.type = "button";
+        card.dataset.referenceId = asset.referenceId; card.dataset.status = asset.status;
+        card.setAttribute("aria-controls", "reference-vault-detail");
+        card.setAttribute("aria-pressed", String(asset.referenceId === state.selectedReferenceId));
+        const roles = Array.isArray(asset.referenceRoles) ? asset.referenceRoles : [];
+        card.append(
+          element("span", "cc-reference-kind", (asset.mimeType || "FILE").replace("image/", "")),
+          element("strong", "", asset.title || asset.originalFilename || asset.referenceId),
+          element("small", "", statusLabel(asset.status || "IMPORTED") + " · v" + String(asset.version === undefined ? "—" : asset.version)),
+          element("p", "", roles.slice(0, 3).map(statusLabel).join(" · ") || "Ruolo da classificare"),
+        );
+        card.addEventListener("click", () => { state.selectedReferenceId = asset.referenceId; renderReferenceVault(vault); });
+        gallery.append(card);
+      }
+      const selected = visible.find((asset) => asset.referenceId === state.selectedReferenceId);
+      if (selected) renderReferenceDetail(detailPanel, selected, vault);
+    }
+    renderFingerprint("visual-fingerprint-panel", vault.visualFingerprint, "Il profilo visivo nasce solo da decisioni esplicite di Fabio.");
+    renderFingerprint("writing-fingerprint-panel", vault.writingFingerprint, "Il profilo di scrittura nasce solo da decisioni esplicite di Fabio.");
+    renderBusinessContext(vault.businessContext);
+    renderDecisionMemory(vault.decisions || [], vault.outcomeLinks || []);
+    renderVaultComparison(approved, current.filter((asset) => asset.status === "REJECTED"));
+    renderVaultSequences(vault.sequences || []);
+    const alerts = byId("vault-missing-inputs"); alerts.replaceChildren();
+    const missing = Array.isArray(vault.missingInputs) ? vault.missingInputs : [];
+    const blockers = Array.isArray(vault.rightsBlockers) ? vault.rightsBlockers : [];
+    if (vault.queryStatus === "UNAVAILABLE") alerts.append(vaultAlert("Vault non disponibile", ["La lettura è fallita chiusa; nessun riferimento è stato esposto."]));
+    if (vault.coverage === "LIMIT_REACHED") alerts.append(vaultAlert("Copertura parziale", ["Metriche e gallery descrivono soltanto la finestra bounded osservata."]));
+    if (missing.length === 0 && blockers.length === 0 && vault.queryStatus !== "UNAVAILABLE" && vault.coverage !== "LIMIT_REACHED") alerts.append(element("p", "cc-vault-ok", "Nessun input o diritto mancante nel perimetro osservato."));
+    else {
+      if (missing.length > 0) alerts.append(vaultAlert("Input ancora necessari", missing));
+      if (blockers.length > 0) alerts.append(vaultAlert("Diritti bloccati", blockers));
+    }
+  }
+
+  function renderVaultComparison(approved, rejected) {
+    const target = byId("approved-rejected-comparison"); target.replaceChildren();
+    const grid = element("div", "cc-vault-compare-grid");
+    const columns = [["APPROVATO", approved[0]], ["RIFIUTATO", rejected[0]]];
+    for (const [label, asset] of columns) {
+      const column = element("section", "cc-vault-compare-column");
+      column.append(element("span", "", label));
+      if (!asset) column.append(element("p", "cc-vault-empty", "NOT AVAILABLE · nessuna decisione reale."));
+      else column.append(element("strong", "", asset.title || asset.referenceId), element("small", "", asset.referenceId + " · v" + String(asset.version)), element("p", "cc-vault-empty", formatVaultValue(asset.approvalReason)));
+      grid.append(column);
+    }
+    target.append(grid, element("p", "cc-vault-empty", "Confronto metadati: gli originali privati non vengono serviti dal browser."));
+  }
+
+  function renderVaultSequences(sequences) {
+    const target = byId("carousel-sequence-panel"); target.replaceChildren();
+    if (!Array.isArray(sequences) || sequences.length === 0) { target.append(element("p", "cc-vault-empty", "Nessuna sequenza reale registrata. Nessuna slide segnaposto viene mostrata.")); return; }
+    const list = element("div", "cc-vault-sequence-list");
+    for (const sequence of sequences) {
+      const disclosure = element("details", "cc-vault-sequence");
+      const items = Array.isArray(sequence.items) ? sequence.items : [];
+      const ordered = element("ol", "");
+      for (const item of items) {
+        const requested = item.requestedVersion === undefined ? "" : " · richiesto v" + String(item.requestedVersion);
+        const reasons = Array.isArray(item.eligibilityReasonCodes) && item.eligibilityReasonCodes.length > 0 ? " · " + item.eligibilityReasonCodes.join(", ") : "";
+        ordered.append(element("li", "", String(item.referenceId) + " · corrente v" + String(item.version) + requested + (item.available ? " · IDONEO" : " · NON IDONEO") + reasons));
+      }
+      disclosure.append(element("summary", "", (sequence.title || sequence.collectionId) + " · " + String(items.length) + " slide"), element("p", "cc-vault-empty", formatVaultValue(sequence.description)), ordered);
+      list.append(disclosure);
+    }
+    target.append(list);
+  }
+
+  function isVaultRightsBlocked(asset) {
+    if (asset && typeof asset.eligible === "boolean") return asset.eligible !== true;
+    const rights = asset && asset.rights ? asset.rights : {};
+    const status = rights.status || asset && asset.rightsStatus;
+    const expiresAt = rights.expiresAt || asset && asset.rightsExpiresAt;
+    return Boolean(
+      !status ||
+      asset.status === "RIGHTS_BLOCKED" ||
+      ["BLOCKED", "PUBLIC_ANALYSIS_ONLY", "UNKNOWN"].includes(status) ||
+      (expiresAt && Number.isFinite(Date.parse(expiresAt)) && Date.parse(expiresAt) <= Date.now())
+    );
+  }
+
+  function renderReferenceDetail(target, asset, vault) {
+    const head = element("div", "cc-reference-detail-head");
+    head.append(element("p", "cc-panel-label", "REFERENCE DOSSIER"), element("h3", "", asset.title || asset.referenceId), element("span", "cc-agent-state", statusLabel(asset.status || "IMPORTED")));
+    const metadata = element("div", "cc-reference-metadata");
+    const rights = asset.rights || {};
+    const source = asset.source || {};
+    const dimensions = asset.dimensions && asset.dimensions.width && asset.dimensions.height ? String(asset.dimensions.width) + "×" + String(asset.dimensions.height) : "NOT AVAILABLE";
+    const rows = [
+      ["ID / versione", asset.referenceId + " · v" + String(asset.version === undefined ? "—" : asset.version)],
+      ["File", asset.originalFilename || "NOT AVAILABLE"],
+      ["SHA-256", asset.sha256 || asset.fingerprint || "NOT AVAILABLE"],
+      ["Formato", (asset.mimeType || "NOT AVAILABLE") + " · " + dimensions],
+      ["Fonte", statusLabel(source.type || asset.sourceType || "NOT_AVAILABLE")],
+      ["Diritti", statusLabel(rights.status || asset.rightsStatus || "UNKNOWN")],
+      ["Uso consentito", formatVaultValue(rights.allowedUse || asset.allowedUse)],
+      ["Privacy / retention", (asset.privacy && statusLabel(asset.privacy.status) || "NOT AVAILABLE") + " · " + (asset.privacy && asset.privacy.retentionExpiresAt || "NOT AVAILABLE")],
+      ["Idoneità creative direction", asset.eligible === true ? "IDONEO" : "BLOCCATO · " + formatVaultValue(asset.eligibilityReasonCodes)],
+      ["Obiettivo", formatVaultValue(asset.businessObjective)],
+      ["Audience", formatVaultValue(asset.audience)],
+      ["Da imparare", formatVaultValue(asset.whatToLearn)],
+      ["Da non copiare", formatVaultValue(asset.whatNotToCopy)],
+      ["Missione collegata", formatVaultValue(asset.linkedMission)],
+      ["Pacchetto collegato", formatVaultValue(asset.linkedPackage)],
+      ["Outcome collegato", formatVaultValue(asset.linkedOutcome)],
+    ];
+    for (const [label, value] of rows) metadata.append(vaultDatum(label, value));
+    const disclosure = element("details", "cc-progressive-details");
+    disclosure.append(element("summary", "", "Metadati, fonte e diritti"), metadata);
+    const outcomeCount = Array.isArray(vault.outcomeLinks) ? vault.outcomeLinks.filter((link) => link.referenceId === asset.referenceId).length : 0;
+    target.append(head, element("p", "cc-reference-purpose", formatVaultValue(asset.approvalReason || "Nessuna decisione Fabio registrata per questa versione.")), element("small", "", String(outcomeCount) + " outcome collegato/i"), disclosure);
+  }
+
+  function renderFingerprint(targetId, fingerprint, emptyMessage) {
+    const target = byId(targetId); target.replaceChildren();
+    if (!fingerprint) { target.append(element("p", "cc-vault-empty", emptyMessage + " Campioni: 0 · confidenza non disponibile.")); return; }
+    const sampleCount = fingerprint.sampleCount === undefined ? 0 : fingerprint.sampleCount;
+    const confidence = fingerprint.confidence === undefined ? "NOT AVAILABLE" : typeof fingerprint.confidence === "number" ? new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1, style: "percent" }).format(fingerprint.confidence) : statusLabel(String(fingerprint.confidence));
+    const summary = element("div", "cc-fingerprint-summary");
+    summary.append(vaultDatum("Campioni espliciti", number(sampleCount)), vaultDatum("Confidenza", confidence), vaultDatum("Versione", "v" + String(fingerprint.version === undefined ? "—" : fingerprint.version)));
+    const dimensions = fingerprint.preferences || fingerprint.dimensions || {};
+    const disclosure = element("details", "cc-progressive-details");
+    const body = element("div", "cc-reference-metadata");
+    for (const [key, value] of Object.entries(dimensions).slice(0, 16)) body.append(vaultDatum(statusLabel(key), formatVaultValue(value)));
+    disclosure.append(element("summary", "", "Dimensioni del fingerprint"), body);
+    target.append(summary, disclosure);
+  }
+
+  function renderBusinessContext(context) {
+    const target = byId("business-context-panel"); target.replaceChildren();
+    if (!context) { target.append(element("p", "cc-vault-empty", "Contesto non ancora registrato. Valori economici e vincoli restano NOT AVAILABLE.")); return; }
+    const keys = ["founderConstraints", "revenueTargets", "budget", "availableTime", "riskTolerance", "audience", "offers", "pricing", "deliveryCapacity", "channels", "successMetrics", "unitEconomics", "activeExperiments"];
+    const disclosure = element("details", "cc-progressive-details");
+    const body = element("div", "cc-reference-metadata");
+    for (const key of keys) body.append(vaultDatum(statusLabel(key), formatVaultValue(context[key])));
+    disclosure.append(element("summary", "", "Vincoli, offerte e obiettivi"), body);
+    target.append(element("p", "cc-vault-empty", "Versione " + String(context.version === undefined ? "—" : context.version) + " · valori mancanti non stimati"), disclosure);
+  }
+
+  function renderDecisionMemory(decisions, outcomes) {
+    const target = byId("decision-memory-panel"); target.replaceChildren();
+    const summary = element("div", "cc-fingerprint-summary");
+    summary.append(vaultDatum("Decisioni", number(decisions.length)), vaultDatum("Outcome", number(outcomes.length)), vaultDatum("Aggiornamento", decisions[0] && decisions[0].createdAt ? timestamp(decisions[0].createdAt) : "NOT AVAILABLE"));
+    target.append(summary);
+    if (decisions.length === 0) { target.append(element("p", "cc-vault-empty", "Nessuna preferenza viene dedotta senza una decisione esplicita di Fabio.")); return; }
+    const list = element("div", "cc-vault-decision-list");
+    for (const decision of decisions.slice(0, 6)) {
+      const disclosure = element("details", "cc-progressive-details");
+      const metadata = element("div", "cc-reference-metadata");
+      metadata.append(
+        vaultDatum("Motivo", formatVaultValue(decision.structuredReason)),
+        vaultDatum("Elemento", formatVaultValue(decision.affectedElement)),
+        vaultDatum("Regola riutilizzabile", formatVaultValue(decision.reusableRule)),
+        vaultDatum("Scope / confidenza", formatVaultValue(decision.scope) + " · " + formatVaultValue(decision.confidence)),
+        vaultDatum("Pacchetto", formatVaultValue(decision.packageIds)),
+        vaultDatum("Revisione risultante", decision.resultingRevision && decision.resultingRevision.status === "AVAILABLE" ? decision.resultingRevision.packageId + " · v" + String(decision.resultingRevision.version) : "NOT AVAILABLE"),
+        vaultDatum("Scadenza", formatVaultValue(decision.expiresAt)),
+      );
+      disclosure.append(element("summary", "", statusLabel(decision.decision || decision.type || "DECISION") + " · " + formatVaultValue(decision.reusableRule)), metadata);
+      list.append(disclosure);
+    }
+    target.append(list);
+  }
+
+  function vaultDatum(label, value) { const row = element("div", "cc-vault-datum"); row.append(element("span", "", label), element("b", "", value)); return row; }
+  function vaultAlert(title, items) { const card = element("article", "cc-vault-alert"); card.append(element("strong", "", title), element("p", "", items.map((item) => typeof item === "string" ? item : item.reasonCode || item.referenceId || "Record bloccato").join(" · "))); return card; }
+  function formatVaultValue(value) { if (value === undefined || value === null || value === "") return "NOT AVAILABLE"; if (Array.isArray(value)) return value.length === 0 ? "NOT AVAILABLE" : value.map((item) => typeof item === "string" ? item : item.label || item.id || "Dato strutturato").join(" · "); if (typeof value === "object") return value.status || value.label || value.value || "Dato strutturato disponibile"; return String(value); }
+
   function renderList(targetId, records, format) {
     const target = byId(targetId); target.replaceChildren();
     if (records.length === 0) { target.append(element("div", "cc-list-empty", "Nessun record durevole è stato ancora importato in questo piano.")); return; }
@@ -1588,6 +1856,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       foot.append(element("p", "", visualBlocked ? "Il Visual Gate non è superato: l'approvazione interna non viene proposta. Programmazione e pubblicazione restano separate e bloccate." : "L'approvazione autorizza soltanto questo pacchetto interno. Programmazione e pubblicazione restano separate e bloccate."), element("a", "cc-text-action", "Apri asset e azioni controllate →"));
       foot.lastChild.href = "#production";
       card.append(head, visual, grid, fingerprint, foot);
+      collapseCardDetails(card, visualBlocked ? "Apri blocker e audit" : "Apri dossier completo");
       reviewList.append(card);
     }
   }
@@ -1727,28 +1996,91 @@ export const COMMAND_CENTER_CLIENT_JS = `
     }
     card.append(connectorPanel);
     card.append(element("p", "", "Fabio deve verificare il Visual Gate e, in un unico checkpoint browser, collegare o verificare gli account TikTok e Instagram senza pubblicare."));
+    collapseCardDetails(card, "Apri asset, costi e provenienza");
     return card;
+  }
+
+  function collapseCardDetails(card, label) {
+    const children = Array.from(card.children).slice(1);
+    if (children.length === 0) return;
+    const disclosure = element("details", "cc-progressive-details");
+    const body = element("div", "cc-progressive-details-body");
+    body.append(...children);
+    disclosure.append(element("summary", "", label), body);
+    card.append(disclosure);
   }
 
   function navigate(query) {
     const normalized = query.toLocaleLowerCase("it-IT");
-    const mapping = [["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["business", "business"], ["opportun", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
+    const mapping = [["fingerprint", "vault"], ["riferiment", "vault"], ["creativ", "vault"], ["prefer", "vault"], ["vault", "vault"], ["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["business", "business"], ["opportun", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
     const found = mapping.find(([keyword]) => normalized.includes(keyword));
-    if (!found) { commandResult.textContent = "Usa un termine come Social, trend, Business, approvazioni, evidenze, runtime, agenti o produzioni."; return; }
-    const target = byId(found[1]); if (target) target.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
-    commandResult.textContent = "Aperta la sezione richiesta.";
+    if (!found) { commandResult.textContent = "Prova con decisioni, Social, Business, evidenze, sistema, agenti o produzione."; return; }
+    const nextHash = "#" + found[1];
+    if (window.location.hash === nextHash) syncVisualContext();
+    else window.location.hash = nextHash;
+    commandResult.textContent = "Contesto aperto. Nessuna azione è stata eseguita.";
   }
 
   function syncVisualContext() {
     const candidate = window.location.hash.slice(1);
-    root.dataset.section = ["business", "social", "production", "evidence", "runtime", "approvals", "governance", "agents"].includes(candidate) ? candidate : "overview";
-    root.querySelectorAll(".cc-nav a").forEach((link) => {
-      const active = link.getAttribute("href") === "#" + root.dataset.section;
+    const routes = {
+      agents: ["team", "production"],
+      approvals: ["today", "production"],
+      business: ["studio", "business"],
+      evidence: ["studio", "evidence"],
+      governance: ["system", "production"],
+      overview: ["today", "production"],
+      production: ["studio", "production"],
+      runtime: ["system", "production"],
+      social: ["studio", "social"],
+      studio: ["studio", root.dataset.activeStudio || "production"],
+      system: ["system", "production"],
+      team: ["team", "production"],
+      today: ["today", "production"],
+      vault: ["studio", "vault"],
+    };
+    const route = routes[candidate] || routes.today;
+    const previousView = root.dataset.activeView;
+    const previousStudio = root.dataset.activeStudio;
+    root.dataset.activeView = route[0];
+    root.dataset.activeStudio = route[1];
+    root.dataset.section = candidate || "today";
+    root.querySelectorAll(".cc-main > [data-primary-view]").forEach((panel) => {
+      const visible = panel.dataset.primaryView === route[0];
+      panel.hidden = !visible;
+      panel.setAttribute("aria-hidden", String(!visible));
+    });
+    root.querySelectorAll("[data-studio-panel]").forEach((panel) => {
+      const visible = route[0] === "studio" && panel.dataset.studioPanel === route[1];
+      panel.hidden = !visible;
+      panel.setAttribute("aria-hidden", String(!visible));
+    });
+    root.querySelectorAll(".cc-nav a[data-view-target]").forEach((link) => {
+      const active = link.dataset.viewTarget === route[0];
       link.classList.toggle("is-active", active);
       if (active) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
-    if (mobileSidebar.matches) setMobileSidebar(false);
+    root.querySelectorAll("[data-studio-target]").forEach((button) => {
+      const active = button.dataset.studioTarget === route[1];
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    const viewCopy = {
+      studio: ["Studio", "Produzione, intelligence e riferimenti in un unico spazio."],
+      system: ["Sistema", "Runtime, flussi e vincoli operativi senza rumore."],
+      team: ["Squadra Apex", "Diciassette specialisti coordinati da un solo comando."],
+      today: ["Buongiorno, Fabio.", "Qui trovi soltanto ciò che richiede attenzione."],
+    };
+    const heading = root.querySelector(".cc-command-title h1");
+    const subtitle = root.querySelector(".cc-topbar-subtitle");
+    if (heading) heading.textContent = viewCopy[route[0]][0];
+    if (subtitle) subtitle.textContent = viewCopy[route[0]][1];
+    if (previousView !== route[0] || previousStudio !== route[1]) {
+      const main = root.querySelector(".cc-main");
+      if (main && typeof main.scrollTo === "function") main.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth", top: 0 });
+      window.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth", top: 0 });
+    }
   }
 
   function storedSidebarState() {
@@ -1798,6 +2130,15 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function initializeSidebar() {
+    if (root.dataset.navigation === "dock") {
+      sidebarToggle.hidden = true;
+      mobileMenuToggle.hidden = true;
+      sidebarBackdrop.hidden = true;
+      sidebar.removeAttribute("inert");
+      sidebar.removeAttribute("aria-hidden");
+      root.dataset.mobileSidebar = "closed";
+      return;
+    }
     setDesktopSidebar(storedSidebarState(), false);
     setMobileSidebar(false);
     sidebarToggle.addEventListener("click", toggleSidebar);
@@ -1814,12 +2155,44 @@ export const COMMAND_CENTER_CLIENT_JS = `
     }
   }
 
+  function initializeViewControls() {
+    document.querySelectorAll("[data-studio-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.studioTarget || "production";
+        const nextHash = "#" + target;
+        if (window.location.hash === nextHash) syncVisualContext();
+        else window.location.hash = nextHash;
+      });
+      button.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        const controls = Array.from(document.querySelectorAll("[data-studio-target]"));
+        const current = controls.indexOf(button);
+        if (current < 0) return;
+        event.preventDefault();
+        const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? controls.length - 1 : (current + (event.key === "ArrowLeft" ? -1 : 1) + controls.length) % controls.length;
+        const next = controls[nextIndex];
+        next.focus();
+        next.click();
+      });
+    });
+  }
+
   function initializeAgentControls() {
     document.querySelectorAll("[data-agent-filter]").forEach((button) => {
       button.addEventListener("click", () => {
         state.agentFilter = button.dataset.agentFilter || "ALL";
         state.selectedAgentId = null;
         if (state.snapshot) renderAgents(state.snapshot.agents);
+      });
+    });
+  }
+
+  function initializeVaultControls() {
+    document.querySelectorAll("[data-vault-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.vaultFilter = button.dataset.vaultFilter || "ALL";
+        state.selectedReferenceId = null;
+        if (state.snapshot) renderReferenceVault(state.snapshot.referenceVault || { assets: [], businessContext: null, decisions: [], missingInputs: ["Nessun riferimento importato"], outcomeLinks: [], rightsBlockers: [], visualFingerprint: null, writingFingerprint: null });
       });
     });
   }
@@ -1842,7 +2215,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   document.addEventListener("keydown", (event) => {
     if (!actionConfirmation.hidden) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); commandInput.focus(); }
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") { event.preventDefault(); toggleSidebar(); }
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b" && root.dataset.navigation !== "dock") { event.preventDefault(); toggleSidebar(); }
     if (event.key === "Escape" && mobileSidebar.matches && root.dataset.mobileSidebar === "open") { event.preventDefault(); setMobileSidebar(false); return; }
     if (event.key === "Tab" && mobileSidebar.matches && root.dataset.mobileSidebar === "open") {
       const controls = Array.from(sidebar.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'));
@@ -1869,7 +2242,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
   });
   window.addEventListener("hashchange", syncVisualContext);
   initializeSidebar();
+  initializeViewControls();
   initializeAgentControls();
+  initializeVaultControls();
   syncVisualContext();
   prepareAmbientMotion();
   connectLiveEvents();

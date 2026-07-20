@@ -28,11 +28,14 @@ import type {
 } from "../operations-control/operations-control.js";
 import { controlFingerprint } from "../operations-control/operations-control-validator.js";
 import { canonicalSha256 } from "../contracts/canonical-fingerprint.js";
+import { RepositoryValidationError } from "../errors/core-error.js";
 import type {
   OperationsJobSummary,
   OperationsRuntimeCounts,
   OperationsRuntimeUsageSummary,
 } from "../operations-runtime/operations-runtime.js";
+import type { ReferenceVaultCommandCenterQuery } from "./reference-vault-query.js";
+import type { CommandCenterReferenceVaultView } from "./reference-vault-view.js";
 
 export const COMMAND_CENTER_CONTRACT_VERSION = "1" as const;
 
@@ -45,6 +48,20 @@ const PRODUCTION_LIMIT = 25;
 const RESEARCH_LIMIT = 25;
 const SOCIAL_LIVE_LIMIT = 500;
 const WORKDAY_LIMIT = 25;
+
+const EMPTY_REFERENCE_VAULT_VIEW: CommandCenterReferenceVaultView = Object.freeze({
+  assets: Object.freeze([]),
+  businessContext: null,
+  coverage: "NOT_AVAILABLE",
+  decisions: Object.freeze([]),
+  missingInputs: Object.freeze(["Nessun riferimento importato."]),
+  outcomeLinks: Object.freeze([]),
+  queryStatus: "UNAVAILABLE",
+  rightsBlockers: Object.freeze([]),
+  sequences: Object.freeze([]),
+  visualFingerprint: null,
+  writingFingerprint: null,
+});
 
 export interface CommandCenterClock {
   now(): Date;
@@ -62,6 +79,7 @@ export interface CommandCenterSnapshot {
   readonly generatedAt: string;
   readonly overview: CommandCenterOverview;
   readonly productions: readonly MetodoVeloceContentProductionRecord[];
+  readonly referenceVault: CommandCenterReferenceVaultView;
   readonly research: readonly AuthorizedResearchMission[];
   readonly runtime: CommandCenterRuntimeSummary;
   readonly socialIntelligence: CommandCenterSocialIntelligenceSummary;
@@ -196,21 +214,33 @@ export interface CommandCenterControlTarget {
 }
 
 export class CommandCenterQueryService {
+  readonly #actorId: string;
   readonly #clock: CommandCenterClock;
+  readonly #referenceVault: Pick<ReferenceVaultCommandCenterQuery, "snapshot"> | undefined;
   readonly #repositories: RepositoryTransactionRunner;
   readonly #workspaceId: string;
 
   public constructor(input: {
+    readonly actorId: string;
     readonly clock?: CommandCenterClock;
+    readonly referenceVault?: Pick<ReferenceVaultCommandCenterQuery, "snapshot">;
     readonly repositories: RepositoryTransactionRunner;
     readonly workspaceId: string;
   }) {
+    this.#actorId = input.actorId;
     this.#clock = input.clock ?? systemClock;
+    this.#referenceVault = input.referenceVault;
     this.#repositories = input.repositories;
     this.#workspaceId = input.workspaceId;
   }
 
   public async snapshot(): Promise<CommandCenterSnapshot> {
+    const referenceVault = this.#referenceVault === undefined
+      ? EMPTY_REFERENCE_VAULT_VIEW
+      : await this.#referenceVault.snapshot().catch(() => Object.freeze({
+        ...EMPTY_REFERENCE_VAULT_VIEW,
+        missingInputs: Object.freeze(["Reference Vault temporaneamente non disponibile: nessun riferimento è stato esposto."]),
+      }));
     return this.#repositories.transaction(async ({
       businessMissions,
       agentCompanyWorkdays,
@@ -247,7 +277,7 @@ export class CommandCenterQueryService {
         operationsUsage,
       ] = await Promise.all([
         contentProductions.listByWorkspaceId(this.#workspaceId, PRODUCTION_LIMIT),
-        agentCompanyWorkdays.listByWorkspaceId(this.#workspaceId, WORKDAY_LIMIT),
+        agentCompanyWorkdays.listByOwner({ actorId: this.#actorId, workspaceId: this.#workspaceId }, WORKDAY_LIMIT),
         businessMissions.listByWorkspaceId(this.#workspaceId, BUSINESS_LIMIT),
         operationalPlanes.listSourcesByWorkspaceId(this.#workspaceId, 100),
         operationalPlanes.listEvidenceByWorkspaceId(this.#workspaceId, 100),
@@ -267,6 +297,7 @@ export class CommandCenterQueryService {
         operationsRuntime.listJobsByWorkspaceId(this.#workspaceId, OPERATIONS_JOB_LIMIT),
         operationsRuntime.summarizeUsage(this.#workspaceId),
       ]);
+      if (workdays.some((workday) => workday.workspaceId !== this.#workspaceId || workday.actorId !== this.#actorId)) throw new RepositoryValidationError("Command Center Agent Company read returned cross-identity data");
       const pendingFabio = productions.filter(
         ({ status }) => status === "PENDING_FABIO_APPROVAL",
       ).length;
@@ -450,6 +481,7 @@ export class CommandCenterQueryService {
           system: attentionRequired ? "ATTENTION_REQUIRED" : "READY",
         }),
         productions: Object.freeze([...productions]),
+        referenceVault,
         research: Object.freeze([...research]),
         runtime: Object.freeze({
           continuousWorker,

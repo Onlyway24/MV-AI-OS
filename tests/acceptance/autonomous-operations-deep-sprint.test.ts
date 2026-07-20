@@ -131,7 +131,7 @@ describe("Onlyway autonomous operations practical acceptance", () => {
         reasonCode: "ACCEPTANCE_START",
         updatedBy: ACTOR_ID,
       });
-      const queryService = new CommandCenterQueryService({ clock, repositories, workspaceId: WORKSPACE_ID });
+      const queryService = new CommandCenterQueryService({ actorId: ACTOR_ID, clock, repositories, workspaceId: WORKSPACE_ID });
       started = await startCommandCenterRuntime(configPath);
       const session = await commandCenterSession(started);
       const page = await fetch(`${session.origin}/`, { headers: { Cookie: session.cookie } });
@@ -189,7 +189,7 @@ describe("Onlyway autonomous operations practical acceptance", () => {
         founderWorkdays,
         operationalEvents,
       }) => ({
-        company: await agentCompanyWorkdays.getById("acceptance-company-day-001"),
+        company: await agentCompanyWorkdays.getByOwner({ actorId: ACTOR_ID, workspaceId: WORKSPACE_ID }, "acceptance-company-day-001"),
         events: await operationalEvents.listAfter(WORKSPACE_ID, 0, 250),
         founder: await founderWorkdays.getById(`founder-workday-${BUSINESS_DATE}`),
         production: await contentProductions.getById("acceptance-content-001"),
@@ -395,7 +395,7 @@ describe("Onlyway autonomous operations practical acceptance", () => {
       await Promise.all(openLocks.map((lock) => lock.close()));
 
       const finalState = await repositories.transaction(async ({ agentCompanyWorkdays, operationsRuntime }) => ({
-        company: await agentCompanyWorkdays.getById("acceptance-company-day-001"),
+        company: await agentCompanyWorkdays.getByOwner({ actorId: ACTOR_ID, workspaceId: WORKSPACE_ID }, "acceptance-company-day-001"),
         schedulerLeases: await operationsRuntime.listProcessLeases(WORKSPACE_ID, "SCHEDULER", 10),
         usage: await operationsRuntime.summarizeUsage(WORKSPACE_ID),
         workerLeases: await operationsRuntime.listProcessLeases(WORKSPACE_ID, "WORKER", 10),

@@ -29,7 +29,12 @@ export interface DailyOperatingBriefSourceSnapshot {
 }
 
 export interface DailyOperatingBriefSource {
-  snapshot(repositories: RepositoryTransaction, workspaceId: string, asOf: Date, businessDate: string): Promise<DailyOperatingBriefSourceSnapshot>;
+  snapshot(
+    repositories: RepositoryTransaction,
+    identity: { readonly actorId: string; readonly workspaceId: string },
+    asOf: Date,
+    businessDate: string,
+  ): Promise<DailyOperatingBriefSourceSnapshot>;
 }
 
 export class DailyOperatingBriefService {
@@ -51,7 +56,7 @@ export class DailyOperatingBriefService {
       }
       const instant = this.dependencies.clock.now();
       const generatedAt = instant.toISOString();
-      const snapshot = await this.dependencies.source.snapshot(repositories, this.dependencies.workspaceId, instant, businessDate);
+      const snapshot = await this.dependencies.source.snapshot(repositories, { actorId: this.dependencies.actorId, workspaceId: this.dependencies.workspaceId }, instant, businessDate);
       const fresh = snapshot.evidence?.filter(({ freshnessExpiresAt }) => Date.parse(freshnessExpiresAt) > instant.getTime()).length ?? 0;
       const stale = (snapshot.evidence?.length ?? 0) - fresh;
       const decisions = decisionsFrom(snapshot);

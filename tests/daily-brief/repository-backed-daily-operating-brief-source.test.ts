@@ -11,7 +11,7 @@ describe("Repository-backed Daily Operating Brief source", () => {
       completed("spring-start", "2026-03-28T23:00:00.000Z"),
       completed("spring-end", "2026-03-29T21:59:59.999Z"),
       completed("next-day", "2026-03-29T22:00:00.000Z"),
-    ] }), "workspace", new Date("2026-03-29T20:00:00.000Z"), "2026-03-29");
+    ] }), { actorId: "fabio", workspaceId: "workspace" }, new Date("2026-03-29T20:00:00.000Z"), "2026-03-29");
 
     expect(snapshot.workCompleted?.map(({ identity }) => identity)).toEqual(["spring-start", "spring-end"]);
   });
@@ -38,7 +38,7 @@ describe("Repository-backed Daily Operating Brief source", () => {
         workdayId: "founder-day",
       }],
       jobs: [],
-    }), "workspace", new Date("2026-07-19T12:00:00.000Z"), "2026-07-19");
+    }), { actorId: "fabio", workspaceId: "workspace" }, new Date("2026-07-19T12:00:00.000Z"), "2026-07-19");
 
     expect(snapshot.workCompleted?.map(({ identity }) => identity)).toEqual(["agent-completed", "founder-completed"]);
     expect(snapshot.blockedTasks).toEqual(expect.arrayContaining([
@@ -62,7 +62,7 @@ describe("Repository-backed Daily Operating Brief source", () => {
     const snapshot = await source.snapshot(repositories({
       agentCompanyWorkdays: [{ status: "BLOCKED", tasks, workdayId: "bounded-day" }],
       jobs: [],
-    }), "workspace", new Date("2026-07-19T12:00:00.000Z"), "2026-07-19");
+    }), { actorId: "fabio", workspaceId: "workspace" }, new Date("2026-07-19T12:00:00.000Z"), "2026-07-19");
 
     expect(snapshot.blockedTasks).toBeUndefined();
     expect(snapshot.workCompleted).toBeUndefined();
@@ -73,7 +73,10 @@ describe("Repository-backed Daily Operating Brief source", () => {
 function repositories(input: Readonly<{ readonly agentCompanyWorkdays?: readonly unknown[]; readonly founderWorkdays?: readonly unknown[]; readonly jobs: readonly unknown[] }>): RepositoryTransaction {
   const emptyList = (): Promise<readonly never[]> => Promise.resolve([]);
   return {
-    agentCompanyWorkdays: { listByWorkspaceId: () => Promise.resolve(input.agentCompanyWorkdays ?? []) },
+    agentCompanyWorkdays: { listByOwner: (identity: { readonly actorId: string; readonly workspaceId: string }) => {
+      expect(identity).toEqual({ actorId: "fabio", workspaceId: "workspace" });
+      return Promise.resolve(input.agentCompanyWorkdays ?? []);
+    } },
     businessMissions: { listByWorkspaceId: emptyList },
     contentProductions: { listByWorkspaceId: emptyList },
     founderWorkdays: { listByWorkspaceId: () => Promise.resolve(input.founderWorkdays ?? []) },

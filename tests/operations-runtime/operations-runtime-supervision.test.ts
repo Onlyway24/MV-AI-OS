@@ -24,6 +24,10 @@ import type { LocalWorkflowCommandBoundary } from "../../src/runtime/local-workf
 
 const roots: string[] = [];
 const POST_V26_TABLES = Object.freeze([
+  "reference_vault_audit_events",
+  "reference_vault_command_receipts",
+  "reference_vault_records",
+  "reference_vault_blobs",
   "control_action_receipts",
   "control_action_proposals",
   "daily_operating_briefs",

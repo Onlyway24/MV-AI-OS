@@ -34,10 +34,12 @@ import { DeterministicMetodoVeloceSocialProductionLine } from "../social-intelli
 import { SocialIntelligenceLiveService } from "../social-intelligence-live/social-intelligence-live-service.js";
 import { GoogleTrendsLiveAcquisitionService } from "../social-intelligence-live/google-trends-live-acquisition-service.js";
 import { FileSocialVisualApprovalGate, type FileSocialVisualApprovalGateConfig } from "../command-center/visual-approval-gate.js";
+import type { ReferenceVaultQueryAgent } from "../reference-vault/reference-vault-query-agent.js";
 
 export function createLocalWorkflowCommandBoundary(input: {
   readonly actorId: string;
   readonly clock: Clock;
+  readonly referenceVault?: Pick<ReferenceVaultQueryAgent, "getBrief">;
   readonly repositories: RepositoryTransactionRunner;
   readonly visualApproval?: Readonly<FileSocialVisualApprovalGateConfig>;
   readonly workspaceId: string;
@@ -54,7 +56,7 @@ export function createLocalWorkflowCommandBoundary(input: {
   const https = new NodeRestrictedHttpsClient();
   const socialIntelligenceLive = new SocialIntelligenceLiveService({ actorId: input.actorId, clock: input.clock, repositories: input.repositories, workspaceId: input.workspaceId });
   return new LocalWorkflowCommandBoundary({
-    agentCompany: new OperationalAgentCompanyService({ actorId: input.actorId, businessMissions, clock: input.clock, operationalPlanes, repositories: input.repositories, workspaceId: input.workspaceId }),
+    agentCompany: new OperationalAgentCompanyService({ actorId: input.actorId, businessMissions, clock: input.clock, operationalPlanes, ...(input.referenceVault === undefined ? {} : { referenceVault: input.referenceVault }), repositories: input.repositories, workspaceId: input.workspaceId }),
     actorId: input.actorId,
     authorizedResearch: new AuthorizedResearchService({ actorId: input.actorId, clock: input.clock, https, operationalPlanes, repositories: input.repositories, workspaceId: input.workspaceId }),
     businessMissions,

@@ -107,6 +107,95 @@ export {
   type CommandCenterSnapshot,
 } from "./command-center/command-center-query-service.js";
 export {
+  ReferenceVaultCommandCenterQuery,
+} from "./command-center/reference-vault-query.js";
+export {
+  buildCommandCenterReferenceVaultView,
+  type CommandCenterBusinessContextView,
+  type CommandCenterCreativeDecisionView,
+  type CommandCenterFingerprintView,
+  type CommandCenterOutcomeLinkView,
+  type CommandCenterReferenceAssetView,
+  type CommandCenterReferenceSequenceView,
+  type CommandCenterReferenceVaultView,
+  type CommandCenterRightsBlockerView,
+} from "./command-center/reference-vault-view.js";
+export * from "./reference-vault/reference-vault.js";
+export {
+  ReferenceVaultCommandBoundary,
+  type ReferenceVaultCommandBoundaryDependencies,
+} from "./reference-vault/reference-vault-command-boundary.js";
+export {
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION,
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE,
+  type ReferenceVaultApprovalAuthority,
+} from "./reference-vault/reference-vault-approval-authority.js";
+export {
+  ReferenceVaultError,
+  type ReferenceVaultErrorCode,
+} from "./reference-vault/reference-vault-error.js";
+export {
+  evaluateReferenceEligibility,
+  isCompetitorMaterial,
+  type ReferenceEligibilityContext,
+  type ReferenceEligibilityDecision,
+} from "./reference-vault/reference-vault-eligibility.js";
+export {
+  ReferenceVaultQueryAgent,
+  buildCollectionProjection,
+  buildReferenceBriefFromRepository,
+  referenceBriefContainsCompetitorMaterial,
+  type ReferenceCollectionProjectionQuery,
+  type ReferenceVaultBriefQuery,
+  type ReferenceVaultQueryAgentDependencies,
+} from "./reference-vault/reference-vault-query-agent.js";
+export {
+  referenceVaultEntityId,
+  type AuthoritativeContentPackageRef,
+  type ReferenceVaultAppendExpectation,
+  type ReferenceVaultBlob,
+  type ReferenceVaultIdentity,
+  type ReferenceVaultListQuery,
+  type ReferenceVaultRecordQuery,
+  type ReferenceVaultRepository,
+  type ReferenceVaultStorageUsage,
+  type ReferenceVaultTransactionRunner,
+} from "./reference-vault/reference-vault-repository.js";
+export {
+  AudienceSignalValidator,
+  BusinessContextValidator,
+  CreativeDecisionValidator,
+  CreativeFingerprintValidator,
+  CustomerLanguageReferenceValidator,
+  NegativeReferenceValidator,
+  OfferReferenceValidator,
+  OutcomeLinkValidator,
+  ReferenceAssetValidator,
+  ReferenceBlobTombstoneValidator,
+  ReferenceBriefValidator,
+  ReferenceCollectionValidator,
+  ReferenceImportPreviewValidator,
+  ReferenceImportReceiptValidator,
+  ReferenceImportRequestValidator,
+  ReferencePrivacyValidator,
+  ReferenceReviewValidator,
+  ReferenceRightsValidator,
+  ReferenceSourceValidator,
+  ReferenceVaultAuditEventValidator,
+  ReferenceVaultCommandReceiptValidator,
+  ReferenceVaultCommandResultValidator,
+  ReferenceVaultCommandResponseValidator,
+  ReferenceVaultCommandValidator,
+  VisualPreferenceValidator,
+  WritingPreferenceValidator,
+  deepFreezeReference,
+  referenceConfidence,
+  referenceFingerprint,
+  referenceInputFingerprint,
+  validateReferenceVaultRecord,
+} from "./reference-vault/reference-vault-validator.js";
+export { SqliteReferenceVaultTransactionRunner } from "./persistence/sqlite/sqlite-reference-vault-transaction-runner.js";
+export {
   PrivateCommandCenterServer,
   type CommandCenterServerOptions,
   type StartedCommandCenter,
@@ -1910,7 +1999,7 @@ export {
   type OperationalAgentMetrics,
   type OperationalAgentState,
 } from "./agent-company/operational-agent-company.js";
-export type { AgentCompanyWorkdayRepository } from "./agent-company/agent-company-workday-repository.js";
+export type { AgentCompanyWorkdayIdentity, AgentCompanyWorkdayRepository } from "./agent-company/agent-company-workday-repository.js";
 export {
   AgentCompanyWorkdayInputValidator,
   AgentCompanyWorkdayValidator,
