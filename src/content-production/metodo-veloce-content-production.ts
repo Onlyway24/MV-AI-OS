@@ -10,6 +10,7 @@ export type ContentProductionStatus = "BLOCKED" | "READY_FOR_FABIO_APPROVAL";
 
 export interface ContentEvidence {
   readonly evidenceId: string;
+  readonly limitations?: readonly string[];
   readonly sourceRef: string;
   readonly statement: string;
 }

@@ -26,7 +26,7 @@ export class DeterministicMetodoVeloceContentProductionLine {
       approval: { required: true, status: blocked ? "NOT_ELIGIBLE" : "PENDING_FABIO" },
       contractVersion: METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION,
       editorialPlan: { angle: `Un punto pratico su ${brief.topic} senza promesse non verificabili.`, audience: brief.audience, objective: brief.objective, selectedIdea: `Trasforma ${brief.topic} in una decisione concreta prima di parlare di ${brief.offer}.` },
-      evidence: { items: brief.evidence, limitations: ["Le evidenze sono dichiarate nel brief e non sono state cercate sul web.", "Qualunque risultato o beneficio ulteriore richiede verifica prima dell'uso esterno."] },
+      evidence: { items: brief.evidence, limitations: evidenceLimitations(brief.evidence) },
       externalActionsAllowed: false,
       generatedAt,
       metrics: { measures: ["contenuti prodotti", "percentuale approvata", "tempo di produzione", "costo per contenuto", "salvataggi", "visualizzazioni", "lead", "conversioni"], reviewCadence: "weekly" },
@@ -81,6 +81,13 @@ function resaleAssets(brief: MetodoVeloceContentProductionBrief) {
 
 function claimFindings(brief: MetodoVeloceContentProductionBrief): readonly string[] { const findings = [brief.topic, brief.offer, brief.callToAction, ...brief.evidence.map(({ statement }) => statement)].filter(contentClaimRisk).map((value) => `Claim bloccante rilevato: ${value.slice(0, 180)}`); return Object.freeze(findings); }
 function evidenceLine(evidence: ContentEvidence | undefined): string { return evidence === undefined ? "Nessuna evidenza disponibile." : `Evidenza dichiarata (${evidence.sourceRef}): ${evidence.statement}`; }
+function evidenceLimitations(evidence: readonly ContentEvidence[]): readonly string[] {
+  return Object.freeze([...new Set([
+    "Le evidenze sono dichiarate nel brief e non sono state cercate sul web.",
+    "Qualunque risultato o beneficio ulteriore richiede verifica prima dell'uso esterno.",
+    ...evidence.flatMap(({ limitations }) => limitations ?? []),
+  ])]);
+}
 function slide(slide: number, title: string, body: string) { return { body, slide, title }; }
 function beat(beat: number, onScreenText: string, spokenText: string) { return { beat, onScreenText, spokenText }; }
 function validate<T>(value: unknown, validator: Validator<T>, label: string): T { const result = validator.validate(value); if (!result.ok) throw new Error(`${label} failed validation`); return result.value; }

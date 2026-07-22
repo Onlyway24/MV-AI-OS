@@ -1,12 +1,30 @@
-# MV AI OS
+# MV AI OS · Onlyway
 
 > A modular AI Operating System for coordinating intelligent agents, shared context, automation workflows, and OpenAI models through one extensible architecture.
 
 ## Overview
 
-MV AI OS is designed as a flexible foundation for building and operating AI-powered workflows. Instead of relying on a single assistant for every task, the system combines a central reasoning layer with specialized AI agents, persistent shared memory, and event-driven automation.
+MV AI OS is the local operating system behind Onlyway. It coordinates specialized agents, evidence, business missions, content production, approvals, model cost, social intelligence and durable operational state through a private Command Center.
 
-The project is currently in its foundational design phase. Its architecture is intended to support incremental development, independent modules, and future expansion without tightly coupling agents, models, or external services.
+The current product includes a 17-agent company, provider-neutral model boundaries, an evidence-led Business Mission engine, the Creative & Business Intelligence Vault, Brand-Locked Media Factory, supervised operations and the Revenue Operating System. External actions remain locked unless Fabio grants a separate, bounded authorization.
+
+## Start locally
+
+```text
+npm run check
+npm run command-center -- --config <private-local-config.json>
+```
+
+The Command Center is loopback-only and uses a one-time local bootstrap URL. Never commit the private config, bootstrap file, SQLite database or secrets.
+
+Revenue inputs can be validated without contacting providers or customers:
+
+```text
+npm run build
+npm run revenue-os -- --input <private-revenue-mission.json>
+```
+
+See `docs/revenue-os/README.md` and `assets/revenue-os/` for the operating pack and empty input contracts.
 
 ## Vision
 
@@ -191,4 +209,4 @@ As implementation begins, the repository is expected to expand into independentl
 
 ## Project Status
 
-MV AI OS is under active design and early development. Interfaces, implementation details, and repository structure may change as the architecture is validated.
+MV AI OS is under active product development with a tested local control plane and private Command Center. Revenue, pipeline and delivery values are shown only when supported by explicit input or durable evidence; missing data stays `NOT_AVAILABLE`. Publishing, outreach, payments, spend, merge and deploy are not authorized by the local UI.

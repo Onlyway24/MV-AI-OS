@@ -269,13 +269,14 @@ export class LocalWorkflowCommandBoundary {
     return this.#insertContentProduction(record);
   }
 
-  #contentProductionRecord(brief: MetodoVeloceContentProductionBrief, evidencePack?: MetodoVeloceContentProductionRecord["evidencePack"], preparedPackage?: MetodoVeloceContentProductionPackage): MetodoVeloceContentProductionRecord {
+  #contentProductionRecord(brief: MetodoVeloceContentProductionBrief, evidencePack?: MetodoVeloceContentProductionRecord["evidencePack"], preparedPackage?: MetodoVeloceContentProductionPackage, generationContextFingerprint?: string): MetodoVeloceContentProductionRecord {
     const contentPackage = preparedPackage ?? this.dependencies.contentProduction.produce(brief);
     return {
       actorId: this.dependencies.actorId,
       contractVersion: "1",
       createdAt: contentPackage.generatedAt,
       ...(evidencePack === undefined ? {} : { evidencePack }),
+      ...(generationContextFingerprint === undefined ? {} : { generationContextFingerprint }),
       package: contentPackage,
       productionId: brief.productionId,
       status: contentPackage.status === "BLOCKED" ? "BLOCKED" : "PENDING_FABIO_APPROVAL",
@@ -303,12 +304,18 @@ export class LocalWorkflowCommandBoundary {
 
   async #produceContentProductionFromEvidencePack(input: Readonly<Record<string, unknown>>): Promise<MetodoVeloceContentProductionRecord> {
     const evidencePackId = input.evidencePackId;
-    if (!keys(input, ["brief", "evidencePackId"]) || !safeId(evidencePackId)) throw new RepositoryValidationError("Evidence Pack content production request is invalid");
+    const generationContextFingerprint = input.generationContextFingerprint;
+    const expectedKeys = ["brief", "evidencePackId", ...(generationContextFingerprint === undefined ? [] : ["generationContextFingerprint"])];
+    if (!keys(input, expectedKeys) || !safeId(evidencePackId) || (generationContextFingerprint !== undefined && !sha256(generationContextFingerprint))) throw new RepositoryValidationError("Evidence Pack content production request is invalid");
     const brief = validate(input.brief, this.#contentBriefValidator, "Metodo Veloce Evidence Pack content production brief");
     return this.dependencies.repositories.transaction(async ({ contentProductions, operationalEvents, operationalPlanes }) => {
       const pack = await this.dependencies.operationalPlanes.assertEvidencePackForContentInTransaction(operationalPlanes, evidencePackId, brief.evidence);
-      const record = this.#contentProductionRecord(brief, { fingerprint: pack.fingerprint, minFreshnessExpiresAt: pack.minFreshnessExpiresAt, packId: pack.packId, verifiedAt: this.dependencies.clock.now().toISOString() });
-      if (await contentProductions.getById(record.productionId) !== undefined) throw new RepositoryConflictError("Metodo Veloce content production already exists");
+      const record = this.#contentProductionRecord(brief, { fingerprint: pack.fingerprint, minFreshnessExpiresAt: pack.minFreshnessExpiresAt, packId: pack.packId, verifiedAt: this.dependencies.clock.now().toISOString() }, undefined, generationContextFingerprint);
+      const existing = await contentProductions.getById(record.productionId);
+      if (existing !== undefined) {
+        if (generationContextFingerprint !== undefined && recoverableContentProduction(existing, record)) return existing;
+        throw new RepositoryConflictError("Metodo Veloce content production already exists");
+      }
       await contentProductions.insert(record);
       await appendProductionCreationEvents(operationalEvents, record);
       return record;
@@ -513,6 +520,7 @@ function validate<T>(value: unknown, validator: Validator<T>, label: string): T 
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function keys(value: Record<string, unknown>, allowed: readonly string[]): boolean { return Object.keys(value).length === allowed.length && Object.keys(value).every((key) => allowed.includes(key)); }
 function safeId(value: unknown): value is string { return typeof value === "string" && value.length > 0 && value.length <= 128 && /^[a-zA-Z0-9@._:-]+$/u.test(value); }
+function sha256(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value); }
 function prohibited(value: string): boolean { return /(?:\bsk-[a-z0-9][a-z0-9_-]{10,}|rawPrompt|rawCompletion|providerPayload|secret|stack trace)/iu.test(value); }
 function json(value: unknown): string | undefined { try { return jsonValue(value) ? JSON.stringify(value) : undefined; } catch { return undefined; } }
 function jsonValue(value: unknown): boolean {
@@ -524,4 +532,43 @@ function jsonValue(value: unknown): boolean {
 }
 function invalid<T>(message: string): ValidationResult<T> { return validationFailure([{ code: "invalid_value", message, path: "$" }]); }
 function replay(storedFingerprint: string, expectedFingerprint: string, response: LocalWorkflowCommandResponse): LocalWorkflowCommandResponse { if (storedFingerprint !== expectedFingerprint) throw new RepositoryConflictError("Local Workflow command ID conflicts with a prior command"); return freeze({ ...response, replayed: true }); }
+function recoverableContentProduction(existing: MetodoVeloceContentProductionRecord, expected: MetodoVeloceContentProductionRecord): boolean {
+  return existing.generationContextFingerprint === expected.generationContextFingerprint
+    && semanticProductionFingerprint(existing) === semanticProductionFingerprint(expected);
+}
+function semanticProductionFingerprint(recordValue: MetodoVeloceContentProductionRecord): string {
+  const { generatedAt, quality, ...packageWithoutGeneratedAt } = recordValue.package;
+  const { report, ...qualityWithoutReport } = quality;
+  const { generatedAt: reportGeneratedAt, ...reportWithoutGeneratedAt } = report;
+  void generatedAt;
+  void reportGeneratedAt;
+  const evidencePack = recordValue.evidencePack === undefined ? undefined : {
+    fingerprint: recordValue.evidencePack.fingerprint,
+    minFreshnessExpiresAt: recordValue.evidencePack.minFreshnessExpiresAt,
+    packId: recordValue.evidencePack.packId,
+  };
+  return createHash("sha256").update(canonicalJson({
+    actorId: recordValue.actorId,
+    archive: recordValue.archive,
+    contractVersion: recordValue.contractVersion,
+    evidencePack,
+    generationContextFingerprint: recordValue.generationContextFingerprint,
+    metrics: recordValue.metrics,
+    package: { ...packageWithoutGeneratedAt, quality: { ...qualityWithoutReport, report: reportWithoutGeneratedAt } },
+    productionId: recordValue.productionId,
+    review: recordValue.review,
+    schedule: recordValue.schedule,
+    status: recordValue.status,
+    version: recordValue.version,
+    workspaceId: recordValue.workspaceId,
+  }), "utf8").digest("hex");
+}
+function canonicalJson(value: unknown): string {
+  const normalize = (candidate: unknown): unknown => {
+    if (Array.isArray(candidate)) return candidate.map(normalize);
+    if (!record(candidate)) return candidate;
+    return Object.fromEntries(Object.keys(candidate).sort().filter((key) => candidate[key] !== undefined).map((key) => [key, normalize(candidate[key])]));
+  };
+  return JSON.stringify(normalize(value));
+}
 function freeze<T>(value: T): T { if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value; Object.freeze(value); for (const child of Object.values(value)) freeze(child); return value; }

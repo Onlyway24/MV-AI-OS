@@ -1,0 +1,116 @@
+{
+  "actorId": "fabio",
+  "approval": {
+    "contractVersion": "1",
+    "status": "DRAFT",
+    "version": 0
+  },
+  "contractVersion": "1",
+  "createdAt": "2026-07-21T00:00:00.000Z",
+  "externalActionsAllowed": false,
+  "externalActionsExecuted": false,
+  "missionId": "revenue-mission-template",
+  "objective": "Completare con l'obiettivo commerciale esplicito di Fabio prima della review",
+  "plan": {
+    "approval": {
+      "contractVersion": "1",
+      "status": "DRAFT",
+      "version": 0
+    },
+    "capacity": {
+      "availableHours": {
+        "note": "Fabio deve dichiarare le ore realmente disponibili nel periodo.",
+        "reasonCode": "MISSING_INPUT",
+        "status": "NOT_AVAILABLE"
+      },
+      "contractVersion": "1",
+      "endsAt": "2026-08-21T00:00:00.000Z",
+      "maxConcurrentDeliveries": {
+        "note": "Fabio deve dichiarare il massimo numero di consegne contemporanee.",
+        "reasonCode": "MISSING_INPUT",
+        "status": "NOT_AVAILABLE"
+      },
+      "offerRequirements": [],
+      "period": "MONTH",
+      "reservedHours": {
+        "note": "Fabio deve dichiarare le ore già impegnate nel periodo.",
+        "reasonCode": "MISSING_INPUT",
+        "status": "NOT_AVAILABLE"
+      },
+      "startsAt": "2026-07-21T00:00:00.000Z",
+      "version": 0
+    },
+    "contractVersion": "1",
+    "economics": [],
+    "experiments": [],
+    "funnelStages": [
+      {
+        "contractVersion": "1",
+        "entryCriteria": ["Lead registrato localmente con riferimento privato"],
+        "exitCriteria": ["Qualificazione registrata da Fabio"],
+        "kind": "LEAD",
+        "label": "Lead",
+        "order": 0,
+        "stageId": "lead",
+        "terminal": false,
+        "version": 0
+      },
+      {
+        "contractVersion": "1",
+        "entryCriteria": ["Qualificazione completata"],
+        "exitCriteria": ["Esito commerciale registrato"],
+        "kind": "OPPORTUNITY",
+        "label": "Opportunità",
+        "order": 1,
+        "stageId": "opportunity",
+        "terminal": false,
+        "version": 0
+      },
+      {
+        "contractVersion": "1",
+        "entryCriteria": ["Decisione commerciale registrata"],
+        "exitCriteria": ["Nessuna transizione successiva"],
+        "kind": "OUTCOME",
+        "label": "Esito",
+        "order": 2,
+        "stageId": "outcome",
+        "terminal": true,
+        "version": 0
+      }
+    ],
+    "leads": [],
+    "missionId": "revenue-mission-template",
+    "offers": [],
+    "opportunities": [],
+    "planId": "revenue-plan-template",
+    "status": "BLOCKED",
+    "target": {
+      "approval": {
+        "contractVersion": "1",
+        "status": "DRAFT",
+        "version": 0
+      },
+      "contractVersion": "1",
+      "currency": "EUR",
+      "endsAt": "2026-08-21T00:00:00.000Z",
+      "period": "MONTH",
+      "recognizedRevenueMinorUnits": {
+        "note": "Il ricavo riconosciuto richiede un dato contabile verificato.",
+        "reasonCode": "NOT_VERIFIED",
+        "status": "NOT_AVAILABLE"
+      },
+      "startsAt": "2026-07-21T00:00:00.000Z",
+      "targetId": "revenue-target-template",
+      "targetRevenueMinorUnits": {
+        "note": "Fabio deve dichiarare il target del periodo in centesimi EUR.",
+        "reasonCode": "MISSING_INPUT",
+        "status": "NOT_AVAILABLE"
+      },
+      "version": 0
+    },
+    "version": 0
+  },
+  "updatedAt": "2026-07-21T00:00:00.000Z",
+  "version": 0,
+  "workspaceId": "onlyway"
+}

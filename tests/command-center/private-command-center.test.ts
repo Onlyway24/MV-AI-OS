@@ -174,6 +174,12 @@ describe("Private Command Center", () => {
       });
       expect(snapshot.productions).toHaveLength(1);
       expect(snapshot.business).toEqual([]);
+      expect(snapshot.revenue).toMatchObject({
+        externalActions: "LOCKED",
+        reasonCode: "BUSINESS_MISSION_REQUIRED",
+        state: "SETUP_REQUIRED",
+        verifiedPipelineCents: { status: "NOT_AVAILABLE" },
+      });
       expect(snapshot.agentCompany).toEqual([]);
       expect(snapshot.socialIntelligence).toMatchObject({ blocked: 0, packs: [], readyForFabio: 0, requiresResearch: 0 });
       expect(snapshot.agents).toHaveLength(17);
@@ -261,6 +267,8 @@ describe("Private Command Center", () => {
       expect(pageHtml).toContain("id=\"mobile-menu-toggle\"");
       expect(pageHtml).toContain("id=\"package-inspector\"");
       expect(pageHtml).toContain("id=\"decision-inbox-list\"");
+      expect(pageHtml).toContain("ONLYWAY REVENUE OPERATING SYSTEM");
+      expect(pageHtml).toContain("revenue-mission-input.template.json");
       expect(pageHtml).toContain("id=\"action-confirmation-timer\"");
       expect(pageHtml).not.toContain(["Only", "Way"].join(" "));
       expect(pageHtml).not.toContain("1111111111111111111111111111111111111111111111111111111111111111");
@@ -317,6 +325,12 @@ describe("Private Command Center", () => {
       expect(appText).toContain("questo link non ne esegue alcuna");
       expect(appText).not.toContain('"Disconnetti"');
       expect(appText).not.toContain(">Pubblica<");
+
+      const revenueInput = await fetch(`${origin}/assets/revenue-os/revenue-mission-input.template.json`, { headers: { Cookie: cookie ?? "" } });
+      expect(revenueInput.status).toBe(200);
+      expect(revenueInput.headers.get("content-type")).toContain("application/json");
+      expect(revenueInput.headers.get("content-disposition")).toContain("onlyway-revenue-mission-input.template.json");
+      await expect(revenueInput.json()).resolves.toMatchObject({ externalActionsAllowed: false, externalActionsExecuted: false, plan: { status: "BLOCKED" } });
 
       const insightsTemplate = await fetch(`${origin}/downloads/metodo-veloce-insights-template.csv`, { headers: { Cookie: cookie ?? "" } });
       expect(insightsTemplate.status).toBe(200);

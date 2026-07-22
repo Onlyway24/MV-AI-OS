@@ -2078,6 +2078,39 @@ export {
   type CommandCenterContentAction,
 } from "./command-center/command-center-action-service.js";
 export {
+  ORACLE_CREATIVE_DELIVERABLES,
+  ORACLE_CREATIVE_PROMPT_CONTRACT_VERSION,
+  ORACLE_LOCAL_CONTENT_BUNDLE,
+  type OracleCreativeAgentStage,
+  type OracleCreativeCapability,
+  type OracleCreativeDeliverable,
+  type OracleCreativePlatform,
+  type OracleCreativePromptConfirmation,
+  type OracleCreativePromptProposal,
+  type OracleCreativePromptReceipt,
+  type OracleCreativePromptRequest,
+  type OracleCreativeReasonCode,
+} from "./oracle-creative/oracle-creative-prompt.js";
+export { OracleCreativePromptConfirmationValidator, OracleCreativePromptRequestValidator, oraclePromptIsSafe } from "./oracle-creative/oracle-creative-prompt-validator.js";
+export { OracleCreativePromptService } from "./oracle-creative/oracle-creative-prompt-service.js";
+export {
+  DisabledVideoGenerationProvider,
+  VIDEO_GENERATION_PROVIDER_CONTRACT_VERSION,
+  VideoGenerationOperationValidator,
+  VideoGenerationProviderError,
+  VideoGenerationRequestValidator,
+  VideoGenerationSubmissionValidator,
+  bindVideoGenerationOperation,
+  bindVideoGenerationSubmission,
+  type VideoGenerationOperation,
+  type VideoGenerationOperationStatus,
+  type VideoGenerationProvider,
+  type VideoGenerationProviderCapability,
+  type VideoGenerationRequest,
+  type VideoGenerationSubmission,
+} from "./media-factory/video-generation-provider.js";
+export { evidencePackFingerprint, type EvidencePackFingerprintInput } from "./operational-planes/evidence-pack-fingerprint.js";
+export {
   FileSocialVisualApprovalGate,
   SOCIAL_VISUAL_PACK_MANIFEST_PATH,
   verifyVisualApprovalBinding,
@@ -2086,3 +2119,55 @@ export {
   type FileSocialVisualApprovalGateConfig,
   type VisualApprovalBindingReceipt,
 } from "./command-center/visual-approval-gate.js";
+export {
+  FUNNEL_STAGE_KINDS,
+  REVENUE_OS_CONTRACT_VERSION,
+  REVENUE_PERIODS,
+  type ApprovalState,
+  type DeliveryCapacity,
+  type FunnelStage,
+  type FunnelStageKind,
+  type Lead,
+  type Offer,
+  type OfferDeliveryRequirement,
+  type OfferEconomics,
+  type OfferRevenueScore,
+  type RevenueCalculatedMetric,
+  type RevenueDataKind,
+  type RevenueExperiment,
+  type RevenueExperimentPriority,
+  type RevenueMetric,
+  type RevenueMetricProvenance,
+  type RevenueMission,
+  type RevenueNotAvailableReason,
+  type RevenueOpportunity,
+  type RevenuePeriod,
+  type RevenuePlan,
+  type RevenueScorecard,
+  type RevenueTarget,
+} from "./revenue-os/revenue-os.js";
+export {
+  ApprovalStateValidator,
+  DeliveryCapacityValidator,
+  FunnelStageValidator,
+  LeadValidator,
+  OfferEconomicsValidator,
+  OfferValidator,
+  RevenueExperimentValidator,
+  RevenueMissionValidator,
+  RevenueOpportunityValidator,
+  RevenuePlanValidator,
+  RevenueScorecardValidator,
+  RevenueTargetValidator,
+} from "./revenue-os/revenue-os-validator.js";
+export { DeterministicRevenuePlanningService } from "./revenue-os/revenue-planning-service.js";
+export { runRevenueOsCli } from "./revenue-os/revenue-os-cli.js";
+export {
+  COMMAND_CENTER_REVENUE_CONTRACT_VERSION,
+  buildCommandCenterRevenueView,
+  type CommandCenterRevenueMetric,
+  type CommandCenterRevenueReadinessItem,
+  type CommandCenterRevenueReasonCode,
+  type CommandCenterRevenueStage,
+  type CommandCenterRevenueView,
+} from "./command-center/command-center-revenue-view.js";

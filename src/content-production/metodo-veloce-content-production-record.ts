@@ -46,6 +46,8 @@ export interface MetodoVeloceContentProductionRecord {
   readonly contractVersion: RequestContractVersion;
   readonly createdAt: string;
   readonly evidencePack?: MetodoVeloceEvidencePackAttestation;
+  /** Optional SHA-256 binding to the complete upstream generation context. */
+  readonly generationContextFingerprint?: string;
   readonly metrics?: MetodoVeloceContentPerformanceMetrics;
   readonly package: MetodoVeloceContentProductionPackage;
   readonly productionId: string;

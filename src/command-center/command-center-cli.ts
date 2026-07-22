@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { MAX_LOCAL_CLI_CONFIG_BYTES, type LocalCliConfig } from "../cli/local-cli-config.js";
 import { LocalCliConfigValidator } from "../cli/local-cli-config-validator.js";
 import { OperationsControlService } from "../operations-control/operations-control-service.js";
+import { OracleCreativePromptService } from "../oracle-creative/oracle-creative-prompt-service.js";
 import { SupervisedProcessLock } from "../operations-runtime/supervised-process-lock.js";
 import { SqliteRepositoryTransactionRunner } from "../persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { SqliteReferenceVaultTransactionRunner } from "../persistence/sqlite/sqlite-reference-vault-transaction-runner.js";
@@ -61,17 +62,25 @@ export async function startCommandCenterRuntime(configPath: string): Promise<Sta
       repositories: referenceVaultRepositories,
       workspaceId: config.runtime.workspaceId,
     });
+    const commands = createLocalWorkflowCommandBoundary({
+      actorId: config.runtime.actorId,
+      clock: systemClock,
+      referenceVault,
+      repositories,
+      workspaceId: config.runtime.workspaceId,
+    });
     const server = new PrivateCommandCenterServer({
       actionService: new CommandCenterActionService({
         actorId: config.runtime.actorId,
-        commands: createLocalWorkflowCommandBoundary({
-          actorId: config.runtime.actorId,
-          clock: systemClock,
-          referenceVault,
-          repositories,
-          workspaceId: config.runtime.workspaceId,
-        }),
+        commands,
         contentApprovalGate: new FileSocialVisualApprovalGate(),
+        repositories,
+        workspaceId: config.runtime.workspaceId,
+      }),
+      oracleCreativePromptService: new OracleCreativePromptService({
+        actorId: config.runtime.actorId,
+        clock: systemClock,
+        commands,
         repositories,
         workspaceId: config.runtime.workspaceId,
       }),

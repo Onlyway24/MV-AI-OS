@@ -25,6 +25,7 @@ import { competitorObservationsCsvTemplate } from "../social-intelligence-live/s
 import { audioRightsCsvTemplate } from "../social-intelligence-live/social-audio-rights-csv-adapter.js";
 import type { OperationalEvent } from "../operations-runtime/operational-event.js";
 import type { OperationsControlService } from "../operations-control/operations-control-service.js";
+import type { OracleCreativePromptService } from "../oracle-creative/oracle-creative-prompt-service.js";
 import type {
   CommandCenterEventPlaneOptions,
   CommandCenterEventSource,
@@ -39,6 +40,7 @@ const DEFAULT_EVENT_POLL_INTERVAL_MS = 750;
 const EVENT_BATCH_SIZE = 100;
 const MAX_EVENT_STREAM_BUFFER_BYTES = 262_144;
 const ORIGINAL_BRAND_ASSET_PATH = fileURLToPath(new URL("../../assets/brand/onlyway-obsidian-chrome-original.png", import.meta.url));
+const REVENUE_INPUT_TEMPLATE_PATH = fileURLToPath(new URL("../../assets/revenue-os/revenue-mission-input.template.json", import.meta.url));
 const SOCIAL_VISUAL_PACK_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/social-pack-five-items-v3/", import.meta.url));
 const SOCIAL_VISUAL_PACK_MANIFEST_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/social-pack-five-items-v3/manifest.json", import.meta.url));
 const BRAND_MEDIA_FACTORY_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/live-ai-brand-media-pilot-v1/", import.meta.url));
@@ -50,11 +52,17 @@ const MEDIA_QUALITY_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/med
 const MEDIA_QUALITY_APPROVAL_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/media-factory-quality-closure-v1/approval-manifest.json", import.meta.url));
 const MEDIA_QUALITY_LIVE_RESULT_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/media-factory-quality-closure-v1/live-result.json", import.meta.url));
 const SOCIAL_CONNECTOR_STATUS_PATH = fileURLToPath(new URL("../../assets/metodo-veloce/media-factory-quality-closure-v1/social-connector-status.json", import.meta.url));
+const MOTION_BROWSER_RUNTIME_PATH = fileURLToPath(new URL("../../node_modules/motion/dist/motion.js", import.meta.url));
+const MOTION_BROWSER_ADAPTER_PATHS = Object.freeze([
+  fileURLToPath(new URL("./motion-ui-adapter.js", import.meta.url)),
+  fileURLToPath(new URL("../../dist/command-center/motion-ui-adapter.js", import.meta.url)),
+]);
 
 export interface CommandCenterServerOptions {
   readonly accessToken?: string;
   readonly actionService?: CommandCenterActionService;
   readonly eventPlane?: CommandCenterEventPlaneOptions;
+  readonly oracleCreativePromptService?: Pick<OracleCreativePromptService, "confirmForOperator" | "proposeForOperator">;
   readonly operationsControlService?: Pick<OperationsControlService, "confirmForOperator" | "proposeForOperator">;
   readonly port?: number;
   readonly queryService: Pick<CommandCenterQueryService, "snapshot">;
@@ -84,6 +92,7 @@ export class PrivateCommandCenterServer {
   readonly #eventMaxReplay: number;
   readonly #eventPollIntervalMs: number;
   readonly #eventSource: CommandCenterEventSource | undefined;
+  readonly #oracleCreativePromptService: Pick<OracleCreativePromptService, "confirmForOperator" | "proposeForOperator"> | undefined;
   readonly #operationsControlService: Pick<OperationsControlService, "confirmForOperator" | "proposeForOperator"> | undefined;
   readonly #port: number;
   readonly #queryService: Pick<CommandCenterQueryService, "snapshot">;
@@ -103,6 +112,7 @@ export class PrivateCommandCenterServer {
     this.#eventHeartbeatMs = boundedInteger(options.eventPlane?.heartbeatMs, DEFAULT_EVENT_HEARTBEAT_MS, 10, 60_000, "intervallo heartbeat SSE");
     this.#eventMaxReplay = boundedInteger(options.eventPlane?.maxReplayEvents, DEFAULT_EVENT_MAX_REPLAY, 1, 2_000, "limite replay SSE");
     this.#eventPollIntervalMs = boundedInteger(options.eventPlane?.pollIntervalMs, DEFAULT_EVENT_POLL_INTERVAL_MS, 10, 10_000, "intervallo event plane");
+    this.#oracleCreativePromptService = options.oracleCreativePromptService;
     this.#operationsControlService = options.operationsControlService;
     this.#port = options.port ?? 0;
     this.#queryService = options.queryService;
@@ -200,6 +210,19 @@ export class PrivateCommandCenterServer {
         send(response, 200, "text/javascript; charset=utf-8", COMMAND_CENTER_CLIENT_JS);
         return;
       }
+      if (requestUrl.pathname === "/assets/motion-runtime.js") {
+        send(response, 200, "text/javascript; charset=utf-8", await motionBrowserRuntime());
+        return;
+      }
+      if (requestUrl.pathname === "/assets/motion-ui-adapter.js") {
+        const adapter = await motionBrowserAdapter();
+        if (adapter === undefined) {
+          send(response, 503, "text/plain; charset=utf-8", "Motion UI adapter non compilato");
+          return;
+        }
+        send(response, 200, "text/javascript; charset=utf-8", adapter);
+        return;
+      }
       if (requestUrl.pathname === "/assets/brand/onlyway-obsidian-chrome-original.png") {
         const asset = await originalBrandAsset();
         if (asset === undefined) {
@@ -207,6 +230,15 @@ export class PrivateCommandCenterServer {
           return;
         }
         send(response, 200, "image/png", asset);
+        return;
+      }
+      if (requestUrl.pathname === "/assets/revenue-os/revenue-mission-input.template.json") {
+        const asset = await revenueInputTemplate();
+        if (asset === undefined) {
+          send(response, 404, "text/plain; charset=utf-8", "Revenue Input Pack non disponibile");
+          return;
+        }
+        send(response, 200, "application/json; charset=utf-8", asset, { "Content-Disposition": "attachment; filename=onlyway-revenue-mission-input.template.json" });
         return;
       }
       const visualAsset = await socialVisualAsset(requestUrl.pathname);
@@ -475,12 +507,14 @@ export class PrivateCommandCenterServer {
   ): Promise<void> {
     const legacyAction = requestUrl.pathname === "/api/actions/propose" || requestUrl.pathname === "/api/actions/confirm";
     const operationsControlAction = requestUrl.pathname === "/api/control-actions/propose" || requestUrl.pathname === "/api/control-actions/confirm";
-    if (!legacyAction && !operationsControlAction) {
+    const oraclePromptAction = requestUrl.pathname === "/api/prompt-missions/propose" || requestUrl.pathname === "/api/prompt-missions/confirm";
+    if (!legacyAction && !operationsControlAction && !oraclePromptAction) {
       send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", { Allow: "GET, HEAD" });
       return;
     }
     const csrfHeader = request.headers["x-onlyway-csrf"];
     const actionService = this.#actionService;
+    const oracleCreativePromptService = this.#oracleCreativePromptService;
     const operationsControlService = this.#operationsControlService;
     if (!hasTrustedOrigin(request, port) || !sameTextToken(this.#csrfToken, typeof csrfHeader === "string" ? csrfHeader : "")) {
       send(response, 403, "text/plain; charset=utf-8", "Azione locale non autorizzata");
@@ -494,7 +528,23 @@ export class PrivateCommandCenterServer {
       send(response, 503, "text/plain; charset=utf-8", "Action boundary non disponibile");
       return;
     }
+    if (oraclePromptAction && oracleCreativePromptService === undefined) {
+      send(response, 503, "text/plain; charset=utf-8", "Prompt mission boundary non disponibile");
+      return;
+    }
     const body = await parseJsonBody(request);
+    if (requestUrl.pathname === "/api/prompt-missions/propose") {
+      if (oracleCreativePromptService === undefined) throw new Error("Prompt mission boundary unavailable after authorization");
+      const proposal = await oracleCreativePromptService.proposeForOperator(body);
+      send(response, 200, "application/json; charset=utf-8", JSON.stringify(proposal));
+      return;
+    }
+    if (requestUrl.pathname === "/api/prompt-missions/confirm") {
+      if (oracleCreativePromptService === undefined) throw new Error("Prompt mission boundary unavailable after authorization");
+      const receipt = await oracleCreativePromptService.confirmForOperator(body);
+      send(response, 200, "application/json; charset=utf-8", JSON.stringify(receipt));
+      return;
+    }
     if (requestUrl.pathname === "/api/control-actions/propose") {
       if (operationsControlService === undefined) throw new Error("Control action boundary unavailable after authorization");
       const proposal = await operationsControlService.proposeForOperator(body);
@@ -546,12 +596,38 @@ export class PrivateCommandCenterServer {
 }
 
 function pageDocument(): string {
-  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Centro di Comando Onlyway</title><link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/responsive.css"></head><body>${COMMAND_CENTER_HTML}<script src="/app.js" defer></script></body></html>`;
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Centro di Comando Onlyway</title><link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/responsive.css"></head><body>${COMMAND_CENTER_HTML}<script src="/app.js" defer></script><script type="module" src="/assets/motion-ui-adapter.js"></script></body></html>`;
+}
+
+async function motionBrowserRuntime(): Promise<string> {
+  const runtime = await readFile(MOTION_BROWSER_RUNTIME_PATH, "utf8");
+  return `${runtime}\nconst { animate, inView, stagger } = globalThis.Motion; export { animate, inView, stagger };\n`;
+}
+
+async function motionBrowserAdapter(): Promise<string | undefined> {
+  for (const path of MOTION_BROWSER_ADAPTER_PATHS) {
+    try {
+      const source = await readFile(path, "utf8");
+      return source.replace(/from ["']motion["'];/u, 'from "/assets/motion-runtime.js";');
+    } catch (error) {
+      if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+    }
+  }
+  return undefined;
 }
 
 async function originalBrandAsset(): Promise<Buffer | undefined> {
   try {
     return await readFile(ORIGINAL_BRAND_ASSET_PATH);
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+async function revenueInputTemplate(): Promise<Buffer | undefined> {
+  try {
+    return await readFile(REVENUE_INPUT_TEMPLATE_PATH);
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
     throw error;

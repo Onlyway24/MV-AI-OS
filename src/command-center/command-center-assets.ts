@@ -37,7 +37,7 @@ export const COMMAND_CENTER_HTML = `
       <div class="cc-command-title">
         <p class="cc-eyebrow">CENTRO DI COMANDO</p>
         <h1>Buongiorno, Fabio.</h1>
-        <p class="cc-topbar-subtitle">Qui trovi soltanto ciò che richiede attenzione.</p>
+        <p class="cc-topbar-subtitle">Qui trovi il prossimo collo di bottiglia tra lavoro e ricavo.</p>
       </div>
       <div class="cc-status-rail" aria-label="Quadro operativo corrente">
         <span><i class="cc-status-dot" data-status-dot aria-hidden="true"></i>Sistema <b id="system-status">Caricamento</b></span>
@@ -48,32 +48,78 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </header>
 
-    <form class="cc-command" id="command-form" role="search">
-      <label class="sr-only" for="command-input">Chiedi a Onlyway</label>
-      <span aria-hidden="true">⌘</span>
-      <input id="command-input" autocomplete="off" placeholder="Cerca decisioni, contenuti, agenti o sistema…" />
+    <form class="cc-command cc-oracle-composer" id="command-form" aria-describedby="command-help command-result">
+      <span class="cc-oracle-mark" aria-hidden="true">OR</span>
+      <label class="sr-only" for="command-input">Dai una missione creativa a Onlyway e ORACLE</label>
+      <textarea id="command-input" autocomplete="off" aria-describedby="command-help command-result" maxlength="240" rows="2" required placeholder="Descrivi il contenuto da creare: obiettivo, messaggio e pubblico…"></textarea>
       <kbd>⌘ K</kbd>
+      <div class="cc-oracle-controls">
+        <label class="cc-oracle-select">Business Mission
+          <select id="command-business-mission" required aria-label="Business Mission approvata"><option value="">Caricamento missioni…</option></select>
+        </label>
+        <label class="cc-oracle-select">Obiettivo
+          <select id="command-objective" aria-label="Obiettivo del contenuto">
+            <option value="lead_generation">Lead generation</option>
+            <option value="educate">Educare</option>
+            <option value="engage">Coinvolgere</option>
+            <option value="soft_sell">Soft sell</option>
+          </select>
+        </label>
+        <fieldset class="cc-oracle-deliverables">
+          <legend>Output</legend>
+          <label title="Incluso nel bundle locale"><input type="checkbox" name="oracle-deliverable" value="CAROUSEL" checked disabled /> Carosello</label>
+          <label title="Incluso nel bundle locale"><input type="checkbox" name="oracle-deliverable" value="INSTAGRAM_COPY" checked disabled /> Instagram</label>
+          <label title="Incluso nel bundle locale"><input type="checkbox" name="oracle-deliverable" value="TIKTOK_VIDEO_BLUEPRINT" checked disabled /> TikTok blueprint</label>
+          <label title="Richiede autorizzazione media separata"><input type="checkbox" name="oracle-deliverable" value="IMAGE_MASTER" /> Immagine master · gate</label>
+          <label title="Provider video non configurato"><input type="checkbox" name="oracle-deliverable" value="VIDEO_RENDER" /> Video render · off</label>
+        </fieldset>
+        <div class="cc-oracle-actions">
+          <button class="cc-oracle-context" id="command-navigate" type="button">Apri contesto</button>
+          <button class="cc-oracle-submit" id="command-submit" type="submit">Prepara con ORACLE <span aria-hidden="true">→</span></button>
+        </div>
+      </div>
     </form>
     <p class="cc-command-result" id="command-result" aria-live="polite"></p>
+    <p class="cc-command-help" id="command-help">NEXUS coordina ORACLE, VECTOR, PRISM e FORGE. La proposta usa solo evidenze approvate; provider media e pubblicazione restano sotto gate separati.</p>
 
-    <section class="cc-tower-intro" id="today" data-primary-view="today" aria-labelledby="tower-heading">
-      <div class="cc-tower-copy">
-        <p class="cc-kicker">OPERATIONAL AGENT COMPANY</p>
-        <h2 id="tower-heading">Non diciassette chatbot.<br /><em>Una squadra coordinata.</em></h2>
-        <p>Ogni agente ha una missione, un executor verificabile e confini precisi. Onlyway coordina il team; Fabio mantiene sempre l'ultima decisione.</p>
-        <div class="cc-tower-pacts" aria-label="Principi della squadra">
-          <span>Evidence-led</span><span>Quality gated</span><span>Zero autonomia esterna</span>
+    <section class="cc-revenue-hero" id="today" data-primary-view="today" aria-labelledby="revenue-hero-heading">
+      <div class="cc-revenue-copy">
+        <p class="cc-kicker">ONLYWAY REVENUE OPERATING SYSTEM</p>
+        <h2 id="revenue-hero-heading">Dal lavoro al ricavo.<br /><em>Senza perdere il controllo.</em></h2>
+        <p>Offerta, contenuti, vendita e consegna diventano un solo sistema misurabile. I dati mancanti restano visibili; Fabio mantiene prezzo, promessa e decisione finale.</p>
+        <div class="cc-revenue-actions">
+          <a class="cc-primary-link" href="#business">Apri Revenue Studio <span aria-hidden="true">→</span></a>
+          <span id="revenue-hero-assurance">Nessuna metrica economica viene inventata.</span>
+        </div>
+        <div class="cc-revenue-squad" aria-label="Squadra operativa reale">
+          <span><b id="team-total">—</b> specialisti</span>
+          <span><b id="team-ready">—</b> pronti</span>
+          <span><b id="team-active">—</b> attivi</span>
+           <span><b id="team-completed">—</b> TASK COMPLETATI</span>
         </div>
       </div>
-      <div class="cc-tower-command" aria-label="Telemetria reale della squadra">
-        <div class="cc-tower-seal" aria-hidden="true"><span>OW</span><i></i></div>
-        <div class="cc-tower-rail">
-          <div><span>AGENTI</span><strong id="team-total">—</strong><small>catalogo operativo</small></div>
-          <div><span>PRONTI</span><strong id="team-ready">—</strong><small>ready o active</small></div>
-          <div><span>ATTIVI</span><strong id="team-active">—</strong><small>task in esecuzione</small></div>
-          <div><span>TASK COMPLETATI</span><strong id="team-completed">—</strong><small>telemetria durevole</small></div>
+      <aside class="cc-revenue-pulse" aria-labelledby="revenue-pulse-heading">
+        <div class="cc-revenue-pulse-head">
+          <div><p class="cc-panel-label">REVENUE PULSE</p><h3 id="revenue-pulse-heading">Stato commerciale reale</h3></div>
+          <span class="cc-revenue-state" id="revenue-state">SETUP REQUIRED</span>
         </div>
-      </div>
+        <div class="cc-revenue-metrics" aria-live="polite">
+          <article><span>Target mensile</span><strong id="revenue-target">—</strong><small id="revenue-target-note">Input Fabio richiesto</small></article>
+          <article><span>Piano base</span><strong id="revenue-plan">—</strong><small id="revenue-plan-note">Economics non disponibile</small></article>
+          <article><span>Margine contribuzione</span><strong id="revenue-margin">—</strong><small id="revenue-margin-note">Formula in attesa</small></article>
+          <article><span>Pipeline verificata</span><strong id="revenue-pipeline">—</strong><small id="revenue-pipeline-note">Nessun CRM inventato</small></article>
+        </div>
+        <div class="cc-revenue-next">
+          <span>PROSSIMA MOSSA</span>
+          <strong id="revenue-next-title">Completa il Revenue Input Pack</strong>
+          <p id="revenue-next-detail">Definisci target, offerta, prezzo, capacità e canale prima di attivare esperimenti.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="cc-revenue-journey" data-primary-view="today" aria-labelledby="revenue-journey-heading">
+      <div class="cc-revenue-journey-head"><div><p class="cc-panel-label">VALUE FLOW</p><h3 id="revenue-journey-heading">Una catena, sette segnali verificabili</h3></div><span>La vendita non è un numero: è un percorso osservabile.</span></div>
+      <div class="cc-revenue-stages" id="revenue-stage-list" aria-live="polite"></div>
     </section>
 
     <section class="cc-section cc-overview" id="overview" data-primary-view="today" aria-labelledby="overview-heading">
@@ -148,7 +194,12 @@ export const COMMAND_CENTER_HTML = `
     </section>
 
     <section class="cc-section" id="business" data-primary-view="studio" data-studio-panel="business" role="tabpanel" aria-labelledby="studio-tab-business" hidden aria-hidden="true">
-      <div class="cc-section-heading"><div><p class="cc-kicker">BUSINESS MISSION V1</p><h2 id="business-heading">Decisioni commerciali verificabili</h2></div><span class="cc-section-note">Tre opportunità → una decisione → dossier completo</span></div>
+      <div class="cc-section-heading"><div><p class="cc-kicker">REVENUE STUDIO · BUSINESS MISSION</p><h2 id="business-heading">Progetta, valida, vendi, consegna.</h2></div><span class="cc-section-note">Un solo spazio commerciale · nessuna metrica dimostrativa</span></div>
+      <section class="cc-revenue-readiness" aria-labelledby="revenue-readiness-heading">
+        <div class="cc-revenue-readiness-copy"><p class="cc-panel-label">REVENUE READINESS</p><h3 id="revenue-readiness-heading">Dal contesto alla prima vendita verificata</h3><p id="revenue-readiness-summary">Lettura delle fonti durevoli in corso.</p><a class="cc-revenue-download" href="/assets/revenue-os/revenue-mission-input.template.json" download>Scarica Input Pack <span aria-hidden="true">↓</span></a></div>
+        <div class="cc-revenue-readiness-grid" id="revenue-readiness-grid" aria-live="polite"></div>
+        <div class="cc-revenue-blockers" id="revenue-blockers" aria-live="polite"></div>
+      </section>
       <div class="cc-business-shell">
         <aside class="cc-business-list" id="business-mission-list"><div class="cc-list-empty">Nessuna Business Mission durevole disponibile.</div></aside>
         <div class="cc-business-workspace">
@@ -236,17 +287,34 @@ export const COMMAND_CENTER_HTML = `
     </section>
 
     <section class="cc-section cc-agent-section" id="agents" data-primary-view="team" aria-labelledby="agents-heading" hidden aria-hidden="true">
+      <section class="cc-tower-intro" aria-labelledby="onlyway-tower-heading">
+        <div class="cc-tower-copy">
+          <p class="cc-kicker">ONLYWAY TOWER · MISSION COMMAND</p>
+          <h2 id="onlyway-tower-heading">Un comando.<br /><em>Una squadra coordinata.</em></h2>
+          <p>La Tower mostra soltanto capacità, stato e lavoro osservati nel control plane. NEXUS orchestra ORACLE, VECTOR, PRISM e FORGE; Fabio mantiene ogni decisione ad alto impatto.</p>
+          <div class="cc-tower-pacts"><span>Evidence-led</span><span>A3 controllata</span><span>Provider gated</span><span>Publication locked</span></div>
+        </div>
+        <aside class="cc-tower-command" aria-label="Telemetria reale Onlyway Tower">
+          <div class="cc-tower-seal" aria-hidden="true"><i></i><span>OW</span></div>
+          <div class="cc-tower-rail">
+            <div><span>AGENTI</span><strong id="tower-total">—</strong><small>registrati</small></div>
+            <div><span>PRONTI</span><strong id="tower-ready">—</strong><small>ready o active</small></div>
+            <div><span>GUARDIANI</span><strong id="tower-guardians">—</strong><small>quality · risk · cost</small></div>
+            <div><span>PUBBLICAZIONE</span><strong>LOCKED</strong><small>zero effetti esterni</small></div>
+          </div>
+        </aside>
+      </section>
       <div class="cc-agent-hero">
         <div>
           <p class="cc-kicker">COMPAGNIA AGENTI · APEX</p>
           <h2 id="agents-heading">La squadra che trasforma una missione in risultato.</h2>
-          <p>Sei reparti, diciassette specialisti, un solo comando. Le identità sono visive; ruoli, task, gate, costi e stati arrivano esclusivamente dal control plane.</p>
+           <p>Non diciassette chatbot. Sei reparti, diciassette specialisti, un solo comando: ruoli, task, gate, costi e stati arrivano esclusivamente dal control plane.</p>
         </div>
         <div class="cc-agent-hero-stats" aria-label="Stato della Compagnia Agenti">
           <div><strong id="apex-total">—</strong><span>specialisti</span></div>
           <div><strong id="apex-squads">—</strong><span>reparti</span></div>
           <div><strong id="apex-guardians">—</strong><span>guardiani</span></div>
-          <div><strong>A3</strong><span>controllata</span></div>
+           <div><strong>A3</strong><span>controllata</span></div>
         </div>
       </div>
       <div class="cc-agent-toolbar">
@@ -448,7 +516,7 @@ html{background:var(--focus-bg);scroll-behavior:auto}body{background:var(--focus
 .cc-app,.cc-app[data-sidebar-state="compact"]{display:block;height:100dvh;min-height:100svh;overflow:hidden}.cc-sidebar{align-items:center;background:rgba(18,18,20,.74);border:0;border-bottom:1px solid var(--focus-line);box-shadow:none;display:grid;gap:24px;grid-template-columns:auto minmax(360px,1fr) auto auto;height:72px;inset:0 0 auto;padding:10px max(24px,calc((100vw - 1240px)/2));position:fixed;transform:none;width:auto;z-index:50;backdrop-filter:saturate(160%) blur(24px)}.cc-sidebar-head{min-height:0}.cc-brand{gap:9px;margin:0;padding:0}.cc-brand-mark{background:#f5f5f7;border:0;border-radius:11px;box-shadow:none;color:#050505;font:700 10px/1 -apple-system,BlinkMacSystemFont,sans-serif;height:34px;letter-spacing:-.02em;text-shadow:none;width:34px}.cc-brand b{background:none;color:var(--focus-text);font:650 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.02em}.cc-brand small{color:var(--focus-secondary);font-size:9px;letter-spacing:.08em;margin-top:3px}.cc-sidebar-toggle,.cc-mobile-menu,.cc-sidebar-backdrop{display:none!important}
 .cc-nav,.cc-app[data-sidebar-state="compact"] .cc-nav{background:rgba(118,118,128,.16);border:1px solid rgba(255,255,255,.07);border-radius:15px;display:grid;gap:2px;grid-template-columns:repeat(4,minmax(80px,1fr));justify-self:center;margin:0;max-width:520px;padding:3px;width:100%}.cc-nav p{display:none}.cc-nav a,.cc-app[data-sidebar-state="compact"] .cc-nav a{align-items:center;background:transparent;border:0;border-radius:11px;color:var(--focus-secondary);display:flex;gap:7px;justify-content:center;min-height:36px;padding:7px 13px;position:relative;text-align:center;transition:background .18s ease,color .18s ease;white-space:nowrap}.cc-nav a:before,.cc-nav a:after{display:none!important}.cc-nav a:hover{background:rgba(255,255,255,.055);color:var(--focus-text)}.cc-nav a.is-active{background:rgba(255,255,255,.13);box-shadow:0 1px 5px rgba(0,0,0,.18);color:var(--focus-text)}.cc-nav-icon{color:currentColor;font-size:10px}.cc-nav-label,.cc-app[data-sidebar-state="compact"] .cc-nav-label{display:block;font-size:12px;font-weight:560;overflow:visible}.cc-sidebar-foot{border:0;color:var(--focus-secondary);font-size:11px;gap:7px;margin:0;padding:0;white-space:nowrap}.cc-live-dot{height:6px;width:6px}.cc-sidebar>.cc-operator{border:0;padding:0}.cc-sidebar .cc-avatar{background:rgba(255,255,255,.1);border:0;color:var(--focus-text);font-family:inherit;height:32px;width:32px}.cc-sidebar .cc-operator b{font-size:11px}.cc-sidebar .cc-operator small{font-size:9px}
 .cc-main{height:100dvh;margin:0 auto;max-width:1240px;overflow-x:hidden;overflow-y:auto;padding:112px 30px 96px;scrollbar-gutter:stable;width:100%}.cc-topbar{align-items:end;border:0;display:grid;gap:28px;grid-template-columns:minmax(280px,1fr) minmax(520px,1.25fr);padding:0}.cc-command-title .cc-eyebrow{color:var(--focus-secondary);font-family:inherit;font-size:11px;font-weight:650;letter-spacing:.08em}.cc-command-title h1,.cc-topbar h1{background:none;color:var(--focus-text);font-family:inherit;font-size:clamp(38px,4.6vw,58px);font-weight:650;letter-spacing:-.055em;line-height:.96;margin:9px 0 0;text-shadow:none}.cc-topbar-subtitle{color:var(--focus-secondary);font-size:14px;line-height:1.45;margin:13px 0 0}.cc-status-rail{background:transparent;border:0;box-shadow:none;display:grid;gap:8px;grid-template-columns:repeat(5,minmax(0,1fr))}.cc-status-rail span{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:14px;color:var(--focus-secondary);font-size:10px;min-height:60px;padding:11px 12px}.cc-status-rail b{color:var(--focus-text);font-size:11px;margin-top:5px}.cc-status-rail .cc-lock{color:#ff9f0a}.cc-command{background:rgba(28,28,30,.8);border:1px solid var(--focus-line);border-radius:17px;box-shadow:none;margin:26px 0 0;min-height:52px;padding:0 16px}.cc-command:after{display:none}.cc-command:focus-within{border-color:rgba(41,151,255,.65);box-shadow:0 0 0 4px rgba(41,151,255,.12)}.cc-command input{font-size:14px;height:50px}.cc-command kbd{background:rgba(255,255,255,.06);border:0;border-radius:6px;color:var(--focus-secondary);padding:3px 7px}.cc-command-result{color:var(--focus-secondary);font-size:12px;margin:7px 4px 0;min-height:16px}
-.cc-main>[data-primary-view]{animation:cc-view-in .32s cubic-bezier(.2,.75,.25,1) both}.cc-section,.cc-overview{margin-top:34px}.cc-section-heading{align-items:end;margin-bottom:18px}.cc-section-heading h2,.cc-studio-switcher h2,.cc-agent-hero h2{background:none;color:var(--focus-text);font-family:inherit;font-size:clamp(28px,3vw,40px);font-weight:650;letter-spacing:-.045em;line-height:1.02;margin:6px 0 0}.cc-kicker,.cc-panel-label,.cc-brief-label,.cc-eyebrow{color:var(--focus-secondary);font-weight:650;letter-spacing:.09em}.cc-section-note,.cc-section-heading time{color:var(--focus-secondary);font-size:12px}
+.cc-main>[data-primary-view]{animation:cc-view-in .32s cubic-bezier(.2,.75,.25,1) both}.cc-section,.cc-overview{margin-top:34px}.cc-section h3{font-family:inherit}.cc-section-heading{align-items:end;margin-bottom:18px}.cc-section-heading h2,.cc-studio-switcher h2,.cc-agent-hero h2{background:none;color:var(--focus-text);font-family:inherit;font-size:clamp(28px,3vw,40px);font-weight:650;letter-spacing:-.045em;line-height:1.02;margin:6px 0 0}.cc-kicker,.cc-panel-label,.cc-brief-label,.cc-eyebrow{color:var(--focus-secondary);font-weight:650;letter-spacing:.09em}.cc-section-note,.cc-section-heading time{color:var(--focus-secondary);font-size:12px}
 .cc-tower-intro{background:linear-gradient(145deg,rgba(29,29,31,.92),rgba(15,15,17,.9));border:1px solid var(--focus-line);border-radius:30px;box-shadow:var(--focus-shadow);grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);margin-top:26px;min-height:300px}.cc-tower-intro:before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent)}.cc-tower-intro:after{display:none}.cc-tower-copy{padding:clamp(34px,5vw,60px)}.cc-tower-copy h2{color:var(--focus-text);font-family:inherit;font-size:clamp(36px,4.8vw,58px);font-weight:650;letter-spacing:-.055em;line-height:.98;margin:15px 0 20px}.cc-tower-copy h2 em{color:var(--focus-text)}.cc-tower-copy>p:not(.cc-kicker){color:var(--focus-secondary);font-size:15px;line-height:1.55;max-width:620px}.cc-tower-pacts{gap:7px;margin-top:24px}.cc-tower-pacts span{background:rgba(255,255,255,.055);border:0;border-radius:999px;color:#d1d1d6;font-size:10px;letter-spacing:0;padding:8px 11px;text-transform:none}.cc-tower-command{border-left:1px solid var(--focus-line);grid-template-columns:120px 1fr;padding:34px}.cc-tower-seal{border-color:rgba(255,255,255,.2);max-width:118px}.cc-tower-seal span{font-family:inherit;font-size:34px;font-weight:650}.cc-tower-seal i{border-color:rgba(41,151,255,.22)}.cc-tower-rail div{border-bottom-color:var(--focus-line);padding:11px 0 11px 18px}.cc-tower-rail span,.cc-tower-rail small{font-size:10px;letter-spacing:0}.cc-tower-rail strong{font-family:inherit;font-size:22px;font-weight:620}
 .cc-metrics{gap:9px;grid-template-columns:repeat(6,minmax(0,1fr));margin:0}.cc-metric,.cc-system-core,.cc-brief,.cc-decision-inbox,.cc-daily-console,.cc-evidence-panel,.cc-runtime-console,.cc-runtime-jobs,.cc-approval-panel,.cc-governance,.cc-preview,.cc-package-inspector,.cc-social-live,.cc-social-summary article,.cc-social-pack,.cc-approval-review,.cc-workday-console,.cc-agent-dossier{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:var(--focus-radius);box-shadow:none;backdrop-filter:none}.cc-metric{border-left:1px solid var(--focus-line);min-height:104px;padding:15px}.cc-metric:after{display:none}.cc-metric .cc-metric-label{font-size:11px}.cc-metric strong{font-family:inherit;font-size:26px;font-weight:620;margin:12px 0 7px}.cc-metric p{font-size:10px}.cc-hero-grid{gap:12px;grid-template-columns:minmax(280px,.7fr) minmax(360px,1.3fr);margin-top:12px}.cc-system-core{min-height:250px}.cc-brief{padding:30px}.cc-brief h2{background:none;color:var(--focus-text);font-family:inherit;font-size:27px;font-weight:620}.cc-brief strong{color:var(--focus-text);font-family:inherit;font-size:21px;font-weight:600}.cc-brief p{color:var(--focus-secondary);font-size:13px}.cc-decision-inbox,.cc-daily-console{margin-top:12px;padding:22px}.cc-decision-item{background:var(--focus-surface-2);border:0;border-radius:14px;grid-template-columns:minmax(150px,.4fr) minmax(0,1.6fr);padding:14px 16px}.cc-decision-item b{font-size:12px}.cc-decision-item p{color:var(--focus-secondary);font-size:12px}.cc-daily-sections{gap:9px}.cc-daily-section{background:var(--focus-surface-2);border:0;border-radius:14px;min-height:132px}.cc-daily-section p{font-size:11px}.cc-daily-section small{font-size:10px}
 .cc-studio-switcher{align-items:end;background:linear-gradient(145deg,rgba(28,28,30,.96),rgba(17,17,19,.94));border:1px solid var(--focus-line);border-radius:28px;display:grid;gap:30px;grid-template-columns:1fr auto;margin-top:26px;padding:32px}.cc-studio-switcher h2{margin-top:8px}.cc-studio-switcher>div>p:not(.cc-kicker){color:var(--focus-secondary);font-size:13px;margin:12px 0 0}.cc-segmented-control{background:rgba(118,118,128,.18);border-radius:13px;display:flex;gap:2px;padding:3px}.cc-segmented-control button{background:transparent;border:0;border-radius:10px;color:var(--focus-secondary);font:560 12px/1 -apple-system,BlinkMacSystemFont,sans-serif;min-height:38px;padding:10px 14px}.cc-segmented-control button:hover{color:var(--focus-text)}.cc-segmented-control button[aria-selected="true"]{background:rgba(255,255,255,.14);box-shadow:0 1px 5px rgba(0,0,0,.22);color:var(--focus-text)}
@@ -459,13 +527,27 @@ html{background:var(--focus-bg);scroll-behavior:auto}body{background:var(--focus
 .cc-governance{align-items:center;border-radius:22px;padding:24px}.cc-governance h2{background:none;color:var(--focus-text);font-family:inherit;font-size:25px;font-weight:620}.cc-lock-glyph{background:rgba(255,159,10,.1);border:0;color:#ff9f0a}.cc-authorization-dialog{background:#1c1c1e;border:1px solid var(--focus-line);border-radius:24px;max-width:580px}.cc-authorization-dialog:before{display:none}.cc-authorization-dialog h2{color:var(--focus-text);font-family:inherit;font-weight:650}
 .cc-vault-metrics{display:grid;gap:9px;grid-template-columns:repeat(4,minmax(0,1fr))}.cc-vault-metrics article,.cc-vault-intelligence{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:18px;display:grid;gap:6px;padding:18px}.cc-vault-metrics span{color:var(--focus-secondary);font-size:11px}.cc-vault-metrics strong{font-size:27px;font-weight:620}.cc-vault-metrics small{color:var(--focus-secondary);font-size:10px}.cc-vault-shell{align-items:start;display:grid;gap:13px;grid-template-columns:minmax(0,1.45fr) minmax(320px,.55fr);margin-top:13px}.cc-vault-gallery-panel,.cc-vault-detail{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:22px;padding:20px}.cc-vault-toolbar{align-items:center;display:flex;gap:14px;justify-content:space-between}.cc-vault-toolbar>span{color:var(--focus-secondary);font-size:11px}.cc-vault-filters{display:flex;flex-wrap:wrap;gap:6px}.cc-vault-filters button{background:transparent;border:1px solid var(--focus-line);border-radius:999px;color:var(--focus-secondary);font:560 10px/1 -apple-system,BlinkMacSystemFont,sans-serif;min-height:34px;padding:8px 11px}.cc-vault-filters button[aria-pressed="true"]{background:#f5f5f7;border-color:#f5f5f7;color:#050505}.cc-vault-gallery{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:16px}.cc-reference-card{background:var(--focus-surface-2);border:1px solid transparent;border-radius:16px;color:var(--focus-text);display:grid;gap:7px;min-height:164px;padding:15px;text-align:left}.cc-reference-card:hover,.cc-reference-card:focus-visible,.cc-reference-card[aria-pressed="true"]{border-color:rgba(41,151,255,.55);outline:0}.cc-reference-card[data-status="RIGHTS_BLOCKED"]{border-color:rgba(255,69,58,.35)}.cc-reference-kind{color:var(--focus-blue);font-size:10px;font-weight:650;text-transform:uppercase}.cc-reference-card strong{font-size:14px;line-height:1.25}.cc-reference-card small,.cc-reference-card p{color:var(--focus-secondary);font-size:10px;margin:0}.cc-vault-detail{position:sticky;top:20px}.cc-reference-detail-head{display:grid;gap:7px;grid-template-columns:1fr auto}.cc-reference-detail-head .cc-panel-label,.cc-reference-detail-head h3{grid-column:1}.cc-reference-detail-head .cc-agent-state{grid-column:2;grid-row:1/3}.cc-reference-detail-head h3{font-size:24px;letter-spacing:-.03em;margin:0}.cc-reference-purpose{color:var(--focus-secondary);font-size:12px;line-height:1.5;margin:15px 0 7px}.cc-vault-detail>small{color:var(--focus-secondary);font-size:10px}.cc-reference-metadata{display:grid;gap:1px;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden}.cc-vault-datum{background:var(--focus-surface-2);display:grid;gap:5px;min-width:0;padding:11px}.cc-vault-datum span{color:var(--focus-secondary);font-size:9px;text-transform:none}.cc-vault-datum b{font-size:11px;font-weight:570;overflow-wrap:anywhere}.cc-vault-intelligence-grid{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:13px}.cc-vault-intelligence{min-height:190px}.cc-fingerprint-summary{display:grid;gap:1px;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:10px}.cc-vault-empty{color:var(--focus-secondary);font-size:12px;line-height:1.5}.cc-vault-decision-list{display:grid;gap:1px;margin-top:10px}.cc-vault-alerts{display:grid;gap:8px;margin-top:13px}.cc-vault-alert,.cc-vault-ok{background:rgba(255,159,10,.09);border:1px solid rgba(255,159,10,.18);border-radius:16px;padding:15px}.cc-vault-alert strong{color:#ffc56b;font-size:12px}.cc-vault-alert p,.cc-vault-ok{color:var(--focus-secondary);font-size:11px;margin:5px 0 0}.cc-vault-ok{background:rgba(48,209,88,.08);border-color:rgba(48,209,88,.17);margin:0}
 .cc-vault-secondary-grid{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:13px}.cc-vault-compare-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:10px}.cc-vault-compare-column{background:var(--focus-surface-2);border-radius:14px;display:grid;gap:7px;min-width:0;padding:13px}.cc-vault-compare-column>span{color:var(--focus-secondary);font-size:9px}.cc-vault-compare-column strong{font-size:12px;overflow-wrap:anywhere}.cc-vault-sequence-list{display:grid;gap:8px;margin-top:10px}.cc-vault-sequence{background:var(--focus-surface-2);border-radius:14px;padding:13px}.cc-vault-sequence summary{cursor:pointer;font-size:12px;font-weight:600;min-height:28px}.cc-vault-sequence ol{color:var(--focus-secondary);font-size:10px;margin:8px 0 0;padding-left:22px}.cc-vault-sequence li{padding:3px 0}
+/* Revenue OS V1 — first viewport follows value creation, not dashboard chrome. */
+.cc-revenue-hero{background:linear-gradient(145deg,rgba(29,29,31,.97),rgba(13,13,15,.95));border:1px solid var(--focus-line);border-radius:34px;box-shadow:var(--focus-shadow);display:grid;gap:0;grid-template-columns:minmax(0,1.08fr) minmax(430px,.92fr);isolation:isolate;margin-top:26px;min-height:390px;overflow:hidden;position:relative}.cc-revenue-hero:before{background:radial-gradient(circle at 12% 8%,rgba(41,151,255,.18),transparent 34%),radial-gradient(circle at 86% 82%,rgba(175,82,222,.12),transparent 38%);content:"";inset:0;pointer-events:none;position:absolute;z-index:-1}.cc-revenue-copy{align-content:center;display:grid;padding:clamp(38px,5vw,68px)}.cc-revenue-copy h2{color:var(--focus-text);font-family:inherit;font-size:clamp(45px,5.5vw,72px);font-weight:680;letter-spacing:-.064em;line-height:.94;margin:16px 0 23px;max-width:760px}.cc-revenue-copy h2 em{color:#b8d9ff;font-style:normal}.cc-revenue-copy>p:not(.cc-kicker){color:var(--focus-secondary);font-size:15px;line-height:1.6;margin:0;max-width:650px}.cc-revenue-actions{align-items:center;display:flex;flex-wrap:wrap;gap:18px;margin-top:28px}.cc-primary-link{align-items:center;background:#f5f5f7;border-radius:999px;color:#050505;display:inline-flex;font-size:12px;font-weight:650;gap:9px;min-height:44px;padding:12px 18px;text-decoration:none}.cc-primary-link:hover{opacity:.88}.cc-revenue-actions>span{color:var(--focus-secondary);font-size:11px}.cc-revenue-squad{display:flex;flex-wrap:wrap;gap:7px 18px;margin-top:32px}.cc-revenue-squad span{color:var(--focus-secondary);font-size:10px}.cc-revenue-squad b{color:var(--focus-text);font-size:11px;font-weight:650}.cc-revenue-pulse{align-content:center;background:rgba(8,8,10,.42);border-left:1px solid var(--focus-line);display:grid;gap:18px;padding:clamp(28px,4vw,46px)}.cc-revenue-pulse-head{align-items:start;display:flex;gap:20px;justify-content:space-between}.cc-revenue-pulse-head h3{color:var(--focus-text);font-family:inherit;font-size:25px;font-weight:650;letter-spacing:-.035em;margin:7px 0 0}.cc-revenue-state{background:rgba(255,159,10,.12);border:1px solid rgba(255,159,10,.22);border-radius:999px;color:#ffc568;font-size:9px;font-weight:680;letter-spacing:.06em;padding:7px 9px;white-space:nowrap}.cc-revenue-state[data-state="READY"]{background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.2);color:#8ce9a5}.cc-revenue-state[data-state="REVIEW_REQUIRED"]{background:rgba(41,151,255,.12);border-color:rgba(41,151,255,.25);color:#82c5ff}.cc-revenue-metrics{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}.cc-revenue-metrics article{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.065);border-radius:16px;display:grid;gap:5px;min-height:106px;padding:15px}.cc-revenue-metrics span{color:var(--focus-secondary);font-size:10px}.cc-revenue-metrics strong{color:var(--focus-text);font-size:25px;font-weight:640;letter-spacing:-.035em}.cc-revenue-metrics small{color:var(--focus-secondary);font-size:9px;line-height:1.35}.cc-revenue-next{border-top:1px solid var(--focus-line);display:grid;gap:6px;padding-top:18px}.cc-revenue-next>span{color:#82c5ff;font-size:9px;font-weight:680;letter-spacing:.09em}.cc-revenue-next strong{color:var(--focus-text);font-size:16px;font-weight:620}.cc-revenue-next p{color:var(--focus-secondary);font-size:11px;line-height:1.45;margin:0}.cc-revenue-journey{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:24px;margin-top:12px;padding:20px 22px}.cc-revenue-journey-head{align-items:end;display:flex;gap:20px;justify-content:space-between}.cc-revenue-journey-head h3{color:var(--focus-text);font-family:inherit;font-size:20px;font-weight:650;letter-spacing:-.025em;margin:5px 0 0}.cc-revenue-journey-head>span{color:var(--focus-secondary);font-size:11px}.cc-revenue-stages{display:grid;gap:7px;grid-template-columns:repeat(7,minmax(0,1fr));margin-top:17px}.cc-revenue-stage{background:var(--focus-surface-2);border:1px solid transparent;border-radius:14px;display:grid;gap:5px;min-height:96px;padding:13px;position:relative}.cc-revenue-stage:before{background:#636366;border-radius:99px;content:"";height:4px;position:absolute;right:13px;top:13px;width:4px}.cc-revenue-stage[data-status="READY"]:before,.cc-revenue-stage[data-status="MEASURED"]:before{background:#30d158;box-shadow:0 0 0 4px rgba(48,209,88,.09)}.cc-revenue-stage[data-status="REVIEW_REQUIRED"]:before,.cc-revenue-stage[data-status="PLANNED"]:before{background:#2997ff;box-shadow:0 0 0 4px rgba(41,151,255,.09)}.cc-revenue-stage[data-status="BLOCKED"]:before{background:#ff453a}.cc-revenue-stage span{color:var(--focus-secondary);font-size:9px}.cc-revenue-stage strong{color:var(--focus-text);font-size:12px;font-weight:620}.cc-revenue-stage small{color:var(--focus-secondary);font-size:9px;line-height:1.35;margin-top:auto}.cc-revenue-readiness{background:linear-gradient(145deg,rgba(28,28,30,.96),rgba(17,17,19,.94));border:1px solid var(--focus-line);border-radius:24px;display:grid;gap:18px;grid-template-columns:minmax(230px,.55fr) minmax(0,1.45fr);margin-bottom:14px;padding:24px}.cc-revenue-readiness-copy h3{color:var(--focus-text);font-family:inherit;font-size:24px;font-weight:650;letter-spacing:-.035em;line-height:1.05;margin:8px 0}.cc-revenue-readiness-copy>p:not(.cc-panel-label){color:var(--focus-secondary);font-size:11px;line-height:1.5;margin:0}.cc-revenue-readiness-grid{display:grid;gap:7px;grid-template-columns:repeat(4,minmax(0,1fr))}.cc-readiness-card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.065);border-radius:15px;display:grid;gap:6px;min-height:108px;padding:14px}.cc-readiness-card span{color:var(--focus-secondary);font-size:9px}.cc-readiness-card strong{color:var(--focus-text);font-size:13px;font-weight:620}.cc-readiness-card small{color:var(--focus-secondary);font-size:9px;line-height:1.4;margin-top:auto}.cc-readiness-card[data-status="READY"]{border-color:rgba(48,209,88,.18)}.cc-readiness-card[data-status="BLOCKED"]{border-color:rgba(255,69,58,.25)}.cc-readiness-card[data-status="REVIEW_REQUIRED"]{border-color:rgba(41,151,255,.25)}.cc-revenue-blockers{grid-column:1/-1}.cc-revenue-blocker{align-items:start;background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.16);border-radius:14px;color:var(--focus-secondary);display:grid;font-size:10px;gap:5px;grid-template-columns:auto 1fr;padding:12px 14px}.cc-revenue-blocker b{color:#ffc568;font-size:10px}.cc-revenue-blocker p{margin:0}.cc-business-mission-card,.cc-opportunity-card,.cc-business-dossier,.cc-business-panel{border-radius:18px}.cc-business-mission-card{cursor:pointer}.cc-business-dossier{background:var(--focus-surface);border-color:var(--focus-line)}.cc-business-panel{background:var(--focus-surface-2);border:0;box-shadow:none}.cc-business-comparison{gap:9px}.cc-opportunity-card{background:var(--focus-surface);border-color:var(--focus-line);box-shadow:none}.cc-business-gate,.cc-business-scenario{border-radius:14px}
+.cc-revenue-blocker+.cc-revenue-blocker{margin-top:6px}.cc-business-dossier>h3{font-family:inherit;font-size:26px;font-weight:640;letter-spacing:-.035em}.cc-business-lock-note{background:rgba(255,159,10,.08);border-radius:13px;color:#ffc568;font-size:10px;line-height:1.5;padding:11px 13px}.cc-business-panel h4{font-family:inherit;font-size:20px;font-weight:630;letter-spacing:-.025em}.cc-business-panel p:not(.cc-panel-label),.cc-business-panel small{color:var(--focus-secondary);font-size:11px;line-height:1.5}.cc-opportunity-card h3{font-family:inherit;font-weight:620}.cc-business-offer-summary,.cc-business-tier-list,.cc-business-channel-list,.cc-business-scenario-metrics{display:grid;gap:7px;grid-template-columns:repeat(2,minmax(0,1fr))}.cc-business-offer-summary .cc-business-datum,.cc-business-tier-list .cc-business-datum,.cc-business-channel-list .cc-business-datum,.cc-business-scenario-metrics .cc-business-datum{background:rgba(255,255,255,.035);border:0;border-radius:12px;padding:11px}.cc-business-datum span{font-size:10px}.cc-business-datum b{font-size:11px;overflow-wrap:anywhere}.cc-business-datum small{font-size:9px;line-height:1.4;overflow-wrap:anywhere}.cc-business-detail-stack{display:grid;gap:14px}.cc-business-list-block{background:rgba(255,255,255,.03);border-radius:13px;padding:13px}.cc-business-list-block ul{color:var(--focus-secondary);display:grid;font-size:11px;gap:7px;line-height:1.45;margin:9px 0 0;padding-left:19px}.cc-business-scenario{align-content:start}.cc-business-scenario>.cc-progressive-details{margin-top:8px}.cc-business-scenario-metrics{grid-template-columns:1fr}.cc-experiment-list{display:grid;gap:8px}.cc-experiment-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:14px;display:grid;gap:7px;padding:14px}.cc-experiment-card>span{color:#82c5ff;font-size:9px;font-weight:650}.cc-experiment-card>strong{font-size:13px}.cc-experiment-card>p,.cc-experiment-card>small{color:var(--focus-secondary);font-size:10px;margin:0}.cc-experiment-card>b{color:#ffc568;font-size:9px;font-weight:650}.cc-artifact-list span{border-radius:999px;font-size:9px;text-transform:none}
+.cc-revenue-download{color:#82c5ff;display:inline-flex;font-size:11px;font-weight:620;gap:7px;margin-top:15px;text-decoration:none}.cc-revenue-download:hover{text-decoration:underline}
 @keyframes cc-view-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.cc-main>[data-primary-view]{animation:none!important}}
-@media (max-width:1100px){.cc-sidebar{grid-template-columns:auto minmax(340px,1fr) auto}.cc-sidebar>.cc-operator{display:none}.cc-topbar{grid-template-columns:1fr}.cc-status-rail{grid-template-columns:repeat(5,minmax(0,1fr))}.cc-tower-intro{grid-template-columns:1fr}.cc-tower-command{border-left:0;border-top:1px solid var(--focus-line)}.cc-agent-company-layout--apex{grid-template-columns:1fr}.cc-agent-side{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-company-layout--apex .cc-agent-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-vault-shell{grid-template-columns:1fr}.cc-vault-detail{position:static}}
-@media (max-width:820px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}.cc-app,.cc-app[data-sidebar-state="compact"]{height:auto;min-height:100svh;overflow:visible}.cc-sidebar{background:rgba(18,18,20,.88);display:flex;height:56px!important;justify-content:space-between;padding:8px 16px;position:fixed;transform:none!important;width:100%}.cc-sidebar-head{display:flex}.cc-brand-mark{border-radius:10px;height:32px;width:32px}.cc-brand-copy small{display:none}.cc-sidebar-foot{font-size:0}.cc-sidebar-foot-label{display:none!important}.cc-sidebar>.cc-operator{display:none}.cc-nav,.cc-app[data-sidebar-state="compact"] .cc-nav{background:rgba(24,24,26,.94);border:1px solid rgba(255,255,255,.12);border-radius:20px;bottom:calc(8px + env(safe-area-inset-bottom));box-shadow:0 16px 44px rgba(0,0,0,.38);display:grid;grid-template-columns:repeat(4,1fr);left:10px;margin:0;max-width:none;padding:4px;position:fixed;right:10px;width:auto;z-index:70;backdrop-filter:saturate(160%) blur(24px)}.cc-nav a,.cc-app[data-sidebar-state="compact"] .cc-nav a{display:grid;gap:2px;grid-template-columns:1fr;justify-items:center;min-height:54px;padding:6px 4px}.cc-nav-icon{font-size:11px}.cc-nav-label,.cc-app[data-sidebar-state="compact"] .cc-nav-label{font-size:10px}.cc-main{height:auto;min-height:100svh;overflow:visible;padding:82px 16px 110px}.cc-topbar{display:block}.cc-command-title h1,.cc-topbar h1{font-size:38px}.cc-topbar-subtitle{font-size:13px}.cc-status-rail{display:flex;gap:7px;margin-top:20px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.cc-status-rail span{flex:0 0 142px;min-height:58px;scroll-snap-align:start}.cc-command{margin-top:18px}.cc-tower-intro{border-radius:24px;margin-top:20px;min-height:0}.cc-tower-copy{padding:28px 22px}.cc-tower-copy h2{font-size:38px}.cc-tower-command{display:grid;grid-template-columns:72px minmax(0,1fr);padding:22px}.cc-tower-seal{max-width:72px}.cc-tower-seal span{font-size:22px}.cc-tower-rail{grid-template-columns:repeat(2,minmax(0,1fr));margin:0}.cc-tower-rail div{border:0;padding:9px 0 9px 14px}.cc-metrics{display:flex;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.cc-metric{flex:0 0 154px;scroll-snap-align:start}.cc-hero-grid,.cc-runtime-grid{grid-template-columns:1fr}.cc-system-core{display:none}.cc-section{margin-top:28px}.cc-section-heading{align-items:start;display:grid;gap:8px}.cc-decision-item{grid-template-columns:1fr}.cc-daily-sections{grid-template-columns:1fr}.cc-studio-switcher{align-items:start;border-radius:24px;display:grid;grid-template-columns:1fr;padding:24px 20px}.cc-segmented-control{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow-x:auto;width:100%}.cc-segmented-control button{min-width:0;padding:10px 6px}.cc-production-layout,.cc-app[data-sidebar-state="compact"] .cc-production-layout{grid-template-columns:1fr}.cc-preview,.cc-package-inspector{position:static}.cc-social-summary{display:flex;overflow-x:auto}.cc-social-summary article{flex:0 0 158px}.cc-social-live-grid,.cc-social-grid,.cc-approval-review-grid{grid-template-columns:1fr}.cc-visual-review-canvases{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.cc-visual-canvas{flex:0 0 88%;scroll-snap-align:center}.cc-evidence-grid{grid-template-columns:1fr}.cc-pipeline{display:flex;overflow-x:auto}.cc-pipeline-node{flex:0 0 170px}.cc-agent-hero{border-radius:24px;grid-template-columns:1fr;padding:26px 20px}.cc-agent-company-layout--apex .cc-agent-grid{display:flex;overflow-x:auto;scroll-snap-type:x proximity}.cc-agent-company-layout--apex .cc-agent{flex:0 0 82%;min-height:210px;scroll-snap-align:start}.cc-agent-side{grid-template-columns:1fr}.cc-authorization{padding:12px}.cc-authorization-dialog{border-radius:22px;height:auto;max-height:calc(100dvh - 24px);overflow:auto}.cc-control-button{min-height:44px}.cc-progressive-details>summary{min-height:48px}}
+@media (max-width:1100px){.cc-sidebar{grid-template-columns:auto minmax(340px,1fr) auto}.cc-sidebar>.cc-operator{display:none}.cc-topbar{grid-template-columns:1fr}.cc-status-rail{grid-template-columns:repeat(5,minmax(0,1fr))}.cc-revenue-hero{grid-template-columns:1fr}.cc-revenue-pulse{border-left:0;border-top:1px solid var(--focus-line)}.cc-revenue-stages{display:flex;overflow-x:auto;scroll-snap-type:x proximity}.cc-revenue-stage{flex:0 0 155px;scroll-snap-align:start}.cc-revenue-readiness{grid-template-columns:1fr}.cc-agent-company-layout--apex{grid-template-columns:1fr}.cc-agent-side{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-agent-company-layout--apex .cc-agent-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-vault-shell{grid-template-columns:1fr}.cc-vault-detail{position:static}}
+@media (max-width:820px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}.cc-app,.cc-app[data-sidebar-state="compact"]{height:auto;min-height:100svh;overflow:visible}.cc-sidebar{background:rgba(18,18,20,.88);display:flex;height:56px!important;justify-content:space-between;padding:8px 16px;position:fixed;transform:none!important;width:100%}.cc-sidebar-head{display:flex}.cc-brand-mark{border-radius:10px;height:32px;width:32px}.cc-brand-copy small{display:none}.cc-sidebar-foot{font-size:0}.cc-sidebar-foot-label{display:none!important}.cc-sidebar>.cc-operator{display:none}.cc-nav,.cc-app[data-sidebar-state="compact"] .cc-nav{background:rgba(24,24,26,.94);border:1px solid rgba(255,255,255,.12);border-radius:20px;bottom:calc(8px + env(safe-area-inset-bottom));box-shadow:0 16px 44px rgba(0,0,0,.38);display:grid;grid-template-columns:repeat(4,1fr);left:10px;margin:0;max-width:none;padding:4px;position:fixed;right:10px;width:auto;z-index:70;backdrop-filter:saturate(160%) blur(24px)}.cc-nav a,.cc-app[data-sidebar-state="compact"] .cc-nav a{display:grid;gap:2px;grid-template-columns:1fr;justify-items:center;min-height:54px;padding:6px 4px}.cc-nav-icon{font-size:11px}.cc-nav-label,.cc-app[data-sidebar-state="compact"] .cc-nav-label{font-size:10px}.cc-main{height:auto;min-height:100svh;overflow:visible;padding:82px 16px 110px}.cc-topbar{display:block}.cc-command-title h1,.cc-topbar h1{font-size:38px}.cc-topbar-subtitle{font-size:13px}.cc-status-rail{display:flex;gap:7px;margin-top:20px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.cc-status-rail span{flex:0 0 142px;min-height:58px;scroll-snap-align:start}.cc-command{margin-top:18px}.cc-revenue-hero{border-radius:26px;margin-top:20px;min-height:0}.cc-revenue-copy{padding:34px 24px}.cc-revenue-copy h2{font-size:44px}.cc-revenue-pulse{padding:26px 22px}.cc-revenue-journey{padding:18px}.cc-revenue-journey-head{align-items:start;display:grid}.cc-revenue-readiness{padding:20px}.cc-revenue-readiness-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-metrics{display:flex;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.cc-metric{flex:0 0 154px;scroll-snap-align:start}.cc-hero-grid,.cc-runtime-grid{grid-template-columns:1fr}.cc-system-core{display:none}.cc-section{margin-top:28px}.cc-section-heading{align-items:start;display:grid;gap:8px}.cc-decision-item{grid-template-columns:1fr}.cc-daily-sections{grid-template-columns:1fr}.cc-studio-switcher{align-items:start;border-radius:24px;display:grid;grid-template-columns:1fr;padding:24px 20px}.cc-segmented-control{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow-x:auto;width:100%}.cc-segmented-control button{min-width:0;padding:10px 6px}.cc-production-layout,.cc-app[data-sidebar-state="compact"] .cc-production-layout{grid-template-columns:1fr}.cc-preview,.cc-package-inspector{position:static}.cc-social-summary{display:flex;overflow-x:auto}.cc-social-summary article{flex:0 0 158px}.cc-social-live-grid,.cc-social-grid,.cc-approval-review-grid{grid-template-columns:1fr}.cc-visual-review-canvases{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.cc-visual-canvas{flex:0 0 88%;scroll-snap-align:center}.cc-evidence-grid{grid-template-columns:1fr}.cc-pipeline{display:flex;overflow-x:auto}.cc-pipeline-node{flex:0 0 170px}.cc-agent-hero{border-radius:24px;grid-template-columns:1fr;padding:26px 20px}.cc-agent-company-layout--apex .cc-agent-grid{display:flex;overflow-x:auto;scroll-snap-type:x proximity}.cc-agent-company-layout--apex .cc-agent{flex:0 0 82%;min-height:210px;scroll-snap-align:start}.cc-agent-side{grid-template-columns:1fr}.cc-authorization{padding:12px}.cc-authorization-dialog{border-radius:22px;height:auto;max-height:calc(100dvh - 24px);overflow:auto}.cc-control-button{min-height:44px}.cc-progressive-details>summary{min-height:48px}}
 @media (max-width:820px){.cc-vault-metrics{display:flex;overflow-x:auto}.cc-vault-metrics article{flex:0 0 170px}.cc-vault-toolbar{align-items:start;display:grid}.cc-vault-filters{flex-wrap:nowrap;max-width:100%;overflow-x:auto}.cc-vault-filters button{white-space:nowrap}.cc-vault-gallery{display:flex;overflow-x:auto;scroll-snap-type:x proximity}.cc-reference-card{flex:0 0 72%;scroll-snap-align:start}.cc-vault-intelligence-grid{grid-template-columns:1fr}.cc-reference-metadata{grid-template-columns:1fr}}
+@media (max-width:820px){.cc-business-offer-summary,.cc-business-tier-list,.cc-business-channel-list{grid-template-columns:1fr}.cc-revenue-blocker{grid-template-columns:1fr}.cc-business-panel{padding:16px}}
 @media (max-width:820px){.cc-sidebar{backdrop-filter:none!important;overflow:visible!important}.cc-nav,.cc-app[data-sidebar-state="compact"] .cc-nav{justify-self:stretch;width:calc(100vw - 20px)}.cc-agent-company-layout--apex{grid-template-columns:minmax(0,1fr)}.cc-agent-roster,.cc-agent-company-layout--apex .cc-agent-grid,.cc-agent-company-layout--apex .cc-agent,.cc-agent-card-head,.cc-agent-identity{min-width:0}.cc-agent-company-layout--apex .cc-agent{max-width:100%;overflow:hidden}.cc-vault-secondary-grid{grid-template-columns:1fr}.cc-vault-filters button{min-height:44px}}
-@media (max-width:430px){.cc-status-rail span{flex-basis:132px}.cc-tower-copy h2{font-size:34px}.cc-tower-command{grid-template-columns:1fr}.cc-tower-seal{display:none}.cc-segmented-control{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-approval-review-head,.cc-approval-review-foot,.cc-visual-review-head{display:grid}.cc-visual-canvas{flex-basis:92%}.cc-agent-company-layout--apex .cc-agent{flex-basis:90%}.cc-agent-hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-reference-card{flex-basis:88%}.cc-fingerprint-summary{grid-template-columns:1fr}.cc-vault-compare-grid{grid-template-columns:1fr}}
+@media (max-width:430px){.cc-status-rail span{flex-basis:132px}.cc-revenue-copy h2{font-size:38px}.cc-revenue-actions{align-items:start;display:grid}.cc-revenue-metrics,.cc-revenue-readiness-grid{grid-template-columns:1fr}.cc-revenue-squad{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.cc-segmented-control{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-approval-review-head,.cc-approval-review-foot,.cc-visual-review-head{display:grid}.cc-visual-canvas{flex-basis:92%}.cc-agent-company-layout--apex .cc-agent{flex-basis:90%}.cc-agent-hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-reference-card{flex-basis:88%}.cc-fingerprint-summary{grid-template-columns:1fr}.cc-vault-compare-grid{grid-template-columns:1fr}}
+
+/* ORACLE Creative Connector — one governed prompt, explicit capabilities. */
+.cc-oracle-composer{align-items:start;border-radius:24px;display:grid;gap:12px 14px;grid-template-columns:auto minmax(0,1fr) auto;padding:15px 17px 17px}.cc-oracle-composer .cc-oracle-mark{align-items:center;background:linear-gradient(145deg,rgba(41,151,255,.2),rgba(175,82,222,.15));border:1px solid rgba(130,190,255,.22);border-radius:12px;color:#b8d9ff;display:flex;font-size:10px;font-weight:750;height:38px;justify-content:center;letter-spacing:.08em;margin-top:2px;width:38px}.cc-oracle-composer textarea{background:transparent;border:0;color:var(--focus-text);font:500 14px/1.5 Inter,ui-sans-serif,system-ui,sans-serif;max-height:150px;min-height:48px;outline:0;padding:8px 0;resize:vertical;width:100%}.cc-oracle-composer textarea::placeholder{color:var(--focus-secondary)}.cc-oracle-composer kbd{margin-top:10px}.cc-oracle-controls{align-items:end;border-top:1px solid var(--focus-line);display:grid;gap:12px;grid-column:1/-1;grid-template-columns:minmax(180px,.8fr) minmax(150px,.55fr) minmax(0,1.65fr) auto;padding-top:14px}.cc-oracle-select{color:var(--focus-secondary);display:grid;font-size:9px;gap:6px;letter-spacing:.04em}.cc-oracle-select select{appearance:none;background:var(--focus-surface-2);border:1px solid var(--focus-line);border-radius:12px;color:var(--focus-text);font:500 11px/1.2 Inter,ui-sans-serif,system-ui,sans-serif;height:44px;max-width:100%;padding:0 34px 0 12px}.cc-oracle-deliverables{border:0;display:flex;flex-wrap:wrap;gap:6px;margin:0;min-width:0;padding:0}.cc-oracle-deliverables legend{color:var(--focus-secondary);font-size:9px;letter-spacing:.04em;margin-bottom:6px;padding:0;width:100%}.cc-oracle-deliverables label{align-items:center;background:rgba(255,255,255,.045);border:1px solid var(--focus-line);border-radius:999px;color:var(--focus-secondary);display:flex;font-size:9px;gap:6px;min-height:30px;padding:5px 9px;white-space:nowrap}.cc-oracle-deliverables input{accent-color:#2997ff;margin:0}.cc-oracle-actions{display:flex;gap:7px}.cc-oracle-actions button{border-radius:999px;cursor:pointer;font:650 10px/1 Inter,ui-sans-serif,system-ui,sans-serif;min-height:44px;padding:0 15px;white-space:nowrap}.cc-oracle-context{background:transparent;border:1px solid var(--focus-line);color:var(--focus-text)}.cc-oracle-submit{background:#f5f5f7;border:1px solid #f5f5f7;color:#050505}.cc-oracle-actions button:disabled{cursor:wait;opacity:.55}.cc-oracle-composer[aria-busy="true"]{border-color:rgba(41,151,255,.45)}.cc-command-help{color:var(--focus-secondary);font-size:10px;line-height:1.45;margin:2px 3px 0}.cc-command-result{color:#b8d9ff}
+@media (max-width:1100px){.cc-oracle-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-oracle-deliverables,.cc-oracle-actions{grid-column:1/-1}.cc-oracle-actions{justify-content:flex-end}}
+@media (max-width:820px){.cc-oracle-composer{border-radius:20px;grid-template-columns:auto minmax(0,1fr);padding:13px}.cc-oracle-composer kbd{display:none}.cc-oracle-controls{grid-template-columns:1fr}.cc-oracle-deliverables,.cc-oracle-actions{grid-column:auto}.cc-oracle-deliverables{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}.cc-oracle-deliverables label{flex:0 0 auto;min-height:36px}.cc-oracle-actions{display:grid;grid-template-columns:1fr 1fr}.cc-oracle-actions button{width:100%}}
+@media (max-width:430px){.cc-oracle-composer{grid-template-columns:1fr}.cc-oracle-composer .cc-oracle-mark{display:none}.cc-oracle-composer textarea{min-height:72px}.cc-oracle-actions{grid-template-columns:1fr}.cc-command-help{padding:0 3px}}
+.cc-oracle-deliverables label{font-size:10px;min-height:44px;padding:7px 11px}.cc-oracle-deliverables input:disabled{opacity:.72}
+.cc-tiktok-motion-preview{background:linear-gradient(155deg,rgba(41,151,255,.1),rgba(175,82,222,.08));border:1px solid var(--focus-line);border-radius:18px;display:grid;gap:10px;margin-top:12px;overflow:hidden;padding:15px}.cc-tiktok-motion-preview-head{align-items:center;display:flex;gap:12px;justify-content:space-between}.cc-tiktok-motion-preview-head span{color:var(--focus-secondary);font-size:9px;letter-spacing:.07em}.cc-tiktok-motion-preview-head button{background:#f5f5f7;border:0;border-radius:999px;color:#050505;cursor:pointer;font:650 10px/1 Inter,ui-sans-serif,system-ui,sans-serif;min-height:38px;padding:9px 13px}.cc-tiktok-motion-beats{display:grid;gap:6px}.cc-tiktok-motion-beat{background:rgba(255,255,255,.045);border-radius:11px;color:var(--focus-secondary);display:grid;font-size:10px;gap:4px;padding:9px 11px}.cc-tiktok-motion-beat b{color:var(--focus-text);font-size:11px}.cc-tiktok-motion-marker{color:#ff9f0a!important;font:8px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+@media (max-width:820px){.cc-oracle-deliverables label{min-height:44px}}
 `;
 
 export const COMMAND_CENTER_CLIENT_JS = `
@@ -474,7 +556,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
   const root = document.getElementById("command-center");
   const commandForm = document.getElementById("command-form");
   const commandInput = document.getElementById("command-input");
+  const commandBusinessMission = document.getElementById("command-business-mission");
+  const commandNavigate = document.getElementById("command-navigate");
+  const commandObjective = document.getElementById("command-objective");
   const commandResult = document.getElementById("command-result");
+  const commandSubmit = document.getElementById("command-submit");
   const sidebar = document.getElementById("command-sidebar");
   const sidebarToggle = document.getElementById("sidebar-toggle");
   const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
@@ -511,10 +597,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
   function element(tag, className, value) { const node = document.createElement(tag); if (className) node.className = className; if (value !== undefined) node.textContent = value; return node; }
+  function emitMotion(name, detail) { window.dispatchEvent(new CustomEvent("onlyway:motion:" + name, { detail })); }
   function number(value) { return new Intl.NumberFormat("it-IT").format(value); }
   function prefersReducedMotion() { return Boolean(reducedMotionQuery.matches); }
   function timestamp(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Data locale non disponibile" : new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeStyle: "short" }).format(date); }
-  function statusLabel(value) { const labels = { ACTIVE: "ATTIVO", ATTENTION_REQUIRED: "ATTENZIONE RICHIESTA", AVAILABLE: "DISPONIBILE", AWAITING_DEPENDENCY: "IN ATTESA DI DIPENDENZA", AWAITING_FABIO: "IN ATTESA DI FABIO", BLOCKED: "BLOCCATO", COMPLETED: "COMPLETATO", DEGRADED: "DEGRADATO", DISABLED: "DISABILITATA", ENABLED: "ABILITATA", IMPLEMENTING: "IN IMPLEMENTAZIONE", LOCKED: "BLOCCATO", MEASURED: "MISURATO", MISSING: "NON REGISTRATO", NOT_OBSERVED: "NON OSSERVATO", NOT_REGISTERED: "NON REGISTRATO", QUEUED: "IN CODA", READY: "PRONTO", RUNNING: "IN ESECUZIONE", SPECIFIED: "SPECIFICATO", STALE: "SCADUTO", TRIGGERED: "ATTIVATO", UNAVAILABLE: "NON DISPONIBILE" }; return labels[value] || value.replaceAll("_", " "); }
+  function statusLabel(value) { const labels = { ACTIVE: "ATTIVO", ATTENTION_REQUIRED: "ATTENZIONE RICHIESTA", AVAILABLE: "DISPONIBILE", AWAITING_DEPENDENCY: "IN ATTESA DI DIPENDENZA", AWAITING_FABIO: "IN ATTESA DI FABIO", BLOCKED: "BLOCCATO", COMPLETED: "COMPLETATO", DEGRADED: "DEGRADATO", DISABLED: "DISABILITATA", ENABLED: "ABILITATA", IMPLEMENTING: "IN IMPLEMENTAZIONE", LOCKED: "BLOCCATO", MEASURED: "MISURATO", MISSING: "NON REGISTRATO", NOT_AVAILABLE: "NON DISPONIBILE", NOT_OBSERVED: "NON OSSERVATO", NOT_REGISTERED: "NON REGISTRATO", PLANNED: "PIANIFICATO", QUEUED: "IN CODA", READY: "PRONTO", REVIEW_REQUIRED: "REVISIONE RICHIESTA", RUNNING: "IN ESECUZIONE", SETUP_REQUIRED: "CONFIGURAZIONE RICHIESTA", SPECIFIED: "SPECIFICATO", STALE: "SCADUTO", TRIGGERED: "ATTIVATO", UNAVAILABLE: "NON DISPONIBILE", VALIDATION_PLANNED: "VALIDAZIONE PIANIFICATA" }; return labels[value] || value.replaceAll("_", " "); }
   function statusLane(status) { if (status === "PENDING_FABIO_APPROVAL") return "REVISIONE FABIO"; if (status === "APPROVED_FOR_SCHEDULING") return "APPROVATI"; if (status === "SCHEDULED") return "CALENDARIO"; if (status === "BLOCKED") return "BLOCCATI DAL RISCHIO"; return "ARCHIVIATI"; }
   function agentIdentity(agentId) { return AGENT_IDENTITIES[agentId] || { callSign: agentId.toLocaleUpperCase("it-IT"), glyph: "AI", squad: "BUILD", squadLabel: "Build Lab" }; }
 
@@ -596,6 +683,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
     });
     source.addEventListener("operational", (event) => {
       if (!acceptLiveCursor(event)) return;
+      try {
+        const payload = JSON.parse(event.data);
+        const statuses = { APPROVAL_REQUESTED: "AWAITING_FABIO", JOB_BLOCKED: "BLOCKED", JOB_COMPLETED: "COMPLETED", JOB_DEAD_LETTER: "BLOCKED", JOB_FAILED: "BLOCKED", JOB_LEASE_ACQUIRED: "RUNNING", JOB_QUEUED: "QUEUED" };
+        emitMotion("operational", { eventId: payload.eventId, eventType: payload.eventType, sequence: Number(event.lastEventId), status: statuses[payload.eventType] || "IDLE" });
+      } catch { emitMotion("stop", { reasonCode: "INVALID_REDACTED_EVENT" }); }
       scheduleLiveRefresh();
     });
     source.addEventListener("cursor_reset", (event) => {
@@ -605,18 +697,22 @@ export const COMMAND_CENTER_CLIENT_JS = `
         if (Number.isSafeInteger(sequence)) state.lastEventSequence = sequence;
       }
       setLiveEventState("live", "Eventi live · stato riallineato");
+      emitMotion("stop", { reasonCode: "EVENT_CURSOR_RESET" });
       scheduleLiveRefresh();
     });
     source.addEventListener("source_unavailable", () => {
       setLiveEventState("reconnecting", "Eventi live · riconnessione");
+      emitMotion("stop", { reasonCode: "EVENT_SOURCE_UNAVAILABLE" });
       startLiveFallback();
     });
     source.addEventListener("shutdown", () => {
       setLiveEventState("reconnecting", "Eventi live · arresto controllato");
+      emitMotion("stop", { reasonCode: "COMMAND_CENTER_SHUTDOWN" });
       startLiveFallback();
     });
     source.addEventListener("error", () => {
       setLiveEventState("reconnecting", "Eventi live · riconnessione");
+      emitMotion("stop", { reasonCode: "EVENT_RECONNECTING" });
       startLiveFallback();
     });
   }
@@ -640,6 +736,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
     renderDecisionInbox(snapshot.overview.decisionInbox || [], snapshot.overview.decisionInboxCoverage || "LIMIT_REACHED");
     renderDailyOperatingBrief(snapshot.dailyOperatingBriefs || []);
     renderPipeline(snapshot);
+    renderRevenue(snapshot.revenue || null);
+    renderOracleMissionOptions(snapshot.oracleBusinessMissions || snapshot.business || [], snapshot.overview && snapshot.overview.operationalWindow ? snapshot.overview.operationalWindow.businessMissions : null);
     renderBusiness(snapshot.business || []);
     renderSocialIntelligence(snapshot.socialIntelligence || { blocked: 0, coverage: "LIMIT_REACHED", expiringWithin24Hours: 0, packs: [], readyForFabio: 0, requiresResearch: 0 }, snapshot.socialLive);
     renderProductions(snapshot.productions, productionCoverage);
@@ -691,6 +789,58 @@ export const COMMAND_CENTER_CLIENT_JS = `
     }
   }
 
+  function renderRevenue(revenue) {
+    const target = revenue && revenue.targetMonthlyRevenueCents ? revenue.targetMonthlyRevenueCents : { reasonCode: "BUSINESS_CONTEXT_REQUIRED", status: "NOT_AVAILABLE" };
+    const plan = revenue && revenue.plannedRevenueCents ? revenue.plannedRevenueCents : { reasonCode: "ECONOMICS_INPUT_REQUIRED", status: "NOT_AVAILABLE" };
+    const margin = revenue && revenue.contributionMarginCents ? revenue.contributionMarginCents : { reasonCode: "ECONOMICS_INPUT_REQUIRED", status: "NOT_AVAILABLE" };
+    const pipeline = revenue && revenue.verifiedPipelineCents ? revenue.verifiedPipelineCents : { reasonCode: "PIPELINE_AGGREGATE_NOT_AVAILABLE", status: "NOT_AVAILABLE" };
+    const stateValue = revenue ? revenue.state : "SETUP_REQUIRED";
+    const stateNode = byId("revenue-state");
+    if (stateNode) { stateNode.textContent = statusLabel(stateValue); stateNode.dataset.state = stateValue; }
+    renderRevenueMetric("revenue-target", "revenue-target-note", target, "Target esplicito di Fabio");
+    renderRevenueMetric("revenue-plan", "revenue-plan-note", plan, "Previsione del piano BASE, non ricavo effettivo");
+    renderRevenueMetric("revenue-margin", "revenue-margin-note", margin, "Margine del piano BASE, non risultato effettivo");
+    renderRevenueMetric("revenue-pipeline", "revenue-pipeline-note", pipeline, "Solo opportunità con valore e probabilità verificati");
+    text("revenue-next-title", revenue ? revenue.nextAction.label : "Completa il Revenue Input Pack");
+    text("revenue-next-detail", revenue ? revenue.nextAction.detail : "Definisci target, offerta, prezzo, capacità e canale prima di attivare esperimenti.");
+    text("revenue-hero-assurance", revenue && revenue.coverage === "LIMIT_REACHED" ? "Copertura parziale: nessun totale globale viene dedotto." : "Nessuna metrica economica viene inventata.");
+    const primaryLink = root.querySelector(".cc-primary-link");
+    if (primaryLink && revenue) { primaryLink.href = revenue.nextAction.href; primaryLink.firstChild.textContent = revenue.nextAction.label + " "; }
+
+    const stages = byId("revenue-stage-list");
+    stages.replaceChildren();
+    for (const item of revenue && Array.isArray(revenue.stages) ? revenue.stages : []) {
+      const card = element("article", "cc-revenue-stage"); card.dataset.status = item.status;
+      card.append(element("span", "", statusLabel(item.status)), element("strong", "", item.label), element("b", "", item.value), element("small", "", item.detail));
+      stages.append(card);
+    }
+    if (stages.childElementCount === 0) stages.append(element("div", "cc-list-empty", "Revenue View non disponibile: nessun numero sostitutivo è stato mostrato."));
+
+    const readiness = byId("revenue-readiness-grid");
+    readiness.replaceChildren();
+    for (const item of revenue && Array.isArray(revenue.readiness) ? revenue.readiness : []) {
+      const card = element("article", "cc-readiness-card"); card.dataset.status = item.status;
+      card.append(element("span", "", statusLabel(item.status)), element("strong", "", item.label), element("small", "", item.detail));
+      readiness.append(card);
+    }
+    if (readiness.childElementCount === 0) readiness.append(element("div", "cc-list-empty", "Revenue readiness non disponibile."));
+    text("revenue-readiness-summary", revenue ? statusLabel(revenue.state) + " · " + revenue.reasonCode + (revenue.coverage === "LIMIT_REACHED" ? " · COPERTURA PARZIALE" : "") : "CONFIGURAZIONE RICHIESTA · BUSINESS_MISSION_REQUIRED");
+
+    const blockers = byId("revenue-blockers");
+    blockers.replaceChildren();
+    for (const item of revenue && Array.isArray(revenue.blockers) ? revenue.blockers : []) {
+      const row = element("article", "cc-revenue-blocker");
+      row.append(element("b", "", item.reasonCode), element("p", "", item.detail));
+      blockers.append(row);
+    }
+  }
+
+  function renderRevenueMetric(valueId, noteId, metric, availableNote) {
+    const available = metric && metric.status === "AVAILABLE" && Number.isSafeInteger(metric.valueCents);
+    text(valueId, available ? euro(metric.valueCents) : "NON DISPONIBILE");
+    text(noteId, available ? availableNote : statusLabel(metric && metric.reasonCode ? metric.reasonCode : "NOT_AVAILABLE"));
+  }
+
   function renderBusiness(missions) {
     const list = byId("business-mission-list");
     const comparison = byId("business-comparison");
@@ -721,25 +871,122 @@ export const COMMAND_CENTER_CLIENT_JS = `
       if (scorecard) for (const item of scorecard.criteria) criteria.append(businessDatum(item.criterion, item.weightedContribution === undefined ? "—" : String(item.weightedContribution), item.dataKind));
       card.append(criteria); comparison.append(card);
     }
-    dossier.append(element("p", "cc-panel-label", "COMMERCIAL PACKAGE"), element("h3", "", selected.selectionExplanation));
+    dossier.append(element("p", "cc-panel-label", "REVENUE MISSION · DRAFT INTERNO"), element("h3", "", selected.selectionExplanation), element("p", "cc-business-lock-note", "Approvazione Business ≠ autorizzazione esterna. Invio, contatto, spesa e pubblicazione restano BLOCCATI."));
     const summary = element("div", "cc-business-summary");
     summary.append(businessDatum("Stato", statusLabel(selected.status), "DUREVOLE"), businessDatum("Versione", "v" + String(selected.version), "ESATTA"), businessDatum("Artefatti", String(selected.artifacts.length), "FINGERPRINTED"), businessDatum("Azioni esterne", "0", "BLOCCATE")); dossier.append(summary);
     const gates = element("div", "cc-business-gates"); for (const gate of selected.gates) gates.append(businessGate(gate)); dossier.append(gates);
     const offer = selected.commercialPlan.offer;
-    const offerPanel = element("section", "cc-business-panel"); offerPanel.append(element("p", "cc-panel-label", "OFFERTA"), element("h4", "", offer.promisedOutcome), element("p", "", offer.positioning), element("small", "", offer.deliverables.join(" · "))); dossier.append(offerPanel);
-    const economics = element("section", "cc-business-panel"); economics.append(element("p", "cc-panel-label", "ECONOMICS DETERMINISTICO"));
+    const offerPanel = renderOfferPanel(offer); dossier.append(offerPanel);
+    dossier.append(renderFunnelPanel(selected.commercialPlan.acquisition));
+    const economics = element("section", "cc-business-panel"); economics.append(element("p", "cc-panel-label", "ECONOMICS DETERMINISTICO"), element("h4", "", "Tre scenari. Nessun input nascosto."), element("p", "", "I valori sono previsioni del piano, non fatturato o margine effettivo."));
     const scenarioGrid = element("div", "cc-scenario-grid"); for (const scenario of selected.economics) scenarioGrid.append(businessScenario(scenario)); economics.append(scenarioGrid); dossier.append(economics);
-    const validation = element("section", "cc-business-panel"); validation.append(element("p", "cc-panel-label", "VALIDAZIONE"), element("h4", "", String(selected.commercialPlan.validation.length) + " esperimento/i preparati"), element("p", "", "Budget massimo dichiarato: " + euro(selected.commercialPlan.validation.reduce((sum, experiment) => sum + experiment.maxCostCents, 0)) + ". Nessuna esecuzione esterna.")); dossier.append(validation);
-    const artifacts = element("section", "cc-business-panel"); artifacts.append(element("p", "cc-panel-label", "ARTIFACT FACTORY")); const artifactList = element("div", "cc-artifact-list"); for (const artifact of selected.artifacts) artifactList.append(element("span", "", artifact.kind.replaceAll("_", " "))); artifacts.append(artifactList); dossier.append(artifacts);
+    dossier.append(renderExperimentsPanel(selected.commercialPlan.validation));
+    dossier.append(renderDeliveryPanel(offer));
+    dossier.append(renderCommercialArtifacts(selected.artifacts));
     if (selected.status === "PENDING_FABIO_APPROVAL") {
       const actions = element("div", "cc-business-actions");
       actions.append(businessAction("Approva dossier", "APPROVE_BUSINESS", selected), businessAction("Richiedi revisione", "REQUEST_BUSINESS_REVISION", selected), businessAction("Rifiuta dossier", "REJECT_BUSINESS", selected)); dossier.append(actions);
     }
   }
 
+  function renderOracleMissionOptions(missions, coverage) {
+    const current = commandBusinessMission.value;
+    const approved = missions.filter((mission) => mission.status === "APPROVED" && mission.selectedOpportunityId);
+    commandBusinessMission.replaceChildren();
+    if (approved.length === 0) {
+      const option = document.createElement("option"); option.value = ""; option.textContent = coverage && coverage.status === "LIMIT_REACHED" ? "Nessuna missione APPROVED nella finestra corrente" : "Prima approva una Business Mission"; commandBusinessMission.append(option);
+      commandBusinessMission.disabled = true; commandSubmit.disabled = true;
+      return;
+    }
+    for (const mission of approved) {
+      const option = document.createElement("option"); option.value = mission.mission.missionId; option.textContent = mission.mission.objective + " · " + mission.selectedOpportunityId; commandBusinessMission.append(option);
+    }
+    const preferred = approved.some((mission) => mission.mission.missionId === current) ? current : approved.some((mission) => mission.mission.missionId === state.selectedBusinessMissionId) ? state.selectedBusinessMissionId : approved[0].mission.missionId;
+    commandBusinessMission.value = preferred; commandBusinessMission.disabled = false; commandSubmit.disabled = false;
+  }
+
   function businessDatum(label, value, meta) { const item = element("div", "cc-business-datum"); item.append(element("span", "", label), element("b", "", value), element("small", "", meta)); return item; }
   function businessGate(gate) { const item = element("article", "cc-business-gate"); item.dataset.status = gate.status; item.append(element("span", "", gate.name), element("strong", "", String(gate.score) + "/100"), element("small", "", gate.findings.length === 0 ? "Nessun blocco" : gate.findings.join(" · "))); return item; }
-  function businessScenario(scenario) { const item = element("article", "cc-business-scenario"); item.append(element("span", "", scenario.name), element("b", "", scenario.contributionMarginCents.value === undefined ? "NON DISPONIBILE" : euro(scenario.contributionMarginCents.value)), element("small", "", "Margine di contribuzione")); return item; }
+  function businessScenario(scenario) {
+    const item = element("article", "cc-business-scenario");
+    item.append(element("span", "", scenario.name), element("b", "", scenario.contributionMarginCents.value === undefined ? "NON DISPONIBILE" : euro(scenario.contributionMarginCents.value)), element("small", "", "Margine di contribuzione pianificato"));
+    const metrics = element("div", "cc-business-scenario-metrics");
+    metrics.append(
+      businessDatum("Ricavi piano", moneyValue(scenario.revenueCents), scenario.revenueCents.formula),
+      businessDatum("Ricavi netti piano", moneyValue(scenario.netRevenueCents), scenario.netRevenueCents.formula),
+      businessDatum("Margine lordo", moneyValue(scenario.grossMarginCents), scenario.grossMarginCents.formula),
+      businessDatum("Break-even", countValue(scenario.breakEvenClients), scenario.breakEvenClients.formula),
+      businessDatum("CAC massimo", moneyValue(scenario.maximumSustainableCacCents), scenario.maximumSustainableCacCents.formula),
+      businessDatum("Payback", decimalValue(scenario.paybackMonths, " mesi"), scenario.paybackMonths.formula),
+    );
+    item.append(businessDisclosure("Apri formule e sensibilità", metrics, scenario.sensitivity));
+    return item;
+  }
+  function renderOfferPanel(offer) {
+    const panel = element("section", "cc-business-panel");
+    panel.append(element("p", "cc-panel-label", "OFFERTA"), element("h4", "", offer.promisedOutcome), element("p", "", offer.positioning));
+    const summary = element("div", "cc-business-offer-summary");
+    summary.append(businessDatum("Cliente ideale", offer.idealCustomer, "ICP DICHIARATO"), businessDatum("Problema", offer.primaryProblem, "PROBLEMA DICHIARATO"), businessDatum("Meccanismo", offer.mechanism, "COME VIENE CREATO VALORE"), businessDatum("Differenziazione", offer.differentiation, "PERCHÉ ONLYWAY"));
+    const body = element("div", "cc-business-detail-stack");
+    body.append(summary, businessList("Deliverable", offer.deliverables), businessList("Bonus", offer.bonuses), businessList("Limiti", offer.limits), businessList("Esclusioni cliente", offer.customerExclusions));
+    const tiers = element("div", "cc-business-tier-list");
+    for (const tier of offer.tiers) tiers.append(businessDatum(tier.name, tier.priceCents === undefined ? "NON DISPONIBILE" : euro(tier.priceCents), tier.deliverables.join(" · ")));
+    body.append(element("p", "cc-panel-label", "TIER E PREZZI"), tiers, businessList("Obiezioni", offer.objections.map((item) => item.objection + " → " + item.response)));
+    panel.append(businessDisclosure("Apri struttura completa dell'offerta", body));
+    return panel;
+  }
+  function renderFunnelPanel(acquisition) {
+    const panel = element("section", "cc-business-panel");
+    panel.append(element("p", "cc-panel-label", "FUNNEL & SALES SYSTEM"), element("h4", "", acquisition.landingCopy.headline), element("p", "", acquisition.landingCopy.subheadline), element("small", "", "CTA DRAFT · " + acquisition.landingCopy.callToAction));
+    const body = element("div", "cc-business-detail-stack");
+    const channels = element("div", "cc-business-channel-list");
+    for (const channel of [...acquisition.channels].sort((left, right) => left.priority - right.priority)) channels.append(businessDatum("Priorità " + String(channel.priority) + " · " + channel.channel, channel.message, "DRAFT INTERNO · INVIO BLOCCATO"));
+    body.append(element("p", "cc-panel-label", "CANALI"), channels, businessList("Sequenza email", acquisition.emailSequence.map((item) => item.subject + " — " + item.body)), businessList("Supporto social", acquisition.socialSupport), businessList("FAQ", acquisition.faq.map((item) => item.question + " → " + item.answer)), businessDatum("Outreach", acquisition.outreachScript, "DRAFT INTERNO · CONTATTO BLOCCATO"));
+    panel.append(businessDisclosure("Apri funnel, messaggi e obiezioni", body));
+    return panel;
+  }
+  function renderExperimentsPanel(experiments) {
+    const panel = element("section", "cc-business-panel");
+    const budget = experiments.reduce((sum, experiment) => sum + experiment.maxCostCents, 0);
+    panel.append(element("p", "cc-panel-label", "EXPERIMENT ENGINE"), element("h4", "", String(experiments.length) + " esperimento/i pianificati"), element("p", "", "Budget massimo dichiarato: " + euro(budget) + ". Stato: PIANIFICATO, non eseguito."));
+    const list = element("div", "cc-experiment-list");
+    for (const experiment of experiments) {
+      const card = element("article", "cc-experiment-card");
+      card.append(element("span", "", experiment.method + " · " + String(experiment.durationDays) + " giorni"), element("strong", "", experiment.hypothesis), element("p", "", "Audience: " + experiment.audience), element("small", "", "METRICA · " + experiment.primaryMetric + " · SOGLIA · " + experiment.minimumThreshold), element("small", "", "STOP · " + experiment.stopCondition + " · NEXT · " + experiment.nextDecision), element("b", "", "PIANIFICATO · AZIONE ESTERNA BLOCCATA"));
+      list.append(card);
+    }
+    panel.append(businessDisclosure("Apri ipotesi, soglie e stop condition", list));
+    return panel;
+  }
+  function renderDeliveryPanel(offer) {
+    const panel = element("section", "cc-business-panel");
+    panel.append(element("p", "cc-panel-label", "DELIVERY SYSTEM"), element("h4", "", "Consegna definita prima della vendita"), element("p", "", offer.guarantee));
+    const body = element("div", "cc-business-detail-stack");
+    body.append(businessList("Cosa viene consegnato", offer.deliverables), businessList("Confini operativi", offer.limits), businessList("Richieste escluse", offer.customerExclusions), businessDatum("Capacità verificata", "NON DISPONIBILE", "DELIVERY_RUN_NOT_AVAILABLE"));
+    panel.append(businessDisclosure("Apri scope e protezioni della consegna", body));
+    return panel;
+  }
+  function renderCommercialArtifacts(artifacts) {
+    const panel = element("section", "cc-business-panel");
+    panel.append(element("p", "cc-panel-label", "COMMERCIAL ASSET FACTORY"), element("h4", "", String(artifacts.length) + " artefatti fingerprinted"), element("p", "", "Tutti gli artefatti sono draft interni: nessun invio o pubblicazione."));
+    const list = element("div", "cc-artifact-list");
+    for (const artifact of artifacts) list.append(element("span", "", artifact.kind.replaceAll("_", " ") + " · " + artifact.mediaType));
+    panel.append(list);
+    return panel;
+  }
+  function businessDisclosure(label, content, notes) {
+    const details = element("details", "cc-progressive-details");
+    const body = element("div", "cc-progressive-details-body"); body.append(content);
+    if (Array.isArray(notes) && notes.length > 0) body.append(businessList("Sensibilità", notes));
+    details.append(element("summary", "", label), body); return details;
+  }
+  function businessList(label, items) {
+    const block = element("div", "cc-business-list-block"); block.append(element("p", "cc-panel-label", label));
+    const list = element("ul", ""); for (const item of items) list.append(element("li", "", item)); block.append(list); return block;
+  }
+  function moneyValue(metric) { return metric && metric.value !== undefined ? euro(metric.value) : "NON DISPONIBILE"; }
+  function countValue(metric) { return metric && metric.value !== undefined ? number(metric.value) : "NON DISPONIBILE"; }
+  function decimalValue(metric, suffix) { return metric && metric.value !== undefined ? String(metric.value) + suffix : "NON DISPONIBILE"; }
   function euro(cents) { return new Intl.NumberFormat("it-IT", { currency: "EUR", style: "currency" }).format(cents / 100); }
   function businessAction(label, action, mission) { const button = element("button", "cc-control-button", label); button.type = "button"; button.dataset.action = action; button.addEventListener("click", () => { void proposeBusinessAction(action, mission, button); }); return button; }
 
@@ -930,18 +1177,40 @@ export const COMMAND_CENTER_CLIENT_JS = `
       const position = element("span", "", String(state.slideIndex + 1) + " / " + String(slides.length));
       const next = element("button", "", "Successivo"); next.type = "button"; next.addEventListener("click", () => { state.slideIndex += 1; renderPreview(record); });
       nav.append(previous, position, next);
-      target.append(frame, nav, previewDetails(record));
+      target.append(frame, nav, tiktokMotionPreview(record), previewDetails(record));
       return;
     }
     if (assets && assets.tiktok) {
       const frame = element("article", "cc-asset-frame");
       frame.append(element("span", "cc-asset-index", "SCRIPT BREVE"), element("h4", "", assets.tiktok.hook), element("p", "", assets.tiktok.caption));
-      target.append(frame, previewDetails(record));
+      target.append(frame, tiktokMotionPreview(record), previewDetails(record));
       return;
     }
     const empty = element("div", "cc-preview-empty");
     empty.append(element("span", "", "◇"), element("div", "", "Questo pacchetto durevole non ha asset visivi generati. Il suo stato esatto di qualità, rischio ed evidenze è comunque mostrato qui sotto."));
     target.append(empty, previewDetails(record));
+  }
+
+  function tiktokMotionPreview(record) {
+    const shell = element("section", "cc-tiktok-motion-preview");
+    shell.dataset.motionPreview = "tiktok";
+    const head = element("div", "cc-tiktok-motion-preview-head");
+    const play = element("button", "", "Anteprima transizioni");
+    play.type = "button";
+    play.addEventListener("click", () => emitMotion("tiktok-preview", { marker: "PREVIEW_ONLY_NOT_RENDERED_VIDEO", productionId: record.productionId }));
+    head.append(element("span", "", "TIKTOK · TRANSITION PREVIEW 9:16"), play);
+    const beats = element("div", "cc-tiktok-motion-beats");
+    const source = record.package.assets && record.package.assets.tiktok && Array.isArray(record.package.assets.tiktok.beats) ? record.package.assets.tiktok.beats.slice(0, 6) : [];
+    const effects = ["PAN", "ZOOM", "TEXT STAGGER", "FADE"];
+    for (const [index, beat] of source.entries()) {
+      const item = element("div", "cc-tiktok-motion-beat");
+      item.dataset.motionPreviewBeat = String(index + 1);
+      item.append(element("span", "", String(index + 1).padStart(2, "0") + " · " + effects[index % effects.length] + " · 900 ms"), element("b", "", beat.onScreenText));
+      beats.append(item);
+    }
+    if (source.length === 0) beats.append(element("div", "cc-tiktok-motion-beat", "Blueprint non disponibile: nessuna transizione simulata."));
+    shell.append(head, beats, element("span", "cc-tiktok-motion-marker", "PREVIEW_ONLY_NOT_RENDERED_VIDEO · provider calls 0 · publication LOCKED"));
+    return shell;
   }
 
   function previewDetails(record) {
@@ -1100,6 +1369,52 @@ export const COMMAND_CENTER_CLIENT_JS = `
     return response.json();
   }
 
+  function oraclePromptInput() {
+    const prompt = commandInput.value.trim().replace(/\s+/g, " ");
+    if (prompt.length < 12 || prompt.length > 240) throw new Error("Descrivi la missione creativa in 12–240 caratteri.");
+    if (!commandBusinessMission.value) throw new Error("Seleziona prima una Business Mission approvata.");
+    const deliverables = Array.from(document.querySelectorAll('input[name="oracle-deliverable"]:checked')).map((input) => input.value);
+    if (deliverables.length === 0) throw new Error("Seleziona almeno un output.");
+    const platforms = [];
+    if (deliverables.some((value) => value === "CAROUSEL" || value === "INSTAGRAM_COPY" || value === "IMAGE_MASTER")) platforms.push("instagram");
+    if (deliverables.some((value) => value === "TIKTOK_VIDEO_BLUEPRINT" || value === "VIDEO_RENDER" || value === "IMAGE_MASTER")) platforms.push("tiktok");
+    return { businessMissionId: commandBusinessMission.value, contractVersion: "1", deliverables, objective: commandObjective.value, platforms, prompt, promptId: nextIdempotencyKey("ORACLE_PROMPT", "creative").slice(0, 80) };
+  }
+
+  async function proposeOraclePrompt() {
+    const returnFocus = document.activeElement;
+    try {
+      commandForm.setAttribute("aria-busy", "true"); commandSubmit.disabled = true; commandNavigate.disabled = true;
+      commandResult.textContent = "ORACLE sta verificando missione, evidenze e capability. Nessuna generazione live è in corso.";
+      const input = oraclePromptInput();
+      const proposal = await actionPost("/api/prompt-missions/propose", input);
+      openOraclePromptConfirmation(proposal, input, returnFocus);
+    } catch (error) {
+      commandResult.textContent = error instanceof Error ? error.message : "Missione ORACLE non preparata.";
+      emitMotion("validation", { reasonCode: "ORACLE_PREFLIGHT_REJECTED" });
+    } finally {
+      commandForm.setAttribute("aria-busy", "false"); commandNavigate.disabled = false; commandSubmit.disabled = commandBusinessMission.disabled;
+    }
+  }
+
+  function openOraclePromptConfirmation(proposal, input, returnFocus) {
+    state.returnFocus = returnFocus;
+    state.pendingConfirmation = { input, oracle: true, proposal };
+    actionConfirmationTitle.textContent = proposal.canConfirm ? "Creare la bozza con la squadra ORACLE" : "Missione ORACLE bloccata";
+    actionConfirmationDetail.textContent = proposal.canConfirm ? "La conferma crea soltanto un pacchetto interno evidence-led per la review di Fabio." : "Il preflight ha trovato un blocker reale. Nessun contenuto o asset è stato creato.";
+    actionConfirmationSubmit.textContent = "Crea bozza interna";
+    actionConfirmationSubmit.dataset.action = "ORACLE_PROMPT";
+    actionConfirmationSubmit.disabled = !proposal.canConfirm;
+    actionConfirmationDetails.replaceChildren();
+    const mission = proposal.businessMission ? proposal.businessMission.missionId + " · " + proposal.businessMission.selectedOpportunityId : "NON DISPONIBILE";
+    const packs = proposal.evidencePacks.length === 0 ? "NON DISPONIBILI" : proposal.evidencePacks.map((pack) => pack.packId + " · " + pack.fingerprint.slice(0, 12) + "…" + (pack.selectedForContent ? " · SELECTED" : "")).join(" | ");
+    const route = proposal.route.map((stage) => stage.callSign + " " + stage.status).join(" → ");
+    const capabilities = proposal.capabilities.map((capability) => capability.deliverable + " " + capability.status).join(" · ");
+    const entries = [["Stato", proposal.status + " · " + proposal.reasonCode], ["Missione", mission], ["Evidence Pack", packs], ["Squadra", route], ["Capability", capabilities], ["Costo / provider", "USD " + Number(proposal.estimatedCostUsd).toFixed(2) + " · " + String(proposal.providerCalls) + " chiamate"], ["Prompt SHA-256", proposal.promptFingerprint], ["Context SHA-256", proposal.proposalFingerprint], ["Pubblicazione", proposal.publication + " · effetti esterni ZERO"]];
+    for (const [label, value] of entries) { const row = document.createElement("div"); row.append(element("dt", "", label), element("dd", "", value)); actionConfirmationDetails.append(row); }
+    showActionConfirmation(proposal.expiresAt);
+  }
+
   async function proposeContentAction(action, record, button) {
     try {
       button.disabled = true;
@@ -1158,6 +1473,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function openActionConfirmation(action, proposal) {
     state.returnFocus = document.activeElement;
+    actionConfirmationSubmit.disabled = false;
     if (proposal && proposal.proposal) {
       if (proposal.receipt) {
         commandResult.textContent = "Comando già registrato. Ricevuta durevole: " + proposal.receipt.receiptId + ".";
@@ -1216,8 +1532,10 @@ export const COMMAND_CENTER_CLIENT_JS = `
     state.confirmationInertedNodes = background.filter((node) => !node.hasAttribute("inert"));
     for (const node of background) node.setAttribute("inert", "");
     actionConfirmation.hidden = false;
+    emitMotion("review", { status: "AWAITING_FABIO" });
     startConfirmationTimer(expiresAt);
-    actionConfirmationSubmit.focus();
+    const quietButton = actionConfirmation.querySelector(".cc-modal-button--quiet");
+    if (actionConfirmationSubmit.disabled && quietButton) quietButton.focus(); else actionConfirmationSubmit.focus();
   }
 
   function closeActionConfirmation(message) {
@@ -1227,6 +1545,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     state.pendingConfirmation = null;
     state.returnFocus = null;
     actionConfirmation.hidden = true;
+    actionConfirmationSubmit.disabled = false;
     for (const node of state.confirmationInertedNodes) node.removeAttribute("inert");
     state.confirmationInertedNodes = [];
     if (message) commandResult.textContent = message;
@@ -1251,11 +1570,17 @@ export const COMMAND_CENTER_CLIENT_JS = `
     try {
       actionConfirmationSubmit.disabled = true;
       const proposal = pending.proposal;
-      const receipt = pending.control
-        ? await actionPost("/api/control-actions/confirm", { confirmationToken: proposal.confirmationToken, contractVersion: "1", entityFingerprint: proposal.proposal.target.entityFingerprint, proposalId: proposal.proposal.proposalId })
-        : await actionPost("/api/actions/confirm", { actionId: proposal.actionId, confirmationToken: proposal.confirmationToken, packageFingerprint: proposal.summary.packageFingerprint });
-      closeActionConfirmation("Azione registrata. Ricevuta durevole: " + (pending.control ? receipt.receiptId : receipt.command.commandId) + ".");
+      const receipt = pending.oracle
+        ? await actionPost("/api/prompt-missions/confirm", { confirmationToken: proposal.confirmationToken, contractVersion: "1", prompt: pending.input.prompt, promptFingerprint: proposal.promptFingerprint, proposalFingerprint: proposal.proposalFingerprint, proposalId: proposal.proposalId })
+        : pending.control
+          ? await actionPost("/api/control-actions/confirm", { confirmationToken: proposal.confirmationToken, contractVersion: "1", entityFingerprint: proposal.proposal.target.entityFingerprint, proposalId: proposal.proposal.proposalId })
+          : await actionPost("/api/actions/confirm", { actionId: proposal.actionId, confirmationToken: proposal.confirmationToken, packageFingerprint: proposal.summary.packageFingerprint });
+      if (pending.oracle) { commandInput.value = ""; state.selectedProductionId = receipt.productionId; }
+      const deferredMedia = pending.oracle && proposal.capabilities.some((capability) => capability.status !== "READY_LOCAL");
+      closeActionConfirmation(pending.oracle ? "Bozza interna creata: " + receipt.productionId + ". Review Fabio richiesta; pubblicazione LOCKED." + (deferredMedia ? " Gli output media selezionati restano differiti sotto gate separato." : "") : "Azione registrata. Ricevuta durevole: " + (pending.control ? receipt.receiptId : receipt.command.commandId) + ".");
+      emitMotion("receipt", { status: pending.oracle ? "AWAITING_FABIO" : "COMPLETED" });
       await refresh();
+      if (pending.oracle) window.location.hash = "#production";
     } catch (error) {
       closeActionConfirmation(error instanceof Error ? error.message : "Azione non eseguita.");
     } finally { actionConfirmationSubmit.disabled = false; }
@@ -1683,6 +2008,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
     text("apex-total", number(agents.length));
     text("apex-squads", number(squads));
     text("apex-guardians", number(guardians));
+    text("tower-total", number(agents.length));
+    text("tower-ready", number(ready));
+    text("tower-guardians", number(guardians));
   }
 
   function renderAgentDossier(agent) {
@@ -2012,9 +2340,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function navigate(query) {
     const normalized = query.toLocaleLowerCase("it-IT");
-    const mapping = [["fingerprint", "vault"], ["riferiment", "vault"], ["creativ", "vault"], ["prefer", "vault"], ["vault", "vault"], ["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["business", "business"], ["opportun", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
+    const mapping = [["fingerprint", "vault"], ["riferiment", "vault"], ["creativ", "vault"], ["prefer", "vault"], ["vault", "vault"], ["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["revenue", "business"], ["ricav", "business"], ["vendit", "business"], ["funnel", "business"], ["lead", "business"], ["prezz", "business"], ["margine", "business"], ["business", "business"], ["opportun", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
     const found = mapping.find(([keyword]) => normalized.includes(keyword));
-    if (!found) { commandResult.textContent = "Prova con decisioni, Social, Business, evidenze, sistema, agenti o produzione."; return; }
+    if (!found) { commandResult.textContent = "Prova con ricavi, offerta, funnel, evidenze, produzione, squadra o sistema."; return; }
     const nextHash = "#" + found[1];
     if (window.location.hash === nextHash) syncVisualContext();
     else window.location.hash = nextHash;
@@ -2070,7 +2398,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       studio: ["Studio", "Produzione, intelligence e riferimenti in un unico spazio."],
       system: ["Sistema", "Runtime, flussi e vincoli operativi senza rumore."],
       team: ["Squadra Apex", "Diciassette specialisti coordinati da un solo comando."],
-      today: ["Buongiorno, Fabio.", "Qui trovi soltanto ciò che richiede attenzione."],
+      today: ["Buongiorno, Fabio.", "Qui trovi il prossimo collo di bottiglia tra lavoro e ricavo."],
     };
     const heading = root.querySelector(".cc-command-title h1");
     const subtitle = root.querySelector(".cc-topbar-subtitle");
@@ -2080,6 +2408,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       const main = root.querySelector(".cc-main");
       if (main && typeof main.scrollTo === "function") main.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth", top: 0 });
       window.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth", top: 0 });
+      emitMotion("route", { selector: candidate && /^[a-zA-Z0-9_-]+$/.test(candidate) ? "#" + candidate : "#today" });
     }
   }
 
@@ -2211,7 +2540,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
     if (typeof reducedMotionQuery.addEventListener === "function") reducedMotionQuery.addEventListener("change", reset);
   }
 
-  commandForm.addEventListener("submit", (event) => { event.preventDefault(); navigate(commandInput.value.trim()); });
+  commandForm.addEventListener("submit", (event) => { event.preventDefault(); void proposeOraclePrompt(); });
+  commandNavigate.addEventListener("click", () => { navigate(commandInput.value.trim()); });
   document.addEventListener("keydown", (event) => {
     if (!actionConfirmation.hidden) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); commandInput.focus(); }
@@ -2249,6 +2579,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   prepareAmbientMotion();
   connectLiveEvents();
   window.addEventListener("beforeunload", () => {
+    emitMotion("stop", { reasonCode: "BROWSER_UNLOAD" });
     if (state.eventSource) state.eventSource.close();
     if (state.liveFallbackInterval !== null) window.clearInterval(state.liveFallbackInterval);
     if (state.liveRefreshTimer !== null) window.clearTimeout(state.liveRefreshTimer);

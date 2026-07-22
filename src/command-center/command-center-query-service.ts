@@ -36,10 +36,15 @@ import type {
 } from "../operations-runtime/operations-runtime.js";
 import type { ReferenceVaultCommandCenterQuery } from "./reference-vault-query.js";
 import type { CommandCenterReferenceVaultView } from "./reference-vault-view.js";
+import {
+  buildCommandCenterRevenueView,
+  type CommandCenterRevenueView,
+} from "./command-center-revenue-view.js";
 
 export const COMMAND_CENTER_CONTRACT_VERSION = "1" as const;
 
 const BUSINESS_LIMIT = 25;
+const ORACLE_APPROVED_BUSINESS_LIMIT = 100;
 const EXPOSED_WORKDAY_LIMIT = 3;
 const FOUNDER_WORKDAY_LIMIT = 25;
 const INCIDENT_LIMIT = 100;
@@ -78,8 +83,10 @@ export interface CommandCenterSnapshot {
   readonly founderWorkdays: readonly FounderWorkdayRecord[];
   readonly generatedAt: string;
   readonly overview: CommandCenterOverview;
+  readonly oracleBusinessMissions: readonly BusinessMissionDossier[];
   readonly productions: readonly MetodoVeloceContentProductionRecord[];
   readonly referenceVault: CommandCenterReferenceVaultView;
+  readonly revenue: CommandCenterRevenueView;
   readonly research: readonly AuthorizedResearchMission[];
   readonly runtime: CommandCenterRuntimeSummary;
   readonly socialIntelligence: CommandCenterSocialIntelligenceSummary;
@@ -258,6 +265,7 @@ export class CommandCenterQueryService {
         productions,
         workdays,
         business,
+        oracleBusiness,
         sources,
         evidence,
         evidencePacks,
@@ -279,6 +287,7 @@ export class CommandCenterQueryService {
         contentProductions.listByWorkspaceId(this.#workspaceId, PRODUCTION_LIMIT),
         agentCompanyWorkdays.listByOwner({ actorId: this.#actorId, workspaceId: this.#workspaceId }, WORKDAY_LIMIT),
         businessMissions.listByWorkspaceId(this.#workspaceId, BUSINESS_LIMIT),
+        businessMissions.listApprovedByOwner({ actorId: this.#actorId, workspaceId: this.#workspaceId }, ORACLE_APPROVED_BUSINESS_LIMIT),
         operationalPlanes.listSourcesByWorkspaceId(this.#workspaceId, 100),
         operationalPlanes.listEvidenceByWorkspaceId(this.#workspaceId, 100),
         operationalPlanes.listEvidencePacksByWorkspaceId(this.#workspaceId, 100),
@@ -298,13 +307,15 @@ export class CommandCenterQueryService {
         operationsRuntime.summarizeUsage(this.#workspaceId),
       ]);
       if (workdays.some((workday) => workday.workspaceId !== this.#workspaceId || workday.actorId !== this.#actorId)) throw new RepositoryValidationError("Command Center Agent Company read returned cross-identity data");
+      if (oracleBusiness.some((mission) => mission.workspaceId !== this.#workspaceId || mission.actorId !== this.#actorId || mission.status !== "APPROVED")) throw new RepositoryValidationError("Command Center ORACLE read returned invalid mission data");
+      const ownedBusiness = business.filter((mission) => mission.workspaceId === this.#workspaceId && mission.actorId === this.#actorId);
       const pendingFabio = productions.filter(
         ({ status }) => status === "PENDING_FABIO_APPROVAL",
       ).length;
-      const pendingBusiness = business.filter(({ status }) => status === "PENDING_FABIO_APPROVAL").length;
+      const pendingBusiness = ownedBusiness.filter(({ status }) => status === "PENDING_FABIO_APPROVAL").length;
       const pendingWorkdays = workdays.filter(({ status }) => status === "AWAITING_FABIO").length;
       const blockedWorkdays = workdays.filter(({ status }) => status === "BLOCKED").length;
-      const blockedBusiness = business.filter(({ status }) => status === "BLOCKED").length;
+      const blockedBusiness = ownedBusiness.filter(({ status }) => status === "BLOCKED").length;
       const blockedResearch = research.filter(({ status }) => status === "BLOCKED").length;
       const blockedClaims = research.flatMap(({ claimResults }) => claimResults).filter(({ status }) => status !== "VERIFIED").length;
       const pendingEvidenceAttested = productions.filter(
@@ -340,7 +351,7 @@ export class CommandCenterQueryService {
       const approvalWindowLimited = productionWindow.status === "LIMIT_REACHED" || businessWindow.status === "LIMIT_REACHED" || workdayWindow.status === "LIMIT_REACHED";
       const latestDailyBrief = currentDailyBriefs[0];
       const decisionInbox = commandCenterDecisionInbox({
-        business,
+        business: ownedBusiness,
         founderWorkdays: founderAcceptanceWorkdays,
         incidents,
         jobs: operationsJobs,
@@ -349,7 +360,7 @@ export class CommandCenterQueryService {
         workdays,
       });
       const decisionInboxCoverage = completeDecisionCoverage({
-        business,
+        business: ownedBusiness,
         founderWorkdays: founderAcceptanceWorkdays,
         incidents,
         jobs: operationsJobs,
@@ -375,6 +386,14 @@ export class CommandCenterQueryService {
         || socialCoverage === "LIMIT_REACHED";
       const pendingApprovals = pendingFabio + pendingBusiness + pendingWorkdays;
       const controlTargets = commandCenterControlTargets({ incidents, jobs: operationsJobs, productionControls, productions });
+      const revenue = buildCommandCenterRevenueView({
+        agentCompany: workdays,
+        businessContext: referenceVault.businessContext,
+        businessMissions: ownedBusiness,
+        coverage: decisionInboxCoverage,
+        evidencePacks,
+        productions,
+      });
 
       return Object.freeze({
         // The overview carries complete task detail only for the three highest-
@@ -383,7 +402,7 @@ export class CommandCenterQueryService {
         // multiplying into an unbounded API/DOM response.
         agentCompany: Object.freeze(workdays.slice(0, EXPOSED_WORKDAY_LIMIT)),
         agents: agentSummaries(workdays),
-        business: Object.freeze([...business]),
+        business: Object.freeze([...ownedBusiness]),
         contractVersion: COMMAND_CENTER_CONTRACT_VERSION,
         controls: Object.freeze({
           incidents: Object.freeze([...incidents]),
@@ -480,8 +499,10 @@ export class CommandCenterQueryService {
           }),
           system: attentionRequired ? "ATTENTION_REQUIRED" : "READY",
         }),
+        oracleBusinessMissions: Object.freeze([...oracleBusiness]),
         productions: Object.freeze([...productions]),
         referenceVault,
+        revenue,
         research: Object.freeze([...research]),
         runtime: Object.freeze({
           continuousWorker,

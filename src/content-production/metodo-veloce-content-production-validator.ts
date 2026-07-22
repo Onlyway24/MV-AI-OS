@@ -19,7 +19,7 @@ import { QualityGuardianReportValidator } from "../guardians/quality-guardian-va
 import { SocialPublishingPackValidator } from "../social-intelligence/metodo-veloce-social-intelligence-validator.js";
 
 const ID = /^[a-z0-9][a-z0-9@._-]{0,127}$/u;
-const UNSAFE = /(?:\bsk-[A-Za-z0-9_-]{8,}|https?:\/\/|secret|token|raw prompt|raw completion|provider payload|stack trace|password)/iu;
+const UNSAFE = /(?:\bsk-[A-Za-z0-9_-]{8,}|\bghp_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}|\bAKIA[A-Z0-9]{16}\b|\bAIza[A-Za-z0-9_-]{30,}|\bBearer\s+[A-Za-z0-9._~+/-]{12,}|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|https?:\/\/|secret|token|raw prompt|raw completion|provider payload|stack trace|password)/iu;
 const CLAIM = /(?:guaranteed|garantit[oaie]?|make\s+€?\d+|guadagn\w+\s+(?:sicuro|garantit)|cura|dimagrisci|senza pagare tasse|best in the world|migliore del mondo)/iu;
 const QUALITY_REPORT = new QualityGuardianReportValidator();
 const SOCIAL_PUBLISHING_PACK = new SocialPublishingPackValidator();
@@ -47,8 +47,8 @@ const PACKAGE = new MetodoVeloceContentProductionPackageValidator();
 export class MetodoVeloceContentProductionRecordValidator implements Validator<MetodoVeloceContentProductionRecord> {
   public validate(value: unknown): ValidationResult<MetodoVeloceContentProductionRecord> {
     if (!record(value)) return invalid("Metodo Veloce content production record is invalid");
-    const fields = ["actorId", "contractVersion", "createdAt", "package", "productionId", "status", "updatedAt", "version", "workspaceId", ...(value.archive === undefined ? [] : ["archive"]), ...(value.evidencePack === undefined ? [] : ["evidencePack"]), ...(value.metrics === undefined ? [] : ["metrics"]), ...(value.review === undefined ? [] : ["review"]), ...(value.schedule === undefined ? [] : ["schedule"])];
-    if (!keys(value, fields) || !identifier(value.actorId) || !identifier(value.workspaceId) || !identifier(value.productionId) || value.contractVersion !== METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION || !timestamp(value.createdAt) || !timestamp(value.updatedAt) || !version(value.version) || !evidencePack(value.evidencePack) || !PACKAGE.validate(value.package).ok || !recordStatus(value)) return invalid("Metodo Veloce content production record is invalid");
+    const fields = ["actorId", "contractVersion", "createdAt", "package", "productionId", "status", "updatedAt", "version", "workspaceId", ...(value.archive === undefined ? [] : ["archive"]), ...(value.evidencePack === undefined ? [] : ["evidencePack"]), ...(value.generationContextFingerprint === undefined ? [] : ["generationContextFingerprint"]), ...(value.metrics === undefined ? [] : ["metrics"]), ...(value.review === undefined ? [] : ["review"]), ...(value.schedule === undefined ? [] : ["schedule"])];
+    if (!keys(value, fields) || !identifier(value.actorId) || !identifier(value.workspaceId) || !identifier(value.productionId) || value.contractVersion !== METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION || !timestamp(value.createdAt) || !timestamp(value.updatedAt) || !version(value.version) || !optionalFingerprint(value.generationContextFingerprint) || !evidencePack(value.evidencePack) || !PACKAGE.validate(value.package).ok || !recordStatus(value)) return invalid("Metodo Veloce content production record is invalid");
     return validationSuccess(freeze(structuredClone(value as unknown as MetodoVeloceContentProductionRecord)));
   }
 }
@@ -69,9 +69,9 @@ export class MetodoVeloceContentProductionArchiveRequestValidator implements Val
   public validate(value: unknown): ValidationResult<MetodoVeloceContentProductionArchiveRequest> { return request(value, ["expectedVersion", "productionId", "reason"], (candidate) => identifier(candidate.productionId) && version(candidate.expectedVersion) && candidate.reason === "MANUAL", "Metodo Veloce content archive request"); }
 }
 
-function evidence(value: unknown): value is readonly ContentEvidence[] { return Array.isArray(value) && value.length >= 1 && value.length <= 8 && value.every((entry) => record(entry) && keys(entry, ["evidenceId", "sourceRef", "statement"]) && identifier(entry.evidenceId) && identifier(entry.sourceRef) && text(entry.statement, 8, 500)); }
+function evidence(value: unknown): value is readonly ContentEvidence[] { return Array.isArray(value) && value.length >= 1 && value.length <= 8 && value.every((entry) => record(entry) && keys(entry, ["evidenceId", "sourceRef", "statement", ...(entry.limitations === undefined ? [] : ["limitations"])]) && identifier(entry.evidenceId) && identifier(entry.sourceRef) && text(entry.statement, 8, 500) && (entry.limitations === undefined || strings(entry.limitations, 1, 6, 320))); }
 function evidencePack(value: unknown): boolean { return value === undefined || (record(value) && keys(value, ["fingerprint", "minFreshnessExpiresAt", "packId", "verifiedAt"]) && identifier(value.packId) && typeof value.fingerprint === "string" && /^[a-f0-9]{64}$/u.test(value.fingerprint) && timestamp(value.minFreshnessExpiresAt) && timestamp(value.verifiedAt) && Date.parse(value.verifiedAt) < Date.parse(value.minFreshnessExpiresAt)); }
-function evidenceSummary(value: unknown): boolean { return record(value) && keys(value, ["items", "limitations"]) && evidence(value.items) && strings(value.limitations, 1, 4, 300); }
+function evidenceSummary(value: unknown): boolean { return record(value) && keys(value, ["items", "limitations"]) && evidence(value.items) && strings(value.limitations, 1, 50, 320); }
 function socialPublishingPack(value: unknown): boolean {
   if (SOCIAL_PUBLISHING_PACK.validate(value).ok) return true;
   if (!record(value) || value.contractVersion !== "1" || value.externalActionsAllowed !== false || !identifier(value.productionId) || !timestamp(value.generatedAt) || !["BLOCKED", "REQUIRES_RESEARCH"].includes(String(value.status)) || !["RICHIEDE_RICERCA", "SCARTARE"].includes(String(value.decision)) || typeof value.fingerprint !== "string" || !/^[a-f0-9]{64}$/u.test(value.fingerprint)) return false;
@@ -94,6 +94,7 @@ function variants(value: unknown): boolean { return record(value) && keys(value,
 function strings(value: unknown, min: number, max: number, length: number): boolean { return Array.isArray(value) && value.length >= min && value.length <= max && value.every((entry) => text(entry, 1, length)); }
 function score(value: unknown): boolean { return Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= 100; }
 function identifier(value: unknown): value is string { return typeof value === "string" && ID.test(value); }
+function optionalFingerprint(value: unknown): boolean { return value === undefined || (typeof value === "string" && /^[a-f0-9]{64}$/u.test(value)); }
 function text(value: unknown, min: number, max: number): value is string { return typeof value === "string" && value.trim().length >= min && value.trim().length <= max && !UNSAFE.test(value); }
 function timestamp(value: unknown): value is string { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value); }
 function version(value: unknown): boolean { return Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= 1_000_000; }

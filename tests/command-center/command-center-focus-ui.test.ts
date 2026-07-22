@@ -21,8 +21,11 @@ describe("Command Center focused information architecture", () => {
     expect(COMMAND_CENTER_HTML).toContain('aria-controls="vault"');
     expect(COMMAND_CENTER_HTML).toContain('aria-labelledby="studio-tab-vault"');
     expect(COMMAND_CENTER_HTML).toContain("Buongiorno, Fabio.");
-    expect(COMMAND_CENTER_HTML).toContain("Qui trovi soltanto ciò che richiede attenzione.");
+    expect(COMMAND_CENTER_HTML).toContain("Qui trovi il prossimo collo di bottiglia tra lavoro e ricavo.");
     expect(COMMAND_CENTER_HTML).toContain("Intelligence Creativa");
+    expect(COMMAND_CENTER_HTML).toContain("ONLYWAY REVENUE OPERATING SYSTEM");
+    expect(COMMAND_CENTER_HTML).toContain('id="revenue-stage-list"');
+    expect(COMMAND_CENTER_HTML).toContain('id="revenue-readiness-grid"');
   });
 
   it("renders only durable Vault state and keeps navigation non-mutating", () => {
@@ -36,6 +39,10 @@ describe("Command Center focused information architecture", () => {
     expect(COMMAND_CENTER_HTML).toContain('id="approved-rejected-comparison"');
     expect(COMMAND_CENTER_HTML).toContain('id="carousel-sequence-panel"');
     expect(COMMAND_CENTER_CLIENT_JS).toContain("renderReferenceVault(snapshot.referenceVault");
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("renderRevenue(snapshot.revenue");
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("PIPELINE_AGGREGATE_NOT_AVAILABLE");
+    expect(COMMAND_CENTER_CLIENT_JS).toContain("DRAFT INTERNO · INVIO BLOCCATO");
+    expect(COMMAND_CENTER_CLIENT_JS).not.toContain("innerHTML");
     expect(COMMAND_CENTER_CLIENT_JS).toContain("Nessuna azione è stata eseguita.");
     expect(COMMAND_CENTER_CLIENT_JS).toContain('vault: ["studio", "vault"]');
     expect(COMMAND_CENTER_CLIENT_JS).toContain("isVaultRightsBlocked");
@@ -50,6 +57,30 @@ describe("Command Center focused information architecture", () => {
     expect(COMMAND_CENTER_CLIENT_JS).toContain('window.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth"');
     expect(COMMAND_CENTER_CLIENT_JS).not.toContain("IMPORT_REFERENCE_ASSET");
     expect(COMMAND_CENTER_CLIENT_JS).not.toContain("APPROVE_REFERENCE_ASSET");
+    expect(() => new Script(COMMAND_CENTER_CLIENT_JS)).not.toThrow();
+  });
+
+  it("turns the top command into a governed ORACLE composer without hiding media blockers", () => {
+    expect(COMMAND_CENTER_HTML).toContain('id="command-input"');
+    expect(COMMAND_CENTER_HTML).toContain('aria-describedby="command-help command-result"');
+    expect(COMMAND_CENTER_HTML).toContain('maxlength="240"');
+    expect(COMMAND_CENTER_HTML).toContain('id="command-business-mission"');
+    expect(COMMAND_CENTER_HTML).toContain('value="IMAGE_MASTER"');
+    expect(COMMAND_CENTER_HTML).toContain('value="VIDEO_RENDER"');
+    expect(COMMAND_CENTER_HTML).toContain('value="CAROUSEL" checked disabled');
+    expect(COMMAND_CENTER_HTML).toContain('value="TIKTOK_VIDEO_BLUEPRINT" checked disabled');
+    expect(COMMAND_CENTER_HTML).toContain('value="IMAGE_MASTER" />');
+    expect(COMMAND_CENTER_HTML).toContain('id="command-navigate"');
+    expect(COMMAND_CENTER_HTML).toContain('id="command-submit"');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('/api/prompt-missions/propose');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('/api/prompt-missions/confirm');
+    expect(COMMAND_CENTER_HTML).toContain('NEXUS coordina ORACLE, VECTOR, PRISM e FORGE');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('proposal.providerCalls');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('proposal.publication + " · effetti esterni ZERO"');
+    expect(COMMAND_CENTER_CLIENT_JS).not.toContain("window.confirm");
+    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain(".cc-oracle-composer");
+    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain(".cc-oracle-deliverables label{font-size:10px;min-height:44px");
+    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain(".cc-oracle-actions button{width:100%}");
     expect(() => new Script(COMMAND_CENTER_CLIENT_JS)).not.toThrow();
   });
 

@@ -8,6 +8,7 @@ import type { Clock } from "../ports/clock.js";
 import { controlFingerprint } from "../operations-control/operations-control-validator.js";
 import type { EvidencePack, EvidencePackItem, EvidencePackRequest, EvidenceRecord, EvidenceRecordRequest, FeedbackAnalysis, FeedbackMetricImportRequest, FeedbackMetricSnapshot, PublicationAuthorizationRequest, PublicationDryRunRequest, PublicationKillSwitch, PublicationKillSwitchRequest, PublicationPlan, PublicationReceiptRequest, SourceRegistrationRequest, SourceRegistryEntry } from "./operational-plane.js";
 import type { OperationalPlaneRepository } from "./operational-plane-repository.js";
+import { evidencePackFingerprint } from "./evidence-pack-fingerprint.js";
 
 export interface OperationalPlaneServiceDependencies { readonly actorId: string; readonly clock: Clock; readonly repositories: RepositoryTransactionRunner; readonly workspaceId: string; }
 
@@ -62,7 +63,7 @@ export class OperationalPlaneService {
         createdAt,
         evidence,
         evidenceIds: [...input.evidenceIds],
-        fingerprint: fingerprint({ evidence, evidenceIds: input.evidenceIds, packId: input.packId }),
+        fingerprint: evidencePackFingerprint({ evidence, evidenceIds: input.evidenceIds, packId: input.packId }),
         minFreshnessExpiresAt: evidence.map((item) => item.freshnessExpiresAt).sort()[0] ?? createdAt,
         packId: input.packId,
         status: "READY",
@@ -85,7 +86,7 @@ export class OperationalPlaneService {
    */
   public async assertEvidencePackForContentInTransaction(operationalPlanes: OperationalPlaneRepository, packId: string, evidence: readonly ContentEvidence[]): Promise<EvidencePack> {
     const pack = await this.#ownedEvidencePack(operationalPlanes, packId);
-    if (evidence.length !== pack.evidence.length || !evidence.every((item, index) => { const packed = pack.evidence[index]; if (packed === undefined) return false; return item.evidenceId === packed.evidenceId && item.sourceRef === packed.source.sourceId && packed.claimMappings.some(({ statement }) => statement === item.statement); })) throw new RepositoryConflictError("Content evidence does not exactly match its Evidence Pack");
+    if (evidence.length !== pack.evidence.length || !evidence.every((item, index) => { const packed = pack.evidence[index]; if (packed === undefined) return false; return item.evidenceId === packed.evidenceId && item.sourceRef === packed.source.sourceId && packed.claimMappings.some(({ statement }) => statement === item.statement) && (item.limitations === undefined || sameStrings(item.limitations, packed.limitations)); })) throw new RepositoryConflictError("Content evidence does not exactly match its Evidence Pack");
     await this.#currentPackEvidence(operationalPlanes, pack.evidenceIds);
     return pack;
   }
@@ -96,7 +97,7 @@ export class OperationalPlaneService {
       const records = await Promise.all(evidenceIds.map((id) => operationalPlanes.getEvidenceById(id)));
       for (const [index, item] of evidence.entries()) {
         const record = records[index];
-        if (record?.workspaceId !== this.dependencies.workspaceId || record.status !== "VERIFIED" || Date.parse(record.freshnessExpiresAt) <= this.dependencies.clock.now().getTime() || record.sourceId !== item.sourceRef || !record.claimMappings.some(({ statement }) => statement === item.statement)) throw new RepositoryConflictError("Content evidence is not verified, current, or claim-bound");
+        if (record?.workspaceId !== this.dependencies.workspaceId || record.status !== "VERIFIED" || Date.parse(record.freshnessExpiresAt) <= this.dependencies.clock.now().getTime() || record.sourceId !== item.sourceRef || !record.claimMappings.some(({ statement }) => statement === item.statement) || (item.limitations !== undefined && !sameStrings(item.limitations, record.limitations))) throw new RepositoryConflictError("Content evidence is not verified, current, or claim-bound");
         const source = await this.#ownedSource(operationalPlanes, record.sourceId);
         if (!source.publicCitationAllowed) throw new RepositoryConflictError("Content evidence source is not eligible for public citation");
       }
@@ -232,8 +233,9 @@ function hasVisualApprovalReceipt(content: MetodoVeloceContentProductionRecord):
   return content.review?.decision === "APPROVED" && typeof content.review.visualApprovalBindingFingerprint === "string" && /^[a-f0-9]{64}$/u.test(content.review.visualApprovalBindingFingerprint);
 }
 
-function fingerprint(value: unknown): string { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }
 function sharesClaim(left: EvidenceRecord, right: EvidenceRecord): boolean { const claims = new Set(right.claimMappings.map(({ claimId }) => claimId)); return left.claimMappings.some(({ claimId }) => claims.has(claimId)); }
+function sameStrings(left: readonly string[], right: readonly string[]): boolean { return left.length === right.length && left.every((value, index) => value === right[index]); }
+function fingerprint(value: unknown): string { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }
 
 function referenceWithinAuthorizedSource(reference: string, canonicalReference: string): boolean {
   try {

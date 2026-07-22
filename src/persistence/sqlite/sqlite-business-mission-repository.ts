@@ -29,6 +29,12 @@ export class SqliteBusinessMissionRepository implements BusinessMissionRepositor
     return Promise.resolve();
   }
 
+  public listApprovedByOwner(owner: { readonly actorId: string; readonly workspaceId: string }, limit: number): Promise<readonly BusinessMissionDossier[]> {
+    assertActiveTransaction(this.scope); assertId(owner.actorId); assertId(owner.workspaceId); assertLimit(limit);
+    const rows = this.database.prepare("SELECT record_json FROM business_mission_dossiers WHERE workspace_id = ? AND actor_id = ? AND status = 'APPROVED' ORDER BY updated_at DESC, mission_id ASC LIMIT ?").all(owner.workspaceId, owner.actorId, limit);
+    return Promise.resolve(Object.freeze(rows.map((row) => this.#decode(row))));
+  }
+
   public listByWorkspaceId(workspaceId: string, limit: number): Promise<readonly BusinessMissionDossier[]> {
     assertActiveTransaction(this.scope); assertId(workspaceId); assertLimit(limit);
     const rows = this.database.prepare("SELECT record_json FROM business_mission_dossiers WHERE workspace_id = ? ORDER BY CASE status WHEN 'PENDING_FABIO_APPROVAL' THEN 0 WHEN 'REVISION_REQUESTED' THEN 1 WHEN 'BLOCKED' THEN 2 ELSE 3 END, updated_at DESC, mission_id ASC LIMIT ?").all(workspaceId, limit);
