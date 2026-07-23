@@ -16,6 +16,14 @@ export const OPERATIONS_JOB_TYPES = Object.freeze([
   "STALE_TASK_DETECTION",
   "DAILY_OPERATING_REPORT",
   "SECURITY_POSTURE_CHECK",
+  "VENTURE_OPPORTUNITY_SCAN",
+  "VENTURE_EVIDENCE_REFRESH",
+  "VENTURE_EXPERIMENT_REVIEW",
+  "VENTURE_STALE_CHECK",
+  "PORTFOLIO_DAILY_BRIEF",
+  "PORTFOLIO_WEEKLY_REVIEW",
+  "CAPITAL_ALLOCATION_REVIEW",
+  "VENTURE_KILL_SCALE_CHECK",
 ] as const);
 
 export type OperationsJobType = typeof OPERATIONS_JOB_TYPES[number];
@@ -30,7 +38,13 @@ export type OperationsJobPayload =
   | Readonly<{ readonly recoveryLimit: number }>
   | Readonly<{ readonly window: "TODAY" }>
   | Readonly<{ readonly backupPolicyId: string }>
-  | Readonly<{ readonly staleAfterSeconds: number }>;
+  | Readonly<{ readonly staleAfterSeconds: number }>
+  | Readonly<{ readonly ventureMode: "REGISTERED_EVIDENCE_ONLY" }>
+  | Readonly<{ readonly ventureMode: "REGISTERED_EVIDENCE_REFRESH" }>
+  | Readonly<{ readonly ventureMode: "EXPERIMENT_REVIEW_ONLY" }>
+  | Readonly<{ readonly ventureStaleAfterSeconds: number }>
+  | Readonly<{ readonly ventureMode: "CAPITAL_PROPOSAL_ONLY" }>
+  | Readonly<{ readonly ventureMode: "KILL_SCALE_REVIEW_ONLY" }>;
 
 export interface OperationsJobBudget {
   readonly maxCostCents: number;
@@ -72,6 +86,10 @@ export const OPERATIONS_JOB_BLOCK_CODES = Object.freeze([
   "RISK_GATE_BLOCKED",
   "SECURITY_POSTURE_COVERAGE_REQUIRED",
   "STALE_TASK_COVERAGE_REQUIRED",
+  "VENTURE_POLICY_REQUIRED",
+  "VENTURE_EVIDENCE_COVERAGE_REQUIRED",
+  "VENTURE_PORTFOLIO_COVERAGE_REQUIRED",
+  "VENTURE_REAL_OBSERVATION_REQUIRED",
 ] as const);
 
 export interface OperationsJobBlock {

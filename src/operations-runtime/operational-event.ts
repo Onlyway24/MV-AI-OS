@@ -23,6 +23,7 @@ export const OPERATIONAL_EVENT_TYPES = Object.freeze([
   "KILL_SWITCH_CHANGED",
   "HEALTH_STATE_CHANGED",
   "INCIDENT_ACKNOWLEDGED",
+  "VENTURE_STATE_CHANGED",
 ] as const);
 
 export const OPERATIONAL_EVENT_AGGREGATE_TYPES = Object.freeze([
@@ -36,6 +37,7 @@ export const OPERATIONAL_EVENT_AGGREGATE_TYPES = Object.freeze([
   "FOUNDER_WORKDAY",
   "OPERATIONS_CONTROL",
   "INCIDENT",
+  "VENTURE",
 ] as const);
 
 export const OPERATIONAL_EVENT_SUMMARY_CODES = Object.freeze([
@@ -61,6 +63,7 @@ export const OPERATIONAL_EVENT_SUMMARY_CODES = Object.freeze([
   "kill_switch_changed",
   "health_state_changed",
   "incident_acknowledged",
+  "venture_state_changed",
 ] as const);
 
 export type OperationalEventType = typeof OPERATIONAL_EVENT_TYPES[number];
@@ -122,4 +125,5 @@ export const OPERATIONAL_EVENT_SEMANTICS: Readonly<
   KILL_SWITCH_CHANGED: Object.freeze({ aggregateType: "OPERATIONS_CONTROL", safeSummaryCode: "kill_switch_changed" }),
   HEALTH_STATE_CHANGED: Object.freeze({ aggregateType: "OPERATIONS_CONTROL", safeSummaryCode: "health_state_changed" }),
   INCIDENT_ACKNOWLEDGED: Object.freeze({ aggregateType: "INCIDENT", safeSummaryCode: "incident_acknowledged" }),
+  VENTURE_STATE_CHANGED: Object.freeze({ aggregateType: "VENTURE", safeSummaryCode: "venture_state_changed" }),
 });

@@ -13,6 +13,7 @@ import { OracleCreativePromptService } from "../oracle-creative/oracle-creative-
 import { SupervisedProcessLock } from "../operations-runtime/supervised-process-lock.js";
 import { SqliteRepositoryTransactionRunner } from "../persistence/sqlite/sqlite-repository-transaction-runner.js";
 import { SqliteReferenceVaultTransactionRunner } from "../persistence/sqlite/sqlite-reference-vault-transaction-runner.js";
+import { SqliteVentureHoldingTransactionRunner } from "../persistence/sqlite/sqlite-venture-holding-transaction-runner.js";
 import { ReferenceVaultQueryAgent } from "../reference-vault/reference-vault-query-agent.js";
 import { createLocalWorkflowCommandBoundary } from "../runtime/create-local-workflow-command-boundary.js";
 import { CommandCenterActionService } from "./command-center-action-service.js";
@@ -21,6 +22,7 @@ import { CommandCenterQueryService } from "./command-center-query-service.js";
 import { PrivateCommandCenterServer, type StartedCommandCenter } from "./command-center-server.js";
 import { FileSocialVisualApprovalGate } from "./visual-approval-gate.js";
 import { ReferenceVaultCommandCenterQuery } from "./reference-vault-query.js";
+import { RepositoryBackedCommandCenterVentureQuery } from "./repository-backed-venture-query.js";
 
 export interface StartedCommandCenterRuntime extends StartedCommandCenter {
   readonly bootstrapPath: string;
@@ -52,10 +54,12 @@ export async function startCommandCenterRuntime(configPath: string): Promise<Sta
   const lock = await SupervisedProcessLock.acquire({ instanceId: `command-center-${randomUUID()}`, path: paths.lockPath, role: "api" });
   let repositories: SqliteRepositoryTransactionRunner | undefined;
   let referenceVaultRepositories: SqliteReferenceVaultTransactionRunner | undefined;
+  let ventureRepositories: SqliteVentureHoldingTransactionRunner | undefined;
   let started: StartedCommandCenter | undefined;
   try {
     repositories = new SqliteRepositoryTransactionRunner(config.runtime.sqlite);
     referenceVaultRepositories = new SqliteReferenceVaultTransactionRunner(config.runtime.sqlite);
+    ventureRepositories = new SqliteVentureHoldingTransactionRunner(config.runtime.sqlite);
     const referenceVault = new ReferenceVaultQueryAgent({
       actorId: config.runtime.actorId,
       clock: systemClock,
@@ -105,6 +109,11 @@ export async function startCommandCenterRuntime(configPath: string): Promise<Sta
           workspaceId: config.runtime.workspaceId,
         }),
         repositories,
+        venture: new RepositoryBackedCommandCenterVentureQuery({
+          actorId: config.runtime.actorId,
+          repositories: ventureRepositories,
+          workspaceId: config.runtime.workspaceId,
+        }),
         workspaceId: config.runtime.workspaceId,
       }),
     });
@@ -115,6 +124,7 @@ export async function startCommandCenterRuntime(configPath: string): Promise<Sta
       started === undefined ? Promise.resolve() : removeOwnedBootstrapFile(paths.bootstrapPath, started.accessUrl),
       started?.close(),
       referenceVaultRepositories?.close(),
+      ventureRepositories?.close(),
       repositories?.close(),
       lock.close(),
     ]);
@@ -122,7 +132,7 @@ export async function startCommandCenterRuntime(configPath: string): Promise<Sta
   }
   let closePromise: Promise<void> | undefined;
   const close = (): Promise<void> => {
-    closePromise ??= closeRuntime(started, repositories, referenceVaultRepositories, lock, paths.bootstrapPath);
+    closePromise ??= closeRuntime(started, repositories, referenceVaultRepositories, ventureRepositories, lock, paths.bootstrapPath);
     return closePromise;
   };
   return Object.freeze({ ...started, bootstrapPath: paths.bootstrapPath, close, lockPath: paths.lockPath });
@@ -177,11 +187,12 @@ async function readBoundedFile(path: string): Promise<Uint8Array> {
   }
 }
 
-async function closeRuntime(started: StartedCommandCenter, repositories: SqliteRepositoryTransactionRunner, referenceVaultRepositories: SqliteReferenceVaultTransactionRunner, lock: SupervisedProcessLock, bootstrapPath: string): Promise<void> {
+async function closeRuntime(started: StartedCommandCenter, repositories: SqliteRepositoryTransactionRunner, referenceVaultRepositories: SqliteReferenceVaultTransactionRunner, ventureRepositories: SqliteVentureHoldingTransactionRunner, lock: SupervisedProcessLock, bootstrapPath: string): Promise<void> {
   const failures: unknown[] = [];
   try { await removeOwnedBootstrapFile(bootstrapPath, started.accessUrl); } catch (error) { failures.push(error); }
   try { await started.close(); } catch (error) { failures.push(error); }
   try { await referenceVaultRepositories.close(); } catch (error) { failures.push(error); }
+  try { await ventureRepositories.close(); } catch (error) { failures.push(error); }
   try { await repositories.close(); } catch (error) { failures.push(error); }
   try { await lock.close(); } catch (error) { failures.push(error); }
   if (failures.length > 0) throw new Error("Arresto del Centro di Comando non riuscito");

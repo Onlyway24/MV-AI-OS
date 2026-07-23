@@ -40,6 +40,11 @@ import {
   buildCommandCenterRevenueView,
   type CommandCenterRevenueView,
 } from "./command-center-revenue-view.js";
+import {
+  EMPTY_COMMAND_CENTER_VENTURE_VIEW,
+  type CommandCenterVentureQuery,
+  type CommandCenterVentureView,
+} from "./command-center-venture-view.js";
 
 export const COMMAND_CENTER_CONTRACT_VERSION = "1" as const;
 
@@ -91,6 +96,7 @@ export interface CommandCenterSnapshot {
   readonly runtime: CommandCenterRuntimeSummary;
   readonly socialIntelligence: CommandCenterSocialIntelligenceSummary;
   readonly socialLive: DailySocialOperationsReport;
+  readonly venture: CommandCenterVentureView;
 }
 
 export interface CommandCenterSocialIntelligenceSummary {
@@ -165,7 +171,10 @@ export interface CommandCenterDecisionInboxItem {
     | "FOUNDER_WORKDAY"
     | "OPERATIONS_INCIDENT"
     | "OPERATIONS_JOB"
-    | "RESEARCH_MISSION";
+    | "RESEARCH_MISSION"
+    | "VENTURE"
+    | "VENTURE_EXPERIMENT"
+    | "VENTURE_THESIS";
   readonly priority: "HIGH" | "MEDIUM";
   readonly question: string;
   readonly reasonCode: string;
@@ -225,6 +234,7 @@ export class CommandCenterQueryService {
   readonly #clock: CommandCenterClock;
   readonly #referenceVault: Pick<ReferenceVaultCommandCenterQuery, "snapshot"> | undefined;
   readonly #repositories: RepositoryTransactionRunner;
+  readonly #venture: Pick<CommandCenterVentureQuery, "snapshot"> | undefined;
   readonly #workspaceId: string;
 
   public constructor(input: {
@@ -232,21 +242,36 @@ export class CommandCenterQueryService {
     readonly clock?: CommandCenterClock;
     readonly referenceVault?: Pick<ReferenceVaultCommandCenterQuery, "snapshot">;
     readonly repositories: RepositoryTransactionRunner;
+    readonly venture?: Pick<CommandCenterVentureQuery, "snapshot">;
     readonly workspaceId: string;
   }) {
     this.#actorId = input.actorId;
     this.#clock = input.clock ?? systemClock;
     this.#referenceVault = input.referenceVault;
     this.#repositories = input.repositories;
+    this.#venture = input.venture;
     this.#workspaceId = input.workspaceId;
   }
 
   public async snapshot(): Promise<CommandCenterSnapshot> {
+    // Each projection owns a separate SQLite connection whose transaction runner uses
+    // BEGIN IMMEDIATE. Reading them sequentially prevents a truthful projection from
+    // being downgraded to UNAVAILABLE solely because two local read snapshots raced.
     const referenceVault = this.#referenceVault === undefined
       ? EMPTY_REFERENCE_VAULT_VIEW
       : await this.#referenceVault.snapshot().catch(() => Object.freeze({
         ...EMPTY_REFERENCE_VAULT_VIEW,
         missingInputs: Object.freeze(["Reference Vault temporaneamente non disponibile: nessun riferimento è stato esposto."]),
+      }));
+    const venture = this.#venture === undefined
+      ? EMPTY_COMMAND_CENTER_VENTURE_VIEW
+      : await this.#venture.snapshot().catch(() => Object.freeze({
+        ...EMPTY_COMMAND_CENTER_VENTURE_VIEW,
+        health: Object.freeze({
+          nextAction: "Ripristina la query locale del Venture Portfolio senza dedurre stato dai dati parziali.",
+          reasonCode: "VENTURE_QUERY_UNAVAILABLE",
+          status: "ATTENTION_REQUIRED" as const,
+        }),
       }));
     return this.#repositories.transaction(async ({
       businessMissions,
@@ -357,6 +382,7 @@ export class CommandCenterQueryService {
         jobs: operationsJobs,
         productions,
         research,
+        venture,
         workdays,
       });
       const decisionInboxCoverage = completeDecisionCoverage({
@@ -367,7 +393,7 @@ export class CommandCenterQueryService {
         productions,
         research,
         workdays,
-      }) ? "COMPLETE" as const : "LIMIT_REACHED" as const;
+      }) && venture.coverage !== "LIMIT_REACHED" ? "COMPLETE" as const : "LIMIT_REACHED" as const;
       const socialCoverage = socialLiveRecords.length < SOCIAL_LIVE_LIMIT && productionWindow.status === "COMPLETE"
         ? "COMPLETE" as const
         : "LIMIT_REACHED" as const;
@@ -382,6 +408,8 @@ export class CommandCenterQueryService {
         || blockedWorkdays > 0
         || blockedResearch > 0
         || incidents.some(({ status }) => status === "OPEN")
+        || venture.coverage === "LIMIT_REACHED"
+        || venture.health.status === "ATTENTION_REQUIRED"
         || decisionInboxCoverage === "LIMIT_REACHED"
         || socialCoverage === "LIMIT_REACHED";
       const pendingApprovals = pendingFabio + pendingBusiness + pendingWorkdays;
@@ -435,6 +463,7 @@ export class CommandCenterQueryService {
             blockedWorkdays,
             pendingEvidenceAttested,
             runtimeCounts: operationsCounts,
+            venture,
           }) : durableDailyBrief(latestDailyBrief),
           decisionsRequired: decisionInbox.length,
           externalActions: "LOCKED" as const,
@@ -526,6 +555,7 @@ export class CommandCenterQueryService {
           requiresResearch: socialPacks.filter(({ status }) => status === "REQUIRES_RESEARCH").length,
         }),
         socialLive: buildDailySocialOperationsReport(socialLiveRecords, now, sources.map(({ sourceId }) => sourceId)),
+        venture,
       });
     });
   }
@@ -610,6 +640,7 @@ function commandCenterDecisionInbox(input: {
   readonly jobs: readonly OperationsJobSummary[];
   readonly productions: readonly MetodoVeloceContentProductionRecord[];
   readonly research: readonly AuthorizedResearchMission[];
+  readonly venture: CommandCenterVentureView;
   readonly workdays: readonly AgentCompanyWorkday[];
 }): readonly CommandCenterDecisionInboxItem[] {
   const inbox = new Map<string, CommandCenterDecisionInboxItem>();
@@ -689,6 +720,17 @@ function commandCenterDecisionInbox(input: {
       updatedAt: incident.updatedAt,
     });
   }
+  for (const decision of input.venture.decisions) {
+    add({
+      decisionKey: `${decision.entityType}:${decision.entityId}:${decision.decisionId}`,
+      entityId: decision.entityId,
+      entityType: decision.entityType,
+      priority: decision.priority,
+      question: decision.question,
+      reasonCode: decision.reasonCode,
+      updatedAt: decision.updatedAt,
+    });
+  }
 
   const latestFounderWorkday = [...input.founderWorkdays].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0];
   if (latestFounderWorkday !== undefined) {
@@ -732,7 +774,15 @@ function dailyBrief(input: {
   readonly pendingEvidenceAttested: number;
   readonly pendingWorkdays: number;
   readonly runtimeCounts: OperationsRuntimeCounts;
+  readonly venture: CommandCenterVentureView;
 }): CommandCenterOverview["dailyBrief"] {
+  if (input.venture.decisions.length > 0) {
+    return Object.freeze({
+      decision: "Il Venture Portfolio richiede una decisione di Fabio",
+      detail: `${String(input.venture.decisions.length)} decisione/i version-bound attendono revisione. Nessuna Venture è stata attivata automaticamente.`,
+      priority: "Apri Venture Studio e verifica tesi, evidenze, economics, esperimenti e fingerprint prima di decidere.",
+    });
+  }
   if (input.pendingWorkdays > 0) {
     return Object.freeze({
       decision: "È richiesta la revisione della giornata Agent Company",

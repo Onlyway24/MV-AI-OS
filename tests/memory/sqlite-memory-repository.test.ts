@@ -132,6 +132,11 @@ describe("SQLite memory persistence", () => {
 
       const legacyDatabase = new DatabaseSync(databasePath);
       legacyDatabase.exec(`
+        DROP TABLE venture_audit_events;
+        DROP TABLE venture_command_receipts;
+        DROP TABLE venture_events;
+        DROP TABLE venture_records;
+        DROP TABLE venture_runtime_controls;
         DROP TABLE reference_vault_audit_events;
         DROP TABLE reference_vault_command_receipts;
         DROP TABLE reference_vault_records;
@@ -188,7 +193,7 @@ describe("SQLite memory persistence", () => {
         DROP TABLE authorized_research_missions;
         DROP TABLE agent_company_workdays;
         DROP INDEX audit_events_workspace_correlation;
-        DELETE FROM schema_migrations WHERE version IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+        DELETE FROM schema_migrations WHERE version IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
         PRAGMA user_version = 1;
       `);
       legacyDatabase.close();

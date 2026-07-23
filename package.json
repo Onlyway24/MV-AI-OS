@@ -10,7 +10,8 @@
     "mv-ai-os": "./dist/cli/local-runtime-cli.js",
     "mv-ai-os-command-center": "./dist/command-center/command-center-cli.js",
     "mv-ai-os-operations": "./dist/operations-runtime/operations-runtime-cli.js",
-    "mv-ai-os-revenue": "./dist/revenue-os/revenue-os-cli.js"
+    "mv-ai-os-revenue": "./dist/revenue-os/revenue-os-cli.js",
+    "mv-ai-os-venture": "./dist/venture-holding/venture-holding-cli.js"
   },
   "files": [
     "dist"
@@ -30,6 +31,7 @@
     "openai-text-diagnosis": "node ./dist/media-factory/openai-text-failure-diagnosis-cli.js",
     "operations": "node ./dist/operations-runtime/operations-runtime-cli.js",
     "revenue-os": "node ./dist/revenue-os/revenue-os-cli.js",
+    "venture-holding": "node ./dist/venture-holding/venture-holding-cli.js",
     "social-connectors": "node ./dist/social-publishing/social-connector-cli.js",
     "lint": "eslint . --max-warnings 0",
     "telegram": "node ./dist/telegram/telegram-cli.js",

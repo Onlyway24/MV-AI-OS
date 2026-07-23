@@ -122,6 +122,12 @@ export const COMMAND_CENTER_HTML = `
       <div class="cc-revenue-stages" id="revenue-stage-list" aria-live="polite"></div>
     </section>
 
+    <section class="cc-venture-today" data-primary-view="today" aria-labelledby="venture-today-heading">
+      <div class="cc-venture-today-head"><div><p class="cc-panel-label">VENTURE PORTFOLIO</p><h3 id="venture-today-heading">Holding pulse</h3></div><a href="#venture">Apri Venture Studio <span aria-hidden="true">→</span></a></div>
+      <div class="cc-venture-today-grid" id="venture-today-grid" aria-live="polite"></div>
+      <div class="cc-venture-today-next" id="venture-today-next" aria-live="polite"></div>
+    </section>
+
     <section class="cc-section cc-overview" id="overview" data-primary-view="today" aria-labelledby="overview-heading">
       <div class="cc-section-heading cc-overview-heading">
         <div><p class="cc-kicker">PANORAMICA OPERATIVA</p><h2 id="overview-heading">Decisioni e produzione</h2></div>
@@ -181,7 +187,7 @@ export const COMMAND_CENTER_HTML = `
     <section class="cc-studio-switcher" id="studio" data-primary-view="studio" aria-label="Strumenti dello Studio" hidden aria-hidden="true">
       <div>
         <p class="cc-kicker">STUDIO ONLYWAY</p>
-        <h2>Un solo spazio. Cinque strumenti.</h2>
+        <h2>Un solo spazio. Sei strumenti.</h2>
         <p>Scegli il contesto; il dettaglio si apre soltanto quando serve.</p>
       </div>
       <div class="cc-segmented-control" role="tablist" aria-label="Aree dello Studio">
@@ -190,6 +196,32 @@ export const COMMAND_CENTER_HTML = `
         <button id="studio-tab-business" type="button" role="tab" data-studio-target="business" aria-controls="business" aria-selected="false" aria-label="Missioni Business">Business</button>
         <button id="studio-tab-evidence" type="button" role="tab" data-studio-target="evidence" aria-controls="evidence" aria-selected="false">Evidenze</button>
         <button id="studio-tab-vault" type="button" role="tab" data-studio-target="vault" aria-controls="vault" aria-selected="false">Intelligence Creativa</button>
+        <button id="studio-tab-venture" type="button" role="tab" data-studio-target="venture" aria-controls="venture" aria-selected="false">Venture Studio</button>
+      </div>
+    </section>
+
+    <section class="cc-section cc-venture-studio" id="venture" data-primary-view="studio" data-studio-panel="venture" role="tabpanel" aria-labelledby="studio-tab-venture" hidden aria-hidden="true">
+      <div class="cc-section-heading"><div><p class="cc-kicker">ONLYWAY VENTURE OPERATING SYSTEM</p><h2 id="venture-heading">Dal segnale alla decisione Founder.</h2></div><span class="cc-section-note">Portfolio interno · proposal only · azioni esterne LOCKED</span></div>
+      <div class="cc-venture-health" id="venture-health" aria-live="polite"></div>
+      <div class="cc-venture-tool-tabs" role="tablist" aria-label="Strumenti Venture Studio">
+        <button id="venture-tab-radar" type="button" role="tab" data-venture-target="radar" aria-controls="venture-radar" aria-selected="true">Opportunity Radar</button>
+        <button id="venture-tab-pipeline" type="button" role="tab" data-venture-target="pipeline" aria-controls="venture-pipeline" aria-selected="false">Venture Pipeline</button>
+        <button id="venture-tab-portfolio" type="button" role="tab" data-venture-target="portfolio" aria-controls="venture-portfolio" aria-selected="false">Portfolio</button>
+        <button id="venture-tab-capital" type="button" role="tab" data-venture-target="capital" aria-controls="venture-capital" aria-selected="false">Capital Board</button>
+        <button id="venture-tab-experiments" type="button" role="tab" data-venture-target="experiments" aria-controls="venture-experiments" aria-selected="false">Experiment Lab</button>
+        <button id="venture-tab-dossier" type="button" role="tab" data-venture-target="dossier" aria-controls="venture-dossier" aria-selected="false">Venture Dossier</button>
+        <button id="venture-tab-assets" type="button" role="tab" data-venture-target="assets" aria-controls="venture-assets" aria-selected="false">Venture Assets</button>
+        <button id="venture-tab-decisions" type="button" role="tab" data-venture-target="decisions" aria-controls="venture-decisions" aria-selected="false">Decision Inbox</button>
+      </div>
+      <div class="cc-venture-workspace">
+        <section id="venture-radar" role="tabpanel" data-venture-panel="radar" aria-labelledby="venture-tab-radar"><div class="cc-venture-panel-content" data-venture-content="radar"></div></section>
+        <section id="venture-pipeline" role="tabpanel" data-venture-panel="pipeline" aria-labelledby="venture-tab-pipeline" hidden aria-hidden="true"><div class="cc-venture-panel-content" data-venture-content="pipeline"></div></section>
+        <section id="venture-portfolio" role="tabpanel" data-venture-panel="portfolio" aria-labelledby="venture-tab-portfolio" hidden aria-hidden="true"><div class="cc-venture-panel-content" data-venture-content="portfolio"></div></section>
+        <section id="venture-capital" role="tabpanel" data-venture-panel="capital" aria-labelledby="venture-tab-capital" hidden aria-hidden="true"><div class="cc-venture-panel-content" data-venture-content="capital"></div></section>
+        <section id="venture-experiments" role="tabpanel" data-venture-panel="experiments" aria-labelledby="venture-tab-experiments" hidden aria-hidden="true"><div class="cc-venture-panel-content" data-venture-content="experiments"></div></section>
+        <section id="venture-dossier" role="tabpanel" data-venture-panel="dossier" aria-labelledby="venture-tab-dossier" hidden aria-hidden="true"><div class="cc-venture-panel-content" data-venture-content="dossier"></div></section>
+        <section id="venture-assets" role="tabpanel" data-venture-panel="assets" aria-labelledby="venture-tab-assets" hidden aria-hidden="true"><div class="cc-venture-panel-content" data-venture-content="assets"></div></section>
+        <section id="venture-decisions" role="tabpanel" data-venture-panel="decisions" aria-labelledby="venture-tab-decisions" hidden aria-hidden="true"><div class="cc-venture-panel-content" data-venture-content="decisions"></div></section>
       </div>
     </section>
 
@@ -548,6 +580,10 @@ html{background:var(--focus-bg);scroll-behavior:auto}body{background:var(--focus
 .cc-oracle-deliverables label{font-size:10px;min-height:44px;padding:7px 11px}.cc-oracle-deliverables input:disabled{opacity:.72}
 .cc-tiktok-motion-preview{background:linear-gradient(155deg,rgba(41,151,255,.1),rgba(175,82,222,.08));border:1px solid var(--focus-line);border-radius:18px;display:grid;gap:10px;margin-top:12px;overflow:hidden;padding:15px}.cc-tiktok-motion-preview-head{align-items:center;display:flex;gap:12px;justify-content:space-between}.cc-tiktok-motion-preview-head span{color:var(--focus-secondary);font-size:9px;letter-spacing:.07em}.cc-tiktok-motion-preview-head button{background:#f5f5f7;border:0;border-radius:999px;color:#050505;cursor:pointer;font:650 10px/1 Inter,ui-sans-serif,system-ui,sans-serif;min-height:38px;padding:9px 13px}.cc-tiktok-motion-beats{display:grid;gap:6px}.cc-tiktok-motion-beat{background:rgba(255,255,255,.045);border-radius:11px;color:var(--focus-secondary);display:grid;font-size:10px;gap:4px;padding:9px 11px}.cc-tiktok-motion-beat b{color:var(--focus-text);font-size:11px}.cc-tiktok-motion-marker{color:#ff9f0a!important;font:8px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
 @media (max-width:820px){.cc-oracle-deliverables label{min-height:44px}}
+.cc-venture-today,.cc-venture-health,.cc-venture-workspace{background:var(--focus-surface);border:1px solid var(--focus-line);border-radius:var(--focus-radius)}.cc-venture-today{margin-top:18px;padding:22px}.cc-venture-today-head{align-items:end;display:flex;gap:20px;justify-content:space-between}.cc-venture-today-head h3{font:650 24px/1.1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.035em;margin:6px 0 0}.cc-venture-today-head a{color:#82c5ff;font-size:11px;font-weight:620;text-decoration:none}.cc-venture-today-grid{display:grid;gap:8px;grid-template-columns:repeat(6,minmax(0,1fr));margin-top:17px}.cc-venture-pulse-card{background:var(--focus-surface-2);border-radius:14px;display:grid;gap:6px;min-height:100px;padding:13px}.cc-venture-pulse-card span{color:var(--focus-secondary);font-size:9px}.cc-venture-pulse-card strong{color:var(--focus-text);font-size:18px;font-weight:620;overflow-wrap:anywhere}.cc-venture-pulse-card small{color:var(--focus-secondary);font-size:9px;line-height:1.4}.cc-venture-today-next{border-top:1px solid var(--focus-line);color:var(--focus-secondary);font-size:11px;line-height:1.5;margin-top:15px;padding-top:13px}.cc-venture-today-next b{color:var(--focus-text);font-weight:620}.cc-venture-health{display:grid;gap:8px;grid-template-columns:minmax(0,1fr) auto;margin-bottom:14px;padding:17px}.cc-venture-health strong{font-size:14px}.cc-venture-health p{color:var(--focus-secondary);font-size:11px;margin:0}.cc-venture-health span{align-self:start;border:1px solid var(--focus-line);border-radius:999px;color:#ff9f0a;font-size:9px;padding:7px 10px}.cc-venture-tool-tabs{background:rgba(118,118,128,.18);border-radius:15px;display:grid;gap:3px;grid-template-columns:repeat(4,minmax(0,1fr));padding:4px}.cc-venture-tool-tabs button{background:transparent;border:0;border-radius:11px;color:var(--focus-secondary);cursor:pointer;font:560 11px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;min-height:44px;padding:9px}.cc-venture-tool-tabs button:hover{color:var(--focus-text)}.cc-venture-tool-tabs button[aria-selected="true"]{background:rgba(255,255,255,.14);box-shadow:0 1px 5px rgba(0,0,0,.22);color:var(--focus-text)}.cc-venture-workspace{margin-top:11px;min-width:0;padding:22px}.cc-venture-panel-content{display:grid;gap:10px}.cc-venture-summary-grid{display:grid;gap:9px;grid-template-columns:repeat(3,minmax(0,1fr))}.cc-venture-card{background:var(--focus-surface-2);border:1px solid rgba(255,255,255,.055);border-radius:15px;display:grid;gap:7px;min-width:0;padding:15px}.cc-venture-card[data-attention="true"]{border-left:2px solid #ff9f0a}.cc-venture-card span{color:#82c5ff;font-size:9px;font-weight:650;letter-spacing:.035em}.cc-venture-card strong{font-size:13px;overflow-wrap:anywhere}.cc-venture-card p,.cc-venture-card small{color:var(--focus-secondary);font-size:10px;line-height:1.45;margin:0;overflow-wrap:anywhere}.cc-venture-empty{color:var(--focus-secondary);display:grid;font-size:12px;min-height:150px;place-items:center;text-align:center}.cc-venture-lock{border-top:1px solid var(--focus-line);color:#ff9f0a;font-size:9px;margin-top:4px;padding-top:10px}
+@media (max-width:1100px){.cc-venture-today-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-segmented-control{flex-wrap:wrap}.cc-venture-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:820px){.cc-venture-today-grid{display:flex;overflow-x:auto;scroll-snap-type:x proximity}.cc-venture-pulse-card{flex:0 0 150px;scroll-snap-align:start}.cc-venture-tool-tabs{display:flex;max-width:100%;overflow-x:auto}.cc-venture-tool-tabs button{flex:0 0 145px}.cc-venture-workspace{padding:16px}.cc-venture-summary-grid{grid-template-columns:1fr}.cc-venture-health{grid-template-columns:1fr}.cc-venture-tool-tabs button{min-height:48px}}
+@media (max-width:430px){.cc-venture-today,.cc-venture-workspace{max-width:100%;overflow:hidden}.cc-venture-today-head{align-items:start;display:grid}.cc-venture-tool-tabs{max-width:calc(100vw - 32px)}}
 `;
 
 export const COMMAND_CENTER_CLIENT_JS = `
@@ -592,7 +628,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     "backup-guardian": { callSign: "VAULT", glyph: "BV", squad: "GUARDIANS", squadLabel: "Guardians" },
     "publisher-agent": { callSign: "LAUNCH", glyph: "LA", squad: "GROWTH", squadLabel: "Growth" },
   });
-  const state = { agentFilter: "ALL", confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mediaFactory: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedReferenceId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, snapshot: null, vaultFilter: "ALL", visualReview: null, visualSlideIndex: 0 };
+  const state = { agentFilter: "ALL", confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mediaFactory: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedReferenceId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, snapshot: null, vaultFilter: "ALL", ventureTool: "radar", visualReview: null, visualSlideIndex: 0 };
 
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
@@ -734,6 +770,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     text("brief-priority", snapshot.overview.dailyBrief.priority);
     renderMetrics(snapshot.overview.metrics);
     renderDecisionInbox(snapshot.overview.decisionInbox || [], snapshot.overview.decisionInboxCoverage || "LIMIT_REACHED");
+    renderVentureStudio(snapshot.venture || unavailableVentureView());
     renderDailyOperatingBrief(snapshot.dailyOperatingBriefs || []);
     renderPipeline(snapshot);
     renderRevenue(snapshot.revenue || null);
@@ -787,6 +824,110 @@ export const COMMAND_CENTER_CLIENT_JS = `
       );
       target.append(row);
     }
+  }
+
+  function unavailableVentureView() {
+    return { artifacts: [], briefs: [], capital: { approvedCents: "NOT_AVAILABLE", proposedCents: "NOT_AVAILABLE" }, capitalProposals: [], coverage: "NOT_AVAILABLE", decisions: [], experiments: [], externalActions: "LOCKED", health: { nextAction: "Registra la Founder Venture Policy e le evidenze ammesse.", reasonCode: "VENTURE_PORTFOLIO_NOT_AVAILABLE", status: "NOT_AVAILABLE" }, opportunities: [], portfolio: null, publication: "LOCKED", summaries: { blockedVentures: 0, capacity: "NOT_AVAILABLE", founderDecisions: 0, portfolioRiskCount: 0, readyExperiments: 0, venturesInProgress: 0 }, ventures: [] };
+  }
+
+  function renderVentureStudio(venture) {
+    const health = byId("venture-health");
+    health.replaceChildren();
+    const copy = element("div", "");
+    copy.append(element("strong", "", statusLabel(venture.health.status) + " · " + venture.health.reasonCode), element("p", "", venture.health.nextAction));
+    health.append(copy, element("span", "", "ESTERNO " + venture.externalActions + " · PUBBLICAZIONE " + venture.publication));
+
+    const pulse = byId("venture-today-grid");
+    pulse.replaceChildren();
+    const capacity = typeof venture.summaries.capacity === "number" ? number(venture.summaries.capacity) : statusLabel(venture.summaries.capacity);
+    const proposed = moneyOrUnavailable(venture.capital.proposedCents);
+    const pulseItems = [
+      ["Portfolio health", statusLabel(venture.health.status), venture.health.reasonCode],
+      ["Venture in corso", number(venture.summaries.venturesInProgress), number(venture.summaries.blockedVentures) + " bloccate"],
+      ["Decisioni Fabio", number(venture.summaries.founderDecisions), venture.coverage === "LIMIT_REACHED" ? "copertura parziale" : "version-bound"],
+      ["Esperimenti pronti", number(venture.summaries.readyExperiments), "nessuna osservazione simulata"],
+      ["Capitale proposto", proposed, "CAPITAL_ALLOCATION_PROPOSAL"],
+      ["Capacità", capacity, number(venture.summaries.portfolioRiskCount) + " rischi aggregati"],
+    ];
+    for (const item of pulseItems) pulse.append(venturePulseCard(item[0], item[1], item[2]));
+    const next = byId("venture-today-next");
+    next.replaceChildren(element("b", "", "Prossima azione · "), document.createTextNode(venture.health.nextAction));
+
+    renderVentureEntities("radar", venture.opportunities, (item) => [statusLabel(item.outcome) + " · " + statusLabel(item.demand), item.title, item.evidenceRefs.length + " evidence ref · expiry " + item.expiry]);
+    renderVentureEntities("pipeline", venture.ventures, (item) => [statusLabel(item.stage), item.title, item.blockerCodes.length === 0 ? "Nessun blocker registrato" : item.blockerCodes.join(" · ")]);
+    renderVenturePortfolio(venture);
+    renderVentureEntities("capital", venture.capitalProposals, (item) => [statusLabel(item.status), item.title, moneyOrUnavailable(item.amountCents) + " · " + statusLabel(item.currency) + " · PROPOSAL ONLY"]);
+    renderVentureEntities("experiments", venture.experiments, (item) => [statusLabel(item.status), item.title, statusLabel(item.observation) + " · venture " + item.ventureId]);
+    renderVentureDossier(venture);
+    renderVentureEntities("assets", venture.artifacts, (item) => [statusLabel(item.reviewState), item.title, item.artifactKind + " · " + item.allowedUse]);
+    renderVentureDecisions(venture.decisions, venture.coverage);
+  }
+
+  function venturePulseCard(label, value, detail) {
+    const card = element("article", "cc-venture-pulse-card");
+    card.append(element("span", "", label), element("strong", "", value), element("small", "", detail));
+    return card;
+  }
+
+  function moneyOrUnavailable(value) {
+    return Number.isSafeInteger(value) ? euro(value) : statusLabel(typeof value === "string" ? value : "NOT_AVAILABLE");
+  }
+
+  function renderVentureEntities(tool, values, project) {
+    const target = root.querySelector('[data-venture-content="' + tool + '"]');
+    if (!target) return;
+    target.replaceChildren();
+    if (!Array.isArray(values) || values.length === 0) {
+      target.append(element("div", "cc-venture-empty", "Nessun record durevole disponibile. Il sistema non crea attività, domanda o risultati dimostrativi."));
+      return;
+    }
+    const grid = element("div", "cc-venture-summary-grid");
+    for (const item of values) {
+      const projected = project(item);
+      const card = element("article", "cc-venture-card");
+      card.append(element("span", "", projected[0]), element("strong", "", projected[1]), element("p", "", projected[2]), element("small", "", "v" + String(item.version) + " · " + item.entityId + " · " + item.fingerprint.slice(0, 12)));
+      grid.append(card);
+    }
+    target.append(grid, element("div", "cc-venture-lock", "INTERNAL_PACKAGE_ONLY · EXTERNAL_ACTION_LOCKED · PUBLICATION_LOCKED"));
+  }
+
+  function renderVenturePortfolio(venture) {
+    const target = root.querySelector('[data-venture-content="portfolio"]');
+    if (!target) return;
+    target.replaceChildren();
+    if (!venture.portfolio) {
+      target.append(element("div", "cc-venture-empty", "Portfolio non disponibile. Nessuna concentrazione, capitale o capacità viene dedotta."));
+      return;
+    }
+    const grid = element("div", "cc-venture-summary-grid");
+    grid.append(
+      venturePulseCard("Portfolio", venture.portfolio.title, "v" + String(venture.portfolio.version)),
+      venturePulseCard("Capitale approvato", moneyOrUnavailable(venture.capital.approvedCents), "solo decisioni durevoli"),
+      venturePulseCard("Rischi aggregati", number(venture.summaries.portfolioRiskCount), "nessun rischio nascosto"),
+    );
+    target.append(grid, element("div", "cc-venture-lock", "EXTERNAL_ACTION_LOCKED · nessuna Venture viene attivata automaticamente"));
+  }
+
+  function renderVentureDossier(venture) {
+    const combined = [...venture.ventures, ...venture.briefs];
+    renderVentureEntities("dossier", combined, (item) => [item.briefKind ? statusLabel(item.briefKind) : statusLabel(item.stage), item.title, item.briefKind ? number(item.founderDecisions) + " decisioni · " + number(item.riskCount) + " rischi" : item.blockerCodes.length + " blocker"]);
+  }
+
+  function renderVentureDecisions(decisions, coverage) {
+    const target = root.querySelector('[data-venture-content="decisions"]');
+    if (!target) return;
+    target.replaceChildren();
+    if (!Array.isArray(decisions) || decisions.length === 0) {
+      target.append(element("div", "cc-venture-empty", coverage === "LIMIT_REACHED" ? "Nessuna decisione nella finestra osservata; copertura parziale." : "Nessuna decisione Founder aperta."));
+      return;
+    }
+    const grid = element("div", "cc-venture-summary-grid");
+    for (const decision of decisions) {
+      const card = element("article", "cc-venture-card"); card.dataset.attention = "true";
+      card.append(element("span", "", decision.priority + " · " + decision.reasonCode), element("strong", "", decision.question), element("p", "", statusLabel(decision.entityType) + " · " + decision.entityId), element("small", "", "v" + String(decision.entityVersion) + " · " + decision.entityFingerprint.slice(0, 12) + " · revisione Fabio richiesta"));
+      grid.append(card);
+    }
+    target.append(grid, element("div", "cc-venture-lock", "Questa vista non approva, non spende e non avvia esperimenti esterni."));
   }
 
   function renderRevenue(revenue) {
@@ -2340,7 +2481,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function navigate(query) {
     const normalized = query.toLocaleLowerCase("it-IT");
-    const mapping = [["fingerprint", "vault"], ["riferiment", "vault"], ["creativ", "vault"], ["prefer", "vault"], ["vault", "vault"], ["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["revenue", "business"], ["ricav", "business"], ["vendit", "business"], ["funnel", "business"], ["lead", "business"], ["prezz", "business"], ["margine", "business"], ["business", "business"], ["opportun", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
+    const mapping = [["fingerprint", "vault"], ["riferiment", "vault"], ["creativ", "vault"], ["prefer", "vault"], ["vault", "vault"], ["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["portfolio", "venture"], ["venture", "venture"], ["opportun", "venture"], ["capital", "venture"], ["esperiment", "venture"], ["revenue", "business"], ["ricav", "business"], ["vendit", "business"], ["funnel", "business"], ["lead", "business"], ["prezz", "business"], ["margine", "business"], ["business", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
     const found = mapping.find(([keyword]) => normalized.includes(keyword));
     if (!found) { commandResult.textContent = "Prova con ricavi, offerta, funnel, evidenze, produzione, squadra o sistema."; return; }
     const nextHash = "#" + found[1];
@@ -2366,6 +2507,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       team: ["team", "production"],
       today: ["today", "production"],
       vault: ["studio", "vault"],
+      venture: ["studio", "venture"],
     };
     const route = routes[candidate] || routes.today;
     const previousView = root.dataset.activeView;
@@ -2506,6 +2648,38 @@ export const COMMAND_CENTER_CLIENT_JS = `
     });
   }
 
+  function showVentureTool(tool, focus) {
+    state.ventureTool = tool;
+    root.querySelectorAll("[data-venture-target]").forEach((button) => {
+      const active = button.dataset.ventureTarget === tool;
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+      if (active && focus) button.focus();
+    });
+    root.querySelectorAll("[data-venture-panel]").forEach((panel) => {
+      const visible = panel.dataset.venturePanel === tool;
+      panel.hidden = !visible;
+      panel.setAttribute("aria-hidden", String(!visible));
+    });
+  }
+
+  function initializeVentureControls() {
+    const controls = Array.from(root.querySelectorAll("[data-venture-target]"));
+    for (const button of controls) {
+      button.addEventListener("click", () => showVentureTool(button.dataset.ventureTarget || "radar", false));
+      button.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        const current = controls.indexOf(button);
+        if (current < 0) return;
+        event.preventDefault();
+        const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? controls.length - 1 : (current + (event.key === "ArrowLeft" ? -1 : 1) + controls.length) % controls.length;
+        const next = controls[nextIndex];
+        showVentureTool(next.dataset.ventureTarget || "radar", true);
+      });
+    }
+    showVentureTool(state.ventureTool, false);
+  }
+
   function initializeAgentControls() {
     document.querySelectorAll("[data-agent-filter]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -2573,6 +2747,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   window.addEventListener("hashchange", syncVisualContext);
   initializeSidebar();
   initializeViewControls();
+  initializeVentureControls();
   initializeAgentControls();
   initializeVaultControls();
   syncVisualContext();

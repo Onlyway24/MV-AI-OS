@@ -36,7 +36,7 @@ validation failures remain separately isolated as `REJECTED`.
 **Objective:** Run bounded zero-provider-cost local schedules under explicit operator
 supervision and project their redaction-safe durable state without granting autonomy.
 
-**Status:** Implementation complete, activation optional and explicit. Eleven schedule
+**Status:** Implementation complete, activation optional and explicit. Nineteen schedule
 types, fenced leases, controls, timeout/cancellation/retry/dead-letter, recovery,
 usage summaries, operational events, Founder Workday, Daily Brief, SSE replay and
 allowlisted propose/confirm controls are covered by offline and SQLite restart tests.
@@ -53,6 +53,21 @@ valid receipt permits only a separate internal scheduling decision.
 No launch agent is installed by the repository. Official-social connection remains a
 single Fabio browser checkpoint, starts only by CSRF-bound local `POST`, and
 `PUBLICATION` remains `LOCKED`.
+
+## Onlyway Autonomous Venture Holding — Founding Sprint V1
+
+**Objective:** convert registered evidence and founder inputs into governed Venture
+dossiers, without silently upgrading signals into demand or granting execution authority.
+
+**Status:** Implementation complete; commercial validation remains deliberately
+blocked. The additive v32 repository, exact command receipts, audit/outbox events,
+kill switch, 15-criterion deterministic scorecard, BigInt/fixed-point economics,
+proposal-only capital board, internal Experiment Engine, fingerprinted Launch Pack,
+Venture Cell, eight zero-provider-call schedules, Telegram brief and Venture Studio
+are implemented and tested offline. Venture #001 is durable and visible, but no
+Venture is active: all three candidates are `DEMAND_NOT_VERIFIED`, economics are
+`NOT_AVAILABLE`, and experiments await real observations plus an explicit future
+authorization. External actions and publication remain `LOCKED`.
 
 ## Phase 0 — Architecture and engineering baseline
 

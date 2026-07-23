@@ -641,6 +641,11 @@ describe("Workflow Persistence and Atomic Audit", () => {
 
       const legacy = new DatabaseSync(path);
       legacy.exec(`
+        DROP TABLE venture_audit_events;
+        DROP TABLE venture_command_receipts;
+        DROP TABLE venture_events;
+        DROP TABLE venture_records;
+        DROP TABLE venture_runtime_controls;
         DROP TABLE reference_vault_audit_events;
         DROP TABLE reference_vault_command_receipts;
         DROP TABLE reference_vault_records;
@@ -706,7 +711,7 @@ describe("Workflow Persistence and Atomic Audit", () => {
         DELETE FROM schema_migrations WHERE version = 6;
         DELETE FROM schema_migrations WHERE version = 5;
         DELETE FROM schema_migrations WHERE version = 4;
-        DELETE FROM schema_migrations WHERE version IN (15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+        DELETE FROM schema_migrations WHERE version IN (15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
         PRAGMA user_version = 3;
       `);
       legacy.close();

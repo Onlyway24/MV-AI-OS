@@ -2,11 +2,38 @@
 
 ## Milestone name
 
-Supervised Operations Acceptance — Fabio checkpoints only
+Venture #001 — Founder Policy and Research Authorization checkpoint
 
 ## Verified repository state
 
-- The bounded local H24 scheduler/worker, eleven-job catalog, leases/fencing,
+- Onlyway Venture Holding V1 is implemented in the authoritative local repository.
+- Venture #001 contains three founder-supplied candidates, three deterministic
+  scorecards, three `NOT_AVAILABLE` economics records, three blocked experiment
+  designs, one proposal-only capital record and twelve internal Launch Pack artifacts.
+- The dossier truthfully remains `AWAITING_FABIO` / `EVIDENCE_INSUFFICIENT`.
+- Demand and willingness to pay are not verified; no candidate is declared a winner.
+- `EXTERNAL_ACTION_LOCKED`, `PUBLICATION_LOCKED`, provider calls zero and spend zero.
+
+## Next authorized checkpoint
+
+Fabio may review the Venture Studio and provide the missing Founder Venture Policy
+values: allowed/forbidden markets and revenue models, customer model, maximum capital,
+maximum Fabio hours, delivery load, automation boundary, minimum margin, days to first
+signal, evidence threshold, reputational/economic risk, kill criteria and scale criteria.
+He may then authorize a separately scoped research-only milestone or archive a
+candidate. That decision must bind the exact entity version and fingerprint.
+
+## Explicitly not authorized
+
+- Activating a Venture, executing an experiment, contacting prospects or treating a
+  simulated response as a real observation.
+- Spending capital, purchasing tools, publishing, sending messages, opening OAuth,
+  deploying or installing a persistent service.
+- Converting `NOT_AVAILABLE` to zero or social signals to demand evidence.
+
+## Existing independent checkpoints preserved
+
+- The bounded local H24 scheduler/worker, nineteen-job catalog, leases/fencing,
   kill switch, maintenance, heartbeat, timeout, cancellation, retry/dead-letter,
   recovery, usage summaries and redaction-safe event plane are implemented.
 - Founder Workday #001 and Daily Operating Brief persist aggregate plus event in one
@@ -41,7 +68,7 @@ Supervised Operations Acceptance — Fabio checkpoints only
 - `PUBLICATION: LOCKED`. No persistent H24 process, OAuth connection, social post,
   cloud deployment or external effect is claimed by implementation tests.
 
-## Next authorized checkpoints
+## Existing optional operator checkpoints
 
 1. Fabio may perform the already documented private-phone Telegram continuity check:
    `/mission`, `/mission quick`, then `/status` or a repeated `/mission quick` while

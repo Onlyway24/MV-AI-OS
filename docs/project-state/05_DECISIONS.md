@@ -2118,3 +2118,23 @@ and hide a deterministic input failure.
 future Telegram transport must preserve durable intent-before-I/O, atomic terminal
 finalization, offset monotonicity, data minimization and the no-automatic-redelivery
 rule.
+
+## ADR-083 — Venture records are evidence-bound proposals, never execution authority
+
+**Context:** Opportunity discovery, scoring, economics, experiments and capital review
+can create a false appearance of commercial certainty or autonomous authority.
+
+**Decision:** Venture state is append-only, actor/workspace isolated and changed only
+through an idempotent command boundary with exact version/fingerprint checks, durable
+receipt, audit and outbox event. Missing facts remain `NOT_AVAILABLE` or
+`FOUNDER_INPUT_REQUIRED`; social signals never prove demand; simulations never count
+as real observations. Capital records are proposals only. Active execution, spend and
+publication require separate Fabio decisions and remain locked in this milestone.
+
+**Reason:** The operating system must preserve evidentiary truth and founder authority
+while still preparing a complete decision package.
+
+**Future impact:** Any research, validation, launch, scale or kill transition must
+consume the current record version and fingerprint, pass the applicable Gates and
+record a new immutable version. No downstream adapter may infer authorization from a
+score, brief or capital proposal.

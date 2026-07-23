@@ -4,7 +4,7 @@ import {
   SqliteSchemaError,
 } from "./sqlite-error.js";
 
-export const SQLITE_SCHEMA_VERSION = 31;
+export const SQLITE_SCHEMA_VERSION = 32;
 
 export const SQLITE_APPLICATION_ID = 0x4d564149;
 const VERSION_ONE_TABLES = Object.freeze([
@@ -96,6 +96,14 @@ const VERSION_THIRTY_ONE_TABLES = Object.freeze([
   "reference_vault_blobs",
   "reference_vault_command_receipts",
   "reference_vault_records",
+]);
+const VERSION_THIRTY_TWO_TABLES = Object.freeze([
+  ...VERSION_THIRTY_ONE_TABLES,
+  "venture_audit_events",
+  "venture_command_receipts",
+  "venture_events",
+  "venture_records",
+  "venture_runtime_controls",
 ]);
 
 export function initializeSqliteSchema(database: DatabaseSync): void {
@@ -337,6 +345,13 @@ export function initializeSqliteSchema(database: DatabaseSync): void {
     verifyMigration(database, 30, "telegram_delivery_reconciliation");
     applyReferenceVaultMigration(database);
   }
+  const ventureHoldingVersion = readPragmaInteger(database, "user_version");
+  if (ventureHoldingVersion === 31) {
+    verifyDatabaseIdentity(database, 31);
+    verifyExpectedTables(database, VERSION_THIRTY_ONE_TABLES);
+    verifyMigration(database, 31, "creative_business_intelligence_reference_vault");
+    applyVentureHoldingMigration(database);
+  }
 
   verifyCurrentSqliteSchema(database);
 }
@@ -359,7 +374,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
       },
     );
   }
-  verifyExpectedTables(database, VERSION_THIRTY_ONE_TABLES);
+  verifyExpectedTables(database, VERSION_THIRTY_TWO_TABLES);
   verifyMigration(database, 1, "initial_task_lifecycle");
   verifyMigration(database, 2, "durable_memory");
   verifyMigration(database, 3, "durable_knowledge");
@@ -391,6 +406,7 @@ export function verifyCurrentSqliteSchema(database: DatabaseSync): void {
   verifyMigration(database, 29, "daily_operating_brief_snapshot_history");
   verifyMigration(database, 30, "telegram_delivery_reconciliation");
   verifyMigration(database, 31, "creative_business_intelligence_reference_vault");
+  verifyMigration(database, 32, "onlyway_venture_holding_v1");
 }
 
 function applyInitialMigration(database: DatabaseSync): void {
@@ -1771,6 +1787,95 @@ function applyReferenceVaultMigration(database: DatabaseSync): void {
   } catch {
     rollbackQuietly(database);
     throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Reference Vault migration failed");
+  }
+}
+
+function applyVentureHoldingMigration(database: DatabaseSync): void {
+  database.exec("BEGIN EXCLUSIVE");
+  try {
+    database.exec(`
+      CREATE TABLE venture_records (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        record_type TEXT NOT NULL CHECK (record_type IN ('FOUNDER_VENTURE_POLICY', 'VENTURE_PORTFOLIO', 'VENTURE_OPPORTUNITY', 'VENTURE_SCORECARD', 'VENTURE_THESIS', 'VENTURE', 'VENTURE_STAGE_TRANSITION', 'VENTURE_ECONOMICS', 'CAPITAL_ALLOCATION_PROPOSAL', 'VENTURE_EXPERIMENT', 'VENTURE_ARTIFACT', 'VENTURE_DECISION', 'VENTURE_OPERATING_REPORT', 'FOUNDER_PORTFOLIO_BRIEF', 'VENTURE_RECEIPT')),
+        entity_id TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        tombstoned INTEGER NOT NULL CHECK (tombstoned IN (0, 1)),
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, actor_id, record_type, entity_id, version)
+      ) STRICT;
+      CREATE INDEX venture_records_identity_type_sequence
+        ON venture_records (workspace_id, actor_id, record_type, sequence DESC);
+      CREATE INDEX venture_records_identity_entity_history
+        ON venture_records (workspace_id, actor_id, record_type, entity_id, version DESC);
+
+      CREATE TABLE venture_command_receipts (
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        idempotency_key_fingerprint TEXT NOT NULL CHECK (length(idempotency_key_fingerprint) = 64 AND idempotency_key_fingerprint NOT GLOB '*[^0-9a-f]*'),
+        command_id TEXT NOT NULL,
+        request_fingerprint TEXT NOT NULL CHECK (length(request_fingerprint) = 64 AND request_fingerprint NOT GLOB '*[^0-9a-f]*'),
+        response_fingerprint TEXT NOT NULL CHECK (length(response_fingerprint) = 64 AND response_fingerprint NOT GLOB '*[^0-9a-f]*'),
+        recorded_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        PRIMARY KEY (workspace_id, actor_id, idempotency_key_fingerprint),
+        UNIQUE (workspace_id, actor_id, command_id)
+      ) WITHOUT ROWID, STRICT;
+
+      CREATE TABLE venture_audit_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        event_id TEXT NOT NULL,
+        command_id TEXT NOT NULL,
+        occurred_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, actor_id, event_id),
+        UNIQUE (workspace_id, actor_id, command_id)
+      ) STRICT;
+      CREATE INDEX venture_audit_identity_sequence
+        ON venture_audit_events (workspace_id, actor_id, sequence DESC);
+
+      CREATE TABLE venture_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        event_id TEXT NOT NULL,
+        aggregate_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        entity_version INTEGER NOT NULL CHECK (entity_version >= 0),
+        occurred_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        UNIQUE (workspace_id, actor_id, event_id)
+      ) STRICT;
+      CREATE INDEX venture_events_identity_sequence
+        ON venture_events (workspace_id, actor_id, sequence ASC);
+
+      CREATE TABLE venture_runtime_controls (
+        workspace_id TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
+        version INTEGER NOT NULL CHECK (version >= 0),
+        updated_at TEXT NOT NULL,
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64 AND fingerprint NOT GLOB '*[^0-9a-f]*'),
+        record_json TEXT NOT NULL CHECK (json_valid(record_json)),
+        PRIMARY KEY (workspace_id, actor_id)
+      ) WITHOUT ROWID, STRICT;
+
+      INSERT INTO schema_migrations (version, name)
+      VALUES (32, 'onlyway_venture_holding_v1');
+      PRAGMA user_version = 32;
+    `);
+    database.exec("COMMIT");
+  } catch {
+    rollbackQuietly(database);
+    throw new SqliteSchemaError("sqlite_schema_invalid", "SQLite Venture Holding migration failed");
   }
 }
 

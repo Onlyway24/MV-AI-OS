@@ -8,7 +8,7 @@ operator may truthfully claim.
 
 For this sprint the only authoritative checkout is
 `/Users/onlyway24/Desktop/MV-AI-OS`. The shadow checkout
-`/Users/onlyway24/AI/MV-AI-OS` is outside the operational and release scope.
+Any alternate or shadow checkout is outside the operational and release scope.
 
 ## Current activation posture
 

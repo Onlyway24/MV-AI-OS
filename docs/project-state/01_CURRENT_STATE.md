@@ -9,14 +9,22 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Authoritative checkout for this sprint:
-  `/Users/onlyway24/Desktop/MV-AI-OS`. The shadow checkout
-  `/Users/onlyway24/AI/MV-AI-OS` is explicitly excluded.
+  `/Users/onlyway24/Desktop/MV-AI-OS`. Every alternate checkout is explicitly excluded.
 - Current branch at the time of this snapshot: `feature/telegram-operator-console`.
 - Core V1 `v1.0.0-core` release baseline:
   `08950d412ba249357064d42eb27a3d92587c1f32`.
 - Validated local runtime composition was committed in
   `b6c0aea feat: add validated local runtime composition`.
 - Current package version: `0.1.0`.
+- Onlyway Autonomous Venture Holding Founding Sprint V1 is implemented locally. It
+  adds strict Venture contracts, append-only SQLite v32 persistence, deterministic
+  Opportunity Radar/scorecard/economics/experiment/capital/Launch Pack services,
+  17-agent Venture Cell coordination, eight Venture H24 jobs, Telegram
+  `/venture_brief`, and Venture Studio inside the existing four-area Command Center.
+  Venture #001 compares the three founder-supplied candidates but remains
+  `AWAITING_FABIO` / `EVIDENCE_INSUFFICIENT`: demand, willingness to pay, policy
+  weights, economics and delivery capacity are not verified. All capital remains
+  proposal-only; publication and external actions remain locked.
 - Runtime: Node.js `22.23.x`, strict TypeScript, ECMAScript modules.
 - Package manager: npm `10.9.8`.
 - No upstream branch, remote CI state, release artifact, or deployment state is

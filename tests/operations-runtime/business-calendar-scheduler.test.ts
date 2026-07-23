@@ -91,7 +91,7 @@ describe("calendar-aware Operations scheduler", () => {
     await repositories.close();
   });
 
-  it("publishes four explicit Europe/Rome daily cadences and rejects other zones", () => {
+  it("publishes seven explicit Europe/Rome daily cadences and rejects other zones", () => {
     const clock = new MutableClock("2026-07-19T08:00:00.000Z");
     const catalog = createDefaultOperationsScheduleCatalog({ actorId: "fabio", backupPolicyId: "local-backup", clock, workspaceId: "workspace" });
     const daily = catalog.filter(({ cadence }) => cadence.kind === "CALENDAR_DAILY");
@@ -100,8 +100,14 @@ describe("calendar-aware Operations scheduler", () => {
       "AGENT_COMPANY_WORKDAY_START",
       "BACKUP_AND_RESTORE_VERIFICATION",
       "DAILY_OPERATING_REPORT",
+      "VENTURE_OPPORTUNITY_SCAN",
+      "PORTFOLIO_DAILY_BRIEF",
+      "VENTURE_KILL_SCALE_CHECK",
     ]);
     expect(daily).toMatchObject([
+      { cadence: { kind: "CALENDAR_DAILY", timeZone: ONLYWAY_BUSINESS_TIME_ZONE } },
+      { cadence: { kind: "CALENDAR_DAILY", timeZone: ONLYWAY_BUSINESS_TIME_ZONE } },
+      { cadence: { kind: "CALENDAR_DAILY", timeZone: ONLYWAY_BUSINESS_TIME_ZONE } },
       { cadence: { kind: "CALENDAR_DAILY", timeZone: ONLYWAY_BUSINESS_TIME_ZONE } },
       { cadence: { kind: "CALENDAR_DAILY", timeZone: ONLYWAY_BUSINESS_TIME_ZONE } },
       { cadence: { kind: "CALENDAR_DAILY", timeZone: ONLYWAY_BUSINESS_TIME_ZONE } },

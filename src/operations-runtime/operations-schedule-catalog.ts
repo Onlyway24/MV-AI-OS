@@ -39,6 +39,14 @@ export function createDefaultOperationsScheduleCatalog(input: Readonly<{
     spec("STALE_TASK_DETECTION", 15 * MINUTE, { staleAfterSeconds: 3_600 }, 60, 60_000, "CATCH_UP_ONE"),
     spec("DAILY_OPERATING_REPORT", { hour: 20, minute: 0 }, { businessDate: businessDateAt(firstRun) }, 75, 120_000, "CATCH_UP_ONE"),
     spec("SECURITY_POSTURE_CHECK", 6 * HOUR, {}, 95, 120_000, "CATCH_UP_ONE"),
+    spec("VENTURE_OPPORTUNITY_SCAN", { hour: 8, minute: 0 }, { ventureMode: "REGISTERED_EVIDENCE_ONLY" }, 50, 120_000, "CATCH_UP_ONE"),
+    spec("VENTURE_EVIDENCE_REFRESH", 6 * HOUR, { ventureMode: "REGISTERED_EVIDENCE_REFRESH" }, 60, 120_000, "CATCH_UP_ONE"),
+    spec("VENTURE_EXPERIMENT_REVIEW", HOUR, { ventureMode: "EXPERIMENT_REVIEW_ONLY" }, 55, 120_000, "CATCH_UP_ONE"),
+    spec("VENTURE_STALE_CHECK", HOUR, { ventureStaleAfterSeconds: 86_400 }, 65, 60_000, "CATCH_UP_ONE"),
+    spec("PORTFOLIO_DAILY_BRIEF", { hour: 20, minute: 15 }, { businessDate: businessDateAt(firstRun) }, 80, 120_000, "CATCH_UP_ONE"),
+    spec("PORTFOLIO_WEEKLY_REVIEW", 7 * 24 * HOUR, { businessDate: businessDateAt(firstRun) }, 82, 180_000, "CATCH_UP_ONE"),
+    spec("CAPITAL_ALLOCATION_REVIEW", 7 * 24 * HOUR, { ventureMode: "CAPITAL_PROPOSAL_ONLY" }, 85, 120_000, "CATCH_UP_ONE"),
+    spec("VENTURE_KILL_SCALE_CHECK", { hour: 19, minute: 30 }, { ventureMode: "KILL_SCALE_REVIEW_ONLY" }, 90, 120_000, "CATCH_UP_ONE"),
   ]);
   const schedules = specs.map((item, index) => {
     const nextRunAt = new Date(firstRun.getTime() + index * MINUTE);

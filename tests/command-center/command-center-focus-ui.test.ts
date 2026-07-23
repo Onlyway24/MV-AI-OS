@@ -16,8 +16,8 @@ describe("Command Center focused information architecture", () => {
       .map((match) => match[1]);
 
     expect(primaryViews).toEqual(["today", "studio", "team", "system"]);
-    expect(studioTools).toEqual(["production", "social", "business", "evidence", "vault"]);
-    expect(COMMAND_CENTER_HTML.match(/role="tabpanel"/gu)).toHaveLength(5);
+    expect(studioTools).toEqual(["production", "social", "business", "evidence", "vault", "venture"]);
+    expect(COMMAND_CENTER_HTML.match(/data-studio-panel=/gu)).toHaveLength(6);
     expect(COMMAND_CENTER_HTML).toContain('aria-controls="vault"');
     expect(COMMAND_CENTER_HTML).toContain('aria-labelledby="studio-tab-vault"');
     expect(COMMAND_CENTER_HTML).toContain("Buongiorno, Fabio.");
@@ -26,6 +26,8 @@ describe("Command Center focused information architecture", () => {
     expect(COMMAND_CENTER_HTML).toContain("ONLYWAY REVENUE OPERATING SYSTEM");
     expect(COMMAND_CENTER_HTML).toContain('id="revenue-stage-list"');
     expect(COMMAND_CENTER_HTML).toContain('id="revenue-readiness-grid"');
+    expect(COMMAND_CENTER_HTML).toContain('id="venture"');
+    expect(COMMAND_CENTER_HTML.match(/data-venture-target=/gu)).toHaveLength(8);
   });
 
   it("renders only durable Vault state and keeps navigation non-mutating", () => {

@@ -204,6 +204,11 @@ describe("Telegram update isolation and Mission quick", () => {
       DROP TABLE reference_vault_command_receipts;
       DROP TABLE reference_vault_records;
       DROP TABLE reference_vault_blobs;
+      DROP TABLE venture_audit_events;
+      DROP TABLE venture_command_receipts;
+      DROP TABLE venture_events;
+      DROP TABLE venture_records;
+      DROP TABLE venture_runtime_controls;
       DROP INDEX telegram_inbound_receipts_expiry;
       DROP INDEX telegram_outbound_deliveries_update;
       ALTER TABLE telegram_inbound_receipts RENAME TO telegram_inbound_receipts_v30;
@@ -224,7 +229,7 @@ describe("Telegram update isolation and Mission quick", () => {
       .run("29", "a".repeat(64), "b".repeat(64), "2026-07-02T10:00:00.000Z", "2026-07-02T11:00:00.000Z");
     legacy.prepare("INSERT INTO telegram_outbound_deliveries (delivery_id, update_id, state, occurred_at) VALUES (?, ?, 'UNCERTAIN', ?)")
       .run("delivery-v29-reconciliation", "29", "2026-07-02T10:00:00.000Z");
-    legacy.exec("DELETE FROM schema_migrations WHERE version IN (30, 31); PRAGMA user_version = 29;");
+    legacy.exec("DELETE FROM schema_migrations WHERE version IN (30, 31, 32); PRAGMA user_version = 29;");
     legacy.close();
 
     const migrated = new TelegramSqliteStateStore({ path, timeoutMs: 1_000 }, new FixedClock());

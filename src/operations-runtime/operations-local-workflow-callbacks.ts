@@ -4,8 +4,8 @@ import type { AgentCompanyWorkday } from "../agent-company/operational-agent-com
 import { createAgentCompanyInputFingerprint } from "../agent-company/operational-agent-company-validator.js";
 import { RepositoryValidationError } from "../errors/core-error.js";
 import type { LocalWorkflowCommandBoundary, LocalWorkflowCommandResponse } from "../runtime/local-workflow-command.js";
-import type { OperationsLocalWorkflowCallbacks } from "./operations-handler-registry.js";
-import type { OperationsJobBlock } from "./operations-runtime.js";
+import type { OperationsLocalWorkflowCallbacks, VentureOperationsJobType } from "./operations-handler-registry.js";
+import type { OperationsJobBlock, OperationsJobPayload } from "./operations-runtime.js";
 
 const AGENT_COMPANY_BLOCK_REASON_CODES = Object.freeze([
   "BACKUP_RESTORE_RECEIPT_REQUIRED",
@@ -22,6 +22,13 @@ interface FounderWorkdayBoundary {
 interface DailyOperatingReportBoundary {
   generate(businessDate: string): Promise<Readonly<{ readonly fingerprint: string }>>;
 }
+interface VentureInternalWorkflowBoundary {
+  run(input: Readonly<{ readonly jobType: VentureOperationsJobType; readonly operationIdentity: string; readonly payload: OperationsJobPayload; readonly signal: AbortSignal }>): Promise<Readonly<{
+    readonly fingerprint: string;
+    readonly reasonCode?: Extract<OperationsJobBlock["code"], "VENTURE_EVIDENCE_COVERAGE_REQUIRED" | "VENTURE_POLICY_REQUIRED" | "VENTURE_PORTFOLIO_COVERAGE_REQUIRED" | "VENTURE_REAL_OBSERVATION_REQUIRED">;
+    readonly status: "BLOCKED" | "COMPLETED";
+  }>>;
+}
 
 /** Adapts real local services without introducing a dependency back into them. */
 export function createOperationsLocalWorkflowCallbacks(input: Readonly<{
@@ -29,6 +36,7 @@ export function createOperationsLocalWorkflowCallbacks(input: Readonly<{
   readonly commandBoundary: LocalWorkflowCommandBoundary;
   readonly dailyOperatingReport: DailyOperatingReportBoundary;
   readonly founderWorkday: FounderWorkdayBoundary;
+  readonly venture?: VentureInternalWorkflowBoundary;
   readonly workspaceId: string;
 }>): OperationsLocalWorkflowCallbacks {
   const callbacks: OperationsLocalWorkflowCallbacks = {
@@ -37,6 +45,16 @@ export function createOperationsLocalWorkflowCallbacks(input: Readonly<{
       const record = await input.dailyOperatingReport.generate(businessDate);
       signal.throwIfAborted();
       return Object.freeze({ resultRef: fingerprintRef("daily", record.fingerprint), status: "COMPLETED" });
+    },
+    runVentureInternalJob: async ({ jobType, operationIdentity, payload, signal }: Parameters<OperationsLocalWorkflowCallbacks["runVentureInternalJob"]>[0]) => {
+      signal.throwIfAborted();
+      if (input.venture === undefined) return Object.freeze({ reasonCode: "VENTURE_POLICY_REQUIRED", resultRef: "VENTURE_POLICY_REQUIRED", status: "BLOCKED" });
+      const result = await input.venture.run({ jobType, operationIdentity, payload, signal });
+      signal.throwIfAborted();
+      if (!/^[a-f0-9]{64}$/u.test(result.fingerprint) || (result.status === "BLOCKED" && result.reasonCode === undefined) || (result.status === "COMPLETED" && result.reasonCode !== undefined)) throw new RepositoryValidationError("Venture internal workflow result is invalid");
+      return result.status === "BLOCKED"
+        ? Object.freeze({ reasonCode: result.reasonCode ?? "VENTURE_PORTFOLIO_COVERAGE_REQUIRED", resultRef: fingerprintRef("venture", result.fingerprint), status: "BLOCKED" })
+        : Object.freeze({ resultRef: fingerprintRef("venture", result.fingerprint), status: "COMPLETED" });
     },
     startAgentCompanyWorkday: async ({ budgetCents, operationIdentity, signal, workday, workdayId }: Parameters<OperationsLocalWorkflowCallbacks["startAgentCompanyWorkday"]>[0]) => {
       signal.throwIfAborted();
@@ -62,7 +80,7 @@ export function createOperationsLocalWorkflowCallbacks(input: Readonly<{
   return Object.freeze(callbacks);
 }
 
-function fingerprintRef(prefix: "company" | "daily" | "founder", fingerprint: string): string {
+function fingerprintRef(prefix: "company" | "daily" | "founder" | "venture", fingerprint: string): string {
   if (!/^[a-f0-9]{64}$/u.test(fingerprint)) throw new RepositoryValidationError("Local workflow fingerprint is invalid");
   return `${prefix}-${fingerprint.slice(0, 48)}`;
 }

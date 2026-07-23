@@ -89,6 +89,14 @@ function payload(jobType: OperationsJobType, value: unknown): value is Operation
     case "COST_AND_BUDGET_CHECK": return keys(value, ["window"]) && value.window === "TODAY";
     case "BACKUP_AND_RESTORE_VERIFICATION": return keys(value, ["backupPolicyId"]) && id(value.backupPolicyId);
     case "STALE_TASK_DETECTION": return keys(value, ["staleAfterSeconds"]) && integer(value.staleAfterSeconds, 60, 2_592_000);
+    case "VENTURE_OPPORTUNITY_SCAN": return keys(value, ["ventureMode"]) && value.ventureMode === "REGISTERED_EVIDENCE_ONLY";
+    case "VENTURE_EVIDENCE_REFRESH": return keys(value, ["ventureMode"]) && value.ventureMode === "REGISTERED_EVIDENCE_REFRESH";
+    case "VENTURE_EXPERIMENT_REVIEW": return keys(value, ["ventureMode"]) && value.ventureMode === "EXPERIMENT_REVIEW_ONLY";
+    case "VENTURE_STALE_CHECK": return keys(value, ["ventureStaleAfterSeconds"]) && integer(value.ventureStaleAfterSeconds, 60, 2_592_000);
+    case "PORTFOLIO_DAILY_BRIEF":
+    case "PORTFOLIO_WEEKLY_REVIEW": return keys(value, ["businessDate"]) && isBusinessDate(value.businessDate);
+    case "CAPITAL_ALLOCATION_REVIEW": return keys(value, ["ventureMode"]) && value.ventureMode === "CAPITAL_PROPOSAL_ONLY";
+    case "VENTURE_KILL_SCALE_CHECK": return keys(value, ["ventureMode"]) && value.ventureMode === "KILL_SCALE_REVIEW_ONLY";
   }
 }
 

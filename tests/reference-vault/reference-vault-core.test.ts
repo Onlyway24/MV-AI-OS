@@ -618,7 +618,7 @@ describe("Onlyway Creative & Business Intelligence Reference Vault", () => {
       const direct = new DatabaseSync(path);
       direct.prepare("UPDATE reference_vault_blobs SET content = ? WHERE workspace_id = ? AND actor_id = ? AND sha256 = ?").run(Buffer.alloc(PNG.byteLength), "onlyway", "fabio", sha(PNG));
       const version = direct.prepare("PRAGMA user_version").get();
-      expect(version?.user_version).toBe(31);
+      expect(version?.user_version).toBe(32);
       direct.close();
 
       const restarted = createRuntime(path);
@@ -641,10 +641,16 @@ describe("Onlyway Creative & Business Intelligence Reference Vault", () => {
       await initial.runner.close();
       const legacy = new DatabaseSync(path);
       legacy.exec(`
+        DROP TABLE venture_audit_events;
+        DROP TABLE venture_command_receipts;
+        DROP TABLE venture_events;
+        DROP TABLE venture_records;
+        DROP TABLE venture_runtime_controls;
         DROP TABLE reference_vault_audit_events;
         DROP TABLE reference_vault_command_receipts;
         DROP TABLE reference_vault_records;
         DROP TABLE reference_vault_blobs;
+        DELETE FROM schema_migrations WHERE version = 32;
         DELETE FROM schema_migrations WHERE version = 31;
         PRAGMA user_version = 30;
       `);
@@ -655,8 +661,9 @@ describe("Onlyway Creative & Business Intelligence Reference Vault", () => {
       expect(empty).toMatchObject({ assets: [], businessContext: { status: "NOT_AVAILABLE" }, competitorOutputPolicy: "BLOCKED" });
       await migrated.runner.close();
       const inspected = new DatabaseSync(path);
-      expect(inspected.prepare("PRAGMA user_version").get()?.user_version).toBe(31);
+      expect(inspected.prepare("PRAGMA user_version").get()?.user_version).toBe(32);
       expect(inspected.prepare("SELECT name FROM schema_migrations WHERE version = 31").get()?.name).toBe("creative_business_intelligence_reference_vault");
+      expect(inspected.prepare("SELECT name FROM schema_migrations WHERE version = 32").get()?.name).toBe("onlyway_venture_holding_v1");
       inspected.close();
     });
   });

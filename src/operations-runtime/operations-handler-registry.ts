@@ -8,8 +8,20 @@ import { OPERATIONS_JOB_TYPES, type OperationsExecutionResult, type OperationsJo
 
 export interface OperationsLocalWorkflowCallbacks {
   generateDailyOperatingReport(input: Readonly<{ readonly businessDate: string; readonly signal: AbortSignal }>): Promise<OperationsLocalWorkflowResult>;
+  runVentureInternalJob(input: Readonly<{ readonly jobType: VentureOperationsJobType; readonly operationIdentity: string; readonly payload: OperationsJob["payload"]; readonly signal: AbortSignal }>): Promise<OperationsLocalWorkflowResult>;
   startAgentCompanyWorkday(input: Readonly<{ readonly budgetCents: number; readonly operationIdentity: string; readonly signal: AbortSignal; readonly workday?: AgentCompanyWorkdayInput; readonly workdayId: string }>): Promise<OperationsLocalWorkflowResult>;
 }
+
+export type VentureOperationsJobType = Extract<OperationsJobType,
+  | "CAPITAL_ALLOCATION_REVIEW"
+  | "PORTFOLIO_DAILY_BRIEF"
+  | "PORTFOLIO_WEEKLY_REVIEW"
+  | "VENTURE_EVIDENCE_REFRESH"
+  | "VENTURE_EXPERIMENT_REVIEW"
+  | "VENTURE_KILL_SCALE_CHECK"
+  | "VENTURE_OPPORTUNITY_SCAN"
+  | "VENTURE_STALE_CHECK"
+>;
 
 export type OperationsLocalWorkflowResult =
   | Readonly<{ readonly resultRef: string; readonly status: "COMPLETED" }>
@@ -51,7 +63,7 @@ export function createLocalOperationsJobHandlerRegistry(input: Readonly<{
   const inspection = new LocalOperationalInspectionHandler(input.repositories);
   const backup = new BackupVerificationHandler(input.verifyBackupAndRestore);
   return new ImmutableOperationsJobHandlerRegistry(OPERATIONS_JOB_TYPES.map((jobType) => ({
-    handler: jobType === "AGENT_COMPANY_WORKDAY_START" || jobType === "DAILY_OPERATING_REPORT" || jobType === "MORNING_SYSTEM_BRIEF"
+    handler: jobType === "AGENT_COMPANY_WORKDAY_START" || jobType === "DAILY_OPERATING_REPORT" || jobType === "MORNING_SYSTEM_BRIEF" || ventureJobType(jobType)
       ? localWorkflow
       : jobType === "SOCIAL_SIGNAL_REFRESH" || jobType === "PRODUCTION_QUEUE_RECONCILIATION"
       ? command
@@ -93,6 +105,9 @@ class LocalWorkflowCallbackHandler implements OperationsJobHandler {
     } else if (job.jobType === "DAILY_OPERATING_REPORT" || job.jobType === "MORNING_SYSTEM_BRIEF") {
       if (this.callbacks?.generateDailyOperatingReport === undefined) throw new RepositoryValidationError("Daily Operating Report callback is not configured");
       receipt = await this.callbacks.generateDailyOperatingReport({ businessDate: (job.payload as { readonly businessDate: string }).businessDate, signal: context.signal });
+    } else if (ventureJobType(job.jobType)) {
+      if (this.callbacks?.runVentureInternalJob === undefined) throw new RepositoryValidationError("Venture internal workflow callback is not configured");
+      receipt = await this.callbacks.runVentureInternalJob({ jobType: job.jobType, operationIdentity: job.operationIdentity, payload: job.payload, signal: context.signal });
     } else throw new RepositoryValidationError("Local workflow callback received an unsupported job type");
     context.signal.throwIfAborted();
     assertResultRef(receipt.resultRef);
@@ -156,3 +171,4 @@ function commandId(job: OperationsJob, index: number): string { return `ops-${di
 function isIdleProductionRun(value: unknown): boolean { return typeof value === "object" && value !== null && "status" in value && value.status === "IDLE"; }
 function digest(value: string): string { return createHash("sha256").update(value, "utf8").digest("hex"); }
 function assertResultRef(value: string): void { if (!/^[A-Za-z0-9][A-Za-z0-9@._:-]{0,127}$/u.test(value)) throw new RepositoryValidationError("Operations handler result reference is invalid"); }
+function ventureJobType(value: OperationsJobType): value is VentureOperationsJobType { return ["CAPITAL_ALLOCATION_REVIEW", "PORTFOLIO_DAILY_BRIEF", "PORTFOLIO_WEEKLY_REVIEW", "VENTURE_EVIDENCE_REFRESH", "VENTURE_EXPERIMENT_REVIEW", "VENTURE_KILL_SCALE_CHECK", "VENTURE_OPPORTUNITY_SCAN", "VENTURE_STALE_CHECK"].includes(value); }

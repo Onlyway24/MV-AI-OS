@@ -36,6 +36,11 @@ const POST_V26_TABLES = Object.freeze([
   "operations_job_successors",
   "operations_runtime_usage_rollups",
   "production_controls",
+  "venture_audit_events",
+  "venture_command_receipts",
+  "venture_events",
+  "venture_records",
+  "venture_runtime_controls",
 ]);
 afterEach(async () => { await Promise.all(roots.splice(0).map((path) => rm(path, { force: true, recursive: true }))); });
 
@@ -52,21 +57,21 @@ describe("supervised Operations Runtime", () => {
     expect(serialized).not.toContain("lease");
   });
 
-  it("provisions all eleven zero-paid-call schedules idempotently across restarts", async () => {
+  it("provisions the complete zero-paid-call schedule catalog idempotently across restarts", async () => {
     const { clock, repositories } = await fixture();
     const first = scheduler(repositories, clock, "scheduler-catalog");
     const catalog = createDefaultOperationsScheduleCatalog({ actorId: "fabio", backupPolicyId: "local-backup", clock, workspaceId: "workspace" });
     expect(catalog.map(({ jobType }) => jobType).sort()).toEqual([...OPERATIONS_JOB_TYPES].sort());
     expect(catalog.every(({ budget, retryPolicy }) => budget.maxCostCents === 0 && budget.maxProviderCalls === 0 && budget.maxToolCalls > 0 && retryPolicy.automaticRetries <= 2)).toBe(true);
-    await expect(registerDefaultOperationsScheduleCatalog(first, catalog)).resolves.toHaveLength(11);
+    await expect(registerDefaultOperationsScheduleCatalog(first, catalog)).resolves.toHaveLength(OPERATIONS_JOB_TYPES.length);
     await first.close();
 
     clock.advance(25 * 60 * 60 * 1_000);
     const restarted = scheduler(repositories, clock, "scheduler-catalog-restarted");
     const replay = createDefaultOperationsScheduleCatalog({ actorId: "fabio", backupPolicyId: "local-backup", clock, workspaceId: "workspace" });
-    await expect(registerDefaultOperationsScheduleCatalog(restarted, replay)).resolves.toHaveLength(11);
+    await expect(registerDefaultOperationsScheduleCatalog(restarted, replay)).resolves.toHaveLength(OPERATIONS_JOB_TYPES.length);
     const due = await repositories.transaction(({ operationsRuntime }) => operationsRuntime.listDueSchedules("workspace", new Date(clock.now().getTime() + 30 * 60 * 1_000).toISOString(), 100));
-    expect(due).toHaveLength(11);
+    expect(due).toHaveLength(OPERATIONS_JOB_TYPES.length);
     await restarted.close();
     await repositories.close();
   });

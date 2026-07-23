@@ -2171,3 +2171,23 @@ export {
   type CommandCenterRevenueStage,
   type CommandCenterRevenueView,
 } from "./command-center/command-center-revenue-view.js";
+export * from "./venture-holding/venture-domain.js";
+export * from "./venture-holding/venture-repository.js";
+export * from "./venture-holding/venture-validator.js";
+export { DeterministicVentureScorecardService, VENTURE_SCORE_CRITERIA, compareVentureScorecards, type DeterministicVentureScorecard, type VentureCriterionInput, type VentureCriterionScore, type VentureScorePolicy, type VentureScorecardComparison, type VentureScorecardOutcome, type VentureScoreDataKind } from "./venture-holding/venture-scorecard.js";
+export { DeterministicVentureEconomicsEngine, type VentureCalculatedEconomicValue, type VentureEconomicBps, type VentureEconomicInputKind, type VentureEconomicValue, type VentureEconomicsScenario as CalculatedVentureEconomicsScenario, type VentureEconomicsScenarioInput } from "./venture-holding/venture-economics.js";
+export * from "./venture-holding/opportunity-radar.js";
+export * from "./venture-holding/venture-experiment-engine.js";
+export { CAPITAL_BOARD_CRITERIA, DeterministicCapitalBoard, type CapitalAllocationProposal as CapitalBoardProposal, type CapitalAllocationCandidateScore, type CapitalBoardCandidate, type CapitalBoardCriterion, type CapitalBoardCriterionInput, type CapitalBoardPolicy } from "./venture-holding/capital-board.js";
+export * from "./venture-holding/venture-launch-pack.js";
+export * from "./venture-holding/venture-stage-machine.js";
+export * from "./venture-holding/venture-command-boundary.js";
+export * from "./venture-holding/venture-holding-service.js";
+export * from "./venture-holding/onlyway-venture-001.js";
+export * from "./venture-holding/venture-cell-service.js";
+export * from "./venture-holding/venture-brief-service.js";
+export { SqliteVentureHoldingRepository } from "./persistence/sqlite/sqlite-venture-holding-repository.js";
+export { SqliteVentureHoldingTransactionRunner } from "./persistence/sqlite/sqlite-venture-holding-transaction-runner.js";
+export * from "./command-center/command-center-venture-view.js";
+export * from "./command-center/repository-backed-venture-query.js";
+export * from "./telegram/telegram-venture-brief-console.js";
