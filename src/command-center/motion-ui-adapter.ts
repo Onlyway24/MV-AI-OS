@@ -32,6 +32,7 @@ export interface GovernedOperationalMotionEvent {
 }
 
 export interface MotionUiAdapter {
+  animateCinematicSceneEnter(target: unknown): void;
   animateMetricChange(target: unknown): void;
   animatePanelEnter(target: unknown): void;
   animatePanelExit(target: unknown): void;
@@ -41,6 +42,7 @@ export interface MotionUiAdapter {
   animateTikTokPreview(target: unknown, beats: readonly unknown[]): void;
   animateValidationFailure(target: unknown): void;
   animateWorkflowProgress(target: unknown, event: GovernedOperationalMotionEvent): boolean;
+  observeCinematicScenes(target: unknown): () => void;
   observePanels(target: unknown): () => void;
   stopActiveAnimations(): void;
   stopAllMotion(): void;
@@ -70,7 +72,7 @@ export function createMotionUiAdapter(options: MotionUiAdapterOptions = {}): Mot
   const seenEvents = new Set<string>();
   const seenOrder: string[] = [];
 
-  const mayAnimate = (): boolean => enabled() && !reducedMotion();
+  const mayAnimate = (): boolean => safePredicate(enabled, false) && !safePredicate(reducedMotion, true);
   const track = (control: MotionControl): void => {
     controls.push(control);
     if (control.finished !== undefined) {
@@ -83,9 +85,39 @@ export function createMotionUiAdapter(options: MotionUiAdapterOptions = {}): Mot
   };
   const run = (target: unknown, keyframes: unknown, transition: unknown): void => {
     if (!mayAnimate() || target === undefined || target === null) return;
-    track(driver.animate(target, keyframes, transition));
+    try {
+      track(driver.animate(target, keyframes, transition));
+    } catch {
+      // Motion is progressive enhancement: a driver failure must not break UI.
+    }
+  };
+  const observe = (target: unknown, callback: (visibleTarget: unknown) => void, amount: number): (() => void) => {
+    if (!mayAnimate() || !hasObservableTarget(target)) return () => undefined;
+    let dispose: () => void;
+    try {
+      dispose = driver.inView(target, callback, { amount });
+    } catch {
+      return () => undefined;
+    }
+    let active = true;
+    const trackedDispose = (): void => {
+      if (!active) return;
+      active = false;
+      try {
+        dispose();
+      } finally {
+        observers.delete(trackedDispose);
+      }
+    };
+    observers.add(trackedDispose);
+    return trackedDispose;
   };
 
+  const animateCinematicSceneEnter = (target: unknown): void => {
+    run(target, {
+      opacity: [0.72, 1],
+    }, { duration: 0.56, easing: [0.16, 1, 0.3, 1] });
+  };
   const animatePanelEnter = (target: unknown): void => {
     run(target, { opacity: [0, 1], transform: ["translateY(10px)", "translateY(0px)"] }, { duration: 0.32, easing: [0.2, 0.75, 0.25, 1] });
   };
@@ -126,24 +158,30 @@ export function createMotionUiAdapter(options: MotionUiAdapterOptions = {}): Mot
   };
   const animateTikTokPreview = (target: unknown, beats: readonly unknown[]): void => {
     run(target, { opacity: [0.72, 1], transform: ["scale(1.018) translateY(3px)", "scale(1) translateY(0px)"] }, { duration: 0.44, easing: [0.2, 0.75, 0.25, 1] });
-    if (beats.length > 0 && mayAnimate()) track(driver.animate(beats, { opacity: [0, 1], transform: ["translateY(9px)", "translateY(0px)"] }, { delay: driver.stagger(0.07), duration: 0.28, easing: "ease-out" }));
+    if (beats.length > 0 && mayAnimate()) {
+      try {
+        track(driver.animate(beats, { opacity: [0, 1], transform: ["translateY(9px)", "translateY(0px)"] }, { delay: driver.stagger(0.07), duration: 0.28, easing: "ease-out" }));
+      } catch {
+        // Keep the static preview usable when Motion cannot initialize.
+      }
+    }
+  };
+  const observeCinematicScenes = (target: unknown): (() => void) => {
+    return observe(target, animateCinematicSceneEnter, 0.18);
   };
   const observePanels = (target: unknown): (() => void) => {
-    if (!enabled()) return () => undefined;
-    const dispose = driver.inView(target, (visibleTarget) => { animatePanelEnter(visibleTarget); }, { amount: 0.12 });
-    observers.add(dispose);
-    return () => { dispose(); observers.delete(dispose); };
+    return observe(target, animatePanelEnter, 0.12);
   };
   const stopActiveAnimations = (): void => {
     while (controls.length > 0) stopControl(controls.pop());
   };
   const stopAllMotion = (): void => {
     stopActiveAnimations();
-    for (const dispose of observers) dispose();
+    for (const dispose of [...observers]) dispose();
     observers.clear();
   };
 
-  return Object.freeze({ animateMetricChange, animatePanelEnter, animatePanelExit, animateReviewOpen, animateStatusTransition, animateSuccessReceipt, animateTikTokPreview, animateValidationFailure, animateWorkflowProgress, observePanels, stopActiveAnimations, stopAllMotion });
+  return Object.freeze({ animateCinematicSceneEnter, animateMetricChange, animatePanelEnter, animatePanelExit, animateReviewOpen, animateStatusTransition, animateSuccessReceipt, animateTikTokPreview, animateValidationFailure, animateWorkflowProgress, observeCinematicScenes, observePanels, stopActiveAnimations, stopAllMotion });
 }
 
 function validEvent(event: GovernedOperationalMotionEvent): boolean {
@@ -152,7 +190,26 @@ function validEvent(event: GovernedOperationalMotionEvent): boolean {
 
 function boundedMaximum(candidate: number | undefined): number {
   const value = candidate ?? DEFAULT_MAX_CONCURRENT_ANIMATIONS;
-  return Number.isSafeInteger(value) && value >= 1 && value <= 16 ? value : DEFAULT_MAX_CONCURRENT_ANIMATIONS;
+  return Number.isSafeInteger(value) && value >= 1 ? Math.min(value, DEFAULT_MAX_CONCURRENT_ANIMATIONS) : DEFAULT_MAX_CONCURRENT_ANIMATIONS;
+}
+
+function hasObservableTarget(target: unknown): boolean {
+  if (target === undefined || target === null) return false;
+  if (typeof target !== "object") return true;
+  try {
+    const length = (target as { readonly length?: unknown }).length;
+    return typeof length !== "number" || length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function safePredicate(predicate: () => boolean, fallback: boolean): boolean {
+  try {
+    return predicate();
+  } catch {
+    return fallback;
+  }
 }
 
 function forgetControl(controls: MotionControl[], control: MotionControl): void {
@@ -184,25 +241,69 @@ interface BrowserWindowLike {
 
 export interface InstalledCommandCenterMotion { readonly adapter: MotionUiAdapter; dispose(): void }
 
-export function installCommandCenterMotion(browserWindow: BrowserWindowLike, browserDocument: BrowserDocumentLike): InstalledCommandCenterMotion {
+export interface InstallCommandCenterMotionOptions {
+  readonly driver?: MotionDriver;
+  readonly maxConcurrentAnimations?: number;
+}
+
+export function installCommandCenterMotion(browserWindow: BrowserWindowLike, browserDocument: BrowserDocumentLike, options: InstallCommandCenterMotionOptions = {}): InstalledCommandCenterMotion {
   const reducedQuery = browserWindow.matchMedia?.("(prefers-reduced-motion: reduce)");
   const root = browserDocument.querySelector("#command-center") as BrowserElementLike | null;
   root?.setAttribute?.("data-motion-ui", "ready");
-  root?.setAttribute?.("data-motion-reduced", String(reducedQuery?.matches === true));
-  const killSwitch = (): boolean => Boolean(browserDocument.querySelector('[data-motion-kill-switch="active"]'));
-  const adapter = createMotionUiAdapter({ enabled: () => !killSwitch(), reducedMotion: () => reducedQuery?.matches === true });
-  adapter.observePanels(browserDocument.querySelectorAll(".cc-main > [data-primary-view], [data-studio-panel]"));
+  const isReduced = (): boolean => safePredicate(() => reducedQuery?.matches === true, true);
+  const isVisible = (): boolean => safePredicate(() => browserDocument.hidden !== true, false);
+  const killSwitch = (): boolean => safePredicate(() => !Boolean(browserDocument.querySelector('[data-motion-kill-switch="inactive"]')), true);
+  const adapter = createMotionUiAdapter({
+    enabled: () => isVisible() && !killSwitch(),
+    reducedMotion: isReduced,
+    ...(options.driver === undefined ? {} : { driver: options.driver }),
+    ...(options.maxConcurrentAnimations === undefined ? {} : { maxConcurrentAnimations: options.maxConcurrentAnimations }),
+  });
+  let panelObservation: (() => void) | undefined;
+  let sceneObservation: (() => void) | undefined;
+
+  const disposeObservations = (): void => {
+    panelObservation?.();
+    sceneObservation?.();
+    panelObservation = undefined;
+    sceneObservation = undefined;
+  };
+  const updateRootState = (): void => {
+    root?.setAttribute?.("data-motion-reduced", String(isReduced()));
+    root?.setAttribute?.("data-motion-visible", String(isVisible()));
+    root?.setAttribute?.("data-motion-kill-switch", killSwitch() ? "active" : "inactive");
+  };
+  const rebindObservations = (): void => {
+    disposeObservations();
+    updateRootState();
+    if (!isVisible() || isReduced() || killSwitch()) return;
+    panelObservation = adapter.observePanels(browserDocument.querySelectorAll(".cc-main > [data-primary-view]:not([data-cinematic-scene]), [data-studio-panel]:not([data-cinematic-scene])"));
+    sceneObservation = adapter.observeCinematicScenes(browserDocument.querySelectorAll("[data-cinematic-scene]"));
+  };
+  rebindObservations();
 
   const route = (event: BrowserEventLike): void => {
     const detail = record(event.detail);
     adapter.stopActiveAnimations();
+    rebindObservations();
+    const selector = typeof detail?.selector === "string" && /^#[a-zA-Z0-9_-]{1,80}$/u.test(detail.selector) ? detail.selector : undefined;
+    if (selector !== undefined) adapter.animatePanelEnter(browserDocument.querySelector(selector));
+  };
+  const render = (event: BrowserEventLike): void => {
+    const detail = record(event.detail);
+    adapter.stopActiveAnimations();
+    rebindObservations();
     const selector = typeof detail?.selector === "string" && /^#[a-zA-Z0-9_-]{1,80}$/u.test(detail.selector) ? detail.selector : undefined;
     if (selector !== undefined) adapter.animatePanelEnter(browserDocument.querySelector(selector));
   };
   const operational = (event: BrowserEventLike): void => {
     const detail = governedEvent(event.detail);
     if (detail === undefined) return;
-    if (detail.eventType === "KILL_SWITCH_CHANGED") { adapter.stopActiveAnimations(); return; }
+    if (detail.eventType === "KILL_SWITCH_CHANGED") {
+      adapter.stopActiveAnimations();
+      rebindObservations();
+      return;
+    }
     adapter.animateWorkflowProgress(browserDocument.querySelector("#command-form"), detail);
   };
   const review = (): void => { adapter.animateReviewOpen(browserDocument.querySelector("#action-confirmation .cc-authorization-dialog")); };
@@ -214,11 +315,20 @@ export function installCommandCenterMotion(browserWindow: BrowserWindowLike, bro
     const target = browserDocument.querySelector('[data-motion-preview="tiktok"]');
     adapter.animateTikTokPreview(target, browserDocument.querySelectorAll('[data-motion-preview="tiktok"] [data-motion-preview-beat]'));
   };
-  const stop = (): void => { adapter.stopActiveAnimations(); };
-  const reducedChange = (): void => { root?.setAttribute?.("data-motion-reduced", String(reducedQuery?.matches === true)); stop(); };
-  const visibility = (): void => { if (browserDocument.hidden === true) stop(); };
+  const stop = (): void => {
+    adapter.stopActiveAnimations();
+    disposeObservations();
+  };
+  const reducedChange = (): void => {
+    adapter.stopActiveAnimations();
+    rebindObservations();
+  };
+  const visibility = (): void => {
+    adapter.stopActiveAnimations();
+    rebindObservations();
+  };
 
-  const listeners = [["onlyway:motion:route", route], ["onlyway:motion:operational", operational], ["onlyway:motion:review", review], ["onlyway:motion:validation", validation], ["onlyway:motion:receipt", receipt], ["onlyway:motion:tiktok-preview", preview], ["onlyway:motion:stop", stop], ["beforeunload", stop]] as const;
+  const listeners = [["onlyway:motion:route", route], ["onlyway:motion:render", render], ["onlyway:motion:operational", operational], ["onlyway:motion:review", review], ["onlyway:motion:validation", validation], ["onlyway:motion:receipt", receipt], ["onlyway:motion:tiktok-preview", preview], ["onlyway:motion:stop", stop], ["beforeunload", stop]] as const;
   for (const [name, listener] of listeners) browserWindow.addEventListener(name, listener);
   browserDocument.addEventListener("visibilitychange", visibility);
   reducedQuery?.addEventListener?.("change", reducedChange);
@@ -226,6 +336,7 @@ export function installCommandCenterMotion(browserWindow: BrowserWindowLike, bro
   return Object.freeze({
     adapter,
     dispose: () => {
+      disposeObservations();
       adapter.stopAllMotion();
       for (const [name, listener] of listeners) browserWindow.removeEventListener(name, listener);
       browserDocument.removeEventListener("visibilitychange", visibility);

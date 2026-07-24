@@ -19,7 +19,7 @@ describe("governed Command Center Motion UI", () => {
     expect(source).not.toContain("motion/react");
     const adapter = createMotionUiAdapter({ driver: fakeDriver().driver });
     expect(Object.keys(adapter).sort()).toEqual([
-      "animateMetricChange", "animatePanelEnter", "animatePanelExit", "animateReviewOpen", "animateStatusTransition", "animateSuccessReceipt", "animateTikTokPreview", "animateValidationFailure", "animateWorkflowProgress", "observePanels", "stopActiveAnimations", "stopAllMotion",
+      "animateCinematicSceneEnter", "animateMetricChange", "animatePanelEnter", "animatePanelExit", "animateReviewOpen", "animateStatusTransition", "animateSuccessReceipt", "animateTikTokPreview", "animateValidationFailure", "animateWorkflowProgress", "observeCinematicScenes", "observePanels", "stopActiveAnimations", "stopAllMotion",
     ]);
   });
 
@@ -36,6 +36,30 @@ describe("governed Command Center Motion UI", () => {
     expect(fake.stopped).toBe(1);
     adapter.stopAllMotion();
     expect(fake.stopped).toBe(3);
+  });
+
+  it("caps all cinematic and operational motion at eight concurrent controls", () => {
+    const fake = fakeDriver();
+    const adapter = createMotionUiAdapter({ driver: fake.driver, maxConcurrentAnimations: 64 });
+    for (let index = 0; index < 9; index += 1) adapter.animateCinematicSceneEnter({});
+    expect(fake.animations).toHaveLength(9);
+    expect(fake.stopped).toBe(1);
+    adapter.stopAllMotion();
+    expect(fake.stopped).toBe(9);
+  });
+
+  it("observes cinematic scenes through the same Motion boundary and disposes idempotently", () => {
+    const fake = fakeDriver();
+    const adapter = createMotionUiAdapter({ driver: fake.driver });
+    const dispose = adapter.observeCinematicScenes([{}]);
+    expect(fake.observations).toBe(1);
+    expect(fake.activeObservers).toBe(1);
+    expect(JSON.stringify(fake.keyframes[0])).toContain("opacity");
+    expect(JSON.stringify(fake.keyframes[0])).not.toContain("transform");
+    dispose();
+    dispose();
+    expect(fake.observerDisposals).toBe(1);
+    expect(fake.activeObservers).toBe(0);
   });
 
   it("deduplicates authoritative events and never represents QUEUED as RUNNING or hides BLOCKED", () => {
@@ -60,6 +84,65 @@ describe("governed Command Center Motion UI", () => {
     expect(disposed).toBe(0);
     adapter.stopAllMotion();
     expect(disposed).toBe(1);
+  });
+
+  it("rebinds panel and cinematic observers without duplicates after render and route lifecycle events", () => {
+    const fake = fakeDriver();
+    const windowPort = fakeWindow();
+    const documentPort = lifecycleDocument();
+    const installed = installCommandCenterMotion(windowPort.port, documentPort.port, { driver: fake.driver });
+    expect(fake.observations).toBe(2);
+    expect(fake.activeObservers).toBe(2);
+
+    windowPort.emit("onlyway:motion:render", { selector: "#today-view" });
+    expect(fake.observations).toBe(4);
+    expect(fake.observerDisposals).toBe(2);
+    expect(fake.activeObservers).toBe(2);
+
+    windowPort.emit("onlyway:motion:route", { selector: "#studio-view" });
+    expect(fake.observations).toBe(6);
+    expect(fake.observerDisposals).toBe(4);
+    expect(fake.activeObservers).toBe(2);
+
+    installed.dispose();
+    expect(fake.observerDisposals).toBe(6);
+    expect(fake.activeObservers).toBe(0);
+  });
+
+  it("fails closed while hidden, reduced, or kill-switched and resumes only after an authoritative rebind", () => {
+    const fake = fakeDriver();
+    const windowPort = fakeWindow();
+    const documentPort = lifecycleDocument();
+    const installed = installCommandCenterMotion(windowPort.port, documentPort.port, { driver: fake.driver });
+    expect(fake.activeObservers).toBe(2);
+
+    documentPort.setHidden(true);
+    documentPort.emit("visibilitychange");
+    expect(fake.activeObservers).toBe(0);
+    const observationsWhileHidden = fake.observations;
+    windowPort.emit("onlyway:motion:render", { selector: "#today-view" });
+    expect(fake.observations).toBe(observationsWhileHidden);
+
+    documentPort.setHidden(false);
+    documentPort.emit("visibilitychange");
+    expect(fake.activeObservers).toBe(2);
+
+    windowPort.setReduced(true);
+    expect(fake.activeObservers).toBe(0);
+    const observationsWhileReduced = fake.observations;
+    windowPort.emit("onlyway:motion:render", {});
+    expect(fake.observations).toBe(observationsWhileReduced);
+
+    windowPort.setReduced(false);
+    expect(fake.activeObservers).toBe(2);
+    documentPort.setKillSwitch(true);
+    windowPort.emit("onlyway:motion:operational", { eventId: "kill-1", eventType: "KILL_SWITCH_CHANGED", sequence: 10, status: "PAUSED" });
+    expect(fake.activeObservers).toBe(0);
+
+    documentPort.setKillSwitch(false);
+    windowPort.emit("onlyway:motion:render", {});
+    expect(fake.activeObservers).toBe(2);
+    installed.dispose();
   });
 
   it("represents FAILED and PAUSED as bounded terminal states without fake progress", () => {
@@ -101,8 +184,16 @@ describe("governed Command Center Motion UI", () => {
   });
 });
 
-function fakeDriver(): { readonly animations: MotionControl[]; readonly driver: MotionDriver; readonly keyframes: unknown[]; readonly stopped: number } {
-  const state: { animations: MotionControl[]; keyframes: unknown[]; stopped: number } = { animations: [], keyframes: [], stopped: 0 };
+function fakeDriver(): {
+  readonly activeObservers: number;
+  readonly animations: MotionControl[];
+  readonly driver: MotionDriver;
+  readonly keyframes: unknown[];
+  readonly observations: number;
+  readonly observerDisposals: number;
+  readonly stopped: number;
+} {
+  const state = { activeObservers: 0, animations: [] as MotionControl[], keyframes: [] as unknown[], observations: 0, observerDisposals: 0, stopped: 0 };
   const driver: MotionDriver = {
     animate: (_target, keyframes) => {
       state.keyframes.push(keyframes);
@@ -110,27 +201,58 @@ function fakeDriver(): { readonly animations: MotionControl[]; readonly driver: 
       state.animations.push(control);
       return control;
     },
-    inView: (_target, callback) => { callback({}); return () => undefined; },
+    inView: (_target, callback) => {
+      state.observations += 1;
+      state.activeObservers += 1;
+      callback({});
+      let active = true;
+      return () => {
+        if (!active) return;
+        active = false;
+        state.observerDisposals += 1;
+        state.activeObservers -= 1;
+      };
+    },
     stagger: () => 0,
   };
   return {
+    get activeObservers() { return state.activeObservers; },
     get animations() { return state.animations; },
     driver,
     get keyframes() { return state.keyframes; },
+    get observations() { return state.observations; },
+    get observerDisposals() { return state.observerDisposals; },
     get stopped() { return state.stopped; },
   };
 }
 
 type Listener = (event: { readonly detail?: unknown }) => void;
 
-function fakeWindow(): { readonly port: Parameters<typeof installCommandCenterMotion>[0]; emit(name: string, detail: unknown): void } {
+function fakeWindow(): {
+  readonly port: Parameters<typeof installCommandCenterMotion>[0];
+  emit(name: string, detail: unknown): void;
+  setReduced(value: boolean): void;
+} {
   const listeners = new Map<string, Set<Listener>>();
+  const reducedListeners = new Set<() => void>();
+  let reduced = false;
   const port = {
     addEventListener: (name: string, listener: Listener) => { const current = listeners.get(name) ?? new Set<Listener>(); current.add(listener); listeners.set(name, current); },
-    matchMedia: () => ({ matches: false, addEventListener: () => undefined, removeEventListener: () => undefined }),
+    matchMedia: () => ({
+      addEventListener: (_name: "change", listener: () => void) => { reducedListeners.add(listener); },
+      get matches() { return reduced; },
+      removeEventListener: (_name: "change", listener: () => void) => { reducedListeners.delete(listener); },
+    }),
     removeEventListener: (name: string, listener: Listener) => { listeners.get(name)?.delete(listener); },
   };
-  return { port, emit: (name, detail) => { for (const listener of listeners.get(name) ?? []) listener({ detail }); } };
+  return {
+    port,
+    emit: (name, detail) => { for (const listener of listeners.get(name) ?? []) listener({ detail }); },
+    setReduced: (value) => {
+      reduced = value;
+      for (const listener of reducedListeners) listener();
+    },
+  };
 }
 
 function fakeDocument(killSwitch: boolean): { readonly port: Parameters<typeof installCommandCenterMotion>[1] } {
@@ -138,8 +260,37 @@ function fakeDocument(killSwitch: boolean): { readonly port: Parameters<typeof i
   return { port: {
     addEventListener: (name: string, listener: Listener) => { const current = listeners.get(name) ?? new Set<Listener>(); current.add(listener); listeners.set(name, current); },
     hidden: false,
-    querySelector: (selector: string) => selector.includes("data-motion-kill-switch") && killSwitch ? {} : null,
+    querySelector: (selector: string) => selector.includes('data-motion-kill-switch="inactive"') && !killSwitch ? {} : null,
     querySelectorAll: () => [],
     removeEventListener: (name: string, listener: Listener) => { listeners.get(name)?.delete(listener); },
   } };
+}
+
+function lifecycleDocument(): {
+  readonly port: Parameters<typeof installCommandCenterMotion>[1];
+  emit(name: string): void;
+  setHidden(value: boolean): void;
+  setKillSwitch(value: boolean): void;
+} {
+  const listeners = new Map<string, Set<Listener>>();
+  let hidden = false;
+  let killSwitch = false;
+  const root = { setAttribute: () => undefined };
+  const port = {
+    addEventListener: (name: string, listener: Listener) => { const current = listeners.get(name) ?? new Set<Listener>(); current.add(listener); listeners.set(name, current); },
+    get hidden() { return hidden; },
+    querySelector: (selector: string) => {
+      if (selector === "#command-center") return root;
+      if (selector.includes('data-motion-kill-switch="inactive"')) return killSwitch ? null : {};
+      return {};
+    },
+    querySelectorAll: () => [{}],
+    removeEventListener: (name: string, listener: Listener) => { listeners.get(name)?.delete(listener); },
+  };
+  return {
+    port,
+    emit: (name) => { for (const listener of listeners.get(name) ?? []) listener({}); },
+    setHidden: (value) => { hidden = value; },
+    setKillSwitch: (value) => { killSwitch = value; },
+  };
 }

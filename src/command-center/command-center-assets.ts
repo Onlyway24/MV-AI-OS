@@ -1,10 +1,17 @@
 export const COMMAND_CENTER_HTML = `
-<div class="cc-app" id="command-center" data-sidebar-state="expanded" data-navigation="sidebar" data-active-view="today" data-active-studio="production">
+<div class="cc-app" id="command-center" data-sidebar-state="expanded" data-navigation="sidebar" data-active-view="today" data-active-studio="production" data-motion-kill-switch="active">
   <a class="cc-skip-link" href="#workspace-title">Vai al contenuto principale</a>
   <div class="cc-world" aria-hidden="true">
-    <div class="cc-world-image"></div>
-    <div class="cc-world-vignette"></div>
-    <div class="cc-world-light"></div>
+    <div class="cc-world-image" data-cinematic-layer="identity"></div>
+    <div class="cc-world-vignette" data-cinematic-layer="depth"></div>
+    <div class="cc-world-grid" data-cinematic-layer="architecture"></div>
+    <div class="cc-world-light" data-cinematic-layer="light"></div>
+    <div class="cc-world-grain" data-cinematic-layer="texture"></div>
+  </div>
+  <div class="cc-cinematic-hud" aria-hidden="true">
+    <span class="cc-cinematic-edition">ONLYWAY / PRIVATE OPERATING EXPERIENCE</span>
+    <span class="cc-cinematic-coordinate" id="cinematic-coordinate">01 · SIGNAL</span>
+    <span class="cc-cinematic-track"><i id="cinematic-progress"></i></span>
   </div>
   <a class="cc-mobile-brand" href="#today" aria-label="Apri Oggi nel Centro di Comando Onlyway"><span aria-hidden="true">OW</span><b>Onlyway</b></a>
   <button class="cc-mobile-menu" id="mobile-menu-toggle" type="button" aria-controls="command-sidebar" aria-expanded="false" aria-label="Apri il menu del Centro di Comando"><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
@@ -83,7 +90,22 @@ export const COMMAND_CENTER_HTML = `
     <p class="cc-command-result" id="command-result" aria-live="polite"></p>
     <p class="cc-command-help" id="command-help">NEXUS coordina ORACLE, VECTOR, PRISM e FORGE. La proposta usa solo evidenze approvate; provider media e pubblicazione restano sotto gate separati.</p>
 
-    <section class="cc-revenue-hero" id="today" data-primary-view="today" aria-labelledby="revenue-hero-heading">
+    <section class="cc-oracle-constellation" id="oracle-flow" data-primary-view="today" data-cinematic-scene="oracle" data-cinematic-label="ORACLE TRANSMISSION" data-cinematic-tone="violet" aria-labelledby="oracle-flow-heading">
+      <header>
+        <div><p class="cc-kicker">ORACLE · CONTROLLED TRANSFORMATION</p><h2 id="oracle-flow-heading">Da intenzione a pacchetto verificabile.</h2></div>
+        <p>La sequenza descrive responsabilità reali. Nessun nodo dichiara attività finché il preflight non produce una proposta.</p>
+      </header>
+      <ol class="cc-oracle-path" aria-label="NEXUS coordina ORACLE, VECTOR, PRISM e FORGE">
+        <li data-cinematic-step="01"><span>NEXUS</span><strong>Mission intake</strong><small>coordina il boundary</small></li>
+        <li data-cinematic-step="02"><span>ORACLE</span><strong>Evidenze</strong><small>fonti approvate</small></li>
+        <li data-cinematic-step="03"><span>VECTOR</span><strong>Business</strong><small>obiettivo e vincoli</small></li>
+        <li data-cinematic-step="04"><span>PRISM</span><strong>Direzione</strong><small>linguaggio creativo</small></li>
+        <li data-cinematic-step="05"><span>FORGE</span><strong>Pacchetto locale</strong><small>Gate prima degli effetti</small></li>
+      </ol>
+      <footer><span id="oracle-cinematic-state">PROPOSAL-BOUND</span><span>MEDIA GATED</span><span>PUBLICATION LOCKED</span></footer>
+    </section>
+
+    <section class="cc-revenue-hero" id="today" data-primary-view="today" data-cinematic-scene="revenue" data-cinematic-label="VALUE FLOW" data-cinematic-tone="gold" aria-labelledby="revenue-hero-heading">
       <div class="cc-revenue-copy">
         <p class="cc-kicker">ONLYWAY REVENUE OPERATING SYSTEM</p>
         <h2 id="revenue-hero-heading">Dal lavoro al ricavo.<br /><em>Senza perdere il controllo.</em></h2>
@@ -118,18 +140,18 @@ export const COMMAND_CENTER_HTML = `
       </aside>
     </section>
 
-    <section class="cc-revenue-journey" data-primary-view="today" aria-labelledby="revenue-journey-heading">
+    <section class="cc-revenue-journey" data-primary-view="today" data-cinematic-scene="revenue-journey" data-cinematic-label="SEVEN SIGNALS" data-cinematic-tone="gold" aria-labelledby="revenue-journey-heading">
       <div class="cc-revenue-journey-head"><div><p class="cc-panel-label">VALUE FLOW</p><h3 id="revenue-journey-heading">Una catena, sette segnali verificabili</h3></div><span>La vendita non è un numero: è un percorso osservabile.</span></div>
       <div class="cc-revenue-stages" id="revenue-stage-list" aria-live="polite"></div>
     </section>
 
-    <section class="cc-venture-today" data-primary-view="today" aria-labelledby="venture-today-heading">
+    <section class="cc-venture-today" data-primary-view="today" data-cinematic-scene="venture-pulse" data-cinematic-label="OPPORTUNITY FIELD" data-cinematic-tone="cool" aria-labelledby="venture-today-heading">
       <div class="cc-venture-today-head"><div><p class="cc-panel-label">VENTURE PORTFOLIO</p><h3 id="venture-today-heading">Holding pulse</h3></div><a href="#venture">Apri Venture Studio <span aria-hidden="true">→</span></a></div>
       <div class="cc-venture-today-grid" id="venture-today-grid" aria-live="polite"></div>
       <div class="cc-venture-today-next" id="venture-today-next" aria-live="polite"></div>
     </section>
 
-    <section class="cc-section cc-overview" id="overview" data-primary-view="today" aria-labelledby="overview-heading">
+    <section class="cc-section cc-overview" id="overview" data-primary-view="today" data-cinematic-scene="command" data-cinematic-label="FOUNDER SIGNAL" data-cinematic-tone="violet" aria-labelledby="overview-heading">
       <div class="cc-section-heading cc-overview-heading">
       <div><p class="cc-kicker">FOUNDER COMMAND SURFACE</p><h2 id="overview-heading">La prossima decisione, prima del rumore.</h2></div>
         <time id="generated-at"></time>
@@ -170,7 +192,7 @@ export const COMMAND_CENTER_HTML = `
       </section>
     </section>
 
-    <section class="cc-section" id="system" data-primary-view="system" aria-labelledby="pipeline-heading" hidden aria-hidden="true">
+    <section class="cc-section" id="system" data-primary-view="system" data-cinematic-scene="control-plane" data-cinematic-label="CONTROL PLANE" data-cinematic-tone="cool" aria-labelledby="pipeline-heading" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">FLUSSO DI CONTROLLO</p><h2 id="pipeline-heading">Percorso produttivo durevole</h2></div><p class="cc-section-note">Sono conteggiate solo le fasi con un segnale persistito.</p></div>
       <div class="cc-pipeline" role="group" aria-label="Pipeline di produzione">
         <div class="cc-pipeline-node" data-stage="evidence"><span>01</span><b>Evidenze</b><strong>0</strong><small>pacchetti immutabili</small></div>
@@ -185,7 +207,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-studio-switcher" id="studio" data-primary-view="studio" aria-label="Strumenti dello Studio" hidden aria-hidden="true">
+    <section class="cc-studio-switcher" id="studio" data-primary-view="studio" data-cinematic-scene="studio-index" data-cinematic-label="STUDIO INDEX" data-cinematic-tone="violet" aria-label="Strumenti dello Studio" hidden aria-hidden="true">
       <div>
         <p class="cc-kicker">STUDIO ONLYWAY</p>
         <h2>Sei ambienti. Otto capacità.</h2>
@@ -201,7 +223,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section cc-venture-studio" id="venture" data-primary-view="studio" data-studio-panel="venture" role="tabpanel" aria-labelledby="studio-tab-venture" hidden aria-hidden="true">
+    <section class="cc-section cc-venture-studio" id="venture" data-primary-view="studio" data-studio-panel="venture" data-cinematic-scene="venture" data-cinematic-label="VENTURE DECISION" data-cinematic-tone="gold" role="tabpanel" aria-labelledby="studio-tab-venture" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">ONLYWAY VENTURE OPERATING SYSTEM</p><h2 id="venture-heading">Dal segnale alla decisione Founder.</h2></div><span class="cc-section-note">Portfolio interno · proposal only · azioni esterne LOCKED</span></div>
       <div class="cc-venture-health" id="venture-health" aria-live="polite"></div>
       <div class="cc-venture-tool-tabs" role="tablist" aria-label="Strumenti Venture Studio">
@@ -226,7 +248,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="business" data-primary-view="studio" data-studio-panel="business" role="tabpanel" aria-labelledby="studio-tab-business" hidden aria-hidden="true">
+    <section class="cc-section" id="business" data-primary-view="studio" data-studio-panel="business" data-cinematic-scene="business" data-cinematic-label="REVENUE ECONOMICS" data-cinematic-tone="gold" role="tabpanel" aria-labelledby="studio-tab-business" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">REVENUE STUDIO · BUSINESS MISSION</p><h2 id="business-heading">Progetta, valida, vendi, consegna.</h2></div><span class="cc-section-note">Un solo spazio commerciale · nessuna metrica dimostrativa</span></div>
       <section class="cc-revenue-readiness" aria-labelledby="revenue-readiness-heading">
         <div class="cc-revenue-readiness-copy"><p class="cc-panel-label">REVENUE READINESS</p><h3 id="revenue-readiness-heading">Dal contesto alla prima vendita verificata</h3><p id="revenue-readiness-summary">Lettura delle fonti durevoli in corso.</p><a class="cc-revenue-download" href="/assets/revenue-os/revenue-mission-input.template.json" download>Scarica Input Pack <span aria-hidden="true">↓</span></a></div>
@@ -242,14 +264,14 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="social" data-primary-view="studio" data-studio-panel="social" role="tabpanel" aria-labelledby="studio-tab-social" hidden aria-hidden="true">
+    <section class="cc-section" id="social" data-primary-view="studio" data-studio-panel="social" data-cinematic-scene="social" data-cinematic-label="SOCIAL INTELLIGENCE" data-cinematic-tone="violet" role="tabpanel" aria-labelledby="studio-tab-social" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">METODO VELOCE · SOCIAL INTELLIGENCE</p><h2 id="social-heading">Report operativo giornaliero</h2></div><span class="cc-section-note" id="social-daily-status">Nessun segnale inventato</span></div>
       <div class="cc-social-live" id="social-live-panel" aria-live="polite"></div>
       <div class="cc-social-summary" id="social-summary-grid" aria-live="polite"></div>
       <div class="cc-social-pack-list" id="social-pack-list" aria-live="polite"><div class="cc-list-empty">Nessun Social Publishing Pack durevole disponibile.</div></div>
     </section>
 
-    <section class="cc-section" id="production" data-primary-view="studio" data-studio-panel="production" role="tabpanel" aria-labelledby="studio-tab-production" hidden aria-hidden="true">
+    <section class="cc-section" id="production" data-primary-view="studio" data-studio-panel="production" data-cinematic-scene="production" data-cinematic-label="PRODUCTION CHAMBER" data-cinematic-tone="cool" role="tabpanel" aria-labelledby="studio-tab-production" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">METODO VELOCE</p><h2 id="production-heading">Centro Produzione</h2></div><p class="cc-section-note">Seleziona un record per ispezionare gli asset esatti del pacchetto.</p></div>
       <div class="cc-production-layout">
         <div class="cc-kanban" id="production-lanes" aria-live="polite"></div>
@@ -262,7 +284,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="evidence" data-primary-view="studio" data-studio-panel="evidence" role="tabpanel" aria-labelledby="studio-tab-evidence" hidden aria-hidden="true">
+    <section class="cc-section" id="evidence" data-primary-view="studio" data-studio-panel="evidence" data-cinematic-scene="evidence" data-cinematic-label="EVIDENCE FIELD" data-cinematic-tone="cool" role="tabpanel" aria-labelledby="studio-tab-evidence" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">CONOSCENZA</p><h2 id="evidence-heading">Centro Evidenze</h2></div><p class="cc-section-note">Supporto ai claim, provenienza e freshness dalla fonte di registrazione.</p></div>
       <div class="cc-evidence-grid">
         <article class="cc-evidence-panel"><p class="cc-panel-label">RESEARCH MISSION</p><div id="research-mission-list" class="cc-list"></div></article>
@@ -272,7 +294,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section cc-vault" id="vault" data-primary-view="studio" data-studio-panel="vault" role="tabpanel" aria-labelledby="studio-tab-vault" hidden aria-hidden="true">
+    <section class="cc-section cc-vault" id="vault" data-primary-view="studio" data-studio-panel="vault" data-cinematic-scene="creative-intelligence" data-cinematic-label="CREATIVE MEMORY" data-cinematic-tone="violet" role="tabpanel" aria-labelledby="studio-tab-vault" hidden aria-hidden="true">
       <div class="cc-section-heading">
         <div><p class="cc-kicker">CREATIVE &amp; BUSINESS INTELLIGENCE VAULT</p><h2 id="vault-heading">Intelligence Creativa</h2></div>
         <p class="cc-section-note">Solo riferimenti approvati, con diritti e provenienza verificabili.</p>
@@ -311,7 +333,7 @@ export const COMMAND_CENTER_HTML = `
       <div class="cc-vault-alerts" id="vault-missing-inputs" aria-live="polite"></div>
     </section>
 
-    <section class="cc-section cc-operations" id="runtime" data-primary-view="system" aria-labelledby="runtime-heading" hidden aria-hidden="true">
+    <section class="cc-section cc-operations" id="runtime" data-primary-view="system" data-cinematic-scene="runtime" data-cinematic-label="H24 MACHINE" data-cinematic-tone="cool" aria-labelledby="runtime-heading" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">OPERAZIONI</p><h2 id="runtime-heading">Runtime H24</h2></div><span class="cc-runtime-state" id="runtime-status">Caricamento</span></div>
       <div class="cc-runtime-grid">
         <article class="cc-runtime-console"><p class="cc-panel-label">STATO SUPERVISIONE</p><strong id="worker-status">Verifica della registrazione del worker</strong><p id="worker-detail">Il runtime locale è in lettura.</p><div class="cc-runtime-rule"></div><dl><div><dt>Scheduler</dt><dd id="scheduler-status">Non registrato</dd></div><div><dt>Worker</dt><dd id="worker-lease-status">Non registrato</dd></div><div><dt>Maintenance</dt><dd id="maintenance-status">Disabilitata</dd></div><div><dt>Kill switch</dt><dd id="kill-switch-status">Rilasciato</dd></div><div><dt>Telegram</dt><dd id="telegram-status">Non osservato</dd></div><div><dt>Effetti esterni</dt><dd id="external-effects-status">Copertura globale non disponibile</dd></div></dl></article>
@@ -319,7 +341,7 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section cc-agent-section" id="agents" data-primary-view="team" aria-labelledby="agents-heading" hidden aria-hidden="true">
+    <section class="cc-section cc-agent-section" id="agents" data-primary-view="team" data-cinematic-scene="tower" data-cinematic-label="APEX ORGANISM" data-cinematic-tone="violet" aria-labelledby="agents-heading" hidden aria-hidden="true">
       <section class="cc-tower-intro" aria-labelledby="onlyway-tower-heading">
         <div class="cc-tower-copy">
           <p class="cc-kicker">ONLYWAY TOWER · MISSION COMMAND</p>
@@ -384,13 +406,13 @@ export const COMMAND_CENTER_HTML = `
       </div>
     </section>
 
-    <section class="cc-section" id="approvals" data-primary-view="today" aria-labelledby="approvals-heading">
+    <section class="cc-section" id="approvals" data-primary-view="today" data-cinematic-scene="approvals" data-cinematic-label="DECISION CHAMBER" data-cinematic-tone="gold" aria-labelledby="approvals-heading">
       <div class="cc-section-heading"><div><p class="cc-kicker">GOVERNANCE</p><h2 id="approvals-heading">Centro Approvazioni</h2></div></div>
       <div class="cc-approval-panel"><div><p class="cc-panel-label">CONTROLLO FABIO</p><h3 id="approval-title">Lettura dello stato di approvazione</h3><p id="approval-detail">Il registro delle approvazioni supportate da evidenze è in caricamento.</p></div><a class="cc-text-action" href="#production">Ispeziona i pacchetti <span aria-hidden="true">→</span></a></div>
       <div class="cc-approval-review-list" id="approval-review-list"></div>
     </section>
 
-    <section class="cc-section" id="governance" data-primary-view="system" aria-labelledby="governance-heading" hidden aria-hidden="true">
+    <section class="cc-section" id="governance" data-primary-view="system" data-cinematic-scene="governance" data-cinematic-label="EXTERNAL EFFECTS" data-cinematic-tone="gold" aria-labelledby="governance-heading" hidden aria-hidden="true">
       <div class="cc-governance"><span class="cc-lock-glyph" aria-hidden="true">⌁</span><div><p class="cc-kicker">PIANO DELLE AZIONI ESTERNE</p><h2 id="governance-heading">La pubblicazione resta bloccata per progettazione.</h2><p>Nessun controllo dal browser può pubblicare, spendere, contattare clienti, modificare un CRM o fare deploy. Ogni futura azione autorizzata dovrà attraversare i confini esistenti di dry-run, approvazione, ricevuta e kill switch.</p></div></div>
     </section>
   </main>
@@ -791,6 +813,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const approvalCoverageLimited = isApprovalCoverageLimited(snapshot);
     root.dataset.apiState = "ready";
     root.dataset.runtimeActivity = snapshot.runtime.counts.running > 0 ? "active" : "idle";
+    root.dataset.motionKillSwitch = snapshot.runtime.killSwitch === "TRIGGERED" ? "active" : "inactive";
     text("system-status", statusLabel(snapshot.overview.system));
     text("autonomy-status", snapshot.overview.autonomy);
     text("runtime-location", "LOCALE");
@@ -819,6 +842,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     renderAgentWorkdays(snapshot.agentCompany || []);
     renderFounderWorkday(snapshot.founderWorkdays || []);
     renderApprovals(snapshot.productions, snapshot.business || [], snapshot.socialLive, state.visualReview, state.mediaFactory, approvalCoverageLimited);
+    emitMotion("render", { section: root.dataset.section || "today" });
   }
 
   function isApprovalCoverageLimited(snapshot) {
@@ -983,8 +1007,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
     const stages = byId("revenue-stage-list");
     stages.replaceChildren();
+    let stageIndex = 0;
     for (const item of revenue && Array.isArray(revenue.stages) ? revenue.stages : []) {
       const card = element("article", "cc-revenue-stage"); card.dataset.status = item.status;
+      stageIndex += 1;
+      card.dataset.cinematicStep = String(stageIndex).padStart(2, "0");
       card.append(element("span", "", statusLabel(item.status)), element("strong", "", item.label), element("b", "", item.value), element("small", "", item.detail));
       stages.append(card);
     }
@@ -1586,6 +1613,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     actionConfirmationSubmit.textContent = "Crea bozza interna";
     actionConfirmationSubmit.dataset.action = "ORACLE_PROMPT";
     actionConfirmationSubmit.disabled = !proposal.canConfirm;
+    text("oracle-cinematic-state", proposal.canConfirm ? "PREFLIGHT READY" : "BLOCKED · " + proposal.reasonCode);
     actionConfirmationDetails.replaceChildren();
     const mission = proposal.businessMission ? proposal.businessMission.missionId + " · " + proposal.businessMission.selectedOpportunityId : "NON DISPONIBILE";
     const packs = proposal.evidencePacks.length === 0 ? "NON DISPONIBILI" : proposal.evidencePacks.map((pack) => pack.packId + " · " + pack.fingerprint.slice(0, 12) + "…" + (pack.selectedForContent ? " · SELECTED" : "")).join(" | ");
@@ -1738,6 +1766,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   function closeActionConfirmation(message, force) {
     if (state.confirmationInFlight && force !== true) return false;
     const returnFocus = state.returnFocus;
+    const wasOracleConfirmation = state.pendingConfirmation?.oracle === true;
     if (state.confirmationInterval !== null) window.clearInterval(state.confirmationInterval);
     state.confirmationInterval = null;
     state.pendingConfirmation = null;
@@ -1747,6 +1776,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     actionConfirmationSubmit.disabled = false;
     for (const node of state.confirmationInertedNodes) node.removeAttribute("inert");
     state.confirmationInertedNodes = [];
+    if (wasOracleConfirmation) text("oracle-cinematic-state", "PROPOSAL-BOUND");
     if (message) commandResult.textContent = message;
     if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
     return true;
@@ -2101,8 +2131,11 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const target = byId("runtime-bars"); target.replaceChildren();
     const items = [["In coda", runtime.counts.queued, "normal"], ["In esecuzione", runtime.counts.running, "normal"], ["Retry pianificati", runtime.counts.retryScheduled, "normal"], ["Completati", runtime.counts.completed, "normal"], ["Falliti", runtime.counts.failed, "danger"], ["Dead-letter", runtime.counts.deadLetter, "danger"]];
     const max = Math.max(1, ...items.map((item) => item[1]));
+    let runtimeIndex = 0;
     for (const [label, value, tone] of items) {
       const row = element("div", "cc-runtime-bar"); row.dataset.tone = tone;
+      runtimeIndex += 1;
+      row.dataset.cinematicStep = String(runtimeIndex).padStart(2, "0");
       const track = element("div", "cc-runtime-track"); const fill = element("div", "cc-runtime-fill"); fill.style.width = String((value / max) * 100) + "%"; track.append(fill);
       row.append(element("span", "", label), track, element("b", "", number(value))); target.append(row);
     }
@@ -2363,6 +2396,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       const card = element("article", "cc-approval-review");
       const visualBlocked = !boundVisualReview;
       card.dataset.visualStatus = visualBlocked ? "blocked" : "ready";
+      card.dataset.cinematicStep = "FABIO";
       const head = element("div", "cc-approval-review-head");
       const identity = element("div");
       identity.append(element("p", "cc-panel-label", visualBlocked ? "REVIEW VISIVA BLOCCATA" : "REVIEW PRONTA DOPO I GATE"), element("h3", "", master ? master.topic : record.package.editorialPlan.selectedIdea), element("small", "", record.productionId + " · v" + String(record.version)));
@@ -2544,7 +2578,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function collapseCardDetails(card, label) {
-    const children = Array.from(card.children).slice(1);
+    const visibleChildren = card.classList.contains("cc-approval-review") ? 2 : 1;
+    const children = Array.from(card.children).slice(visibleChildren);
     if (children.length === 0) return;
     const disclosure = element("details", "cc-progressive-details");
     const body = element("div", "cc-progressive-details-body");
@@ -2790,26 +2825,99 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function prepareAmbientMotion() {
     const scrollTarget = root.querySelector(".cc-main");
+    const coordinate = byId("cinematic-coordinate");
     let frame = null;
     let pointerX = window.innerWidth / 2;
     let pointerY = window.innerHeight / 2;
+    const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+    const motionBlocked = () => prefersReducedMotion() || document.hidden || root.dataset.motionKillSwitch === "active";
+    const visibleScenes = () => Array.from(root.querySelectorAll("[data-cinematic-scene]"))
+      .filter((scene) => !scene.hidden && scene.getAttribute("aria-hidden") !== "true" && scene.getClientRects().length > 0);
+    const clearActiveScenes = () => {
+      root.querySelectorAll('[data-cinematic-active="true"]').forEach((scene) => scene.removeAttribute("data-cinematic-active"));
+    };
     const reset = () => {
       root.style.setProperty("--cc-parallax-x", "0px");
       root.style.setProperty("--cc-parallax-y", "0px");
       root.style.setProperty("--cc-scroll-shift", "0px");
+      root.style.setProperty("--ow-cinema-progress", "0");
+      root.style.setProperty("--ow-cinema-progress-percent", "0%");
+      root.style.setProperty("--ow-cinema-scene-progress", "0");
+      root.style.setProperty("--ow-cinema-light-opacity", ".76");
+      root.style.setProperty("--ow-cinema-zoom", "1.025");
+      root.style.setProperty("--ow-cinema-lift", "0px");
+      root.style.setProperty("--ow-cinema-counter-lift", "0px");
+      root.style.setProperty("--ow-cinema-depth", "0px");
+      root.style.setProperty("--ow-cinema-light-x", "72%");
+      root.style.setProperty("--ow-cinema-light-y", "22%");
+      root.dataset.cinematicMotion = motionBlocked() ? "reduced" : "ready";
+      clearActiveScenes();
+    };
+    const scrollMetrics = () => {
+      if (mobileSidebar.matches) {
+        const documentNode = document.documentElement;
+        const maximum = Math.max(0, documentNode.scrollHeight - window.innerHeight);
+        return { maximum, top: window.scrollY };
+      }
+      const maximum = scrollTarget ? Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight) : 0;
+      return { maximum, top: scrollTarget ? scrollTarget.scrollTop : 0 };
     };
     const apply = () => {
       frame = null;
-      if (prefersReducedMotion()) { reset(); return; }
-      const x = Math.round(((pointerX / Math.max(window.innerWidth, 1)) - .5) * 10);
-      const y = Math.round(((pointerY / Math.max(window.innerHeight, 1)) - .5) * 7);
-      const scrollTop = scrollTarget && typeof scrollTarget.scrollTop === "number" ? scrollTarget.scrollTop : window.scrollY;
+      if (motionBlocked()) { reset(); return; }
+      const width = Math.max(window.innerWidth, 1);
+      const height = Math.max(window.innerHeight, 1);
+      const xRatio = clamp(pointerX / width, 0, 1);
+      const yRatio = clamp(pointerY / height, 0, 1);
+      const x = Math.round((xRatio - .5) * 18);
+      const y = Math.round((yRatio - .5) * 12);
+      const metrics = scrollMetrics();
+      const pageProgress = metrics.maximum === 0 ? 0 : clamp(metrics.top / metrics.maximum, 0, 1);
+      const scenes = visibleScenes();
+      const focusLine = height * .4;
+      let activeScene = null;
+      let activeIndex = -1;
+      let activeDistance = Number.POSITIVE_INFINITY;
+      for (let index = 0; index < scenes.length; index += 1) {
+        const rect = scenes[index].getBoundingClientRect();
+        const center = clamp(rect.top + rect.height * .34, rect.top, rect.bottom);
+        const distance = Math.abs(center - focusLine);
+        if (distance < activeDistance) {
+          activeDistance = distance;
+          activeIndex = index;
+          activeScene = scenes[index];
+        }
+      }
+      clearActiveScenes();
+      let sceneProgress = 0;
+      if (activeScene) {
+        activeScene.dataset.cinematicActive = "true";
+        const rect = activeScene.getBoundingClientRect();
+        sceneProgress = clamp((focusLine - rect.top) / Math.max(rect.height, 1), 0, 1);
+        root.dataset.cinematicTone = activeScene.dataset.cinematicTone || "violet";
+        if (coordinate) {
+          const indexLabel = String(activeIndex + 1).padStart(2, "0");
+          coordinate.textContent = indexLabel + " · " + (activeScene.dataset.cinematicLabel || "ONLYWAY");
+        }
+      }
+      const lift = Math.round((sceneProgress - .5) * -18);
       root.style.setProperty("--cc-parallax-x", String(x) + "px");
       root.style.setProperty("--cc-parallax-y", String(y) + "px");
-      root.style.setProperty("--cc-scroll-shift", String(Math.min(8, Math.round(scrollTop * .018))) + "px");
+      root.style.setProperty("--cc-scroll-shift", String(Math.min(18, Math.round(metrics.top * .012))) + "px");
+      root.style.setProperty("--ow-cinema-progress", pageProgress.toFixed(4));
+      root.style.setProperty("--ow-cinema-progress-percent", (pageProgress * 100).toFixed(2) + "%");
+      root.style.setProperty("--ow-cinema-scene-progress", sceneProgress.toFixed(4));
+      root.style.setProperty("--ow-cinema-light-opacity", (.74 + sceneProgress * .18).toFixed(3));
+      root.style.setProperty("--ow-cinema-zoom", (1.025 + pageProgress * .035).toFixed(4));
+      root.style.setProperty("--ow-cinema-lift", String(lift) + "px");
+      root.style.setProperty("--ow-cinema-counter-lift", String(Math.round(lift * -.28)) + "px");
+      root.style.setProperty("--ow-cinema-depth", String(Math.round(pageProgress * 28)) + "px");
+      root.style.setProperty("--ow-cinema-light-x", (64 + xRatio * 22).toFixed(2) + "%");
+      root.style.setProperty("--ow-cinema-light-y", (14 + yRatio * 26).toFixed(2) + "%");
+      root.dataset.cinematicMotion = "ready";
     };
     const schedule = () => {
-      if (frame !== null || prefersReducedMotion()) return;
+      if (frame !== null) return;
       frame = window.requestAnimationFrame(apply);
     };
     const pointerMove = (event) => {
@@ -2824,20 +2932,32 @@ export const COMMAND_CENTER_CLIENT_JS = `
       schedule();
     };
     const scroll = () => schedule();
+    const routeOrRender = () => schedule();
     const motionPreferenceChange = () => {
       if (frame !== null) window.cancelAnimationFrame(frame);
       frame = null;
-      if (prefersReducedMotion()) reset(); else schedule();
+      if (motionBlocked()) reset(); else schedule();
     };
     root.addEventListener("pointermove", pointerMove, { passive: true });
     root.addEventListener("pointerleave", pointerLeave);
     scrollTarget?.addEventListener("scroll", scroll, { passive: true });
+    window.addEventListener("scroll", scroll, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("onlyway:motion:route", routeOrRender);
+    window.addEventListener("onlyway:motion:render", routeOrRender);
+    document.addEventListener("visibilitychange", motionPreferenceChange);
     if (typeof reducedMotionQuery.addEventListener === "function") reducedMotionQuery.addEventListener("change", motionPreferenceChange);
     reset();
+    schedule();
     return () => {
       root.removeEventListener("pointermove", pointerMove);
       root.removeEventListener("pointerleave", pointerLeave);
       scrollTarget?.removeEventListener("scroll", scroll);
+      window.removeEventListener("scroll", scroll);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("onlyway:motion:route", routeOrRender);
+      window.removeEventListener("onlyway:motion:render", routeOrRender);
+      document.removeEventListener("visibilitychange", motionPreferenceChange);
       if (typeof reducedMotionQuery.removeEventListener === "function") reducedMotionQuery.removeEventListener("change", motionPreferenceChange);
       if (frame !== null) window.cancelAnimationFrame(frame);
       frame = null;
