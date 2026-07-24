@@ -310,9 +310,11 @@ describe("Private Command Center", () => {
       expect(appText).toContain("confirmationInertedNodes");
       expect(appText).toContain('if (!actionConfirmation.hidden) return;');
       expect(appText).toContain('event.key !== "Enter" && event.key !== " "');
-      expect(appText).toContain("for (const button of [sidebarToggle, mobileMenuToggle])");
-      expect(appText).toContain('behavior: prefersReducedMotion() ? "auto" : "smooth"');
-      expect(appText).toContain('reducedMotionQuery.addEventListener("change", reset)');
+      expect(appText).toContain('sidebarToggle.addEventListener("click", toggleSidebar)');
+      expect(appText).toContain('mobileMenuToggle.addEventListener("click", toggleSidebar)');
+      expect(appText).not.toContain("for (const button of [sidebarToggle, mobileMenuToggle])");
+      expect(appText).toContain('window.scrollTo({ behavior: "auto", top: 0 })');
+      expect(appText).toContain('reducedMotionQuery.addEventListener("change", motionPreferenceChange)');
       expect(appText).toContain('snapshot.runtime.counts.running > 0 ? "active" : "idle"');
       expect(appText).not.toContain("snapshot.runtime.counts.queued > 0 ? \"active\"");
       expect(appText).toContain("VISUAL GATE BLOCCATO");

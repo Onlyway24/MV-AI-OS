@@ -7,6 +7,7 @@ import {
   COMMAND_CENTER_HTML,
   COMMAND_CENTER_RESPONSIVE_CSS,
 } from "../../src/command-center/command-center-assets.js";
+import { COMMAND_CENTER_PREMIUM_CSS } from "../../src/command-center/command-center-premium-experience.js";
 
 describe("Command Center focused information architecture", () => {
   it("exposes four primary destinations and keeps specialist tools inside Studio", () => {
@@ -56,7 +57,7 @@ describe("Command Center focused information architecture", () => {
     expect(COMMAND_CENTER_CLIENT_JS).toContain('card.setAttribute("aria-controls", "reference-vault-detail")');
     expect(COMMAND_CENTER_CLIENT_JS).toContain("finestra parziale");
     expect(COMMAND_CENTER_CLIENT_JS).toContain('["ArrowLeft", "ArrowRight", "Home", "End"]');
-    expect(COMMAND_CENTER_CLIENT_JS).toContain('window.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth"');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('window.scrollTo({ behavior: "auto", top: 0 })');
     expect(COMMAND_CENTER_CLIENT_JS).not.toContain("IMPORT_REFERENCE_ASSET");
     expect(COMMAND_CENTER_CLIENT_JS).not.toContain("APPROVE_REFERENCE_ASSET");
     expect(() => new Script(COMMAND_CENTER_CLIENT_JS)).not.toThrow();
@@ -86,21 +87,19 @@ describe("Command Center focused information architecture", () => {
     expect(() => new Script(COMMAND_CENTER_CLIENT_JS)).not.toThrow();
   });
 
-  it("uses progressive disclosure and a 390 px bottom dock without horizontal overflow", () => {
+  it("uses progressive disclosure and a true 390 px drawer without horizontal overflow", () => {
     expect(COMMAND_CENTER_CLIENT_JS).toContain("collapseCardDetails");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("@media (max-width:430px)");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("grid-template-columns:repeat(4,1fr)");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("height:56px!important");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("backdrop-filter:none!important;overflow:visible!important");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("justify-self:stretch;width:calc(100vw - 20px)");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain(".cc-agent-company-layout--apex{grid-template-columns:minmax(0,1fr)}");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain(".cc-agent-roster,.cc-agent-company-layout--apex .cc-agent-grid");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("max-width:100%;overflow:hidden");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain(".cc-vault-filters button{min-height:44px}");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("min-height:44px");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("overflow-x:hidden");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain(".cc-mobile-menu");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("display:none!important");
-    expect(COMMAND_CENTER_RESPONSIVE_CSS).toContain("[hidden]{display:none!important}");
+    expect(COMMAND_CENTER_HTML).toContain('data-navigation="sidebar"');
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain("@media (max-width:430px)");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain('transform:translateX(-104%)!important');
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain('[data-mobile-sidebar="open"] .cc-sidebar');
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-sidebar-backdrop:not([hidden]){display:block}");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-main{");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain("overflow-x:hidden");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-mobile-menu");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain("[hidden]{display:none!important}");
+    expect(COMMAND_CENTER_PREMIUM_CSS).not.toContain("bottom:calc(8px + env(safe-area-inset-bottom))");
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('main.toggleAttribute("inert", drawerOpen)');
+    expect(COMMAND_CENTER_CLIENT_JS).toContain('event.key === "Tab" && mobileSidebar.matches');
   });
 });

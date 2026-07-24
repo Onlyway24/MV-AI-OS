@@ -13,6 +13,7 @@ import {
   COMMAND_CENTER_HTML,
   COMMAND_CENTER_RESPONSIVE_CSS,
 } from "./command-center-assets.js";
+import { COMMAND_CENTER_PREMIUM_CSS } from "./command-center-premium-experience.js";
 import {
   CommandCenterActionService,
   type CommandCenterBusinessAction,
@@ -203,7 +204,7 @@ export class PrivateCommandCenterServer {
         return;
       }
       if (requestUrl.pathname === "/responsive.css") {
-        send(response, 200, "text/css; charset=utf-8", COMMAND_CENTER_RESPONSIVE_CSS);
+        send(response, 200, "text/css; charset=utf-8", `${COMMAND_CENTER_RESPONSIVE_CSS}\n${COMMAND_CENTER_PREMIUM_CSS}`);
         return;
       }
       if (requestUrl.pathname === "/app.js") {
@@ -229,7 +230,7 @@ export class PrivateCommandCenterServer {
           send(response, 404, "text/plain; charset=utf-8", "Asset del brand non ancora installato");
           return;
         }
-        send(response, 200, "image/png", asset);
+        send(response, 200, "image/png", asset, { "Cache-Control": "private, max-age=3600, immutable" });
         return;
       }
       if (requestUrl.pathname === "/assets/revenue-os/revenue-mission-input.template.json") {

@@ -19,7 +19,7 @@ describe("governed Command Center Motion UI", () => {
     expect(source).not.toContain("motion/react");
     const adapter = createMotionUiAdapter({ driver: fakeDriver().driver });
     expect(Object.keys(adapter).sort()).toEqual([
-      "animateMetricChange", "animatePanelEnter", "animatePanelExit", "animateReviewOpen", "animateStatusTransition", "animateSuccessReceipt", "animateTikTokPreview", "animateValidationFailure", "animateWorkflowProgress", "observePanels", "stopAllMotion",
+      "animateMetricChange", "animatePanelEnter", "animatePanelExit", "animateReviewOpen", "animateStatusTransition", "animateSuccessReceipt", "animateTikTokPreview", "animateValidationFailure", "animateWorkflowProgress", "observePanels", "stopActiveAnimations", "stopAllMotion",
     ]);
   });
 
@@ -47,6 +47,29 @@ describe("governed Command Center Motion UI", () => {
     expect(JSON.stringify(fake.keyframes[0])).toContain("opacity");
     expect(JSON.stringify(fake.keyframes[0])).not.toContain("scale");
     expect(JSON.stringify(fake.keyframes[1])).toContain("translateX");
+  });
+
+  it("keeps panel observers alive when route or visibility only stops active animation", () => {
+    let disposed = 0;
+    const fake = fakeDriver();
+    const driver: MotionDriver = { ...fake.driver, inView: () => () => { disposed += 1; } };
+    const adapter = createMotionUiAdapter({ driver });
+    adapter.observePanels({});
+    adapter.animatePanelEnter({});
+    adapter.stopActiveAnimations();
+    expect(disposed).toBe(0);
+    adapter.stopAllMotion();
+    expect(disposed).toBe(1);
+  });
+
+  it("represents FAILED and PAUSED as bounded terminal states without fake progress", () => {
+    const fake = fakeDriver();
+    const adapter = createMotionUiAdapter({ driver: fake.driver });
+    expect(adapter.animateWorkflowProgress({}, { eventId: "event-failed", eventType: "JOB_FAILED", sequence: 8, status: "FAILED" })).toBe(true);
+    expect(adapter.animateWorkflowProgress({}, { eventId: "event-paused", eventType: "JOB_PAUSED", sequence: 9, status: "PAUSED" })).toBe(true);
+    expect(JSON.stringify(fake.keyframes[0])).toContain("translateX");
+    expect(JSON.stringify(fake.keyframes[1])).toContain("opacity");
+    expect(JSON.stringify(fake.keyframes[1])).not.toContain("translate");
   });
 
   it("stops on kill switch and does not call the disabled video provider", async () => {

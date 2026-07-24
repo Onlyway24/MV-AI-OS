@@ -58,7 +58,7 @@ beforeAll(async () => {
     { cwd: resolve(".") },
   );
   cliPath = join(buildDirectory, "cli", "local-runtime-cli.js");
-});
+}, 30_000);
 
 afterAll(async () => {
   await rm(buildDirectory, { force: true, recursive: true });

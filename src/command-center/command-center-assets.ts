@@ -1,20 +1,21 @@
 export const COMMAND_CENTER_HTML = `
-<div class="cc-app" id="command-center" data-sidebar-state="expanded" data-navigation="dock" data-active-view="today" data-active-studio="production">
+<div class="cc-app" id="command-center" data-sidebar-state="expanded" data-navigation="sidebar" data-active-view="today" data-active-studio="production">
   <a class="cc-skip-link" href="#workspace-title">Vai al contenuto principale</a>
   <div class="cc-world" aria-hidden="true">
     <div class="cc-world-image"></div>
     <div class="cc-world-vignette"></div>
     <div class="cc-world-light"></div>
   </div>
-  <button class="cc-mobile-menu" id="mobile-menu-toggle" type="button" aria-controls="command-sidebar" aria-expanded="false" aria-label="Apri il menu del Centro di Comando" hidden><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
+  <a class="cc-mobile-brand" href="#today" aria-label="Apri Oggi nel Centro di Comando Onlyway"><span aria-hidden="true">OW</span><b>Onlyway</b></a>
+  <button class="cc-mobile-menu" id="mobile-menu-toggle" type="button" aria-controls="command-sidebar" aria-expanded="false" aria-label="Apri il menu del Centro di Comando"><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
   <div class="cc-sidebar-backdrop" id="sidebar-backdrop" hidden></div>
   <header class="cc-sidebar" id="command-sidebar" aria-label="Navigazione principale del Centro di Comando">
     <div class="cc-sidebar-head">
       <a class="cc-brand" href="#today" aria-label="Panoramica del Centro di Comando Onlyway">
         <span class="cc-brand-mark" aria-hidden="true">OW</span>
-        <span class="cc-brand-copy"><b>ONLYWAY</b><small>CONTROL</small></span>
+        <span class="cc-brand-copy"><b>Onlyway</b><small>Command Center</small></span>
       </a>
-      <button class="cc-sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="command-sidebar" aria-expanded="true" aria-label="Compatta il pannello laterale" hidden><span aria-hidden="true">‹</span></button>
+      <button class="cc-sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="command-sidebar" aria-expanded="true" aria-label="Compatta il pannello laterale"><span aria-hidden="true">‹</span></button>
     </div>
     <nav class="cc-nav" aria-label="Aree principali">
       <a class="is-active" href="#today" data-label="Oggi" data-view-target="today"><span class="cc-nav-icon" aria-hidden="true">●</span><span class="cc-nav-label">Oggi</span></a>
@@ -26,7 +27,7 @@ export const COMMAND_CENTER_HTML = `
       <span class="cc-live-dot" aria-hidden="true"></span>
       <span class="cc-sidebar-foot-label" id="live-event-status" aria-live="polite">Live · connessione</span>
     </div>
-    <div class="cc-operator" aria-label="Operatore Fabio">
+    <div class="cc-operator" role="group" aria-label="Operatore Fabio">
       <span class="cc-avatar" aria-hidden="true">F</span>
       <span><b>Fabio</b><small>Operatore</small></span>
     </div>
@@ -35,11 +36,11 @@ export const COMMAND_CENTER_HTML = `
   <main class="cc-main">
     <header class="cc-topbar" id="workspace-title" tabindex="-1">
       <div class="cc-command-title">
-        <p class="cc-eyebrow">CENTRO DI COMANDO</p>
+        <p class="cc-eyebrow" aria-label="Percorso corrente"><span>Onlyway</span><span aria-hidden="true"> / </span><span id="active-context-label">Oggi</span></p>
         <h1>Buongiorno, Fabio.</h1>
         <p class="cc-topbar-subtitle">Qui trovi il prossimo collo di bottiglia tra lavoro e ricavo.</p>
       </div>
-      <div class="cc-status-rail" aria-label="Quadro operativo corrente">
+      <div class="cc-status-rail" role="group" aria-label="Quadro operativo corrente">
         <span><i class="cc-status-dot" data-status-dot aria-hidden="true"></i>Sistema <b id="system-status">Caricamento</b></span>
         <span>Autonomia <b id="autonomy-status">A3 — Controllata</b></span>
         <span>Azioni esterne <b class="cc-lock">BLOCCATE</b></span>
@@ -91,7 +92,7 @@ export const COMMAND_CENTER_HTML = `
           <a class="cc-primary-link" href="#business">Apri Revenue Studio <span aria-hidden="true">→</span></a>
           <span id="revenue-hero-assurance">Nessuna metrica economica viene inventata.</span>
         </div>
-        <div class="cc-revenue-squad" aria-label="Squadra operativa reale">
+        <div class="cc-revenue-squad" role="group" aria-label="Squadra operativa reale">
           <span><b id="team-total">—</b> specialisti</span>
           <span><b id="team-ready">—</b> pronti</span>
           <span><b id="team-active">—</b> attivi</span>
@@ -130,7 +131,7 @@ export const COMMAND_CENTER_HTML = `
 
     <section class="cc-section cc-overview" id="overview" data-primary-view="today" aria-labelledby="overview-heading">
       <div class="cc-section-heading cc-overview-heading">
-        <div><p class="cc-kicker">PANORAMICA OPERATIVA</p><h2 id="overview-heading">Decisioni e produzione</h2></div>
+      <div><p class="cc-kicker">FOUNDER COMMAND SURFACE</p><h2 id="overview-heading">La prossima decisione, prima del rumore.</h2></div>
         <time id="generated-at"></time>
       </div>
       <div class="cc-metrics" id="metric-grid" aria-live="polite"></div>
@@ -171,7 +172,7 @@ export const COMMAND_CENTER_HTML = `
 
     <section class="cc-section" id="system" data-primary-view="system" aria-labelledby="pipeline-heading" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">FLUSSO DI CONTROLLO</p><h2 id="pipeline-heading">Percorso produttivo durevole</h2></div><p class="cc-section-note">Sono conteggiate solo le fasi con un segnale persistito.</p></div>
-      <div class="cc-pipeline" aria-label="Pipeline di produzione">
+      <div class="cc-pipeline" role="group" aria-label="Pipeline di produzione">
         <div class="cc-pipeline-node" data-stage="evidence"><span>01</span><b>Evidenze</b><strong>0</strong><small>pacchetti immutabili</small></div>
         <div class="cc-pipeline-link" aria-hidden="true"></div>
         <div class="cc-pipeline-node" data-stage="queue"><span>02</span><b>Coda</b><strong>0</strong><small>job durevoli</small></div>
@@ -187,8 +188,8 @@ export const COMMAND_CENTER_HTML = `
     <section class="cc-studio-switcher" id="studio" data-primary-view="studio" aria-label="Strumenti dello Studio" hidden aria-hidden="true">
       <div>
         <p class="cc-kicker">STUDIO ONLYWAY</p>
-        <h2>Un solo spazio. Sei strumenti.</h2>
-        <p>Scegli il contesto; il dettaglio si apre soltanto quando serve.</p>
+        <h2>Sei ambienti. Otto capacità.</h2>
+        <p>Revenue e ORACLE restano contestuali: scegli un ambiente, poi apri soltanto il dettaglio necessario.</p>
       </div>
       <div class="cc-segmented-control" role="tablist" aria-label="Aree dello Studio">
         <button id="studio-tab-production" type="button" role="tab" data-studio-target="production" aria-controls="production" aria-selected="true">Produzione</button>
@@ -276,7 +277,7 @@ export const COMMAND_CENTER_HTML = `
         <div><p class="cc-kicker">CREATIVE &amp; BUSINESS INTELLIGENCE VAULT</p><h2 id="vault-heading">Intelligence Creativa</h2></div>
         <p class="cc-section-note">Solo riferimenti approvati, con diritti e provenienza verificabili.</p>
       </div>
-      <div class="cc-vault-metrics" aria-label="Stato del Reference Vault">
+      <div class="cc-vault-metrics" role="group" aria-label="Stato del Reference Vault">
         <article><span>Riferimenti</span><strong id="vault-total">—</strong><small>versioni correnti</small></article>
         <article><span>Approvati</span><strong id="vault-approved">—</strong><small>utilizzabili dagli agenti</small></article>
         <article><span>Da rivedere</span><strong id="vault-review">—</strong><small>decisione esplicita di Fabio</small></article>
@@ -342,7 +343,7 @@ export const COMMAND_CENTER_HTML = `
           <h2 id="agents-heading">La squadra che trasforma una missione in risultato.</h2>
            <p>Non diciassette chatbot. Sei reparti, diciassette specialisti, un solo comando: ruoli, task, gate, costi e stati arrivano esclusivamente dal control plane.</p>
         </div>
-        <div class="cc-agent-hero-stats" aria-label="Stato della Compagnia Agenti">
+        <div class="cc-agent-hero-stats" role="group" aria-label="Stato della Compagnia Agenti">
           <div><strong id="apex-total">—</strong><span>specialisti</span></div>
           <div><strong id="apex-squads">—</strong><span>reparti</span></div>
           <div><strong id="apex-guardians">—</strong><span>guardiani</span></div>
@@ -396,7 +397,7 @@ export const COMMAND_CENTER_HTML = `
 
   <div class="cc-authorization" id="action-confirmation" hidden>
     <div class="cc-authorization-backdrop" data-confirmation-close></div>
-    <section class="cc-authorization-dialog" role="dialog" aria-modal="true" aria-labelledby="action-confirmation-title" aria-describedby="action-confirmation-detail">
+    <section class="cc-authorization-dialog" id="action-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="action-confirmation-title" aria-describedby="action-confirmation-detail" tabindex="-1">
       <p class="cc-kicker">CAMERA DI AUTORIZZAZIONE</p>
       <h2 id="action-confirmation-title">Conferma richiesta</h2>
       <p id="action-confirmation-detail">Verifica la versione, il fingerprint e i controlli prima di autorizzare la decisione.</p>
@@ -602,11 +603,13 @@ export const COMMAND_CENTER_CLIENT_JS = `
   const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
   const sidebarBackdrop = document.getElementById("sidebar-backdrop");
   const actionConfirmation = document.getElementById("action-confirmation");
+  const actionConfirmationDialog = document.getElementById("action-confirmation-dialog");
   const actionConfirmationTitle = document.getElementById("action-confirmation-title");
   const actionConfirmationDetail = document.getElementById("action-confirmation-detail");
   const actionConfirmationDetails = document.getElementById("action-confirmation-details");
   const actionConfirmationSubmit = document.getElementById("action-confirmation-submit");
   const actionConfirmationTimer = document.getElementById("action-confirmation-timer");
+  const activeContextLabel = document.getElementById("active-context-label");
   const reducedMotionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   const mobileSidebar = window.matchMedia ? window.matchMedia("(max-width: 820px)") : { matches: false };
   const AGENT_IDENTITIES = Object.freeze({
@@ -628,11 +631,21 @@ export const COMMAND_CENTER_CLIENT_JS = `
     "backup-guardian": { callSign: "VAULT", glyph: "BV", squad: "GUARDIANS", squadLabel: "Guardians" },
     "publisher-agent": { callSign: "LAUNCH", glyph: "LA", squad: "GROWTH", squadLabel: "Growth" },
   });
-  const state = { agentFilter: "ALL", confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mediaFactory: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedReferenceId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, snapshot: null, vaultFilter: "ALL", ventureTool: "radar", visualReview: null, visualSlideIndex: 0 };
+  const state = { agentFilter: "ALL", ambientCleanup: null, confirmationInFlight: false, confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastAuxiliaryRefreshAt: 0, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mediaFactory: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedReferenceId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, snapshot: null, vaultFilter: "ALL", ventureTool: "radar", visualReview: null, visualSlideIndex: 0 };
 
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
   function element(tag, className, value) { const node = document.createElement(tag); if (className) node.className = className; if (value !== undefined) node.textContent = value; return node; }
+  function visibleFocusControls(container) {
+    return Array.from(container.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'))
+      .filter((control) => !control.hidden && control.getClientRects().length > 0 && getComputedStyle(control).visibility !== "hidden");
+  }
+  function establishFounderFirstOrder() {
+    const main = root.querySelector(".cc-main");
+    const overview = byId("overview");
+    const revenue = byId("today");
+    if (main && overview && revenue) main.insertBefore(overview, revenue);
+  }
   function emitMotion(name, detail) { window.dispatchEvent(new CustomEvent("onlyway:motion:" + name, { detail })); }
   function number(value) { return new Intl.NumberFormat("it-IT").format(value); }
   function prefersReducedMotion() { return Boolean(reducedMotionQuery.matches); }
@@ -645,11 +658,19 @@ export const COMMAND_CENTER_CLIENT_JS = `
     if (state.refreshInFlight) { state.refreshQueued = true; return state.refreshInFlight; }
     const execution = (async () => {
       try {
-        const [response, visualResponse, mediaFactoryResponse] = await Promise.all([fetch("/api/overview", { cache: "no-store", credentials: "same-origin" }), fetch("/api/social-visual-review", { cache: "no-store", credentials: "same-origin" }), fetch("/api/brand-media-factory", { cache: "no-store", credentials: "same-origin" })]);
+        const refreshAuxiliary = Date.now() - state.lastAuxiliaryRefreshAt >= 15000;
+        const [response, visualResponse, mediaFactoryResponse] = await Promise.all([
+          fetch("/api/overview", { cache: "no-store", credentials: "same-origin" }),
+          refreshAuxiliary ? fetch("/api/social-visual-review", { cache: "no-store", credentials: "same-origin" }) : Promise.resolve(null),
+          refreshAuxiliary ? fetch("/api/brand-media-factory", { cache: "no-store", credentials: "same-origin" }) : Promise.resolve(null),
+        ]);
         if (!response.ok) throw new Error("L'API locale del Centro di Comando non è disponibile.");
         state.snapshot = await response.json();
-        state.visualReview = visualResponse.ok ? await visualResponse.json() : null;
-        state.mediaFactory = mediaFactoryResponse.ok ? await mediaFactoryResponse.json() : null;
+        if (refreshAuxiliary) {
+          state.lastAuxiliaryRefreshAt = Date.now();
+          state.visualReview = visualResponse && visualResponse.ok ? await visualResponse.json() : null;
+          state.mediaFactory = mediaFactoryResponse && mediaFactoryResponse.ok ? await mediaFactoryResponse.json() : null;
+        }
         render(state.snapshot);
       } catch (error) {
         root.dataset.apiState = "error";
@@ -704,6 +725,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function connectLiveEvents() {
+    if (state.eventSource !== null || document.hidden) return;
     if (!("EventSource" in window)) {
       setLiveEventState("unavailable", "Eventi live non supportati");
       startLiveFallback();
@@ -721,7 +743,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       if (!acceptLiveCursor(event)) return;
       try {
         const payload = JSON.parse(event.data);
-        const statuses = { APPROVAL_REQUESTED: "AWAITING_FABIO", JOB_BLOCKED: "BLOCKED", JOB_COMPLETED: "COMPLETED", JOB_DEAD_LETTER: "BLOCKED", JOB_FAILED: "BLOCKED", JOB_LEASE_ACQUIRED: "RUNNING", JOB_QUEUED: "QUEUED" };
+        const statuses = { APPROVAL_REQUESTED: "AWAITING_FABIO", JOB_BLOCKED: "BLOCKED", JOB_COMPLETED: "COMPLETED", JOB_DEAD_LETTER: "BLOCKED", JOB_FAILED: "FAILED", JOB_LEASE_ACQUIRED: "RUNNING", JOB_PAUSED: "PAUSED", JOB_QUEUED: "QUEUED" };
         emitMotion("operational", { eventId: payload.eventId, eventType: payload.eventType, sequence: Number(event.lastEventId), status: statuses[payload.eventType] || "IDLE" });
       } catch { emitMotion("stop", { reasonCode: "INVALID_REDACTED_EVENT" }); }
       scheduleLiveRefresh();
@@ -751,6 +773,17 @@ export const COMMAND_CENTER_CLIENT_JS = `
       emitMotion("stop", { reasonCode: "EVENT_RECONNECTING" });
       startLiveFallback();
     });
+  }
+
+  function syncLiveVisibility() {
+    if (document.hidden) {
+      if (state.eventSource) state.eventSource.close();
+      state.eventSource = null;
+      stopLiveFallback();
+      setLiveEventState("paused", "Eventi live · in pausa");
+      return;
+    }
+    connectLiveEvents();
   }
 
   function render(snapshot) {
@@ -1248,6 +1281,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function renderProductions(productions, coverage) {
     const target = byId("production-lanes");
+    const focusedCard = target.contains(document.activeElement) && typeof document.activeElement.closest === "function" ? document.activeElement.closest(".cc-production-card") : null;
+    const focusedProductionId = focusedCard ? focusedCard.dataset.productionId : null;
     target.replaceChildren();
     if (productions.length === 0) {
       const empty = element("div", "cc-list-empty");
@@ -1270,6 +1305,10 @@ export const COMMAND_CENTER_CLIENT_JS = `
       target.append(lane);
     }
     renderPreview(productions.find((item) => item.productionId === state.selectedProductionId) || null);
+    if (focusedProductionId) {
+      const replacement = Array.from(target.querySelectorAll(".cc-production-card")).find((card) => card.dataset.productionId === focusedProductionId);
+      if (replacement) replacement.focus();
+    }
   }
 
   function effectiveStatusLane(record) {
@@ -1280,6 +1319,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   function productionCard(record) {
     const button = element("button", "cc-production-card");
     button.type = "button";
+    button.dataset.productionId = record.productionId;
     button.setAttribute("aria-pressed", String(record.productionId === state.selectedProductionId));
     const meta = element("div", "cc-card-meta");
     meta.append(element("span", "", record.productionId), element("span", "", "v" + String(record.version)));
@@ -1557,20 +1597,22 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   async function proposeContentAction(action, record, button) {
+    const returnFocus = document.activeElement;
     try {
       button.disabled = true;
       const proposal = await actionPost("/api/actions/propose", { action, productionId: record.productionId });
-      openActionConfirmation(action, proposal);
+      openActionConfirmation(action, proposal, returnFocus);
     } catch (error) {
       commandResult.textContent = error instanceof Error ? error.message : "Azione non eseguita.";
     } finally { button.disabled = false; }
   }
 
   async function proposeBusinessAction(action, mission, button) {
+    const returnFocus = document.activeElement;
     try {
       button.disabled = true;
       const proposal = await actionPost("/api/actions/propose", { action, missionId: mission.mission.missionId });
-      openActionConfirmation(action, proposal);
+      openActionConfirmation(action, proposal, returnFocus);
     } catch (error) {
       commandResult.textContent = error instanceof Error ? error.message : "Azione Business non eseguita.";
     } finally { button.disabled = false; }
@@ -1601,19 +1643,20 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   async function proposeControlAction(action, exactTarget, context, button) {
+    const returnFocus = document.activeElement;
     try {
       button.disabled = true;
       const payload = { action, contractVersion: "1", entityId: exactTarget.entityId, entityVersion: exactTarget.version, fingerprint: exactTarget.fingerprint, idempotencyKey: nextIdempotencyKey(action, exactTarget.entityId), reason: controlReason(action) };
       if (action === "REQUEST_PRODUCTION_REVISION") payload.revision = revisionTarget(context);
       const proposal = await actionPost("/api/control-actions/propose", payload);
-      openActionConfirmation(action, proposal);
+      openActionConfirmation(action, proposal, returnFocus);
     } catch (error) {
       commandResult.textContent = error instanceof Error ? error.message : "Comando operativo non eseguito.";
     } finally { button.disabled = false; }
   }
 
-  function openActionConfirmation(action, proposal) {
-    state.returnFocus = document.activeElement;
+  function openActionConfirmation(action, proposal, returnFocus) {
+    state.returnFocus = returnFocus;
     actionConfirmationSubmit.disabled = false;
     if (proposal && proposal.proposal) {
       if (proposal.receipt) {
@@ -1672,6 +1715,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const background = Array.from(root.children).filter((node) => node !== actionConfirmation);
     state.confirmationInertedNodes = background.filter((node) => !node.hasAttribute("inert"));
     for (const node of background) node.setAttribute("inert", "");
+    setConfirmationInFlight(false);
     actionConfirmation.hidden = false;
     emitMotion("review", { status: "AWAITING_FABIO" });
     startConfirmationTimer(expiresAt);
@@ -1679,27 +1723,47 @@ export const COMMAND_CENTER_CLIENT_JS = `
     if (actionConfirmationSubmit.disabled && quietButton) quietButton.focus(); else actionConfirmationSubmit.focus();
   }
 
-  function closeActionConfirmation(message) {
+  function setConfirmationInFlight(active) {
+    state.confirmationInFlight = active;
+    actionConfirmation.dataset.confirmationInFlight = String(active);
+    actionConfirmationDialog.setAttribute("aria-busy", String(active));
+    actionConfirmation.querySelectorAll("[data-confirmation-close]").forEach((control) => {
+      if ("disabled" in control) control.disabled = active;
+      control.toggleAttribute("inert", active);
+      control.setAttribute("aria-disabled", String(active));
+    });
+    if (active) actionConfirmationDialog.focus({ preventScroll: true });
+  }
+
+  function closeActionConfirmation(message, force) {
+    if (state.confirmationInFlight && force !== true) return false;
     const returnFocus = state.returnFocus;
     if (state.confirmationInterval !== null) window.clearInterval(state.confirmationInterval);
     state.confirmationInterval = null;
     state.pendingConfirmation = null;
     state.returnFocus = null;
+    setConfirmationInFlight(false);
     actionConfirmation.hidden = true;
     actionConfirmationSubmit.disabled = false;
     for (const node of state.confirmationInertedNodes) node.removeAttribute("inert");
     state.confirmationInertedNodes = [];
     if (message) commandResult.textContent = message;
     if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
+    return true;
   }
 
   function startConfirmationTimer(expiresAt) {
     if (state.confirmationInterval !== null) window.clearInterval(state.confirmationInterval);
+    const expiry = Date.parse(expiresAt);
+    if (!Number.isFinite(expiry)) {
+      closeActionConfirmation("Conferma non valida: nessuna modifica eseguita.");
+      return;
+    }
     const update = () => {
-      const remaining = Math.max(0, Date.parse(expiresAt) - Date.now());
+      const remaining = Math.max(0, expiry - Date.now());
       const seconds = Math.ceil(remaining / 1000);
       actionConfirmationTimer.textContent = String(Math.floor(seconds / 60)).padStart(2, "0") + ":" + String(seconds % 60).padStart(2, "0");
-      if (remaining <= 0) closeActionConfirmation("Conferma scaduta: nessuna modifica eseguita.");
+      if (remaining <= 0 && !state.confirmationInFlight) closeActionConfirmation("Conferma scaduta: nessuna modifica eseguita.");
     };
     update();
     state.confirmationInterval = window.setInterval(update, 250);
@@ -1707,9 +1771,10 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   async function confirmPendingAction() {
     const pending = state.pendingConfirmation;
-    if (!pending) return;
+    if (!pending || state.confirmationInFlight) return;
     try {
       actionConfirmationSubmit.disabled = true;
+      setConfirmationInFlight(true);
       const proposal = pending.proposal;
       const receipt = pending.oracle
         ? await actionPost("/api/prompt-missions/confirm", { confirmationToken: proposal.confirmationToken, contractVersion: "1", prompt: pending.input.prompt, promptFingerprint: proposal.promptFingerprint, proposalFingerprint: proposal.proposalFingerprint, proposalId: proposal.proposalId })
@@ -1718,13 +1783,16 @@ export const COMMAND_CENTER_CLIENT_JS = `
           : await actionPost("/api/actions/confirm", { actionId: proposal.actionId, confirmationToken: proposal.confirmationToken, packageFingerprint: proposal.summary.packageFingerprint });
       if (pending.oracle) { commandInput.value = ""; state.selectedProductionId = receipt.productionId; }
       const deferredMedia = pending.oracle && proposal.capabilities.some((capability) => capability.status !== "READY_LOCAL");
-      closeActionConfirmation(pending.oracle ? "Bozza interna creata: " + receipt.productionId + ". Review Fabio richiesta; pubblicazione LOCKED." + (deferredMedia ? " Gli output media selezionati restano differiti sotto gate separato." : "") : "Azione registrata. Ricevuta durevole: " + (pending.control ? receipt.receiptId : receipt.command.commandId) + ".");
+      closeActionConfirmation(pending.oracle ? "Bozza interna creata: " + receipt.productionId + ". Review Fabio richiesta; pubblicazione LOCKED." + (deferredMedia ? " Gli output media selezionati restano differiti sotto gate separato." : "") : "Azione registrata. Ricevuta durevole: " + (pending.control ? receipt.receiptId : receipt.command.commandId) + ".", true);
       emitMotion("receipt", { status: pending.oracle ? "AWAITING_FABIO" : "COMPLETED" });
       await refresh();
       if (pending.oracle) window.location.hash = "#production";
     } catch (error) {
-      closeActionConfirmation(error instanceof Error ? error.message : "Azione non eseguita.");
-    } finally { actionConfirmationSubmit.disabled = false; }
+      closeActionConfirmation(error instanceof Error ? error.message : "Azione non eseguita.", true);
+    } finally {
+      setConfirmationInFlight(false);
+      if (!actionConfirmation.hidden) actionConfirmationSubmit.disabled = false;
+    }
   }
 
   function renderEvidence(evidence) {
@@ -1750,6 +1818,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
     text("vault-rights-blocked", number(rightsBlocked.length));
     const gallery = byId("reference-vault-gallery");
     const detailPanel = byId("reference-vault-detail");
+    const focusedCard = gallery.contains(document.activeElement) && typeof document.activeElement.closest === "function" ? document.activeElement.closest(".cc-reference-card") : null;
+    const focusedReferenceId = focusedCard ? focusedCard.dataset.referenceId : null;
     gallery.replaceChildren(); detailPanel.replaceChildren();
     const visible = current.filter((asset) => state.vaultFilter === "ALL" || (state.vaultFilter === "RIGHTS_BLOCKED" ? isVaultRightsBlocked(asset) : asset.status === state.vaultFilter));
     document.querySelectorAll("[data-vault-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.vaultFilter === state.vaultFilter)));
@@ -1777,6 +1847,10 @@ export const COMMAND_CENTER_CLIENT_JS = `
       }
       const selected = visible.find((asset) => asset.referenceId === state.selectedReferenceId);
       if (selected) renderReferenceDetail(detailPanel, selected, vault);
+    }
+    if (focusedReferenceId) {
+      const replacement = Array.from(gallery.querySelectorAll(".cc-reference-card")).find((card) => card.dataset.referenceId === focusedReferenceId);
+      if (replacement) replacement.focus();
     }
     renderFingerprint("visual-fingerprint-panel", vault.visualFingerprint, "Il profilo visivo nasce solo da decisioni esplicite di Fabio.");
     renderFingerprint("writing-fingerprint-panel", vault.writingFingerprint, "Il profilo di scrittura nasce solo da decisioni esplicite di Fabio.");
@@ -2351,7 +2425,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       const asset = review.assets[platform][state.visualSlideIndex];
       const frame = element("figure", "cc-visual-canvas");
       const label = element("span", "", platform.toUpperCase() + " · " + String(asset.width) + "×" + String(asset.height));
-      const image = document.createElement("img"); image.alt = "Slide " + String(asset.slide) + " Metodo Veloce per " + platform; image.src = "/" + asset.path; image.loading = "eager";
+      const image = document.createElement("img"); image.alt = "Slide " + String(asset.slide) + " Metodo Veloce per " + platform; image.decoding = "async"; image.src = "/" + asset.path; image.loading = "lazy";
       frame.append(label, image); canvases.append(frame);
     }
     shell.append(canvases);
@@ -2443,7 +2517,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
         const asset = factory.assets[platform];
         const frame = element("figure", "cc-visual-canvas");
         frame.append(element("span", "", platform.toUpperCase() + " · " + String(asset.width) + "×" + String(asset.height)));
-        const image = document.createElement("img"); image.alt = "Variante locale Metodo Veloce per " + platform; image.src = "/" + asset.path; image.loading = "eager";
+        const image = document.createElement("img"); image.alt = "Variante locale Metodo Veloce per " + platform; image.decoding = "async"; image.src = "/" + asset.path; image.loading = "lazy";
         frame.append(image); canvases.append(frame);
       }
       card.append(canvases);
@@ -2509,14 +2583,17 @@ export const COMMAND_CENTER_CLIENT_JS = `
       vault: ["studio", "vault"],
       venture: ["studio", "venture"],
     };
-    const route = routes[candidate] || routes.today;
+    const section = Object.prototype.hasOwnProperty.call(routes, candidate) ? candidate : "today";
+    const route = routes[section];
     const previousView = root.dataset.activeView;
     const previousStudio = root.dataset.activeStudio;
+    const previousSection = root.dataset.section;
     root.dataset.activeView = route[0];
     root.dataset.activeStudio = route[1];
-    root.dataset.section = candidate || "today";
+    root.dataset.section = section;
+    const isolatedTodayPanel = section === "approvals" || section === "overview" ? section : null;
     root.querySelectorAll(".cc-main > [data-primary-view]").forEach((panel) => {
-      const visible = panel.dataset.primaryView === route[0];
+      const visible = panel.dataset.primaryView === route[0] && (isolatedTodayPanel === null || panel.id === isolatedTodayPanel);
       panel.hidden = !visible;
       panel.setAttribute("aria-hidden", String(!visible));
     });
@@ -2542,15 +2619,22 @@ export const COMMAND_CENTER_CLIENT_JS = `
       team: ["Squadra Apex", "Diciassette specialisti coordinati da un solo comando."],
       today: ["Buongiorno, Fabio.", "Qui trovi il prossimo collo di bottiglia tra lavoro e ricavo."],
     };
+    const studioCopy = { business: "Revenue", evidence: "Evidenze", production: "Produzione", social: "Social", vault: "Intelligence", venture: "Venture" };
     const heading = root.querySelector(".cc-command-title h1");
     const subtitle = root.querySelector(".cc-topbar-subtitle");
     if (heading) heading.textContent = viewCopy[route[0]][0];
     if (subtitle) subtitle.textContent = viewCopy[route[0]][1];
-    if (previousView !== route[0] || previousStudio !== route[1]) {
+    if (activeContextLabel) activeContextLabel.textContent = section === "approvals" ? "Oggi / Approvazioni" : route[0] === "studio" ? "Studio / " + (studioCopy[route[1]] || "Produzione") : viewCopy[route[0]][0].replace("Buongiorno, Fabio.", "Oggi").replace("Squadra Apex", "Squadra");
+    if (previousView !== route[0] || previousStudio !== route[1] || previousSection !== section) {
       const main = root.querySelector(".cc-main");
-      if (main && typeof main.scrollTo === "function") main.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth", top: 0 });
-      window.scrollTo({ behavior: prefersReducedMotion() ? "auto" : "smooth", top: 0 });
-      emitMotion("route", { selector: candidate && /^[a-zA-Z0-9_-]+$/.test(candidate) ? "#" + candidate : "#today" });
+      const resetRouteScroll = () => {
+        if (main && typeof main.scrollTo === "function") main.scrollTo({ behavior: "auto", top: 0 });
+        window.scrollTo({ behavior: "auto", top: 0 });
+      };
+      resetRouteScroll();
+      window.requestAnimationFrame(resetRouteScroll);
+      window.setTimeout(resetRouteScroll, 0);
+      emitMotion("route", { selector: "#" + section });
     }
   }
 
@@ -2586,7 +2670,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     }
     document.body.style.overflow = drawerOpen ? "hidden" : "";
     if (drawerOpen && !wasOpen) {
-      const first = sidebar.querySelector('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])');
+      const first = visibleFocusControls(sidebar)[0];
       if (first) first.focus();
     } else if (!drawerOpen && wasOpen) {
       const returnFocus = state.mobileReturnFocus && typeof state.mobileReturnFocus.focus === "function" ? state.mobileReturnFocus : mobileMenuToggle;
@@ -2600,30 +2684,34 @@ export const COMMAND_CENTER_CLIENT_JS = `
     setDesktopSidebar(state.sidebarState === "expanded" ? "compact" : "expanded", true);
   }
 
-  function initializeSidebar() {
-    if (root.dataset.navigation === "dock") {
-      sidebarToggle.hidden = true;
-      mobileMenuToggle.hidden = true;
+  function syncSidebarMode() {
+    const mobile = mobileSidebar.matches;
+    sidebarToggle.hidden = mobile;
+    mobileMenuToggle.hidden = !mobile;
+    if (mobile) {
+      setMobileSidebar(false);
+    } else {
+      root.dataset.mobileSidebar = "closed";
       sidebarBackdrop.hidden = true;
       sidebar.removeAttribute("inert");
       sidebar.removeAttribute("aria-hidden");
-      root.dataset.mobileSidebar = "closed";
-      return;
+      const main = root.querySelector(".cc-main");
+      if (main) { main.removeAttribute("inert"); main.removeAttribute("aria-hidden"); }
+      document.body.style.overflow = "";
+      setDesktopSidebar(state.sidebarState, false);
     }
+  }
+
+  function initializeSidebar() {
     setDesktopSidebar(storedSidebarState(), false);
-    setMobileSidebar(false);
     sidebarToggle.addEventListener("click", toggleSidebar);
     mobileMenuToggle.addEventListener("click", toggleSidebar);
-    for (const button of [sidebarToggle, mobileMenuToggle]) button.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      toggleSidebar();
-    });
     sidebarBackdrop.addEventListener("click", () => setMobileSidebar(false));
     sidebar.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => { if (mobileSidebar.matches) setMobileSidebar(false); }));
     if (typeof mobileSidebar.addEventListener === "function") {
-      mobileSidebar.addEventListener("change", () => setMobileSidebar(false));
+      mobileSidebar.addEventListener("change", syncSidebarMode);
     }
+    syncSidebarMode();
   }
 
   function initializeViewControls() {
@@ -2701,17 +2789,60 @@ export const COMMAND_CENTER_CLIENT_JS = `
   }
 
   function prepareAmbientMotion() {
-    const reset = () => { root.style.setProperty("--cc-parallax-x", "0px"); root.style.setProperty("--cc-parallax-y", "0px"); };
-    root.addEventListener("pointermove", (event) => {
+    const scrollTarget = root.querySelector(".cc-main");
+    let frame = null;
+    let pointerX = window.innerWidth / 2;
+    let pointerY = window.innerHeight / 2;
+    const reset = () => {
+      root.style.setProperty("--cc-parallax-x", "0px");
+      root.style.setProperty("--cc-parallax-y", "0px");
+      root.style.setProperty("--cc-scroll-shift", "0px");
+    };
+    const apply = () => {
+      frame = null;
       if (prefersReducedMotion()) { reset(); return; }
-      const x = Math.round(((event.clientX / Math.max(window.innerWidth, 1)) - .5) * 12);
-      const y = Math.round(((event.clientY / Math.max(window.innerHeight, 1)) - .5) * 8);
+      const x = Math.round(((pointerX / Math.max(window.innerWidth, 1)) - .5) * 10);
+      const y = Math.round(((pointerY / Math.max(window.innerHeight, 1)) - .5) * 7);
+      const scrollTop = scrollTarget && typeof scrollTarget.scrollTop === "number" ? scrollTarget.scrollTop : window.scrollY;
       root.style.setProperty("--cc-parallax-x", String(x) + "px");
       root.style.setProperty("--cc-parallax-y", String(y) + "px");
-    });
-    root.addEventListener("pointerleave", reset);
-    window.addEventListener("scroll", () => { root.style.setProperty("--cc-scroll-shift", prefersReducedMotion() ? "0px" : String(Math.min(8, Math.round(window.scrollY * .018))) + "px"); }, { passive: true });
-    if (typeof reducedMotionQuery.addEventListener === "function") reducedMotionQuery.addEventListener("change", reset);
+      root.style.setProperty("--cc-scroll-shift", String(Math.min(8, Math.round(scrollTop * .018))) + "px");
+    };
+    const schedule = () => {
+      if (frame !== null || prefersReducedMotion()) return;
+      frame = window.requestAnimationFrame(apply);
+    };
+    const pointerMove = (event) => {
+      if (event.pointerType && event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      schedule();
+    };
+    const pointerLeave = () => {
+      pointerX = window.innerWidth / 2;
+      pointerY = window.innerHeight / 2;
+      schedule();
+    };
+    const scroll = () => schedule();
+    const motionPreferenceChange = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = null;
+      if (prefersReducedMotion()) reset(); else schedule();
+    };
+    root.addEventListener("pointermove", pointerMove, { passive: true });
+    root.addEventListener("pointerleave", pointerLeave);
+    scrollTarget?.addEventListener("scroll", scroll, { passive: true });
+    if (typeof reducedMotionQuery.addEventListener === "function") reducedMotionQuery.addEventListener("change", motionPreferenceChange);
+    reset();
+    return () => {
+      root.removeEventListener("pointermove", pointerMove);
+      root.removeEventListener("pointerleave", pointerLeave);
+      scrollTarget?.removeEventListener("scroll", scroll);
+      if (typeof reducedMotionQuery.removeEventListener === "function") reducedMotionQuery.removeEventListener("change", motionPreferenceChange);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = null;
+      reset();
+    };
   }
 
   commandForm.addEventListener("submit", (event) => { event.preventDefault(); void proposeOraclePrompt(); });
@@ -2722,23 +2853,29 @@ export const COMMAND_CENTER_CLIENT_JS = `
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b" && root.dataset.navigation !== "dock") { event.preventDefault(); toggleSidebar(); }
     if (event.key === "Escape" && mobileSidebar.matches && root.dataset.mobileSidebar === "open") { event.preventDefault(); setMobileSidebar(false); return; }
     if (event.key === "Tab" && mobileSidebar.matches && root.dataset.mobileSidebar === "open") {
-      const controls = Array.from(sidebar.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+      const controls = visibleFocusControls(sidebar);
       if (controls.length === 0) { event.preventDefault(); mobileMenuToggle.focus(); return; }
       const first = controls[0]; const last = controls[controls.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }
   });
-  document.querySelectorAll("[data-confirmation-close]").forEach((button) => button.addEventListener("click", () => closeActionConfirmation("Azione annullata: nessuna modifica eseguita.")));
+  document.querySelectorAll("[data-confirmation-close]").forEach((button) => button.addEventListener("click", () => {
+    if (!state.confirmationInFlight) closeActionConfirmation("Azione annullata: nessuna modifica eseguita.");
+  }));
   actionConfirmationSubmit.addEventListener("click", () => { void confirmPendingAction(); });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !actionConfirmation.hidden) {
+    if (event.key === "Escape" && !actionConfirmation.hidden && !state.confirmationInFlight) {
       closeActionConfirmation("Azione annullata: nessuna modifica eseguita.");
       return;
     }
     if (event.key !== "Tab" || actionConfirmation.hidden) return;
-    const controls = Array.from(actionConfirmation.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
-    if (controls.length === 0) return;
+    const controls = visibleFocusControls(actionConfirmation);
+    if (controls.length === 0) {
+      event.preventDefault();
+      actionConfirmationDialog.focus({ preventScroll: true });
+      return;
+    }
     const first = controls[0];
     const last = controls[controls.length - 1];
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
@@ -2750,11 +2887,15 @@ export const COMMAND_CENTER_CLIENT_JS = `
   initializeVentureControls();
   initializeAgentControls();
   initializeVaultControls();
+  establishFounderFirstOrder();
   syncVisualContext();
-  prepareAmbientMotion();
+  state.ambientCleanup = prepareAmbientMotion();
+  document.addEventListener("visibilitychange", syncLiveVisibility);
   connectLiveEvents();
   window.addEventListener("beforeunload", () => {
     emitMotion("stop", { reasonCode: "BROWSER_UNLOAD" });
+    document.removeEventListener("visibilitychange", syncLiveVisibility);
+    if (state.ambientCleanup) state.ambientCleanup();
     if (state.eventSource) state.eventSource.close();
     if (state.liveFallbackInterval !== null) window.clearInterval(state.liveFallbackInterval);
     if (state.liveRefreshTimer !== null) window.clearTimeout(state.liveRefreshTimer);

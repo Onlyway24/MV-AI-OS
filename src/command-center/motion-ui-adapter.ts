@@ -3,10 +3,11 @@ import { animate, inView, stagger } from "motion";
 export const COMMAND_CENTER_MOTION_CONTRACT_VERSION = "1" as const;
 export const TIKTOK_MOTION_PREVIEW_MARKER = "PREVIEW_ONLY_NOT_RENDERED_VIDEO" as const;
 
-export type GovernedMotionStatus = "AWAITING_FABIO" | "BLOCKED" | "COMPLETED" | "IDLE" | "QUEUED" | "RUNNING";
+export type GovernedMotionStatus = "AWAITING_FABIO" | "BLOCKED" | "COMPLETED" | "FAILED" | "IDLE" | "PAUSED" | "QUEUED" | "RUNNING";
 
 export interface MotionControl {
   cancel?(): void;
+  readonly finished?: Promise<unknown>;
   stop?(): void;
 }
 
@@ -41,10 +42,11 @@ export interface MotionUiAdapter {
   animateValidationFailure(target: unknown): void;
   animateWorkflowProgress(target: unknown, event: GovernedOperationalMotionEvent): boolean;
   observePanels(target: unknown): () => void;
+  stopActiveAnimations(): void;
   stopAllMotion(): void;
 }
 
-const ALLOWED_STATUSES = new Set<GovernedMotionStatus>(["AWAITING_FABIO", "BLOCKED", "COMPLETED", "IDLE", "QUEUED", "RUNNING"]);
+const ALLOWED_STATUSES = new Set<GovernedMotionStatus>(["AWAITING_FABIO", "BLOCKED", "COMPLETED", "FAILED", "IDLE", "PAUSED", "QUEUED", "RUNNING"]);
 const DEFAULT_MAX_CONCURRENT_ANIMATIONS = 8;
 const MAX_SEEN_EVENTS = 256;
 
@@ -71,6 +73,12 @@ export function createMotionUiAdapter(options: MotionUiAdapterOptions = {}): Mot
   const mayAnimate = (): boolean => enabled() && !reducedMotion();
   const track = (control: MotionControl): void => {
     controls.push(control);
+    if (control.finished !== undefined) {
+      void control.finished.then(
+        () => { forgetControl(controls, control); },
+        () => { forgetControl(controls, control); },
+      );
+    }
     while (controls.length > maximum) stopControl(controls.shift());
   };
   const run = (target: unknown, keyframes: unknown, transition: unknown): void => {
@@ -98,10 +106,11 @@ export function createMotionUiAdapter(options: MotionUiAdapterOptions = {}): Mot
   };
   const animateStatusTransition = (target: unknown, status: GovernedMotionStatus): void => {
     if (!ALLOWED_STATUSES.has(status)) return;
-    if (status === "BLOCKED") animateValidationFailure(target);
+    if (status === "BLOCKED" || status === "FAILED") animateValidationFailure(target);
     else if (status === "COMPLETED") animateSuccessReceipt(target);
     else if (status === "AWAITING_FABIO") animateReviewOpen(target);
     else if (status === "RUNNING") run(target, { opacity: [0.72, 1], transform: ["scale(0.99)", "scale(1)"] }, { duration: 0.3, easing: "ease-out" });
+    else if (status === "PAUSED") run(target, { opacity: [1, 0.68] }, { duration: 0.18, easing: "ease-out" });
     else if (status === "QUEUED") run(target, { opacity: [0.72, 1] }, { duration: 0.2, easing: "linear" });
   };
   const animateWorkflowProgress = (target: unknown, event: GovernedOperationalMotionEvent): boolean => {
@@ -125,13 +134,16 @@ export function createMotionUiAdapter(options: MotionUiAdapterOptions = {}): Mot
     observers.add(dispose);
     return () => { dispose(); observers.delete(dispose); };
   };
-  const stopAllMotion = (): void => {
+  const stopActiveAnimations = (): void => {
     while (controls.length > 0) stopControl(controls.pop());
+  };
+  const stopAllMotion = (): void => {
+    stopActiveAnimations();
     for (const dispose of observers) dispose();
     observers.clear();
   };
 
-  return Object.freeze({ animateMetricChange, animatePanelEnter, animatePanelExit, animateReviewOpen, animateStatusTransition, animateSuccessReceipt, animateTikTokPreview, animateValidationFailure, animateWorkflowProgress, observePanels, stopAllMotion });
+  return Object.freeze({ animateMetricChange, animatePanelEnter, animatePanelExit, animateReviewOpen, animateStatusTransition, animateSuccessReceipt, animateTikTokPreview, animateValidationFailure, animateWorkflowProgress, observePanels, stopActiveAnimations, stopAllMotion });
 }
 
 function validEvent(event: GovernedOperationalMotionEvent): boolean {
@@ -141,6 +153,11 @@ function validEvent(event: GovernedOperationalMotionEvent): boolean {
 function boundedMaximum(candidate: number | undefined): number {
   const value = candidate ?? DEFAULT_MAX_CONCURRENT_ANIMATIONS;
   return Number.isSafeInteger(value) && value >= 1 && value <= 16 ? value : DEFAULT_MAX_CONCURRENT_ANIMATIONS;
+}
+
+function forgetControl(controls: MotionControl[], control: MotionControl): void {
+  const index = controls.indexOf(control);
+  if (index >= 0) controls.splice(index, 1);
 }
 
 function stopControl(control: MotionControl | undefined): void {
@@ -178,16 +195,15 @@ export function installCommandCenterMotion(browserWindow: BrowserWindowLike, bro
 
   const route = (event: BrowserEventLike): void => {
     const detail = record(event.detail);
-    adapter.stopAllMotion();
+    adapter.stopActiveAnimations();
     const selector = typeof detail?.selector === "string" && /^#[a-zA-Z0-9_-]{1,80}$/u.test(detail.selector) ? detail.selector : undefined;
     if (selector !== undefined) adapter.animatePanelEnter(browserDocument.querySelector(selector));
   };
   const operational = (event: BrowserEventLike): void => {
     const detail = governedEvent(event.detail);
     if (detail === undefined) return;
-    if (detail.eventType === "KILL_SWITCH_CHANGED") { adapter.stopAllMotion(); return; }
+    if (detail.eventType === "KILL_SWITCH_CHANGED") { adapter.stopActiveAnimations(); return; }
     adapter.animateWorkflowProgress(browserDocument.querySelector("#command-form"), detail);
-    for (const metric of browserDocument.querySelectorAll(".cc-metric strong, .cc-revenue-metrics strong")) adapter.animateMetricChange(metric);
   };
   const review = (): void => { adapter.animateReviewOpen(browserDocument.querySelector("#action-confirmation .cc-authorization-dialog")); };
   const validation = (): void => { adapter.animateValidationFailure(browserDocument.querySelector("#command-form")); };
@@ -198,7 +214,7 @@ export function installCommandCenterMotion(browserWindow: BrowserWindowLike, bro
     const target = browserDocument.querySelector('[data-motion-preview="tiktok"]');
     adapter.animateTikTokPreview(target, browserDocument.querySelectorAll('[data-motion-preview="tiktok"] [data-motion-preview-beat]'));
   };
-  const stop = (): void => { adapter.stopAllMotion(); };
+  const stop = (): void => { adapter.stopActiveAnimations(); };
   const reducedChange = (): void => { root?.setAttribute?.("data-motion-reduced", String(reducedQuery?.matches === true)); stop(); };
   const visibility = (): void => { if (browserDocument.hidden === true) stop(); };
 
