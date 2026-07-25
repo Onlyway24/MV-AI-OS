@@ -56,8 +56,10 @@ describe("Onlyway Premium Command Center Experience", () => {
 
   it("makes Oggi founder-first and keeps ORACLE controls progressively disclosed", () => {
     expect(COMMAND_CENTER_HTML).toContain("FOUNDER COMMAND SURFACE");
-    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-overview{order:4}");
-    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-revenue-hero{order:5}");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-station{order:4}");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-oracle-constellation{order:5}");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-overview{order:6}");
+    expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-revenue-hero{order:7}");
     expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-decision-inbox{order:1}");
     expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-hero-grid{order:2}");
     expect(COMMAND_CENTER_PREMIUM_CSS).toContain(".cc-metrics{order:3}");

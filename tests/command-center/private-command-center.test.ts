@@ -188,6 +188,16 @@ describe("Private Command Center", () => {
         expect.objectContaining({ agentId: "developer-agent", completedTasks: 0, state: "READY" }),
         expect.objectContaining({ agentId: "publisher-agent", completedTasks: 0, state: "READY" }),
       ]));
+      expect(snapshot.station).toMatchObject({
+        externalActions: "LOCKED",
+        publication: "LOCKED",
+      });
+      expect(snapshot.station.rooms).toEqual(expect.arrayContaining([
+        expect.objectContaining({ href: "#agents", roomId: "command" }),
+        expect.objectContaining({ href: "#approvals", roomId: "publishing", status: "LOCKED" }),
+      ]));
+      expect(snapshot.station.rooms).toHaveLength(9);
+      expect(snapshot.station.opportunityLanes).toHaveLength(6);
       expect(snapshot.runtime).toMatchObject({
         continuousWorker: "NOT_REGISTERED",
         jobs: [],

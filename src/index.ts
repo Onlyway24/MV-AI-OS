@@ -2066,6 +2066,92 @@ export { parseGoogleTrendsRss, googleTrendsBatchRecords, type GoogleTrendsRssImp
 export { GoogleTrendsLiveAcquisitionService, type GoogleTrendsLiveAcquisitionReceipt } from "./social-intelligence-live/google-trends-live-acquisition-service.js";
 export { EXACT_COMPETITOR_AUTHORIZATION_TEXT, INITIAL_SOCIAL_COMPETITOR_CANDIDATES, authorizeInitialSocialCompetitors, type InitialSocialCompetitorAuthorizationRequest } from "./social-intelligence-live/social-competitor-authorization.js";
 export {
+  TREND_INTELLIGENCE_CONTRACT_VERSION,
+  MAX_TREND_ITEMS_PER_REQUEST,
+  MAX_TREND_RECEIPTS,
+  MAX_TREND_SIGNALS,
+  TREND_SOURCE_KEYS,
+  type TrendAcquisitionRequest,
+  type TrendAccessGrant,
+  type TrendConnectorReceipt,
+  type TrendConnectorReasonCode,
+  type TrendConnectorResult,
+  type TrendCredentialBinding,
+  type TrendCredentialRequirement,
+  type TrendPreflightReasonCode,
+  type TrendRightsClass,
+  type TrendSignal,
+  type TrendSignalFamily,
+  type TrendSourceAccessRequirement,
+  type TrendSourceAcquisitionMode,
+  type TrendSourceCatalogEntry,
+  type TrendSourceConnectionProfile,
+  type TrendSourceKey,
+  type TrendSourceLicenseState,
+  type TrendSourcePreflight,
+  type TrendSourceTransport,
+  type TrendTransportItem,
+  type TrendTransportReconciliationRequest,
+  type TrendTransportRequest,
+  type TrendTransportResponse,
+} from "./trend-intelligence/trend-intelligence-contract.js";
+export {
+  PREMIUM_TREND_SOURCE_CATALOG,
+  trendSourceByKey,
+} from "./trend-intelligence/trend-source-catalog.js";
+export { preflightTrendSource } from "./trend-intelligence/trend-source-preflight.js";
+export {
+  TrendConnectorError,
+  TrendSourceConnector,
+  TrendTransportFailureError,
+  TrendTransportTimeoutError,
+} from "./trend-intelligence/trend-source-connector.js";
+export {
+  DeterministicFakeTrendTransport,
+  type FakeTrendTransportOutcome,
+  type FakeTrendTransportScript,
+} from "./trend-intelligence/fake-trend-source-transport.js";
+export {
+  PUBLIC_TREND_SOURCE_BLUEPRINTS,
+  ensurePublicTrendSources,
+} from "./trend-intelligence/trend-source-registry.js";
+export {
+  TrendConsensusValidationError,
+  buildTrendConsensusView,
+  type TrendConsensusCandidate,
+  type TrendConsensusProvenance,
+  type TrendConsensusValidationCode,
+  type TrendConsensusView,
+} from "./trend-intelligence/trend-consensus.js";
+export {
+  TREND_OPERATOR_CELL_CATALOG,
+  TREND_OPERATOR_CELL_IDS,
+  buildTrendIntelligenceReadModel,
+  type TrendAgentObservedWork,
+  type TrendCandidateView,
+  type TrendIntelligenceReadModel,
+  type TrendIntelligenceSourceView,
+  type TrendObservedWorkState,
+  type TrendOperatorCellId,
+  type TrendOperatorCellMemberView,
+  type TrendOperatorCellView,
+  type TrendPipelineStageView,
+} from "./trend-intelligence/trend-intelligence-read-model.js";
+export {
+  buildCommandCenterTrendOperationsView,
+  latestObservedAgentWork,
+  type CommandCenterTrendAgentCallSign,
+  type CommandCenterTrendCandidateView,
+  type CommandCenterTrendCapabilityStatus,
+  type CommandCenterTrendConnectorStatus,
+  type CommandCenterTrendDataStatus,
+  type CommandCenterTrendOperationsView,
+  type CommandCenterTrendOperatorCellView,
+  type CommandCenterTrendPipelineStageView,
+  type CommandCenterTrendPolicyStatus,
+  type CommandCenterTrendSourceView,
+} from "./command-center/command-center-trend-operations-view.js";
+export {
   CommandCenterActionService,
   type CommandCenterActionClock,
   type CommandCenterAnyActionProposal,
@@ -2189,5 +2275,6 @@ export * from "./venture-holding/venture-brief-service.js";
 export { SqliteVentureHoldingRepository } from "./persistence/sqlite/sqlite-venture-holding-repository.js";
 export { SqliteVentureHoldingTransactionRunner } from "./persistence/sqlite/sqlite-venture-holding-transaction-runner.js";
 export * from "./command-center/command-center-venture-view.js";
+export * from "./command-center/onlyway-station-view.js";
 export * from "./command-center/repository-backed-venture-query.js";
 export * from "./telegram/telegram-venture-brief-console.js";

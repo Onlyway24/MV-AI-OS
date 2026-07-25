@@ -133,6 +133,8 @@ describe("Social Intelligence Live activation", () => {
     const replay = await ensureInitialSocialSources({ operationalPlanes, repositories, workspaceId: "onlyway" });
     expect(first.map(({ sourceId }) => sourceId)).toEqual([...INITIAL_SOCIAL_SOURCE_BLUEPRINTS, ...SOCIAL_PUBLIC_OBSERVATION_SOURCE_BLUEPRINTS].map(({ sourceId }) => sourceId));
     expect(replay).toEqual(first);
+    const report = await new SocialIntelligenceLiveService({ actorId: "fabio", clock, repositories, workspaceId: "onlyway" }).report();
+    expect(report).toMatchObject({ acquisitionReadiness: "PARTIAL", totalTrends: 0 });
   });
 
   it("imports an immutable Google Trends RSS snapshot without declaring compatibility", async () => {
@@ -178,6 +180,7 @@ describe("Social Intelligence Live activation", () => {
     const acquisition = new GoogleTrendsLiveAcquisitionService({ actorId: "fabio", clock, https, live, repositories, workspaceId: "onlyway" });
     await expect(acquisition.acquire()).resolves.toMatchObject({ importReceipt: { status: "COMMITTED" }, itemCount: 1, unauthorizedExternalEffectOccurred: false });
     await expect(acquisition.acquire()).resolves.toMatchObject({ importReceipt: { status: "REPLAYED" }, itemCount: 1 });
+    await expect(live.report()).resolves.toMatchObject({ acquisitionReadiness: "PARTIAL", totalTrends: 1 });
   });
 
   it("imports attributable competitor observations only after the exact account authorization", async () => {

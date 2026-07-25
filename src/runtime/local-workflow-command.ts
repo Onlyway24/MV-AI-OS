@@ -31,6 +31,8 @@ import type { MetodoVeloceSocialIntelligenceRequest } from "../social-intelligen
 import { MetodoVeloceSocialIntelligenceRequestValidator } from "../social-intelligence/metodo-veloce-social-intelligence-validator.js";
 import { SocialIntelligenceLiveService, createFirstMetodoVeloceExperiment } from "../social-intelligence-live/social-intelligence-live-service.js";
 import { ensureInitialSocialSources } from "../social-intelligence-live/social-official-sources.js";
+import { ensurePublicTrendSources } from "../trend-intelligence/trend-source-registry.js";
+import { PREMIUM_TREND_SOURCE_CATALOG } from "../trend-intelligence/trend-source-catalog.js";
 import type { GoogleTrendsLiveAcquisitionService } from "../social-intelligence-live/google-trends-live-acquisition-service.js";
 import { parseSocialAnalyticsCsv } from "../social-intelligence-live/social-analytics-csv-adapter.js";
 import { authorizeInitialSocialCompetitors, authorizeSocialCompetitorReplacement } from "../social-intelligence-live/social-competitor-authorization.js";
@@ -44,7 +46,7 @@ import {
 import type { OperationalEventRepository } from "../operations-runtime/operational-event-repository.js";
 
 export const LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION = "1" as const;
-export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "RUN_AUTHORIZED_RESEARCH_MISSION", "INSPECT_AUTHORIZED_RESEARCH_MISSION", "LIST_AUTHORIZED_RESEARCH_MISSIONS", "RUN_AGENT_COMPANY_WORKDAY", "INSPECT_AGENT_COMPANY_WORKDAY", "LIST_AGENT_COMPANY_WORKDAYS", "GET_AGENT_COMPANY_CATALOG", "GET_AGENT_COMPANY_METRICS", "CREATE_BUSINESS_MISSION_DOSSIER", "INSPECT_BUSINESS_MISSION_DOSSIER", "LIST_BUSINESS_MISSION_DOSSIERS", "REVIEW_BUSINESS_MISSION_DOSSIER", "REGISTER_SOCIAL_OFFICIAL_SOURCES", "ACQUIRE_GOOGLE_TRENDS_LIVE", "CLASSIFY_SOCIAL_TREND", "IMPORT_SOCIAL_ANALYTICS_CSV", "AUTHORIZE_SOCIAL_COMPETITOR_SET", "REPLACE_SOCIAL_COMPETITOR", "MATERIALIZE_COMPETITOR_INTELLIGENCE_PACK", "IMPORT_SOCIAL_COMPETITOR_OBSERVATIONS_CSV", "IMPORT_SOCIAL_AUDIO_RIGHTS_CSV", "IMPORT_SOCIAL_LIVE_RECORD", "PREVIEW_SOCIAL_LIVE_BATCH", "IMPORT_SOCIAL_LIVE_BATCH", "GET_SOCIAL_LIVE_REPORT", "CREATE_FIRST_SOCIAL_EXPERIMENT", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
+export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "RUN_AUTHORIZED_RESEARCH_MISSION", "INSPECT_AUTHORIZED_RESEARCH_MISSION", "LIST_AUTHORIZED_RESEARCH_MISSIONS", "RUN_AGENT_COMPANY_WORKDAY", "INSPECT_AGENT_COMPANY_WORKDAY", "LIST_AGENT_COMPANY_WORKDAYS", "GET_AGENT_COMPANY_CATALOG", "GET_AGENT_COMPANY_METRICS", "CREATE_BUSINESS_MISSION_DOSSIER", "INSPECT_BUSINESS_MISSION_DOSSIER", "LIST_BUSINESS_MISSION_DOSSIERS", "REVIEW_BUSINESS_MISSION_DOSSIER", "GET_TREND_SOURCE_CATALOG", "REGISTER_PUBLIC_TREND_SOURCES", "REGISTER_SOCIAL_OFFICIAL_SOURCES", "ACQUIRE_GOOGLE_TRENDS_LIVE", "CLASSIFY_SOCIAL_TREND", "IMPORT_SOCIAL_ANALYTICS_CSV", "AUTHORIZE_SOCIAL_COMPETITOR_SET", "REPLACE_SOCIAL_COMPETITOR", "MATERIALIZE_COMPETITOR_INTELLIGENCE_PACK", "IMPORT_SOCIAL_COMPETITOR_OBSERVATIONS_CSV", "IMPORT_SOCIAL_AUDIO_RIGHTS_CSV", "IMPORT_SOCIAL_LIVE_RECORD", "PREVIEW_SOCIAL_LIVE_BATCH", "IMPORT_SOCIAL_LIVE_BATCH", "GET_SOCIAL_LIVE_REPORT", "CREATE_FIRST_SOCIAL_EXPERIMENT", "PRODUCE_METODO_VELOCE_CONTENT", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE", "PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE_PACK", "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK", "INSPECT_METODO_VELOCE_CONTENT", "REVIEW_METODO_VELOCE_CONTENT", "SCHEDULE_METODO_VELOCE_CONTENT", "RECORD_METODO_VELOCE_CONTENT_METRICS", "ARCHIVE_METODO_VELOCE_CONTENT", "LIST_METODO_VELOCE_CONTENT_QUEUE", "ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION", "RUN_PRODUCTION_RUNTIME_ONCE", "GET_PRODUCTION_RUNTIME_HEALTH", "REGISTER_EVIDENCE_SOURCE", "RECORD_EVIDENCE", "CREATE_EVIDENCE_PACK", "INSPECT_EVIDENCE_PACK", "CREATE_PUBLICATION_DRY_RUN", "AUTHORIZE_PUBLICATION_DRY_RUN", "RECORD_PUBLICATION_RECEIPT", "SET_PUBLICATION_KILL_SWITCH", "IMPORT_FEEDBACK_METRICS", "ANALYZE_PUBLICATION_FEEDBACK", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
 export type LocalWorkflowOperation = typeof LOCAL_WORKFLOW_OPERATIONS[number];
 export interface LocalWorkflowCommand { readonly contractVersion: "1"; readonly commandId: string; readonly actorId: string; readonly workspaceId: string; readonly operation: LocalWorkflowOperation; readonly input: Readonly<Record<string, unknown>>; }
 export interface LocalWorkflowCommandResponse { readonly contractVersion: "1"; readonly status: "ok"; readonly operation: LocalWorkflowOperation; readonly commandId: string; readonly result: unknown; readonly nextAction: string; readonly replayed: boolean; readonly unauthorizedExternalEffectOccurred: false; }
@@ -164,6 +166,8 @@ export class LocalWorkflowCommandBoundary {
       case "INSPECT_BUSINESS_MISSION_DOSSIER": return this.#businessMissions().inspect(requiredId(input, "missionId"));
       case "LIST_BUSINESS_MISSION_DOSSIERS": return this.#businessMissions().list(requiredLimit(input));
       case "REVIEW_BUSINESS_MISSION_DOSSIER": return this.#businessMissions().review(input);
+      case "GET_TREND_SOURCE_CATALOG": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Trend source catalog request is invalid"); return trendSourceCatalogProjection();
+      case "REGISTER_PUBLIC_TREND_SOURCES": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Public Trend source registration request is invalid"); return ensurePublicTrendSources({ operationalPlanes: this.dependencies.operationalPlanes, repositories: this.dependencies.repositories, workspaceId: this.dependencies.workspaceId });
       case "REGISTER_SOCIAL_OFFICIAL_SOURCES": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Official Social source registration request is invalid"); return ensureInitialSocialSources({ operationalPlanes: this.dependencies.operationalPlanes, repositories: this.dependencies.repositories, workspaceId: this.dependencies.workspaceId });
       case "ACQUIRE_GOOGLE_TRENDS_LIVE": if (Object.keys(input).length !== 0) throw new RepositoryValidationError("Google Trends Live acquisition request is invalid"); return this.#googleTrendsLive().acquire();
       case "CLASSIFY_SOCIAL_TREND": {
@@ -449,6 +453,8 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   if (operation === "CREATE_BUSINESS_MISSION_DOSSIER") return "Open the durable Business Mission dossier in the Onlyway Approval Center; no external action was executed.";
   if (operation === "INSPECT_BUSINESS_MISSION_DOSSIER" || operation === "LIST_BUSINESS_MISSION_DOSSIERS") return "Review scorecards, economics, validation plan, artifacts, and gates before any decision.";
   if (operation === "REVIEW_BUSINESS_MISSION_DOSSIER") return "The Business Mission decision is recorded durably; experiments and external actions remain separately locked.";
+  if (operation === "GET_TREND_SOURCE_CATALOG") return "Select only an access-compliant source and run policy, connector, data and cost preflight; catalog presence is not connection evidence.";
+  if (operation === "REGISTER_PUBLIC_TREND_SOURCES") return "Run provider preflight next. Source registration records policy only; it does not prove a connection, receipt, trend, metric, or commercial demand.";
   if (operation === "REGISTER_SOCIAL_OFFICIAL_SOURCES") return "Import only attributable observations from these official sources; registration does not create a trend or metric.";
   if (operation === "ACQUIRE_GOOGLE_TRENDS_LIVE") return "Classify the imported Italian trend observations for Metodo Veloce compatibility; unclassified signals cannot justify production.";
   if (operation === "CLASSIFY_SOCIAL_TREND") return "Review the evidence-linked compatibility decision; phase, velocity and saturation remain unclassified unless separately evidenced.";
@@ -497,6 +503,26 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   return `Request the Operator Workflow Report for Workflow ${instanceId}.`;
 }
 function id(value: unknown): string { return typeof value === "string" ? value : "unknown"; }
+function trendSourceCatalogProjection() {
+  return Object.freeze(PREMIUM_TREND_SOURCE_CATALOG.map((source) => Object.freeze({
+    accessRequirement: source.accessRequirement === "SECRET_REFERENCE_REQUIRED"
+      ? "LOCAL_REFERENCE_REQUIRED"
+      : source.accessRequirement,
+    acquisitionMode: source.acquisitionMode,
+    canonicalReference: source.canonicalReference,
+    dataClasses: source.dataClasses,
+    displayName: source.displayName,
+    licenseState: source.licenseState,
+    owner: source.owner,
+    providerRuntime: source.providerRuntime,
+    requiredCredentialBindingIds: Object.freeze(source.requiredCredentialBindings.map(({ bindingId }) => bindingId)),
+    requiredGrants: source.requiredGrants,
+    signalFamilies: source.signalFamilies,
+    sourceId: source.sourceId,
+    sourceKey: source.sourceKey,
+    termsNote: source.termsNote,
+  })));
+}
 function visualApprovalFingerprint(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value); }
 function productionRuntimeCommandId(jobId: string): string { return `runtime-produce-${createHash("sha256").update(jobId, "utf8").digest("hex").slice(0, 24)}`; }
 async function appendProductionCreationEvents(repository: OperationalEventRepository, production: MetodoVeloceContentProductionRecord): Promise<void> {

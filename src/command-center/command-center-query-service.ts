@@ -45,6 +45,14 @@ import {
   type CommandCenterVentureQuery,
   type CommandCenterVentureView,
 } from "./command-center-venture-view.js";
+import {
+  buildOnlywayStationView,
+  type OnlywayStationView,
+} from "./onlyway-station-view.js";
+import {
+  buildCommandCenterTrendOperationsView,
+  type CommandCenterTrendOperationsView,
+} from "./command-center-trend-operations-view.js";
 
 export const COMMAND_CENTER_CONTRACT_VERSION = "1" as const;
 
@@ -96,6 +104,8 @@ export interface CommandCenterSnapshot {
   readonly runtime: CommandCenterRuntimeSummary;
   readonly socialIntelligence: CommandCenterSocialIntelligenceSummary;
   readonly socialLive: DailySocialOperationsReport;
+  readonly station: OnlywayStationView;
+  readonly trendOperations: CommandCenterTrendOperationsView;
   readonly venture: CommandCenterVentureView;
 }
 
@@ -422,6 +432,99 @@ export class CommandCenterQueryService {
         evidencePacks,
         productions,
       });
+      const agents = agentSummaries(workdays);
+      const socialLive = buildDailySocialOperationsReport(socialLiveRecords, now, sources.map(({ sourceId }) => sourceId));
+      const trendOperations = buildCommandCenterTrendOperationsView({
+        actorId: this.#actorId,
+        generatedAt: now.toISOString(),
+        // Trend connector receipts do not yet have a durable repository. Failing
+        // closed here prevents Source Registry rows or legacy observations from
+        // being presented as receipt-backed connections.
+        receipts: [],
+        socialTrends: socialLiveRecords.filter((record) => record.kind === "TREND"),
+        sources,
+        workdays,
+        workspaceId: this.#workspaceId,
+      });
+      const researchCoverage = research.length >= RESEARCH_LIMIT
+        || sources.length >= 100
+        || evidence.length >= 100
+        || evidencePacks.length >= 100
+        ? "LIMIT_REACHED" as const
+        : "COMPLETE" as const;
+      const publishingCoverage = productionWindow.status === "LIMIT_REACHED" || socialCoverage === "LIMIT_REACHED"
+        ? "LIMIT_REACHED" as const
+        : "COMPLETE" as const;
+      const warRoomCoverage = decisionInboxCoverage === "LIMIT_REACHED" || venture.coverage === "LIMIT_REACHED" || socialCoverage === "LIMIT_REACHED"
+        ? "LIMIT_REACHED" as const
+        : venture.coverage === "NOT_AVAILABLE"
+          ? "NOT_AVAILABLE" as const
+          : "COMPLETE" as const;
+      const station = buildOnlywayStationView({
+        archives: {
+          assets: referenceVault.assets.length,
+          coverage: referenceVault.coverage,
+          decisions: referenceVault.decisions.length,
+          outcomeLinks: referenceVault.outcomeLinks.length,
+          rightsBlockers: referenceVault.rightsBlockers.length,
+        },
+        command: {
+          agentsReady: agents.filter(({ state }) => state === "READY").length,
+          agentsTotal: agents.length,
+          coverage: decisionInboxCoverage,
+          decisionsRequired: decisionInbox.length,
+          system: attentionRequired ? "ATTENTION_REQUIRED" : "READY",
+        },
+        communications: {
+          coverage: socialCoverage,
+          readyForFabio: socialPacks.filter(({ status }) => status === "READY_FOR_FABIO_APPROVAL").length,
+          requiresResearch: socialPacks.filter(({ status }) => status === "REQUIRES_RESEARCH").length,
+          socialPacks: socialPacks.length,
+          trendObservations: socialLive.totalTrends,
+        },
+        factory: {
+          blocked,
+          coverage: productionWindow.status,
+          pendingFabio,
+          productions: productions.length,
+          workdays: workdays.length,
+        },
+        generatedAt: now.toISOString(),
+        publishing: {
+          approvedForScheduling: productions.filter(({ status }) => status === "APPROVED_FOR_SCHEDULING").length,
+          coverage: publishingCoverage,
+          readyForFabio: pendingFabio,
+          scheduled: productions.filter(({ status }) => status === "SCHEDULED").length,
+        },
+        research: {
+          coverage: researchCoverage,
+          evidence: evidence.length,
+          evidencePacks: evidencePacks.length,
+          missions: research.length,
+          sources: sources.length,
+        },
+        treasury: {
+          attempts: operationsUsage.attempts,
+          coverage: revenue.coverage,
+          measuredCostCents: operationsUsage.costCents,
+          providerCalls: operationsUsage.providerCalls,
+        },
+        venture: {
+          coverage: venture.coverage,
+          decisions: venture.decisions.length,
+          experiments: venture.experiments.length,
+          health: venture.health.status,
+          opportunities: venture.opportunities.length,
+          ventures: venture.ventures.length,
+        },
+        warRoom: {
+          coverage: warRoomCoverage,
+          deadLetterJobs: operationsCounts.deadLetter,
+          decisions: decisionInbox.length,
+          failedJobs: operationsCounts.failed,
+          openIncidents: incidents.filter(({ status }) => status === "OPEN").length,
+        },
+      });
 
       return Object.freeze({
         // The overview carries complete task detail only for the three highest-
@@ -429,7 +532,7 @@ export class CommandCenterQueryService {
         // 25-record control-plane window, preventing large outputs from
         // multiplying into an unbounded API/DOM response.
         agentCompany: Object.freeze(workdays.slice(0, EXPOSED_WORKDAY_LIMIT)),
-        agents: agentSummaries(workdays),
+        agents,
         business: Object.freeze([...ownedBusiness]),
         contractVersion: COMMAND_CENTER_CONTRACT_VERSION,
         controls: Object.freeze({
@@ -554,7 +657,9 @@ export class CommandCenterQueryService {
           readyForFabio: socialPacks.filter(({ status }) => status === "READY_FOR_FABIO_APPROVAL").length,
           requiresResearch: socialPacks.filter(({ status }) => status === "REQUIRES_RESEARCH").length,
         }),
-        socialLive: buildDailySocialOperationsReport(socialLiveRecords, now, sources.map(({ sourceId }) => sourceId)),
+        socialLive,
+        station,
+        trendOperations,
         venture,
       });
     });

@@ -90,6 +90,70 @@ export const COMMAND_CENTER_HTML = `
     <p class="cc-command-result" id="command-result" aria-live="polite"></p>
     <p class="cc-command-help" id="command-help">NEXUS coordina ORACLE, VECTOR, PRISM e FORGE. La proposta usa solo evidenze approvate; provider media e pubblicazione restano sotto gate separati.</p>
 
+    <section class="cc-station" id="station" data-primary-view="today" data-cinematic-scene="station" data-cinematic-label="VENTURE OPERATING SPACES" data-cinematic-tone="cool" aria-labelledby="station-heading">
+      <header class="cc-station-head">
+        <div>
+          <p class="cc-kicker">ONLYWAY STATION · PRIVATE VENTURE OPERATING SPACES</p>
+          <h2 id="station-heading">Nove camere. Un solo sistema di verità.</h2>
+        </div>
+        <p>Ricerca, impresa, produzione e controllo diventano un ambiente leggibile. Ogni camera mostra soltanto record osservati e apre una funzione già reale.</p>
+      </header>
+      <div class="cc-station-status" id="station-summary" aria-live="polite">
+        <span><small>OSSERVAZIONE</small><strong id="station-coverage">IN ATTESA DELLO SNAPSHOT LOCALE</strong></span>
+        <span><small>AZIONI ESTERNE</small><strong>LOCKED</strong></span>
+        <span><small>PUBBLICAZIONE</small><strong>LOCKED</strong></span>
+      </div>
+      <nav class="cc-station-map" id="station-room-grid" aria-label="Nove camere operative Onlyway">
+        <p class="cc-station-loading">Le camere restano non disponibili finché il boundary locale non restituisce uno snapshot valido.</p>
+      </nav>
+      <section class="cc-trend-deck" id="trend-operations-deck" aria-labelledby="trend-operations-heading">
+        <header class="cc-trend-deck-head">
+          <div>
+            <p class="cc-panel-label">PREMIUM TREND INTELLIGENCE NETWORK</p>
+            <h3 id="trend-operations-heading">Dall’attenzione alla decisione, con provenienza.</h3>
+          </div>
+          <p>Le fonti autorizzate alimentano operatori e Gate soltanto dopo una receipt verificabile. Un segnale non viene mai presentato come domanda o ricavo.</p>
+        </header>
+        <div class="cc-trend-deck-status" id="trend-operations-status" aria-live="polite">
+          <span><small>POLICY</small><strong>IN ATTESA</strong></span>
+          <span><small>CAPABILITY</small><strong>IN ATTESA</strong></span>
+          <span><small>CONNECTOR</small><strong>IN ATTESA</strong></span>
+          <span><small>DATA</small><strong>IN ATTESA</strong></span>
+          <span><small>PUBLICATION</small><strong>LOCKED</strong></span>
+        </div>
+        <ol class="cc-trend-pipeline" id="trend-operations-pipeline" aria-label="Pipeline Trend Intelligence · scorri orizzontalmente sui display compatti" tabindex="0">
+          <li class="cc-trend-empty">La pipeline resta non disponibile finché lo snapshot locale non è conforme.</li>
+        </ol>
+        <div class="cc-trend-deck-grid">
+          <section aria-labelledby="trend-cells-heading">
+            <div class="cc-trend-subhead"><p class="cc-panel-label">OPERATOR CELLS</p><h4 id="trend-cells-heading">Capacità e lavoro osservato</h4></div>
+            <div class="cc-trend-cells" id="trend-operations-cells"></div>
+          </section>
+          <section aria-labelledby="trend-candidates-heading">
+            <div class="cc-trend-subhead"><p class="cc-panel-label">SIGNAL SHORTLIST</p><h4 id="trend-candidates-heading">Massimo tre candidati verificabili</h4></div>
+            <div class="cc-trend-candidates" id="trend-operations-candidates"></div>
+          </section>
+        </div>
+        <footer class="cc-trend-deck-foot">
+          <span>ATTENTION SIGNAL ≠ VERIFIED DEMAND</span>
+          <span>PAID PROVIDERS LOCKED</span>
+          <strong>FABIO DECIDES · EXTERNAL WRITES LOCKED</strong>
+        </footer>
+      </section>
+      <section class="cc-station-opportunities" aria-labelledby="station-opportunities-heading">
+        <div>
+          <p class="cc-panel-label">ETHICAL OPPORTUNITY LANES</p>
+          <h3 id="station-opportunities-heading">Sei linee da validare, nessun business simulato.</h3>
+        </div>
+        <div class="cc-station-lanes" id="station-lane-grid"></div>
+      </section>
+      <footer class="cc-station-guardrail">
+        <span>NEXUS COORDINATION · APEX 17 specialisti catalogati</span>
+        <span>GUARDIAN RING · QUALITY / RISK / COST / SECURITY / BACKUP</span>
+        <strong>FABIO DECIDES · EXTERNAL EFFECTS LOCKED</strong>
+      </footer>
+    </section>
+
     <section class="cc-oracle-constellation" id="oracle-flow" data-primary-view="today" data-cinematic-scene="oracle" data-cinematic-label="ORACLE TRANSMISSION" data-cinematic-tone="violet" aria-labelledby="oracle-flow-heading">
       <header>
         <div><p class="cc-kicker">ORACLE · CONTROLLED TRANSFORMATION</p><h2 id="oracle-flow-heading">Da intenzione a pacchetto verificabile.</h2></div>
@@ -266,6 +330,15 @@ export const COMMAND_CENTER_HTML = `
 
     <section class="cc-section" id="social" data-primary-view="studio" data-studio-panel="social" data-cinematic-scene="social" data-cinematic-label="SOCIAL INTELLIGENCE" data-cinematic-tone="violet" role="tabpanel" aria-labelledby="studio-tab-social" hidden aria-hidden="true">
       <div class="cc-section-heading"><div><p class="cc-kicker">METODO VELOCE · SOCIAL INTELLIGENCE</p><h2 id="social-heading">Report operativo giornaliero</h2></div><span class="cc-section-note" id="social-daily-status">Nessun segnale inventato</span></div>
+      <section class="cc-trend-network" aria-labelledby="trend-network-heading">
+        <header class="cc-trend-network-head">
+          <div><p class="cc-panel-label">PREMIUM SIGNAL NETWORK</p><h3 id="trend-network-heading">Fonti, accesso e receipt</h3></div>
+          <p>Catalogo non significa connessione. Ogni sorgente espone separatamente policy, connector e stato dei dati.</p>
+        </header>
+        <div class="cc-trend-sources" id="trend-source-network">
+          <p class="cc-social-missing">Rete fonti in attesa dello snapshot locale.</p>
+        </div>
+      </section>
       <div class="cc-social-live" id="social-live-panel" aria-live="polite"></div>
       <div class="cc-social-summary" id="social-summary-grid" aria-live="polite"></div>
       <div class="cc-social-pack-list" id="social-pack-list" aria-live="polite"><div class="cc-list-empty">Nessun Social Publishing Pack durevole disponibile.</div></div>
@@ -672,7 +745,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
   function number(value) { return new Intl.NumberFormat("it-IT").format(value); }
   function prefersReducedMotion() { return Boolean(reducedMotionQuery.matches); }
   function timestamp(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Data locale non disponibile" : new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeStyle: "short" }).format(date); }
-  function statusLabel(value) { const labels = { ACTIVE: "ATTIVO", ATTENTION_REQUIRED: "ATTENZIONE RICHIESTA", AVAILABLE: "DISPONIBILE", AWAITING_DEPENDENCY: "IN ATTESA DI DIPENDENZA", AWAITING_FABIO: "IN ATTESA DI FABIO", BLOCKED: "BLOCCATO", COMPLETED: "COMPLETATO", DEGRADED: "DEGRADATO", DISABLED: "DISABILITATA", ENABLED: "ABILITATA", IMPLEMENTING: "IN IMPLEMENTAZIONE", LOCKED: "BLOCCATO", MEASURED: "MISURATO", MISSING: "NON REGISTRATO", NOT_AVAILABLE: "NON DISPONIBILE", NOT_OBSERVED: "NON OSSERVATO", NOT_REGISTERED: "NON REGISTRATO", PLANNED: "PIANIFICATO", QUEUED: "IN CODA", READY: "PRONTO", REVIEW_REQUIRED: "REVISIONE RICHIESTA", RUNNING: "IN ESECUZIONE", SETUP_REQUIRED: "CONFIGURAZIONE RICHIESTA", SPECIFIED: "SPECIFICATO", STALE: "SCADUTO", TRIGGERED: "ATTIVATO", UNAVAILABLE: "NON DISPONIBILE", VALIDATION_PLANNED: "VALIDAZIONE PIANIFICATA" }; return labels[value] || value.replaceAll("_", " "); }
+  function statusLabel(value) { const labels = { ACTIVE: "ATTIVO", ATTENTION_REQUIRED: "ATTENZIONE RICHIESTA", AVAILABLE: "DISPONIBILE", AWAITING_DEPENDENCY: "IN ATTESA DI DIPENDENZA", AWAITING_FABIO: "IN ATTESA DI FABIO", BLOCKED: "BLOCCATO", COMPLETED: "COMPLETATO", DEGRADED: "DEGRADATO", DISABLED: "DISABILITATA", DRAFT_ONLY: "SOLO BOZZA", ENABLED: "ABILITATA", IMPLEMENTING: "IN IMPLEMENTAZIONE", LOCKED: "BLOCCATO", MEASURED: "MISURATO", MISSING: "NON REGISTRATO", NOT_AVAILABLE: "NON DISPONIBILE", NOT_OBSERVED: "NON OSSERVATO", NOT_REGISTERED: "NON REGISTRATO", PLANNED: "PIANIFICATO", QUEUED: "IN CODA", READY: "PRONTO", REVIEW_REQUIRED: "REVISIONE RICHIESTA", RUNNING: "IN ESECUZIONE", SETUP_REQUIRED: "CONFIGURAZIONE RICHIESTA", SPECIFIED: "SPECIFICATO", STALE: "SCADUTO", TRIGGERED: "ATTIVATO", UNAVAILABLE: "NON DISPONIBILE", VALIDATION_PLANNED: "VALIDAZIONE PIANIFICATA", VALIDATION_REQUIRED: "VALIDAZIONE RICHIESTA" }; return labels[value] || value.replaceAll("_", " "); }
   function statusLane(status) { if (status === "PENDING_FABIO_APPROVAL") return "REVISIONE FABIO"; if (status === "APPROVED_FOR_SCHEDULING") return "APPROVATI"; if (status === "SCHEDULED") return "CALENDARIO"; if (status === "BLOCKED") return "BLOCCATI DAL RISCHIO"; return "ARCHIVIATI"; }
   function agentIdentity(agentId) { return AGENT_IDENTITIES[agentId] || { callSign: agentId.toLocaleUpperCase("it-IT"), glyph: "AI", squad: "BUILD", squadLabel: "Build Lab" }; }
 
@@ -826,6 +899,8 @@ export const COMMAND_CENTER_CLIENT_JS = `
     text("brief-priority", snapshot.overview.dailyBrief.priority);
     renderMetrics(snapshot.overview.metrics);
     renderDecisionInbox(snapshot.overview.decisionInbox || [], snapshot.overview.decisionInboxCoverage || "LIMIT_REACHED");
+    renderStation(snapshot.station || null);
+    renderTrendOperations(snapshot.trendOperations || null);
     renderVentureStudio(snapshot.venture || unavailableVentureView());
     renderDailyOperatingBrief(snapshot.dailyOperatingBriefs || []);
     renderPipeline(snapshot);
@@ -881,6 +956,174 @@ export const COMMAND_CENTER_CLIENT_JS = `
       );
       target.append(row);
     }
+  }
+
+  function renderStation(station) {
+    const roomTarget = byId("station-room-grid");
+    const laneTarget = byId("station-lane-grid");
+    if (!roomTarget || !laneTarget) return;
+    roomTarget.replaceChildren();
+    laneTarget.replaceChildren();
+    if (!station || !Array.isArray(station.rooms) || !Array.isArray(station.opportunityLanes)) {
+      text("station-coverage", "NON DISPONIBILE · SNAPSHOT NON CONFORME");
+      roomTarget.append(element("p", "cc-station-loading", "La proiezione Station non è disponibile. Nessuno stato operativo viene dedotto."));
+      laneTarget.append(element("p", "cc-station-loading", "Le opportunità restano non disponibili finché il contratto locale non è valido."));
+      return;
+    }
+    text("station-coverage", station.coverage === "LIMIT_REACHED"
+      ? "COPERTURA PARZIALE · VALORI COME LIMITE INFERIORE"
+      : station.coverage === "COMPLETE"
+        ? "FINESTRA LOCALE COMPLETA"
+        : "COPERTURA NON DISPONIBILE · NESSUNA DEDUZIONE");
+    for (const room of station.rooms) {
+      const link = element("a", "cc-station-room");
+      link.href = room.href;
+      link.dataset.stationRoom = room.roomId;
+      link.dataset.status = room.status;
+      link.dataset.tone = room.tone;
+      link.setAttribute("aria-label", room.title + " · " + statusLabel(room.status));
+      const identity = element("span", "cc-station-room-identity");
+      identity.append(element("small", "", room.index), element("b", "", room.callSign));
+      const copy = element("span", "cc-station-room-copy");
+      copy.append(element("strong", "", room.title), element("small", "", room.owners.join(" · ")));
+      const metric = element("span", "cc-station-room-metric");
+      metric.append(element("b", "", room.metric), element("small", "", room.detail));
+      const status = element("span", "cc-station-room-status", statusLabel(room.status));
+      status.dataset.status = room.status;
+      link.append(identity, copy, metric, status);
+      if (room.coverage === "LIMIT_REACHED") link.append(element("span", "cc-station-room-coverage", "COPERTURA PARZIALE"));
+      roomTarget.append(link);
+    }
+    for (const lane of station.opportunityLanes) {
+      const link = element("a", "cc-station-lane");
+      link.href = lane.href;
+      link.dataset.opportunityLane = lane.laneId;
+      link.dataset.status = lane.status;
+      link.append(
+        element("span", "", lane.index),
+        element("strong", "", lane.title),
+        element("p", "", lane.guardrail),
+        element("small", "", statusLabel(lane.status))
+      );
+      laneTarget.append(link);
+    }
+  }
+
+  function renderTrendOperations(view) {
+    const pipeline = byId("trend-operations-pipeline");
+    const cells = byId("trend-operations-cells");
+    const candidates = byId("trend-operations-candidates");
+    const sources = byId("trend-source-network");
+    if (!pipeline || !cells || !candidates || !sources) return;
+    pipeline.replaceChildren();
+    cells.replaceChildren();
+    candidates.replaceChildren();
+    sources.replaceChildren();
+    if (!view || !Array.isArray(view.pipeline) || !Array.isArray(view.cells) || !Array.isArray(view.candidates) || !Array.isArray(view.sources)) {
+      text("trend-operations-status", "");
+      const status = byId("trend-operations-status");
+      if (status) status.append(trendStatusDatum("SNAPSHOT", "NON DISPONIBILE"), trendStatusDatum("CAPABILITY", "NESSUNA DEDUZIONE"), trendStatusDatum("CONNECTOR", "NESSUNA DEDUZIONE"), trendStatusDatum("DATA", "NESSUNA DEDUZIONE"), trendStatusDatum("PUBLICATION", "LOCKED"));
+      pipeline.append(element("li", "cc-trend-empty", "La pipeline Trend Intelligence non è disponibile. Nessuna fonte o attività viene dedotta."));
+      cells.append(element("p", "cc-trend-empty", "Le capacità operatori restano non disponibili."));
+      candidates.append(element("p", "cc-trend-empty", "Nessun segnale viene simulato."));
+      sources.append(element("p", "cc-social-missing", "La rete fonti non è disponibile nello snapshot corrente."));
+      return;
+    }
+    const status = byId("trend-operations-status");
+    if (status) {
+      status.replaceChildren(
+        trendStatusDatum("POLICY", String(view.summary.authorizedPolicies) + " autorizzate"),
+        trendStatusDatum("CAPABILITY", String(view.summary.cataloguedCapabilities) + " catalogate"),
+        trendStatusDatum("CONNECTOR", String(view.summary.receiptBackedConnectors) + " receipt-backed"),
+        trendStatusDatum("DATA", statusLabel(view.summary.dataStatus)),
+        trendStatusDatum("PUBLICATION", statusLabel(view.publication))
+      );
+    }
+    for (const stage of view.pipeline) {
+      const item = element("li", "cc-trend-stage");
+      item.dataset.status = stage.state;
+      item.append(
+        element("span", "", stage.index),
+        element("strong", "", stage.title),
+        element("small", "", stage.owners.join(" · ")),
+        element("b", "", statusLabel(stage.state)),
+        element("p", "", stage.nextAction)
+      );
+      pipeline.append(item);
+    }
+    for (const cell of view.cells) {
+      const card = element("article", "cc-trend-cell");
+      card.dataset.status = cell.state;
+      card.append(
+        element("span", "cc-panel-label", cell.callSign + " · " + statusLabel(cell.state)),
+        element("strong", "", cell.title),
+        element("p", "", cell.operatorCallSigns.join(" · ")),
+        trendCellDatum("Capacità", String(cell.capabilityReady) + "/" + String(cell.operatorCount) + " ready"),
+        trendCellDatum("Lavoro osservato", cell.observedWorkCount === 0 ? "NESSUNO" : String(cell.observedWorkCount)),
+        element("small", "", cell.reasonCode + " · " + cell.nextAction)
+      );
+      cells.append(card);
+    }
+    if (view.candidates.length === 0) {
+      candidates.append(element("p", "cc-trend-empty", "Nessun segnale supera corroborazione, provenance e freshness. La review diritti resta un Gate separato; non viene creato un ranking sostitutivo."));
+    } else {
+      for (const candidate of view.candidates.slice(0, 3)) {
+        const card = element("article", "cc-trend-candidate");
+        card.dataset.status = candidate.status;
+        card.append(
+          element("span", "cc-panel-label", statusLabel(candidate.status)),
+          element("strong", "", candidate.title),
+          element("p", "", candidate.sourceFamilies.join(" · ")),
+          element("b", "", String(candidate.independentSourceCount) + " fonti indipendenti"),
+          element("small", "", candidate.reasonCode + " · ATTENTION SIGNAL — NOT VERIFIED DEMAND")
+        );
+        candidates.append(card);
+      }
+    }
+    for (const source of view.sources) {
+      const card = element("article", "cc-trend-source");
+      card.dataset.policy = source.policyStatus;
+      card.dataset.connector = source.connectorStatus;
+      card.dataset.data = source.dataStatus;
+      const states = element("div", "cc-trend-source-states");
+      states.append(
+        trendSourceState("Policy", source.policyStatus),
+        trendSourceState("Capability", source.capabilityStatus),
+        trendSourceState("Connector", source.connectorStatus),
+        trendSourceState("Data", source.dataStatus)
+      );
+      const receipt = source.latestReceipt
+        ? statusLabel(source.latestReceipt.status) + " · " + source.latestReceipt.receiptId + " · " + timestamp(source.latestReceipt.recordedAt)
+        : "Nessuna receipt osservata";
+      card.append(
+        element("span", "cc-panel-label", source.tier + " · " + source.accessLevel),
+        element("strong", "", source.name),
+        element("p", "", source.capabilities.join(" · ")),
+        states,
+        element("small", "", receipt),
+        element("small", "cc-trend-source-limit", source.limitation)
+      );
+      sources.append(card);
+    }
+  }
+
+  function trendStatusDatum(label, value) {
+    const item = element("span");
+    item.append(element("small", "", label), element("strong", "", value));
+    return item;
+  }
+
+  function trendCellDatum(label, value) {
+    const item = element("span", "cc-trend-cell-datum");
+    item.append(element("small", "", label), element("b", "", value));
+    return item;
+  }
+
+  function trendSourceState(label, value) {
+    const item = element("span");
+    item.dataset.status = value;
+    item.append(element("small", "", label), element("b", "", statusLabel(value)));
+    return item;
   }
 
   function unavailableVentureView() {
@@ -2590,7 +2833,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
 
   function navigate(query) {
     const normalized = query.toLocaleLowerCase("it-IT");
-    const mapping = [["fingerprint", "vault"], ["riferiment", "vault"], ["creativ", "vault"], ["prefer", "vault"], ["vault", "vault"], ["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["social", "social"], ["portfolio", "venture"], ["venture", "venture"], ["opportun", "venture"], ["capital", "venture"], ["esperiment", "venture"], ["revenue", "business"], ["ricav", "business"], ["vendit", "business"], ["funnel", "business"], ["lead", "business"], ["prezz", "business"], ["margine", "business"], ["business", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["claim", "evidence"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
+    const mapping = [["stazion", "station"], ["camera", "station"], ["operating space", "station"], ["fingerprint", "vault"], ["riferiment", "vault"], ["creativ", "vault"], ["prefer", "vault"], ["archiv", "vault"], ["vault", "vault"], ["trend", "social"], ["hashtag", "social"], ["audio", "social"], ["comunicaz", "social"], ["social", "social"], ["portfolio", "venture"], ["venture", "venture"], ["opportun", "venture"], ["capital", "venture"], ["tesorer", "business"], ["esperiment", "venture"], ["revenue", "business"], ["ricav", "business"], ["vendit", "business"], ["funnel", "business"], ["lead", "business"], ["prezz", "business"], ["margine", "business"], ["business", "business"], ["econom", "business"], ["offert", "business"], ["validaz", "business"], ["approv", "approvals"], ["launch control", "approvals"], ["evid", "evidence"], ["fonte", "evidence"], ["research", "evidence"], ["claim", "evidence"], ["war room", "system"], ["runtime", "runtime"], ["queue", "runtime"], ["agent", "agents"], ["fabbric", "production"], ["produz", "production"], ["conten", "production"], ["pacchet", "production"]];
     const found = mapping.find(([keyword]) => normalized.includes(keyword));
     if (!found) { commandResult.textContent = "Prova con ricavi, offerta, funnel, evidenze, produzione, squadra o sistema."; return; }
     const nextHash = "#" + found[1];
@@ -2611,6 +2854,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
       production: ["studio", "production"],
       runtime: ["system", "production"],
       social: ["studio", "social"],
+      station: ["today", "production"],
       studio: ["studio", root.dataset.activeStudio || "production"],
       system: ["system", "production"],
       team: ["team", "production"],
@@ -2626,7 +2870,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     root.dataset.activeView = route[0];
     root.dataset.activeStudio = route[1];
     root.dataset.section = section;
-    const isolatedTodayPanel = section === "approvals" || section === "overview" ? section : null;
+    const isolatedTodayPanel = section === "approvals" || section === "overview" || section === "station" ? section : null;
     root.querySelectorAll(".cc-main > [data-primary-view]").forEach((panel) => {
       const visible = panel.dataset.primaryView === route[0] && (isolatedTodayPanel === null || panel.id === isolatedTodayPanel);
       panel.hidden = !visible;
@@ -2657,9 +2901,9 @@ export const COMMAND_CENTER_CLIENT_JS = `
     const studioCopy = { business: "Revenue", evidence: "Evidenze", production: "Produzione", social: "Social", vault: "Intelligence", venture: "Venture" };
     const heading = root.querySelector(".cc-command-title h1");
     const subtitle = root.querySelector(".cc-topbar-subtitle");
-    if (heading) heading.textContent = viewCopy[route[0]][0];
-    if (subtitle) subtitle.textContent = viewCopy[route[0]][1];
-    if (activeContextLabel) activeContextLabel.textContent = section === "approvals" ? "Oggi / Approvazioni" : route[0] === "studio" ? "Studio / " + (studioCopy[route[1]] || "Produzione") : viewCopy[route[0]][0].replace("Buongiorno, Fabio.", "Oggi").replace("Squadra Apex", "Squadra");
+    if (heading) heading.textContent = section === "station" ? "Onlyway Station" : viewCopy[route[0]][0];
+    if (subtitle) subtitle.textContent = section === "station" ? "Nove spazi operativi collegati a dati reali, Gate e decisioni." : viewCopy[route[0]][1];
+    if (activeContextLabel) activeContextLabel.textContent = section === "station" ? "Oggi / Station" : section === "approvals" ? "Oggi / Approvazioni" : route[0] === "studio" ? "Studio / " + (studioCopy[route[1]] || "Produzione") : viewCopy[route[0]][0].replace("Buongiorno, Fabio.", "Oggi").replace("Squadra Apex", "Squadra");
     if (previousView !== route[0] || previousStudio !== route[1] || previousSection !== section) {
       const main = root.querySelector(".cc-main");
       const resetRouteScroll = () => {

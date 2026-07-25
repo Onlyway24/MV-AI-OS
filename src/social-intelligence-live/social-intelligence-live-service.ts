@@ -188,7 +188,12 @@ export function buildDailySocialOperationsReport(records: readonly SocialLiveRec
       ...(officialSourcesRegistered < INITIAL_SOCIAL_SOURCE_BLUEPRINTS.length ? ["FONTI_SOCIAL_UFFICIALI_NON_REGISTRATE"] : []),
     ];
     return deepFreeze({
-      acquisitionReadiness: officialSourcesRegistered === 0 ? "NOT_CONFIGURED" as const : officialSourcesRegistered === INITIAL_SOCIAL_SOURCE_BLUEPRINTS.length ? "READY" as const : "PARTIAL" as const,
+      // This legacy projection has Source Registry IDs and durable imports, but
+      // no connector-receipt input. It therefore cannot prove an active/fresh
+      // acquisition path: registration or imported rows may reach PARTIAL only.
+      acquisitionReadiness: officialSourcesRegistered === 0
+        ? "NOT_CONFIGURED" as const
+        : "PARTIAL" as const,
       audioAuthorized,
       audioNotAuthorized: audio.filter((record) => !record.available || record.commercialUse !== "ALLOWED" || record.accountCompatibility !== "AVAILABLE" || Date.parse(record.expiresAt) <= now).length,
       baseline,

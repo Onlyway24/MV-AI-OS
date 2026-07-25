@@ -16,6 +16,7 @@ describe("Onlyway Cinematic Operating Experience", () => {
 
     expect(scenes).toEqual(expect.arrayContaining([
       "oracle",
+      "station",
       "command",
       "revenue",
       "revenue-journey",
