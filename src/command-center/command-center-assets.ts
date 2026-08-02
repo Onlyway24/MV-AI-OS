@@ -726,7 +726,7 @@ export const COMMAND_CENTER_CLIENT_JS = `
     "backup-guardian": { callSign: "VAULT", glyph: "BV", squad: "GUARDIANS", squadLabel: "Guardians" },
     "publisher-agent": { callSign: "LAUNCH", glyph: "LA", squad: "GROWTH", squadLabel: "Growth" },
   });
-  const state = { agentFilter: "ALL", ambientCleanup: null, confirmationInFlight: false, confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastAuxiliaryRefreshAt: 0, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mediaFactory: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedReferenceId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, snapshot: null, vaultFilter: "ALL", ventureTool: "radar", visualReview: null, visualSlideIndex: 0 };
+  const state = { adminAuthentication: null, agentFilter: "ALL", ambientCleanup: null, confirmationInFlight: false, confirmationInertedNodes: [], confirmationInterval: null, csrfToken: null, eventSource: null, lastAuxiliaryRefreshAt: 0, lastEventSequence: 0, liveFallbackInterval: null, liveRefreshTimer: null, mediaFactory: null, mobileReturnFocus: null, pendingConfirmation: null, refreshInFlight: null, refreshQueued: false, returnFocus: null, selectedAgentId: null, selectedBusinessMissionId: null, selectedProductionId: null, selectedReferenceId: null, selectedWorkdayId: null, sidebarState: "expanded", slideIndex: 0, snapshot: null, vaultFilter: "ALL", ventureTool: "radar", visualReview: null, visualSlideIndex: 0 };
 
   function byId(id) { return document.getElementById(id); }
   function text(id, value) { const element = byId(id); if (element) element.textContent = value; }
@@ -1811,13 +1811,92 @@ export const COMMAND_CENTER_CLIENT_JS = `
     if (!response.ok) throw new Error("Sessione locale non disponibile.");
     const session = await response.json();
     if (!session || typeof session.csrfToken !== "string") throw new Error("Token di protezione della sessione non disponibile.");
+    state.adminAuthentication = session.authentication === "PASSKEY" ? "PASSKEY" : "LEGACY_LOCAL";
     state.csrfToken = session.csrfToken; return state.csrfToken;
   }
 
   async function actionPost(path, payload) {
-    const response = await fetch(path, { body: JSON.stringify(payload), cache: "no-store", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-Onlyway-Csrf": await csrfToken() }, method: "POST" });
+    const csrf = await csrfToken();
+    const stepUpReceipt = state.adminAuthentication === "PASSKEY" && path.endsWith("/confirm")
+      ? await passkeyStepUp(path, payload, csrf)
+      : null;
+    const response = await fetch(path, { body: JSON.stringify(payload), cache: "no-store", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-Onlyway-Csrf": csrf, ...(stepUpReceipt === null ? {} : { "X-Onlyway-Step-Up": stepUpReceipt }) }, method: "POST" });
     if (!response.ok) throw new Error(await response.text() || "Azione non eseguita.");
     return response.json();
+  }
+
+  function base64UrlToBytes(value) {
+    const padding = "=".repeat((4 - value.length % 4) % 4);
+    const binary = atob(value.replaceAll("-", "+").replaceAll("_", "/") + padding);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  }
+
+  function bytesToBase64Url(value) {
+    const bytes = new Uint8Array(value);
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+  }
+
+  function passkeyRequestOptions(options) {
+    return {
+      ...options,
+      allowCredentials: (options.allowCredentials || []).map((credential) => ({
+        ...credential,
+        id: base64UrlToBytes(credential.id),
+      })),
+      challenge: base64UrlToBytes(options.challenge),
+    };
+  }
+
+  function passkeyAuthenticationResponse(credential) {
+    const response = credential.response;
+    return {
+      authenticatorAttachment: credential.authenticatorAttachment,
+      clientExtensionResults: credential.getClientExtensionResults(),
+      id: credential.id,
+      rawId: bytesToBase64Url(credential.rawId),
+      response: {
+        authenticatorData: bytesToBase64Url(response.authenticatorData),
+        clientDataJSON: bytesToBase64Url(response.clientDataJSON),
+        signature: bytesToBase64Url(response.signature),
+        userHandle: response.userHandle === null ? undefined : bytesToBase64Url(response.userHandle),
+      },
+      type: credential.type,
+    };
+  }
+
+  async function adminSecurityPost(path, payload, csrf) {
+    const response = await fetch(path, {
+      body: JSON.stringify(payload),
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", "X-Onlyway-Csrf": csrf },
+      method: "POST",
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const code = body && typeof body.reasonCode === "string" ? body.reasonCode : "STEP_UP_DENIED";
+      throw new Error("Verifica passkey non completata (" + code + ").");
+    }
+    return body;
+  }
+
+  async function passkeyStepUp(path, payload, csrf) {
+    if (!window.isSecureContext || typeof PublicKeyCredential !== "function") {
+      throw new Error("La conferma richiede WebAuthn in un contesto browser sicuro.");
+    }
+    const start = await adminSecurityPost("/api/admin/step-up/begin", { path, payload }, csrf);
+    const credential = await navigator.credentials.get({
+      publicKey: passkeyRequestOptions(start.options),
+    });
+    if (!(credential instanceof PublicKeyCredential)) throw new Error("La passkey non ha restituito una credenziale valida.");
+    const receipt = await adminSecurityPost("/api/admin/step-up/finish", {
+      flowId: start.flowId,
+      response: passkeyAuthenticationResponse(credential),
+    }, csrf);
+    if (!receipt || typeof receipt.receiptToken !== "string") throw new Error("Receipt di step-up non disponibile.");
+    return receipt.receiptToken;
   }
 
   function oraclePromptInput() {

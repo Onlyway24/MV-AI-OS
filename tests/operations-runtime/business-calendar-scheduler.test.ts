@@ -14,6 +14,7 @@ import {
   ONLYWAY_BUSINESS_TIME_ZONE,
 } from "../../src/contracts/business-calendar.js";
 import { createDefaultOperationsScheduleCatalog } from "../../src/operations-runtime/operations-schedule-catalog.js";
+import { OperationsRuntimeControlService } from "../../src/operations-runtime/operations-runtime-control-service.js";
 import type { OperationsJobPayload, OperationsJobType } from "../../src/operations-runtime/operations-runtime.js";
 import { createOperationsSchedule, OperationsSchedulerService } from "../../src/operations-runtime/operations-scheduler-service.js";
 import { OperationsScheduleValidator } from "../../src/operations-runtime/operations-runtime-validator.js";
@@ -120,7 +121,19 @@ describe("calendar-aware Operations scheduler", () => {
 
 async function fixture(): Promise<{ readonly repositories: SqliteRepositoryTransactionRunner; readonly root: string }> {
   const root = await mkdtemp(join(tmpdir(), "mv-ai-os-calendar-"));
-  return { repositories: new SqliteRepositoryTransactionRunner({ path: join(root, "runtime.sqlite"), timeoutMs: 1_000 }), root };
+  const repositories = new SqliteRepositoryTransactionRunner({ path: join(root, "runtime.sqlite"), timeoutMs: 1_000 });
+  await new OperationsRuntimeControlService({
+    clock: { now: () => new Date("2026-01-01T00:00:00.000Z") },
+    repositories,
+    workspaceId: "workspace",
+  }).update({
+    expectedVersion: 0,
+    killSwitch: "RELEASED",
+    maintenanceMode: "DISABLED",
+    reasonCode: "TEST_RUNTIME_RELEASE",
+    updatedBy: "fabio",
+  });
+  return { repositories, root };
 }
 
 function scheduler(repositories: SqliteRepositoryTransactionRunner, clock: MutableClock, instanceId: string): OperationsSchedulerService {

@@ -154,9 +154,13 @@ class LocalOperationalInspectionHandler implements OperationsJobHandler {
 class BackupVerificationHandler implements OperationsJobHandler {
   public constructor(private readonly verify: ((backupPolicyId: string, signal: AbortSignal) => Promise<Readonly<{ readonly receiptRef: string }>>) | undefined) {}
   public async execute(job: OperationsJob, context: OperationsJobHandlerContext): Promise<OperationsExecutionResult> {
-    if (this.verify === undefined) throw new RepositoryValidationError("Backup and restore verification boundary is not configured");
+    context.signal.throwIfAborted();
+    if (this.verify === undefined) {
+      return blockedResult("BACKUP_RESTORE_RECEIPT_REQUIRED");
+    }
     await context.assertCanStartExternalAction();
     const receipt = await this.verify((job.payload as { readonly backupPolicyId: string }).backupPolicyId, context.signal);
+    context.signal.throwIfAborted();
     assertResultRef(receipt.receiptRef);
     return Object.freeze({ costCents: 0, externalEffectsExecuted: false, providerCalls: 0, resultRef: receipt.receiptRef, toolCalls: 0 });
   }

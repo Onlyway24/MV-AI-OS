@@ -1,0 +1,28 @@
+[Unit]
+Description=Onlyway MV-AI-OS private production stack
+Documentation=file:/srv/onlyway/current/docs/production/VPS_OPERATIONS.md
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+AssertPathExists=/srv/onlyway/current/compose.production.yml
+AssertPathExists=/srv/onlyway/config/runtime.json
+AssertPathExists=/srv/onlyway/config/compose.env
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/srv/onlyway/current
+Environment=COMPOSE_PROJECT_NAME=onlyway
+EnvironmentFile=/srv/onlyway/config/compose.env
+ExecStartPre=/srv/onlyway/current/scripts/production/release-preflight.sh --expected-commit ${ONLYWAY_RELEASE_COMMIT}
+ExecStartPre=/usr/bin/docker compose --project-directory /srv/onlyway/current --file /srv/onlyway/current/compose.production.yml config --quiet
+ExecStart=/usr/bin/docker compose --project-directory /srv/onlyway/current --file /srv/onlyway/current/compose.production.yml up --detach --remove-orphans
+ExecStartPost=/srv/onlyway/current/scripts/production/readiness.sh --expected-commit ${ONLYWAY_RELEASE_COMMIT} --expected-kind STARTUP --attempts 24 --interval 5
+ExecReload=/usr/bin/docker compose --project-directory /srv/onlyway/current --file /srv/onlyway/current/compose.production.yml up --detach --remove-orphans
+ExecStop=/usr/bin/docker compose --project-directory /srv/onlyway/current --file /srv/onlyway/current/compose.production.yml stop --timeout 45
+ExecStopPost=/usr/bin/docker compose --project-directory /srv/onlyway/current --file /srv/onlyway/current/compose.production.yml down --remove-orphans --timeout 45
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

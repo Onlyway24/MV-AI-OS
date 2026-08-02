@@ -117,7 +117,7 @@ export class OperationsRuntimeControlService {
 }
 
 function defaultControl(workspaceId: string, updatedAt: string): OperationsRuntimeControl {
-  return Object.freeze({ contractVersion: "1", killSwitch: "RELEASED", maintenanceMode: "DISABLED", reasonCode: "INITIAL_STATE", updatedAt, updatedBy: "system", version: 0, workspaceId });
+  return Object.freeze({ contractVersion: "1", killSwitch: "ACTIVE", maintenanceMode: "ENABLED", reasonCode: "CONTROL_STATE_REQUIRED", updatedAt, updatedBy: "system", version: 0, workspaceId });
 }
 
 function healthEntityId(status: OperationsRuntimeHealthReport["status"]): string {

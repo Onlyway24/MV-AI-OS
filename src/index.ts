@@ -1653,6 +1653,35 @@ export {
   createLocalRuntime,
   type LocalRuntimeOverrides,
 } from "./runtime/create-local-runtime.js";
+export {
+  DEFAULT_PRODUCTION_PROVIDER_MODE,
+  LIVE_PAID_ACTIVATION_CONTRACT_VERSION,
+  LIVE_PAID_ACTIVATION_SCOPE,
+  PRODUCTION_PROVIDER_MODES,
+  evaluateProviderModePolicy,
+  isLoopbackProviderBaseUrl,
+  isProductionProviderMode,
+  resolveProductionProviderMode,
+  type LivePaidActivation,
+  type ProductionProviderMode,
+  type ProviderModeEvaluation,
+  type ProviderPolicyReasonCode,
+} from "./production/provider-mode.js";
+export {
+  ProductionDiagnosticsService,
+  type ProductionDiagnosticCheck,
+  type ProductionDiagnosticReport,
+  type ProductionDiagnostics,
+} from "./production/production-diagnostics.js";
+export {
+  DeterministicOfflineProviderSuite,
+  type OfflineProviderReceipt,
+} from "./production/deterministic-offline-provider-suite.js";
+export {
+  runOfflineProductionRehearsal,
+  type OfflineProductionRehearsalConfig,
+  type OfflineProductionRehearsalReceipt,
+} from "./production/offline-production-rehearsal.js";
 export type { LocalRuntime } from "./runtime/local-runtime.js";
 export { createLocalWorkflowCommandBoundary } from "./runtime/create-local-workflow-command-boundary.js";
 export type {
@@ -2278,3 +2307,6 @@ export * from "./command-center/command-center-venture-view.js";
 export * from "./command-center/onlyway-station-view.js";
 export * from "./command-center/repository-backed-venture-query.js";
 export * from "./telegram/telegram-venture-brief-console.js";
+export * from "./admin-security/index.js";
+export * from "./cost-control/production-cost-control.js";
+export * from "./production/production-safety-state.js";

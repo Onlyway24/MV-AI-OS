@@ -439,6 +439,8 @@ class InstrumentedHandlerRegistry implements OperationsJobHandlerRegistry {
   public resolve(jobType: OperationsJobType): OperationsJobHandler {
     const handler = jobType === "SECURITY_POSTURE_CHECK"
       ? malformedLocalHandler()
+      : jobType === "BACKUP_AND_RESTORE_VERIFICATION"
+        ? retryableFailureHandler()
       : this.delegate.resolve(jobType);
     return {
       execute: async (job: OperationsJob, context: OperationsJobHandlerContext) => {
@@ -636,6 +638,13 @@ function malformedLocalHandler(): OperationsJobHandler {
       providerCalls: 0,
       toolCalls: 0,
     } as unknown as OperationsExecutionResult),
+  };
+}
+
+function retryableFailureHandler(): OperationsJobHandler {
+  return {
+    execute: (): Promise<OperationsExecutionResult> =>
+      Promise.reject(new Error("Synthetic retryable acceptance failure")),
   };
 }
 

@@ -155,7 +155,7 @@ export class OperationsWorkerService {
     const now = this.input.clock.now().toISOString();
     return this.input.repositories.transaction(async ({ operationalEvents, operationsRuntime }) => {
       const control = await operationsRuntime.getControl(this.input.workspaceId);
-      if (control?.killSwitch === "ACTIVE" || control?.maintenanceMode === "ENABLED") return undefined;
+      if (control === undefined || control.killSwitch === "ACTIVE" || control.maintenanceMode === "ENABLED") return undefined;
       const durableLease = await operationsRuntime.getProcessLease(this.input.workspaceId, this.#leaseKey());
       if (!sameProcessLease(durableLease, processLease) || Date.parse(durableLease.expiresAt) <= Date.parse(now)) return undefined;
       const claimed = await operationsRuntime.claimNextDue({ fencingToken: processLease.fencingToken, leaseId: `lease-${randomUUID()}`, now, workerId: this.input.workerId, workspaceId: this.input.workspaceId });
@@ -229,7 +229,7 @@ export class OperationsWorkerService {
     const now = this.input.clock.now().toISOString();
     await this.input.repositories.transaction(async ({ operationalEvents, operationsRuntime }) => {
       const control = await operationsRuntime.getControl(this.input.workspaceId);
-      if (control?.killSwitch === "ACTIVE") throw new OperationsExecutionAbort("CANCELLED");
+      if (control === undefined || control.killSwitch === "ACTIVE") throw new OperationsExecutionAbort("CANCELLED");
       const durableProcess = await operationsRuntime.getProcessLease(this.input.workspaceId, this.#leaseKey());
       if (!sameProcessLease(durableProcess, processLease)) throw new OperationsExecutionAbort("CANCELLED");
       const renewedProcess: OperationsProcessLease = Object.freeze({ ...durableProcess, expiresAt: new Date(Date.parse(now) + this.#workerLeaseMs).toISOString(), heartbeatAt: now, version: durableProcess.version + 1 });
@@ -251,7 +251,7 @@ export class OperationsWorkerService {
       const control = await operationsRuntime.getControl(this.input.workspaceId);
       const durableProcess = await operationsRuntime.getProcessLease(this.input.workspaceId, this.#leaseKey());
       const current = await operationsRuntime.getJobById(claimed.jobId);
-      if (control?.killSwitch === "ACTIVE" || control?.maintenanceMode === "ENABLED" || !sameProcessLease(durableProcess, processLease) || Date.parse(durableProcess.expiresAt) <= Date.parse(now) || !sameClaim(current, claimed, processLease) || current.cancellationRequestedAt !== undefined || Date.parse(current.lease.expiresAt) <= Date.parse(now)) throw new OperationsExecutionAbort("CANCELLED");
+      if (control === undefined || control.killSwitch === "ACTIVE" || control.maintenanceMode === "ENABLED" || !sameProcessLease(durableProcess, processLease) || Date.parse(durableProcess.expiresAt) <= Date.parse(now) || !sameClaim(current, claimed, processLease) || current.cancellationRequestedAt !== undefined || Date.parse(current.lease.expiresAt) <= Date.parse(now)) throw new OperationsExecutionAbort("CANCELLED");
     });
     this.#assertExecutionOpen();
   }
@@ -305,7 +305,7 @@ export class OperationsWorkerService {
   async #isStopped(): Promise<boolean> {
     return this.input.repositories.transaction(async ({ operationsRuntime }) => {
       const control = await operationsRuntime.getControl(this.input.workspaceId);
-      return control?.killSwitch === "ACTIVE" || control?.maintenanceMode === "ENABLED";
+      return control === undefined || control.killSwitch === "ACTIVE" || control.maintenanceMode === "ENABLED";
     });
   }
 

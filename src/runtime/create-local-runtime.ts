@@ -79,6 +79,7 @@ import {
 import { createLocalWorkflowCommandBoundary } from "./create-local-workflow-command-boundary.js";
 import { ReferenceVaultQueryAgent } from "../reference-vault/reference-vault-query-agent.js";
 import { ReferenceVaultCommandBoundary } from "../reference-vault/reference-vault-command-boundary.js";
+import { evaluateProviderModePolicy } from "../production/provider-mode.js";
 
 export interface LocalRuntimeOverrides {
   readonly clock?: Clock;
@@ -100,6 +101,7 @@ export async function createLocalRuntime(
   }
   const config = freezeConfig(validation.value);
   const clock = overrides.clock ?? new SystemClock();
+  assertProviderModePolicy(config, clock, overrides);
   const identifiers =
     overrides.identifiers ?? new RandomIdentifierGenerator();
   const logger = overrides.logger ?? new NoopLogger();
@@ -213,6 +215,46 @@ export async function createLocalRuntime(
     await closeResources(openedResources);
     throw error;
   }
+}
+
+function assertProviderModePolicy(
+  config: LocalRuntimeConfig,
+  clock: Clock,
+  overrides: LocalRuntimeOverrides,
+): void {
+  const evaluation = evaluateProviderModePolicy({
+    contentAgentMode: config.contentAgentMode,
+    ...(config.livePaidActivation === undefined
+      ? {}
+      : { livePaidActivation: config.livePaidActivation }),
+    ...(config.modelBudget === undefined
+      ? {}
+      : { modelBudget: config.modelBudget }),
+    ...(config.modelOperationLimits === undefined
+      ? {}
+      : { modelOperationLimits: config.modelOperationLimits }),
+    ...(config.modelProvider === undefined
+      ? {}
+      : { modelProvider: config.modelProvider }),
+    now: clock.now(),
+    ...(config.providerMode === undefined
+      ? {}
+      : { providerMode: config.providerMode }),
+    trustedOfflineTransportInstalled:
+      overrides.openAIResponsesTransport !== undefined,
+    workspaceId: config.workspaceId,
+  });
+  if (evaluation.ready) return;
+  throw new LocalRuntimeConfigurationError(
+    evaluation.reasonCodes.map((reasonCode) => ({
+      code: "provider_mode_blocked",
+      message: `provider mode policy blocked runtime activation: ${reasonCode}`,
+      path:
+        reasonCode.startsWith("LIVE_ACTIVATION")
+          ? "livePaidActivation"
+          : "providerMode",
+    })),
+  );
 }
 
 async function createContentAgent(
@@ -459,6 +501,13 @@ function freezeConfig(config: LocalRuntimeConfig): LocalRuntimeConfig {
     ...(config.modelProvider === undefined
       ? {}
       : { modelProvider: Object.freeze({ ...config.modelProvider }) }),
+    ...(config.livePaidActivation === undefined
+      ? {}
+      : {
+          livePaidActivation: Object.freeze({
+            ...config.livePaidActivation,
+          }),
+        }),
     ...(config.referenceVaultApprovalAuthority === undefined
       ? {}
       : {

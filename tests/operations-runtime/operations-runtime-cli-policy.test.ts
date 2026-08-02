@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  operationsBackupDiskSpaceBudget,
   operationsLoopDelayMs,
   runOperationsWorkerLoop,
   shouldWriteOperationsLoopStatus,
@@ -11,9 +12,45 @@ import type { OperationsWorkerService } from "../../src/operations-runtime/opera
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe("Operations Runtime CLI loop policy", () => {
+  it("budgets three database copies, two admin-state copies, and the fixed reserve", () => {
+    const reserveBytes = 512 * 1024 * 1024;
+    expect(operationsBackupDiskSpaceBudget({
+      adminSecurityStateBytes: 10,
+      availableBytes: reserveBytes + 320,
+      databaseBytes: 100,
+    })).toEqual({
+      availableBytes: reserveBytes + 320,
+      requiredBytes: reserveBytes + 320,
+      sufficient: true,
+    });
+    expect(operationsBackupDiskSpaceBudget({
+      adminSecurityStateBytes: 10,
+      availableBytes: reserveBytes + 319,
+      databaseBytes: 100,
+    })).toMatchObject({
+      requiredBytes: reserveBytes + 320,
+      sufficient: false,
+    });
+  });
+
+  it("fails closed on an undersized reserve or unsafe arithmetic", () => {
+    expect(() => operationsBackupDiskSpaceBudget({
+      adminSecurityStateBytes: 1,
+      availableBytes: 1,
+      databaseBytes: 1,
+      reserveBytes: 512 * 1024 * 1024 - 1,
+    })).toThrow("below the production floor");
+    expect(() => operationsBackupDiskSpaceBudget({
+      adminSecurityStateBytes: 1,
+      availableBytes: Number.MAX_SAFE_INTEGER,
+      databaseBytes: Number.MAX_SAFE_INTEGER,
+    })).toThrow("exceeds the safe range");
+  });
+
   it("uses slow timers for STOPPED and LEASE_HELD without suppressing productive work", () => {
     expect(operationsLoopDelayMs("worker", "STOPPED")).toBe(30_000);
     expect(operationsLoopDelayMs("scheduler", "LEASE_HELD")).toBe(30_000);
+    expect(operationsLoopDelayMs("scheduler", "BACKPRESSURE")).toBe(30_000);
     expect(operationsLoopDelayMs("scheduler", "STOPPED")).toBe(30_000);
     expect(operationsLoopDelayMs("scheduler", "IDLE")).toBe(5_000);
     expect(operationsLoopDelayMs("worker", "IDLE")).toBe(2_000);
@@ -26,6 +63,8 @@ describe("Operations Runtime CLI loop policy", () => {
     expect(shouldWriteOperationsLoopStatus("IDLE", "STOPPED")).toBe(true);
     expect(shouldWriteOperationsLoopStatus(undefined, "LEASE_HELD")).toBe(true);
     expect(shouldWriteOperationsLoopStatus("LEASE_HELD", "LEASE_HELD")).toBe(false);
+    expect(shouldWriteOperationsLoopStatus(undefined, "BACKPRESSURE")).toBe(true);
+    expect(shouldWriteOperationsLoopStatus("BACKPRESSURE", "BACKPRESSURE")).toBe(false);
     expect(shouldWriteOperationsLoopStatus("SCHEDULED", "SCHEDULED")).toBe(true);
     expect(shouldWriteOperationsLoopStatus("COMPLETED", "IDLE")).toBe(false);
   });

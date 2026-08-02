@@ -158,7 +158,10 @@ describe("Onlyway Station frontend contract", () => {
     expect(station).not.toMatch(/https?:\/\//u);
     expect(station).not.toMatch(/<script\b/iu);
     expect(stationRules).not.toMatch(/https?:\/\/|@import/u);
-    expect(Object.keys(packageJson.dependencies ?? {}).sort()).toEqual(["motion"]);
+    expect(Object.keys(packageJson.dependencies ?? {}).sort()).toEqual([
+      "@simplewebauthn/server",
+      "motion",
+    ]);
   });
 });
 

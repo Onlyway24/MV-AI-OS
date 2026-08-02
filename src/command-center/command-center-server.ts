@@ -8,6 +8,26 @@ import {
 } from "node:http";
 import { fileURLToPath } from "node:url";
 import {
+  AdminSecurityError,
+  type AdminCapability,
+} from "../admin-security/admin-security-contracts.js";
+import {
+  killSwitchCommand,
+  type AdminSecurityService,
+  type AuthenticatedAdminSession,
+} from "../admin-security/admin-security-service.js";
+import type {
+  AuthenticationResponseJSON,
+  RegistrationResponseJSON,
+} from "../admin-security/admin-webauthn.js";
+import { canonicalSha256 } from "../contracts/canonical-fingerprint.js";
+import type { OperationsRuntimeControlService } from "../operations-runtime/operations-runtime-control-service.js";
+import {
+  COMMAND_CENTER_ADMIN_AUTH_CSS,
+  COMMAND_CENTER_ADMIN_AUTH_HTML,
+  COMMAND_CENTER_ADMIN_AUTH_JS,
+} from "./command-center-admin-auth-assets.js";
+import {
   COMMAND_CENTER_CLIENT_JS,
   COMMAND_CENTER_CSS,
   COMMAND_CENTER_HTML,
@@ -31,6 +51,9 @@ import type {
   CommandCenterEventPlaneOptions,
   CommandCenterEventSource,
 } from "./command-center-event-source.js";
+import type {
+  ProductionDiagnostics,
+} from "../production/production-diagnostics.js";
 
 const LOCAL_HOST = "127.0.0.1";
 const SESSION_COOKIE_NAME = "mv_ai_os_cc";
@@ -40,6 +63,13 @@ const DEFAULT_EVENT_MAX_REPLAY = 500;
 const DEFAULT_EVENT_POLL_INTERVAL_MS = 750;
 const EVENT_BATCH_SIZE = 100;
 const MAX_EVENT_STREAM_BUFFER_BYTES = 262_144;
+const RUNTIME_KILL_SWITCH_ID = "operations-runtime";
+const ADMIN_CONFIRMATION_PATHS = Object.freeze([
+  "/api/actions/confirm",
+  "/api/control-actions/confirm",
+  "/api/prompt-missions/confirm",
+] as const);
+type AdminConfirmationPath = (typeof ADMIN_CONFIRMATION_PATHS)[number];
 const ORIGINAL_BRAND_ASSET_PATH = fileURLToPath(new URL("../../assets/brand/onlyway-obsidian-chrome-original.png", import.meta.url));
 const REVENUE_INPUT_TEMPLATE_PATH = fileURLToPath(new URL("../../assets/revenue-os/revenue-mission-input.template.json", import.meta.url));
 const SOCIAL_VISUAL_PACK_ROOT = fileURLToPath(new URL("../../assets/metodo-veloce/social-pack-five-items-v3/", import.meta.url));
@@ -62,11 +92,40 @@ const MOTION_BROWSER_ADAPTER_PATHS = Object.freeze([
 export interface CommandCenterServerOptions {
   readonly accessToken?: string;
   readonly actionService?: CommandCenterActionService;
+  readonly adminSecurity?: CommandCenterAdminSecurityOptions;
+  readonly diagnostics?: ProductionDiagnostics;
   readonly eventPlane?: CommandCenterEventPlaneOptions;
+  readonly externalOrigin?: string;
+  /** The private server remains loopback-only; this option is validated. */
+  readonly host?: string;
   readonly oracleCreativePromptService?: Pick<OracleCreativePromptService, "confirmForOperator" | "proposeForOperator">;
   readonly operationsControlService?: Pick<OperationsControlService, "confirmForOperator" | "proposeForOperator">;
+  readonly operationsRuntimeControlService?: Pick<OperationsRuntimeControlService, "get" | "update">;
   readonly port?: number;
   readonly queryService: Pick<CommandCenterQueryService, "snapshot">;
+}
+
+export type CommandCenterAdminSecurityBoundary = Pick<
+  AdminSecurityService,
+  | "authenticateSession"
+  | "beginAuthentication"
+  | "beginFounderRegistration"
+  | "beginStepUp"
+  | "authorizeKillSwitchChange"
+  | "clearSessionCookie"
+  | "consumeStepUpReceipt"
+  | "finishAuthentication"
+  | "finishFounderRegistration"
+  | "finishStepUp"
+  | "listSecurityEvents"
+  | "logout"
+  | "revokeAllSessions"
+>;
+
+export interface CommandCenterAdminSecurityOptions {
+  readonly cookieName: string;
+  readonly onFounderRegistered?: () => Promise<void>;
+  readonly service: CommandCenterAdminSecurityBoundary;
 }
 
 export interface StartedCommandCenter {
@@ -87,14 +146,18 @@ interface EventStreamConnection {
 export class PrivateCommandCenterServer {
   readonly #accessToken: Buffer;
   readonly #actionService: CommandCenterActionService | undefined;
+  readonly #adminSecurity: CommandCenterAdminSecurityOptions | undefined;
   readonly #csrfToken: string;
+  readonly #diagnostics: ProductionDiagnostics | undefined;
   readonly #eventConnectionLimit: number;
   readonly #eventHeartbeatMs: number;
   readonly #eventMaxReplay: number;
   readonly #eventPollIntervalMs: number;
   readonly #eventSource: CommandCenterEventSource | undefined;
+  readonly #externalOrigin: string | undefined;
   readonly #oracleCreativePromptService: Pick<OracleCreativePromptService, "confirmForOperator" | "proposeForOperator"> | undefined;
   readonly #operationsControlService: Pick<OperationsControlService, "confirmForOperator" | "proposeForOperator"> | undefined;
+  readonly #operationsRuntimeControlService: Pick<OperationsRuntimeControlService, "get" | "update"> | undefined;
   readonly #port: number;
   readonly #queryService: Pick<CommandCenterQueryService, "snapshot">;
   readonly #eventConnections = new Set<EventStreamConnection>();
@@ -107,14 +170,28 @@ export class PrivateCommandCenterServer {
   public constructor(options: CommandCenterServerOptions) {
     this.#accessToken = tokenBytes(options.accessToken);
     this.#actionService = options.actionService;
+    this.#adminSecurity = options.adminSecurity;
+    if (
+      this.#adminSecurity !== undefined &&
+      !/^[A-Za-z0-9_-]{1,96}$/u.test(this.#adminSecurity.cookieName)
+    ) {
+      throw new Error("Il nome del cookie Admin Security non è valido");
+    }
     this.#csrfToken = randomBytes(32).toString("hex");
+    this.#diagnostics = options.diagnostics;
     this.#eventSource = options.eventPlane?.source;
+    this.#externalOrigin = normalizeExternalOrigin(options.externalOrigin);
+    if (options.host !== undefined && options.host !== LOCAL_HOST) {
+      throw new Error("Il Centro di Comando accetta solo binding loopback");
+    }
     this.#eventConnectionLimit = boundedInteger(options.eventPlane?.connectionLimit, DEFAULT_EVENT_CONNECTION_LIMIT, 1, 32, "limite connessioni SSE");
     this.#eventHeartbeatMs = boundedInteger(options.eventPlane?.heartbeatMs, DEFAULT_EVENT_HEARTBEAT_MS, 10, 60_000, "intervallo heartbeat SSE");
     this.#eventMaxReplay = boundedInteger(options.eventPlane?.maxReplayEvents, DEFAULT_EVENT_MAX_REPLAY, 1, 2_000, "limite replay SSE");
     this.#eventPollIntervalMs = boundedInteger(options.eventPlane?.pollIntervalMs, DEFAULT_EVENT_POLL_INTERVAL_MS, 10, 10_000, "intervallo event plane");
     this.#oracleCreativePromptService = options.oracleCreativePromptService;
     this.#operationsControlService = options.operationsControlService;
+    this.#operationsRuntimeControlService =
+      options.operationsRuntimeControlService;
     this.#port = options.port ?? 0;
     this.#queryService = options.queryService;
   }
@@ -135,10 +212,14 @@ export class PrivateCommandCenterServer {
       throw new Error("Il Centro di Comando ha rifiutato un binding non-loopback");
     }
     const port = address.port;
-    const token = this.#accessToken.toString("hex");
+    const accessOrigin =
+      this.#externalOrigin ?? `http://${LOCAL_HOST}:${String(port)}`;
+    const accessUrl = this.#adminSecurity === undefined
+      ? `${accessOrigin}/?access_token=${this.#accessToken.toString("hex")}`
+      : `${accessOrigin}/admin-auth`;
     this.#server = server;
     this.#started = Object.freeze({
-      accessUrl: `http://${LOCAL_HOST}:${String(port)}/?access_token=${token}`,
+      accessUrl,
       address: Object.freeze({ host: LOCAL_HOST, port }),
       close: async () => {
         if (this.#server !== undefined) {
@@ -156,13 +237,21 @@ export class PrivateCommandCenterServer {
   async #handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     try {
       const started = this.#started;
-      if (started === undefined || !isLoopbackHost(request, started.address.port)) {
+      if (
+        started === undefined ||
+        !isAllowedHost(
+          request,
+          started.address.port,
+          this.#externalOrigin,
+        )
+      ) {
         send(response, 400, "text/plain; charset=utf-8", "Host locale non valido");
         return;
       }
       const requestUrl = new URL(
         request.url ?? "/",
-        `http://${LOCAL_HOST}:${String(started.address.port)}`,
+        this.#externalOrigin ??
+          `http://${LOCAL_HOST}:${String(started.address.port)}`,
       );
       if (request.method !== "GET" && request.method !== "HEAD" && request.method !== "POST") {
         send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
@@ -170,29 +259,146 @@ export class PrivateCommandCenterServer {
         });
         return;
       }
-      const presentedToken = requestUrl.searchParams.get("access_token");
-      if (presentedToken !== null) {
-        if (!sameToken(this.#accessToken, presentedToken)) {
-          send(response, 401, "text/plain; charset=utf-8", "Non autorizzato");
-          return;
-        }
-        response.writeHead(303, securityHeaders({
-          Location: "/",
-          "Set-Cookie": `${SESSION_COOKIE_NAME}=${this.#accessToken.toString("hex")}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`,
-        }));
-        response.end();
+      if (
+        requestUrl.pathname === "/health/live" ||
+        requestUrl.pathname === "/health/ready" ||
+        requestUrl.pathname === "/health/startup"
+      ) {
+        await this.#handleHealth(
+          request,
+          response,
+          requestUrl.pathname,
+        );
         return;
       }
-      if (!hasSession(request, this.#accessToken)) {
-        send(response, 401, "text/plain; charset=utf-8", "È richiesto l'accesso locale privato");
-        return;
+      let adminSession: AuthenticatedAdminSession | undefined;
+      let adminSessionToken: string | undefined;
+      if (this.#adminSecurity !== undefined) {
+        if (isPublicAdminSecurityPath(requestUrl.pathname)) {
+          await this.#handlePublicAdminSecurity(
+            request,
+            response,
+            requestUrl.pathname,
+            started.address.port,
+          );
+          return;
+        }
+        adminSessionToken = sessionCookie(
+          request,
+          this.#adminSecurity.cookieName,
+        );
+        if (adminSessionToken === undefined) {
+          if (request.method === "GET" && requestUrl.pathname === "/") {
+            response.writeHead(303, securityHeaders({
+              Location: "/admin-auth",
+            }));
+            response.end();
+          } else {
+            sendAdminDenial(response, 401, "SESSION_INVALID");
+          }
+          return;
+        }
+        adminSession = await this.#adminSecurity.service.authenticateSession(
+          adminSessionToken,
+          adminCapabilityForRequest(requestUrl.pathname, request.method),
+        );
+        if (requestUrl.pathname === "/api/admin/diagnostics") {
+          await this.#handleDiagnostic(request, response, true);
+          return;
+        }
+        if (requestUrl.pathname === "/api/admin/logout") {
+          await this.#handleAdminLogout(
+            request,
+            response,
+            adminSessionToken,
+            started.address.port,
+          );
+          return;
+        }
+        if (
+          requestUrl.pathname === "/api/admin/step-up/begin" ||
+          requestUrl.pathname === "/api/admin/step-up/finish"
+        ) {
+          await this.#handleAdminStepUp(
+            request,
+            response,
+            requestUrl.pathname,
+            adminSessionToken,
+            started.address.port,
+          );
+          return;
+        }
+        if (
+          requestUrl.pathname === "/api/admin/runtime-kill-switch" ||
+          requestUrl.pathname ===
+            "/api/admin/runtime-kill-switch/step-up/begin"
+        ) {
+          await this.#handleAdminRuntimeKillSwitch(
+            request,
+            response,
+            requestUrl.pathname,
+            adminSessionToken,
+            started.address.port,
+          );
+          return;
+        }
+        if (
+          requestUrl.pathname === "/api/admin/sessions/revoke-all" ||
+          requestUrl.pathname ===
+            "/api/admin/sessions/revoke-all/step-up/begin"
+        ) {
+          await this.#handleAdminGlobalLogout(
+            request,
+            response,
+            requestUrl.pathname,
+            adminSessionToken,
+            started.address.port,
+          );
+          return;
+        }
+        if (requestUrl.pathname === "/api/admin/security-events") {
+          await this.#handleAdminSecurityEvents(
+            request,
+            response,
+            adminSessionToken,
+          );
+          return;
+        }
+      } else {
+        if (requestUrl.pathname === "/api/admin/diagnostics") {
+          await this.#handleDiagnostic(request, response, false);
+          return;
+        }
+        const presentedToken = requestUrl.searchParams.get("access_token");
+        if (presentedToken !== null) {
+          if (!sameToken(this.#accessToken, presentedToken)) {
+            send(response, 401, "text/plain; charset=utf-8", "Non autorizzato");
+            return;
+          }
+          response.writeHead(303, securityHeaders({
+            Location: "/",
+            "Set-Cookie": `${SESSION_COOKIE_NAME}=${this.#accessToken.toString("hex")}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`,
+          }));
+          response.end();
+          return;
+        }
+        if (!hasSession(request, this.#accessToken)) {
+          send(response, 401, "text/plain; charset=utf-8", "È richiesto l'accesso locale privato");
+          return;
+        }
       }
       if (requestUrl.pathname === "/api/events") {
         await this.#handleEventStream(request, response, started.address.port);
         return;
       }
       if (request.method === "POST") {
-        await this.#handleAction(request, response, requestUrl, started.address.port);
+        await this.#handleAction(
+          request,
+          response,
+          requestUrl,
+          started.address.port,
+          adminSessionToken,
+        );
         return;
       }
       if (requestUrl.pathname === "/") {
@@ -293,13 +499,31 @@ export class PrivateCommandCenterServer {
         return;
       }
       if (requestUrl.pathname === "/api/session") {
-        send(response, 200, "application/json; charset=utf-8", JSON.stringify({ csrfToken: this.#csrfToken }));
+        sendJson(response, 200, {
+          authentication:
+            this.#adminSecurity === undefined ? "LEGACY_LOCAL" : "PASSKEY",
+          csrfToken: this.#csrfToken,
+          ...(adminSession === undefined
+            ? {}
+            : {
+                principal: adminSession.principal,
+                session: {
+                  absoluteExpiresAt: adminSession.session.absoluteExpiresAt,
+                  idleExpiresAt: adminSession.session.idleExpiresAt,
+                  sessionId: adminSession.session.sessionId,
+                },
+              }),
+        });
         return;
       }
       send(response, 404, "text/plain; charset=utf-8", "Risorsa non trovata");
     } catch (error) {
       if (response.headersSent) {
         response.end();
+        return;
+      }
+      if (error instanceof AdminSecurityError) {
+        sendAdminSecurityError(response, error);
         return;
       }
       if (error instanceof RepositoryConflictError) {
@@ -312,6 +536,502 @@ export class PrivateCommandCenterServer {
       }
       send(response, 500, "text/plain; charset=utf-8", "L'API locale non ha potuto leggere il control plane");
     }
+  }
+
+  async #handlePublicAdminSecurity(
+    request: IncomingMessage,
+    response: ServerResponse,
+    pathname: string,
+    port: number,
+  ): Promise<void> {
+    if (pathname === "/admin-auth") {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
+          Allow: "GET, HEAD",
+        });
+        return;
+      }
+      send(
+        response,
+        200,
+        "text/html; charset=utf-8",
+        adminAuthenticationDocument(),
+      );
+      return;
+    }
+    if (pathname === "/admin-auth.css") {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
+          Allow: "GET, HEAD",
+        });
+        return;
+      }
+      send(
+        response,
+        200,
+        "text/css; charset=utf-8",
+        COMMAND_CENTER_ADMIN_AUTH_CSS,
+      );
+      return;
+    }
+    if (pathname === "/admin-auth.js") {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
+          Allow: "GET, HEAD",
+        });
+        return;
+      }
+      send(
+        response,
+        200,
+        "text/javascript; charset=utf-8",
+        COMMAND_CENTER_ADMIN_AUTH_JS,
+      );
+      return;
+    }
+    if (request.method !== "POST") {
+      send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
+        Allow: "POST",
+      });
+      return;
+    }
+    if (!hasTrustedOrigin(request, port, this.#externalOrigin)) {
+      sendAdminDenial(response, 403, "ORIGIN_DENIED");
+      return;
+    }
+    const adminSecurity = this.#adminSecurity;
+    if (adminSecurity === undefined) {
+      sendAdminDenial(response, 503, "CONFIGURATION_REQUIRED");
+      return;
+    }
+    const body = await parseJsonBody(request);
+    const context = adminSecurityRequestContext(request);
+    if (pathname === "/api/admin/bootstrap/begin") {
+      if (!record(body) || typeof body.bootstrapToken !== "string") {
+        throw new AdminSecurityError(
+          "INPUT_INVALID",
+          "Founder bootstrap request is invalid.",
+        );
+      }
+      const start = await adminSecurity.service.beginFounderRegistration({
+        bootstrapToken: body.bootstrapToken,
+        context,
+      });
+      sendJson(response, 200, start);
+      return;
+    }
+    if (pathname === "/api/admin/bootstrap/finish") {
+      if (
+        !record(body) ||
+        typeof body.flowId !== "string" ||
+        !record(body.response)
+      ) {
+        throw new AdminSecurityError(
+          "INPUT_INVALID",
+          "Founder registration response is invalid.",
+        );
+      }
+      const receipt =
+        await adminSecurity.service.finishFounderRegistration({
+          context,
+          flowId: body.flowId,
+          response: body.response as unknown as RegistrationResponseJSON,
+        });
+      await adminSecurity.onFounderRegistered?.();
+      sendJson(response, 200, receipt);
+      return;
+    }
+    if (pathname === "/api/admin/authentication/begin") {
+      if (!record(body)) {
+        throw new AdminSecurityError(
+          "INPUT_INVALID",
+          "Authentication request is invalid.",
+        );
+      }
+      const start =
+        await adminSecurity.service.beginAuthentication(context);
+      sendJson(response, 200, start);
+      return;
+    }
+    if (pathname === "/api/admin/authentication/finish") {
+      if (
+        !record(body) ||
+        typeof body.flowId !== "string" ||
+        !record(body.response)
+      ) {
+        throw new AdminSecurityError(
+          "INPUT_INVALID",
+          "Authentication response is invalid.",
+        );
+      }
+      const receipt = await adminSecurity.service.finishAuthentication({
+        context,
+        flowId: body.flowId,
+        response: body.response as unknown as AuthenticationResponseJSON,
+      });
+      sendJson(
+        response,
+        200,
+        {
+          absoluteExpiresAt: receipt.absoluteExpiresAt,
+          idleExpiresAt: receipt.idleExpiresAt,
+          principal: receipt.principal,
+          sessionId: receipt.sessionId,
+        },
+        { "Set-Cookie": receipt.cookie },
+      );
+      return;
+    }
+    send(response, 404, "text/plain; charset=utf-8", "Risorsa non trovata");
+  }
+
+  async #handleAdminLogout(
+    request: IncomingMessage,
+    response: ServerResponse,
+    sessionToken: string,
+    port: number,
+  ): Promise<void> {
+    if (
+      request.method !== "POST" ||
+      !hasTrustedMutation(
+        request,
+        port,
+        this.#externalOrigin,
+        this.#csrfToken,
+      )
+    ) {
+      sendAdminDenial(response, 403, "CSRF_ORIGIN_DENIED");
+      return;
+    }
+    const adminSecurity = this.#adminSecurity;
+    if (adminSecurity === undefined) {
+      sendAdminDenial(response, 503, "CONFIGURATION_REQUIRED");
+      return;
+    }
+    await adminSecurity.service.logout(sessionToken);
+    sendJson(
+      response,
+      200,
+      { status: "LOGGED_OUT" },
+      { "Set-Cookie": adminSecurity.service.clearSessionCookie() },
+    );
+  }
+
+  async #handleAdminStepUp(
+    request: IncomingMessage,
+    response: ServerResponse,
+    pathname: "/api/admin/step-up/begin" | "/api/admin/step-up/finish",
+    sessionToken: string,
+    port: number,
+  ): Promise<void> {
+    if (
+      request.method !== "POST" ||
+      !hasTrustedMutation(
+        request,
+        port,
+        this.#externalOrigin,
+        this.#csrfToken,
+      )
+    ) {
+      sendAdminDenial(response, 403, "CSRF_ORIGIN_DENIED");
+      return;
+    }
+    const adminSecurity = this.#adminSecurity;
+    if (adminSecurity === undefined) {
+      sendAdminDenial(response, 503, "CONFIGURATION_REQUIRED");
+      return;
+    }
+    const body = await parseJsonBody(request);
+    const context = adminSecurityRequestContext(request);
+    if (pathname === "/api/admin/step-up/begin") {
+      if (
+        !record(body) ||
+        !isAdminConfirmationPath(body.path) ||
+        !record(body.payload)
+      ) {
+        throw new AdminSecurityError(
+          "INPUT_INVALID",
+          "Step-up request is invalid.",
+        );
+      }
+      const binding = adminConfirmationBinding(body.path, body.payload);
+      const start = await adminSecurity.service.beginStepUp({
+        capability: "ADMIN_COMMAND_EXECUTE",
+        command: binding.command,
+        commandFingerprint: binding.commandFingerprint,
+        context,
+        sessionToken,
+      });
+      sendJson(response, 200, start);
+      return;
+    }
+    if (
+      !record(body) ||
+      typeof body.flowId !== "string" ||
+      !record(body.response)
+    ) {
+      throw new AdminSecurityError(
+        "INPUT_INVALID",
+        "Step-up response is invalid.",
+      );
+    }
+    const receipt = await adminSecurity.service.finishStepUp({
+      context,
+      flowId: body.flowId,
+      response: body.response as unknown as AuthenticationResponseJSON,
+      sessionToken,
+    });
+    sendJson(response, 200, receipt);
+  }
+
+  async #handleAdminSecurityEvents(
+    request: IncomingMessage,
+    response: ServerResponse,
+    sessionToken: string,
+  ): Promise<void> {
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
+        Allow: "GET, HEAD",
+      });
+      return;
+    }
+    const events = await this.#adminSecurity?.service.listSecurityEvents({
+      limit: 100,
+      sessionToken,
+    });
+    if (events === undefined) {
+      sendAdminDenial(response, 503, "CONFIGURATION_REQUIRED");
+      return;
+    }
+    sendJson(response, 200, { contractVersion: "1", events });
+  }
+
+  async #handleAdminGlobalLogout(
+    request: IncomingMessage,
+    response: ServerResponse,
+    pathname:
+      | "/api/admin/sessions/revoke-all"
+      | "/api/admin/sessions/revoke-all/step-up/begin",
+    sessionToken: string,
+    port: number,
+  ): Promise<void> {
+    if (
+      request.method !== "POST" ||
+      !hasTrustedMutation(
+        request,
+        port,
+        this.#externalOrigin,
+        this.#csrfToken,
+      )
+    ) {
+      sendAdminDenial(response, 403, "CSRF_ORIGIN_DENIED");
+      return;
+    }
+    const adminSecurity = this.#adminSecurity;
+    if (adminSecurity === undefined) {
+      sendAdminDenial(response, 503, "CONFIGURATION_REQUIRED");
+      return;
+    }
+    const input = adminGlobalLogoutInput(await parseJsonBody(request));
+    const command = `REVOKE_ALL_ADMIN_SESSIONS:${input.principalId ?? "SELF"}`;
+    const commandFingerprint = canonicalSha256({
+      method: "POST",
+      pathname: "/api/admin/sessions/revoke-all",
+      principalId: input.principalId ?? null,
+    });
+    if (
+      pathname === "/api/admin/sessions/revoke-all/step-up/begin"
+    ) {
+      const start = await adminSecurity.service.beginStepUp({
+        capability: "ADMIN_SESSION_MANAGE",
+        command,
+        commandFingerprint,
+        context: adminSecurityRequestContext(request),
+        sessionToken,
+      });
+      sendJson(response, 200, start);
+      return;
+    }
+    const receiptToken = request.headers["x-onlyway-step-up"];
+    if (typeof receiptToken !== "string") {
+      sendAdminDenial(response, 403, "STEP_UP_REQUIRED");
+      return;
+    }
+    await adminSecurity.service.consumeStepUpReceipt({
+      capability: "ADMIN_SESSION_MANAGE",
+      command,
+      commandFingerprint,
+      receiptToken,
+      sessionToken,
+    });
+    const revokedSessions = await adminSecurity.service.revokeAllSessions({
+      adminSessionToken: sessionToken,
+      ...(input.principalId === undefined
+        ? {}
+        : { principalId: input.principalId }),
+    });
+    sendJson(
+      response,
+      200,
+      {
+        contractVersion: "1",
+        revokedSessions,
+        status: "ALL_SESSIONS_REVOKED",
+      },
+      { "Set-Cookie": adminSecurity.service.clearSessionCookie() },
+    );
+  }
+
+  async #handleAdminRuntimeKillSwitch(
+    request: IncomingMessage,
+    response: ServerResponse,
+    pathname:
+      | "/api/admin/runtime-kill-switch"
+      | "/api/admin/runtime-kill-switch/step-up/begin",
+    sessionToken: string,
+    port: number,
+  ): Promise<void> {
+    const runtimeControl = this.#operationsRuntimeControlService;
+    const adminSecurity = this.#adminSecurity;
+    if (runtimeControl === undefined || adminSecurity === undefined) {
+      sendAdminDenial(response, 503, "CONFIGURATION_REQUIRED");
+      return;
+    }
+    if (
+      pathname === "/api/admin/runtime-kill-switch" &&
+      (request.method === "GET" || request.method === "HEAD")
+    ) {
+      sendJson(response, 200, await runtimeControl.get());
+      return;
+    }
+    if (
+      request.method !== "POST" ||
+      !hasTrustedMutation(
+        request,
+        port,
+        this.#externalOrigin,
+        this.#csrfToken,
+      )
+    ) {
+      sendAdminDenial(response, 403, "CSRF_ORIGIN_DENIED");
+      return;
+    }
+    const body = await parseJsonBody(request);
+    const input = runtimeKillSwitchInput(body);
+    const binding = runtimeKillSwitchBinding(input);
+    if (
+      pathname === "/api/admin/runtime-kill-switch/step-up/begin"
+    ) {
+      const start = await adminSecurity.service.beginStepUp({
+        capability: "ADMIN_KILL_SWITCH_CONTROL",
+        command: killSwitchCommand(
+          RUNTIME_KILL_SWITCH_ID,
+          input.desiredState,
+        ),
+        commandFingerprint: binding,
+        context: adminSecurityRequestContext(request),
+        sessionToken,
+      });
+      sendJson(response, 200, start);
+      return;
+    }
+    const receiptToken = request.headers["x-onlyway-step-up"];
+    if (typeof receiptToken !== "string") {
+      sendAdminDenial(response, 403, "STEP_UP_REQUIRED");
+      return;
+    }
+    const authorization =
+      await adminSecurity.service.authorizeKillSwitchChange({
+        commandFingerprint: binding,
+        desiredState: input.desiredState,
+        receiptToken,
+        sessionToken,
+        switchId: RUNTIME_KILL_SWITCH_ID,
+      });
+    const current = await runtimeControl.get();
+    const control = await runtimeControl.update({
+      expectedVersion: input.expectedVersion,
+      killSwitch: input.desiredState ? "ACTIVE" : "RELEASED",
+      maintenanceMode: current.maintenanceMode,
+      reasonCode: input.reasonCode,
+      updatedBy: authorization.principalId,
+    });
+    sendJson(response, 200, {
+      authorization: {
+        authorizationId: authorization.authorizationId,
+        authorizedAt: authorization.authorizedAt,
+        principalId: authorization.principalId,
+      },
+      control,
+    });
+  }
+
+  async #handleHealth(
+    request: IncomingMessage,
+    response: ServerResponse,
+    pathname: "/health/live" | "/health/ready" | "/health/startup",
+  ): Promise<void> {
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
+        Allow: "GET, HEAD",
+      });
+      return;
+    }
+    if (pathname === "/health/live") {
+      sendJson(response, 200, {
+        contractVersion: "1",
+        generatedAt: new Date().toISOString(),
+        kind: "LIVENESS",
+        status: "READY",
+        unauthorizedExternalEffectOccurred: false,
+      });
+      return;
+    }
+    const diagnostics = this.#diagnostics;
+    if (diagnostics === undefined) {
+      sendJson(response, 503, unavailableDiagnosticsReport(
+        pathname === "/health/ready" ? "READINESS" : "STARTUP",
+      ));
+      return;
+    }
+    const report =
+      pathname === "/health/ready"
+        ? await diagnostics.readiness()
+        : await diagnostics.startup();
+    sendJson(response, report.status === "READY" ? 200 : 503, report);
+  }
+
+  async #handleDiagnostic(
+    request: IncomingMessage,
+    response: ServerResponse,
+    adminAuthenticated: boolean,
+  ): Promise<void> {
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      send(response, 405, "text/plain; charset=utf-8", "Metodo non consentito", {
+        Allow: "GET, HEAD",
+      });
+      return;
+    }
+    if (!adminAuthenticated && !hasBearerToken(request, this.#accessToken)) {
+      send(response, 401, "application/json; charset=utf-8", JSON.stringify({
+        contractVersion: "1",
+        reasonCode: "DIAGNOSTIC_AUTHENTICATION_REQUIRED",
+        status: "UNAUTHORIZED",
+      }), {
+        "WWW-Authenticate": 'Bearer realm="onlyway-command-center"',
+      });
+      return;
+    }
+    if (this.#diagnostics === undefined) {
+      sendJson(
+        response,
+        503,
+        unavailableDiagnosticsReport("DIAGNOSTIC"),
+      );
+      return;
+    }
+    const report = await this.#diagnostics.diagnostic();
+    sendJson(response, report.status === "READY" ? 200 : 503, report);
   }
 
   async #handleEventStream(
@@ -327,7 +1047,7 @@ export class PrivateCommandCenterServer {
       send(response, 503, "text/plain; charset=utf-8", "Event plane locale non disponibile", { "Retry-After": "3" });
       return;
     }
-    if (!hasTrustedOptionalOrigin(request, port)) {
+    if (!hasTrustedOptionalOrigin(request, port, this.#externalOrigin)) {
       send(response, 403, "text/plain; charset=utf-8", "Stream locale non autorizzato");
       return;
     }
@@ -505,6 +1225,7 @@ export class PrivateCommandCenterServer {
     response: ServerResponse,
     requestUrl: URL,
     port: number,
+    adminSessionToken: string | undefined,
   ): Promise<void> {
     const legacyAction = requestUrl.pathname === "/api/actions/propose" || requestUrl.pathname === "/api/actions/confirm";
     const operationsControlAction = requestUrl.pathname === "/api/control-actions/propose" || requestUrl.pathname === "/api/control-actions/confirm";
@@ -517,7 +1238,7 @@ export class PrivateCommandCenterServer {
     const actionService = this.#actionService;
     const oracleCreativePromptService = this.#oracleCreativePromptService;
     const operationsControlService = this.#operationsControlService;
-    if (!hasTrustedOrigin(request, port) || !sameTextToken(this.#csrfToken, typeof csrfHeader === "string" ? csrfHeader : "")) {
+    if (!hasTrustedOrigin(request, port, this.#externalOrigin) || !sameTextToken(this.#csrfToken, typeof csrfHeader === "string" ? csrfHeader : "")) {
       send(response, 403, "text/plain; charset=utf-8", "Azione locale non autorizzata");
       return;
     }
@@ -534,6 +1255,29 @@ export class PrivateCommandCenterServer {
       return;
     }
     const body = await parseJsonBody(request);
+    if (
+      adminSessionToken !== undefined &&
+      isAdminConfirmationPath(requestUrl.pathname)
+    ) {
+      const receiptToken = request.headers["x-onlyway-step-up"];
+      if (typeof receiptToken !== "string") {
+        sendAdminDenial(response, 403, "STEP_UP_REQUIRED");
+        return;
+      }
+      const binding = adminConfirmationBinding(requestUrl.pathname, body);
+      const adminSecurity = this.#adminSecurity;
+      if (adminSecurity === undefined) {
+        sendAdminDenial(response, 503, "CONFIGURATION_REQUIRED");
+        return;
+      }
+      await adminSecurity.service.consumeStepUpReceipt({
+        capability: "ADMIN_COMMAND_EXECUTE",
+        command: binding.command,
+        commandFingerprint: binding.commandFingerprint,
+        receiptToken,
+        sessionToken: adminSessionToken,
+      });
+    }
     if (requestUrl.pathname === "/api/prompt-missions/propose") {
       if (oracleCreativePromptService === undefined) throw new Error("Prompt mission boundary unavailable after authorization");
       const proposal = await oracleCreativePromptService.proposeForOperator(body);
@@ -598,6 +1342,10 @@ export class PrivateCommandCenterServer {
 
 function pageDocument(): string {
   return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Centro di Comando Onlyway</title><link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/responsive.css"></head><body>${COMMAND_CENTER_HTML}<script src="/app.js" defer></script><script type="module" src="/assets/motion-ui-adapter.js"></script></body></html>`;
+}
+
+function adminAuthenticationDocument(): string {
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Accesso privato Onlyway</title><link rel="stylesheet" href="/admin-auth.css"></head><body>${COMMAND_CENTER_ADMIN_AUTH_HTML}<script src="/admin-auth.js" defer></script></body></html>`;
 }
 
 async function motionBrowserRuntime(): Promise<string> {
@@ -745,13 +1493,216 @@ function hasSession(request: IncomingMessage, token: Buffer): boolean {
   return value !== undefined && sameToken(token, value);
 }
 
-function hasTrustedOrigin(request: IncomingMessage, port: number): boolean {
-  return request.headers.origin === `http://${LOCAL_HOST}:${String(port)}`;
+function sessionCookie(
+  request: IncomingMessage,
+  cookieName: string,
+): string | undefined {
+  const cookie = request.headers.cookie;
+  if (cookie === undefined) return undefined;
+  const prefix = `${cookieName}=`;
+  const value = cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix))
+    ?.slice(prefix.length);
+  if (
+    value === undefined ||
+    value.length < 20 ||
+    value.length > 256 ||
+    !/^[A-Za-z0-9_-]+$/u.test(value)
+  ) {
+    return undefined;
+  }
+  return value;
 }
 
-function hasTrustedOptionalOrigin(request: IncomingMessage, port: number): boolean {
+function hasTrustedOrigin(
+  request: IncomingMessage,
+  port: number,
+  externalOrigin: string | undefined,
+): boolean {
   const origin = request.headers.origin;
-  return origin === undefined || origin === `http://${LOCAL_HOST}:${String(port)}`;
+  return origin === `http://${LOCAL_HOST}:${String(port)}` ||
+    (externalOrigin !== undefined && origin === externalOrigin);
+}
+
+function hasTrustedMutation(
+  request: IncomingMessage,
+  port: number,
+  externalOrigin: string | undefined,
+  csrfToken: string,
+): boolean {
+  const csrfHeader = request.headers["x-onlyway-csrf"];
+  return hasTrustedOrigin(request, port, externalOrigin) &&
+    sameTextToken(
+      csrfToken,
+      typeof csrfHeader === "string" ? csrfHeader : "",
+    );
+}
+
+function isPublicAdminSecurityPath(pathname: string): boolean {
+  return pathname === "/admin-auth" ||
+    pathname === "/admin-auth.css" ||
+    pathname === "/admin-auth.js" ||
+    pathname === "/api/admin/bootstrap/begin" ||
+    pathname === "/api/admin/bootstrap/finish" ||
+    pathname === "/api/admin/authentication/begin" ||
+    pathname === "/api/admin/authentication/finish";
+}
+
+function adminCapabilityForRequest(
+  pathname: string,
+  method: string | undefined,
+): AdminCapability {
+  if (pathname === "/api/admin/step-up/finish") {
+    // The durable challenge carries the exact capability. finishStepUp()
+    // re-authenticates against it, including the dedicated kill-switch grant.
+    return "ADMIN_READ";
+  }
+  if (
+    pathname === "/api/admin/runtime-kill-switch" ||
+    pathname === "/api/admin/runtime-kill-switch/step-up/begin"
+  ) {
+    return method === "GET" || method === "HEAD"
+      ? "ADMIN_READ"
+      : "ADMIN_KILL_SWITCH_CONTROL";
+  }
+  if (
+    pathname === "/api/admin/sessions/revoke-all" ||
+    pathname === "/api/admin/sessions/revoke-all/step-up/begin"
+  ) {
+    return "ADMIN_SESSION_MANAGE";
+  }
+  if (
+    method === "POST" &&
+    (
+      pathname.startsWith("/api/actions/") ||
+      pathname.startsWith("/api/control-actions/") ||
+      pathname.startsWith("/api/prompt-missions/") ||
+      pathname.startsWith("/api/admin/step-up/")
+    )
+  ) {
+    return "ADMIN_COMMAND_EXECUTE";
+  }
+  return "ADMIN_READ";
+}
+
+interface RuntimeKillSwitchInput {
+  readonly desiredState: boolean;
+  readonly expectedVersion: number;
+  readonly reasonCode: string;
+}
+
+interface AdminGlobalLogoutInput {
+  readonly principalId?: string;
+}
+
+function adminGlobalLogoutInput(value: unknown): AdminGlobalLogoutInput {
+  if (
+    !record(value) ||
+    Object.keys(value).some((key) => key !== "principalId") ||
+    (
+      value.principalId !== undefined
+      && (
+        typeof value.principalId !== "string"
+        || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(value.principalId)
+      )
+    )
+  ) {
+    throw new AdminSecurityError(
+      "INPUT_INVALID",
+      "Global logout request is invalid.",
+    );
+  }
+  return Object.freeze(
+    value.principalId === undefined
+      ? {}
+      : { principalId: value.principalId },
+  );
+}
+
+function runtimeKillSwitchInput(value: unknown): RuntimeKillSwitchInput {
+  if (
+    !record(value) ||
+    Object.keys(value).sort().join(",") !==
+      "desiredState,expectedVersion,reasonCode" ||
+    typeof value.desiredState !== "boolean" ||
+    !Number.isSafeInteger(value.expectedVersion) ||
+    (value.expectedVersion as number) < 0 ||
+    typeof value.reasonCode !== "string" ||
+    !/^[A-Z][A-Z0-9_]{2,63}$/u.test(value.reasonCode)
+  ) {
+    throw new AdminSecurityError(
+      "INPUT_INVALID",
+      "Runtime kill-switch request is invalid.",
+    );
+  }
+  return Object.freeze({
+    desiredState: value.desiredState,
+    expectedVersion: value.expectedVersion as number,
+    reasonCode: value.reasonCode,
+  });
+}
+
+function runtimeKillSwitchBinding(input: RuntimeKillSwitchInput): string {
+  return canonicalSha256({
+    desiredState: input.desiredState,
+    expectedVersion: input.expectedVersion,
+    reasonCode: input.reasonCode,
+    switchId: RUNTIME_KILL_SWITCH_ID,
+  });
+}
+
+function adminSecurityRequestContext(
+  request: IncomingMessage,
+): Readonly<{ readonly origin: string; readonly sourceKey: string }> {
+  return Object.freeze({
+    origin:
+      typeof request.headers.origin === "string"
+        ? request.headers.origin
+        : "",
+    sourceKey: request.socket.remoteAddress ?? "unknown-source",
+  });
+}
+
+function isAdminConfirmationPath(
+  value: unknown,
+): value is AdminConfirmationPath {
+  return typeof value === "string" &&
+    (ADMIN_CONFIRMATION_PATHS as readonly string[]).includes(value);
+}
+
+function adminConfirmationBinding(
+  pathname: AdminConfirmationPath,
+  body: unknown,
+): Readonly<{
+  readonly command: string;
+  readonly commandFingerprint: string;
+}> {
+  const commands: Readonly<Record<AdminConfirmationPath, string>> = {
+    "/api/actions/confirm": "CONFIRM_REVIEW_ACTION",
+    "/api/control-actions/confirm": "CONFIRM_CONTROL_ACTION",
+    "/api/prompt-missions/confirm": "CONFIRM_PROMPT_MISSION",
+  };
+  return Object.freeze({
+    command: commands[pathname],
+    commandFingerprint: canonicalSha256({
+      body,
+      method: "POST",
+      pathname,
+    }),
+  });
+}
+
+function hasTrustedOptionalOrigin(
+  request: IncomingMessage,
+  port: number,
+  externalOrigin: string | undefined,
+): boolean {
+  const origin = request.headers.origin;
+  return origin === undefined ||
+    origin === `http://${LOCAL_HOST}:${String(port)}` ||
+    (externalOrigin !== undefined && origin === externalOrigin);
 }
 
 function acceptsEventStream(request: IncomingMessage): boolean {
@@ -845,9 +1796,73 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isLoopbackHost(request: IncomingMessage, port: number): boolean {
+function isAllowedHost(
+  request: IncomingMessage,
+  port: number,
+  externalOrigin: string | undefined,
+): boolean {
   const host = request.headers.host;
-  return host === `${LOCAL_HOST}:${String(port)}`;
+  if (host === `${LOCAL_HOST}:${String(port)}`) return true;
+  if (externalOrigin === undefined) return false;
+  return host === new URL(externalOrigin).host;
+}
+
+function normalizeExternalOrigin(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  let origin: URL;
+  try {
+    origin = new URL(value);
+  } catch {
+    throw new Error("L'origine esterna del Centro di Comando non è valida");
+  }
+  const loopbackHttp =
+    origin.protocol === "http:" &&
+    (origin.hostname === LOCAL_HOST ||
+      origin.hostname === "::1" ||
+      origin.hostname === "localhost");
+  if (
+    (origin.protocol !== "https:" && !loopbackHttp) ||
+    origin.username.length > 0 ||
+    origin.password.length > 0 ||
+    origin.pathname !== "/" ||
+    origin.search.length > 0 ||
+    origin.hash.length > 0
+  ) {
+    throw new Error(
+      "L'origine esterna deve essere HTTPS o HTTP loopback, senza credenziali o percorso",
+    );
+  }
+  return origin.origin;
+}
+
+function hasBearerToken(request: IncomingMessage, token: Buffer): boolean {
+  const authorization = request.headers.authorization;
+  if (
+    typeof authorization !== "string" ||
+    !authorization.startsWith("Bearer ")
+  ) {
+    return false;
+  }
+  return sameToken(token, authorization.slice("Bearer ".length));
+}
+
+function unavailableDiagnosticsReport(
+  kind: "DIAGNOSTIC" | "READINESS" | "STARTUP",
+) {
+  return Object.freeze({
+    checks: Object.freeze([
+      Object.freeze({
+        name: "diagnostics",
+        reasonCode: "DIAGNOSTICS_NOT_CONFIGURED",
+        status: "FAIL",
+      }),
+    ]),
+    contractVersion: "1",
+    generatedAt: new Date().toISOString(),
+    kind,
+    status: "NOT_READY",
+    unauthorizedExternalEffectOccurred: false,
+  });
 }
 
 function securityHeaders(extra: Readonly<Record<string, string>> = {}): Record<string, string> {
@@ -875,6 +1890,66 @@ function send(
     ...extra,
   }));
   response.end(body);
+}
+
+function sendJson(
+  response: ServerResponse,
+  status: number,
+  body: unknown,
+  extra: Readonly<Record<string, string>> = {},
+): void {
+  send(
+    response,
+    status,
+    "application/json; charset=utf-8",
+    JSON.stringify(body),
+    extra,
+  );
+}
+
+function sendAdminDenial(
+  response: ServerResponse,
+  status: number,
+  reasonCode: string,
+): void {
+  sendJson(response, status, {
+    contractVersion: "1",
+    reasonCode,
+    status: "DENIED",
+  });
+}
+
+function sendAdminSecurityError(
+  response: ServerResponse,
+  error: AdminSecurityError,
+): void {
+  const status =
+    error.code === "RATE_LIMITED"
+      ? 429
+      : error.code === "CAPABILITY_DENIED" ||
+          error.code === "STEP_UP_INVALID"
+        ? 403
+        : error.code === "SESSION_INVALID" ||
+            error.code === "CREDENTIAL_INVALID" ||
+            error.code === "CHALLENGE_EXPIRED" ||
+            error.code === "CHALLENGE_INVALID"
+          ? 401
+          : error.code === "BOOTSTRAP_ALREADY_COMPLETED" ||
+              error.code === "REPOSITORY_CONFLICT"
+            ? 409
+            : error.code === "CONFIGURATION_REQUIRED"
+              ? 503
+              : 400;
+  sendJson(
+    response,
+    status,
+    {
+      contractVersion: "1",
+      reasonCode: error.code,
+      status: "DENIED",
+    },
+    status === 429 ? { "Retry-After": "60" } : {},
+  );
 }
 
 function listen(server: Server, port: number): Promise<void> {

@@ -99,6 +99,100 @@ describe("SupervisedProcessLock atomic publication", () => {
     await expect(candidateArtifacts(root)).resolves.toEqual([]);
     await recovered.close();
   });
+
+  it("reclaims a stale record when a restarted process reuses the same PID", async () => {
+    const root = await tempRoot();
+    const path = join(root, "runtime.lock");
+    const original = await SupervisedProcessLock.acquire({
+      instanceId: "original",
+      path,
+      role: "worker",
+    });
+    const record = JSON.parse(await readFile(path, "utf8")) as Record<string, unknown>;
+    await original.close();
+    const identity = record.processIdentity;
+    if (!isRecord(identity)) throw new Error("Expected a process identity");
+    await writeFile(
+      path,
+      `${JSON.stringify({
+        ...record,
+        instanceId: "stale-same-pid",
+        processIdentity: staleProcessIdentity(identity),
+      })}\n`,
+      { encoding: "utf8", mode: 0o600 },
+    );
+
+    const recovered = await SupervisedProcessLock.acquire({
+      instanceId: "recovered-same-pid",
+      path,
+      role: "worker",
+    });
+
+    await expect(
+      readFile(path, "utf8").then((text) => JSON.parse(text) as unknown),
+    ).resolves.toMatchObject({
+      instanceId: "recovered-same-pid",
+      pid: process.pid,
+    });
+    await recovered.close();
+  });
+
+  it("reclaims an orphaned recovery claim after its PID is reused", async () => {
+    const root = await tempRoot();
+    const identityPath = join(root, "identity.lock");
+    const identityOwner = await SupervisedProcessLock.acquire({
+      instanceId: "identity-owner",
+      path: identityPath,
+      role: "worker",
+    });
+    const identityRecord = JSON.parse(
+      await readFile(identityPath, "utf8"),
+    ) as Record<string, unknown>;
+    await identityOwner.close();
+    const processIdentity = identityRecord.processIdentity;
+    if (!isRecord(processIdentity)) {
+      throw new Error("Expected a process identity");
+    }
+
+    const path = join(root, "runtime.lock");
+    const stale = {
+      contractVersion: "1",
+      createdAt: "2026-07-19T00:00:00.000Z",
+      instanceId: "stale",
+      pid: 2_147_483_647,
+      role: "worker",
+      token: "lock-stale-recovery-same-pid",
+    };
+    await writeFile(
+      path,
+      `${JSON.stringify(stale)}\n`,
+      { encoding: "utf8", mode: 0o600 },
+    );
+    const identity = await stat(path);
+    await writeFile(
+      `${path}.recovery`,
+      `${JSON.stringify({
+        contractVersion: "1",
+        createdAt: "2026-07-19T00:01:00.000Z",
+        expectedDevice: identity.dev,
+        expectedInode: identity.ino,
+        expectedToken: stale.token,
+        ownerPid: process.pid,
+        ownerProcessIdentity: staleProcessIdentity(processIdentity),
+        token: "recovery-orphan-same-pid",
+      })}\n`,
+      { encoding: "utf8", mode: 0o600 },
+    );
+
+    const recovered = await SupervisedProcessLock.acquire({
+      instanceId: "recovered-orphan-same-pid",
+      path,
+      role: "worker",
+    });
+
+    await expect(candidateArtifacts(root)).resolves.toEqual([]);
+    await recovered.close();
+  });
 });
 
 async function candidateArtifacts(root: string): Promise<readonly string[]> {
@@ -109,4 +203,35 @@ async function tempRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "mv-ai-os-process-lock-"));
   roots.push(root);
   return root;
+}
+
+function incrementDecimal(value: unknown): string {
+  if (typeof value !== "string" || !/^[0-9]+$/u.test(value)) {
+    throw new Error("Expected decimal process start time");
+  }
+  return (BigInt(value) + 1n).toString();
+}
+
+function staleProcessIdentity(
+  identity: Record<string, unknown>,
+): Record<string, unknown> {
+  if (identity.kind === "linux-proc-v1") {
+    return {
+      ...identity,
+      startTimeTicks: incrementDecimal(identity.startTimeTicks),
+    };
+  }
+  if (identity.kind !== "local-process-v1" || typeof identity.nonce !== "string") {
+    throw new Error("Expected a supported process identity");
+  }
+  return {
+    ...identity,
+    nonce: identity.nonce === "00000000-0000-4000-8000-000000000000"
+      ? "00000000-0000-4000-8000-000000000001"
+      : "00000000-0000-4000-8000-000000000000",
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

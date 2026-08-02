@@ -121,7 +121,7 @@ export class OperationalPlaneService {
   public async authorizePublication(input: PublicationAuthorizationRequest): Promise<PublicationPlan> {
     return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
       const control = await operationalPlanes.getPublicationKillSwitch(this.dependencies.workspaceId);
-      if (control?.enabled === true) throw new RepositoryConflictError("Global publication kill switch is enabled");
+      if (control?.enabled !== false) throw new RepositoryConflictError("Global publication kill switch is unavailable or enabled");
       const current = await this.#ownedPublication(operationalPlanes, input.publicationId);
       if (current.status !== "DRY_RUN" || current.version !== input.expectedVersion) throw new RepositoryConflictError("Publication plan is not eligible for final authorization");
       await this.#assertCurrentPublicationBinding(current, contentProductions, operationsControls);
@@ -133,6 +133,8 @@ export class OperationalPlaneService {
 
   public async recordPublicationReceipt(input: PublicationReceiptRequest): Promise<PublicationPlan> {
     return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
+      const control = await operationalPlanes.getPublicationKillSwitch(this.dependencies.workspaceId);
+      if (control?.enabled !== false) throw new RepositoryConflictError("Global publication kill switch is unavailable or enabled");
       const current = await this.#ownedPublication(operationalPlanes, input.publicationId);
       if (current.status !== "AUTHORIZED" || current.version !== input.expectedVersion) throw new RepositoryConflictError("Publication plan is not eligible for a receipt");
       await this.#assertCurrentPublicationBinding(current, contentProductions, operationsControls);

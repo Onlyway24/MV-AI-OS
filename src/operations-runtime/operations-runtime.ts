@@ -320,7 +320,7 @@ export interface OperationsSchedulerTickResult {
   readonly contractVersion: typeof OPERATIONS_RUNTIME_CONTRACT_VERSION;
   readonly enqueuedJobIds: readonly string[];
   readonly skippedOccurrences: number;
-  readonly status: "IDLE" | "LEASE_HELD" | "SCHEDULED" | "STOPPED";
+  readonly status: "BACKPRESSURE" | "IDLE" | "LEASE_HELD" | "SCHEDULED" | "STOPPED";
   readonly unauthorizedExternalEffectOccurred: false;
 }
 

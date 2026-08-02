@@ -7,9 +7,54 @@ import { OperationsWorkerService } from "../../src/operations-runtime/operations
 import { InMemoryRepositoryTransactionRunner } from "../support/in-memory-repositories.js";
 
 describe("Operations Runtime in-memory P1 hardening", () => {
+  it("stops before claim when the durable runtime control is absent", async () => {
+    const repositories = new InMemoryRepositoryTransactionRunner();
+    const clock = Object.freeze({ now: () => new Date("2026-07-19T08:00:00.000Z") });
+    const queued = job("missing-control", "missing-control-predecessor");
+    await repositories.transaction(({ operationsRuntime }) =>
+      operationsRuntime.insertJob(queued));
+    let executions = 0;
+    const worker = new OperationsWorkerService({
+      clock,
+      handlers: {
+        resolve: () => ({
+          execute: () => {
+            executions += 1;
+            return Promise.resolve({
+              costCents: 0,
+              externalEffectsExecuted: false as const,
+              providerCalls: 0,
+              toolCalls: 0,
+            });
+          },
+        }),
+      },
+      instanceId: "missing-control-worker",
+      repositories,
+      workerId: "primary",
+      workspaceId: "workspace",
+    });
+    await expect(worker.runOnce()).resolves.toMatchObject({
+      status: "STOPPED",
+    });
+    expect(executions).toBe(0);
+    await worker.close();
+  });
+
   it("retains usage and the one-shot successor reservation after terminal cleanup", async () => {
     const repositories = new InMemoryRepositoryTransactionRunner();
     const clock = Object.freeze({ now: () => new Date("2026-07-19T08:00:00.000Z") });
+    await new OperationsRuntimeControlService({
+      clock,
+      repositories,
+      workspaceId: "workspace",
+    }).update({
+      expectedVersion: 0,
+      killSwitch: "RELEASED",
+      maintenanceMode: "DISABLED",
+      reasonCode: "TEST_RUNTIME_RELEASE",
+      updatedBy: "fabio",
+    });
     const successor = job("successor-first", "predecessor-terminal");
     await repositories.transaction(({ operationsRuntime }) => operationsRuntime.insertJob(successor));
     const handlers: OperationsJobHandlerRegistry = Object.freeze({

@@ -9,17 +9,20 @@ import type { OperationsJob, OperationsJobPayload, OperationsProcessLease, Opera
 import { createOperationsPayloadFingerprint, OperationsScheduleValidator } from "./operations-runtime-validator.js";
 
 const DEFAULT_BATCH_LIMIT = 25;
+const DEFAULT_MAX_QUEUE_DEPTH = 1_000;
 const DEFAULT_SCHEDULER_LEASE_MS = 30_000;
 
 export class OperationsSchedulerService {
   readonly #scheduleValidator = new OperationsScheduleValidator();
   readonly #batchLimit: number;
   readonly #leaseMs: number;
+  readonly #maxQueueDepth: number;
 
   public constructor(private readonly input: {
     readonly actorId: string;
     readonly clock: Clock;
     readonly instanceId: string;
+    readonly maxQueueDepth?: number;
     readonly repositories: RepositoryTransactionRunner;
     readonly workspaceId: string;
     readonly batchLimit?: number;
@@ -27,6 +30,7 @@ export class OperationsSchedulerService {
   }) {
     this.#batchLimit = bounded(input.batchLimit ?? DEFAULT_BATCH_LIMIT, 1, 100, "Scheduler batch limit");
     this.#leaseMs = bounded(input.schedulerLeaseMs ?? DEFAULT_SCHEDULER_LEASE_MS, 1_000, 300_000, "Scheduler lease duration");
+    this.#maxQueueDepth = bounded(input.maxQueueDepth ?? DEFAULT_MAX_QUEUE_DEPTH, 1, 1_000_000, "Scheduler queue depth");
   }
 
   public async registerSchedule(candidate: OperationsSchedule): Promise<OperationsSchedule> {
@@ -51,8 +55,12 @@ export class OperationsSchedulerService {
       const durableLease = await operationsRuntime.getProcessLease(this.input.workspaceId, "scheduler");
       if (durableLease?.instanceId !== schedulerLease.instanceId || durableLease.fencingToken !== schedulerLease.fencingToken || Date.parse(durableLease.expiresAt) <= Date.parse(now)) return result({ enqueuedJobIds: [], skippedOccurrences: 0, status: "LEASE_HELD" });
       const control = await operationsRuntime.getControl(this.input.workspaceId);
-      if (control?.killSwitch === "ACTIVE" || control?.maintenanceMode === "ENABLED") return result({ enqueuedJobIds: [], skippedOccurrences: 0, status: "STOPPED" });
-      const due = await operationsRuntime.listDueSchedules(this.input.workspaceId, now, this.#batchLimit);
+      if (control === undefined || control.killSwitch === "ACTIVE" || control.maintenanceMode === "ENABLED") return result({ enqueuedJobIds: [], skippedOccurrences: 0, status: "STOPPED" });
+      const counts = await operationsRuntime.summarize(this.input.workspaceId);
+      const activeDepth = counts.queued + counts.retryScheduled + counts.running;
+      const available = Math.max(0, this.#maxQueueDepth - activeDepth);
+      if (available === 0) return result({ enqueuedJobIds: [], skippedOccurrences: 0, status: "BACKPRESSURE" });
+      const due = await operationsRuntime.listDueSchedules(this.input.workspaceId, now, Math.min(this.#batchLimit, available));
       const enqueuedJobIds: string[] = [];
       let skippedOccurrences = 0;
       for (const schedule of due) {

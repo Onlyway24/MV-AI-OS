@@ -16,6 +16,14 @@ import { createLocalWorkflowCommandBoundary } from "../../src/runtime/create-loc
 import { downgradeTelegramDeliveryReconciliationSchemaToV29 } from "../support/sqlite-migration-fixtures.js";
 
 describe("OperationalPlaneService", () => {
+  it("treats an absent publication kill-switch as locked", async () => withDatabase(async (path) => {
+    const clock = new MutableClock("2026-07-14T12:00:00.000Z");
+    const service = createService(path, clock);
+    await seedScheduledContent(path, clock);
+    await service.createPublicationDryRun({ accountRef: "metodo-veloce-main", contentVersion: 2, idempotencyKey: "publication-key-missing-lock", platform: "instagram", productionId: "production-001", publicationId: "publication-missing-lock", scheduledFor: "2026-07-20T09:00:00.000Z" });
+    await expect(service.authorizePublication({ expectedVersion: 0, publicationId: "publication-missing-lock" })).rejects.toThrow(/kill switch is unavailable/iu);
+  }));
+
   it("accepts attributable, fresh evidence only from authorized source registry entries", async () => withDatabase(async (path) => {
     const clock = new MutableClock("2026-07-14T12:00:00.000Z");
     const service = createService(path, clock);
@@ -52,6 +60,7 @@ describe("OperationalPlaneService", () => {
     await seedScheduledContent(replacementPath, clock, true);
     const boundService = createService(replacementPath, clock);
     await boundService.createPublicationDryRun({ accountRef: "metodo-veloce-main", contentVersion: 2, idempotencyKey: "publication-key-bound", platform: "instagram", productionId: "production-001", publicationId: "publication-bound", scheduledFor: "2026-07-20T09:00:00.000Z" });
+    await boundService.setPublicationKillSwitch({ enabled: false, expectedVersion: 0 });
     const reader = new SqliteRepositoryTransactionRunner({ path: replacementPath, timeoutMs: 1_000 });
     const current = await reader.transaction(({ contentProductions }) => contentProductions.getById("production-001"));
     await reader.close();
@@ -69,6 +78,7 @@ describe("OperationalPlaneService", () => {
     const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
     const planes = new OperationalPlaneService({ actorId: "actor-local", clock, repositories, workspaceId: "workspace-local" });
     const dryRun = await planes.createPublicationDryRun({ accountRef: "metodo-veloce-main", contentVersion: 2, idempotencyKey: "publication-key-revision", platform: "instagram", productionId: "production-001", publicationId: "publication-revision", scheduledFor: "2026-07-20T09:00:00.000Z" });
+    await planes.setPublicationKillSwitch({ enabled: false, expectedVersion: 0 });
     expect(dryRun.productionControlBinding).toMatchObject({ kind: "CONTENT", version: 2 });
     const content = await repositories.transaction(({ contentProductions }) => contentProductions.getById("production-001"));
     if (content === undefined) throw new Error("Expected scheduled content");
@@ -87,6 +97,7 @@ describe("OperationalPlaneService", () => {
     const service = createService(path, clock);
     await seedScheduledContent(path, clock);
     await service.createPublicationDryRun({ accountRef: "metodo-veloce-main", contentVersion: 2, idempotencyKey: "publication-key-002", platform: "tiktok", productionId: "production-001", publicationId: "publication-002", scheduledFor: "2026-07-20T09:00:00.000Z" });
+    await service.setPublicationKillSwitch({ enabled: false, expectedVersion: 0 });
     const authorized = await service.authorizePublication({ expectedVersion: 0, publicationId: "publication-002" });
     const receipt = await service.recordPublicationReceipt({ expectedVersion: authorized.version, outcome: "SUCCEEDED", platformContentRef: "tiktok-video-001", publicationId: "publication-002", receiptFingerprint: "e".repeat(64) });
     const first = await service.importFeedbackMetrics(feedbackInput(receipt.publicationId, "e".repeat(64), "snapshot-002", "f".repeat(64)));

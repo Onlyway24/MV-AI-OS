@@ -53,13 +53,80 @@ describe("Command Center supervised CLI runtime", () => {
       await expect(access(paths.bootstrapPath)).resolves.toBeUndefined();
     } finally { await started.close(); }
   });
+
+  it("uses a restart-safe owner-only Founder bootstrap without putting its token in the production URL or logs", async () => {
+    const fixture = await runtimeFixture();
+    const options = {
+      adminSecurity: {
+        bootstrapPath: fixture.adminBootstrapPath,
+        sourceKeyPepperPath: fixture.pepperPath,
+        statePath: fixture.adminStatePath,
+      },
+      externalOrigin: "http://localhost:43100",
+    } as const;
+    const first = await startCommandCenterRuntime(
+      fixture.configPath,
+      options,
+    );
+    let firstToken: string;
+    try {
+      expect(first.accessUrl).toBe("http://localhost:43100/admin-auth");
+      expect(first.accessUrl).not.toContain("access_token");
+      const bootstrap = JSON.parse(
+        await readFile(first.bootstrapPath, "utf8"),
+      ) as {
+        readonly accessUrl: string;
+        readonly authentication: string;
+        readonly bootstrapToken: string;
+      };
+      firstToken = bootstrap.bootstrapToken;
+      expect(bootstrap).toMatchObject({
+        accessUrl: "http://localhost:43100/admin-auth",
+        authentication: "PASSKEY",
+      });
+      expect(firstToken).toMatch(/^[A-Za-z0-9_-]{40,}$/u);
+      expect((await stat(first.bootstrapPath)).mode & 0o777).toBe(0o600);
+      expect(commandCenterReadinessLine(first)).not.toContain(firstToken);
+      expect(commandCenterReadinessLine(first)).not.toContain("access_token");
+    } finally {
+      await first.close();
+    }
+    await expect(access(first.bootstrapPath)).resolves.toBeUndefined();
+
+    const second = await startCommandCenterRuntime(
+      fixture.configPath,
+      options,
+    );
+    try {
+      const bootstrap = JSON.parse(
+        await readFile(second.bootstrapPath, "utf8"),
+      ) as { readonly bootstrapToken: string };
+      expect(bootstrap.bootstrapToken).toBe(firstToken);
+      expect(
+        (await stat(
+          fixture.adminStatePath,
+        )).mode & 0o777,
+      ).toBe(0o600);
+    } finally {
+      await second.close();
+    }
+  });
 });
 
-async function runtimeFixture(): Promise<Readonly<{ readonly configPath: string; readonly databasePath: string }>> {
+async function runtimeFixture(): Promise<Readonly<{
+  readonly adminBootstrapPath: string;
+  readonly adminStatePath: string;
+  readonly configPath: string;
+  readonly databasePath: string;
+  readonly pepperPath: string;
+}>> {
   const root = await mkdtemp(join(tmpdir(), "mv-command-center-runtime-"));
   roots.push(root);
   const configPath = join(root, "config.json");
   const databasePath = join(root, "runtime.sqlite");
+  const pepperPath = join(root, "admin-source-key-pepper");
+  const adminBootstrapPath = join(root, "founder-bootstrap.json");
+  const adminStatePath = join(root, "admin-security.json");
   await writeFile(configPath, JSON.stringify({
     contractVersion: "1",
     maxRequestBytes: 65_536,
@@ -72,5 +139,15 @@ async function runtimeFixture(): Promise<Readonly<{ readonly configPath: string;
       workspaceId: "workspace-local",
     },
   }), { encoding: "utf8", mode: 0o600 });
-  return Object.freeze({ configPath, databasePath });
+  await writeFile(pepperPath, "p".repeat(64), {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+  return Object.freeze({
+    adminBootstrapPath,
+    adminStatePath,
+    configPath,
+    databasePath,
+    pepperPath,
+  });
 }

@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { emptyAdminSecurityState } from "../../src/admin-security/admin-security-contracts.js";
 import { RepositoryConflictError } from "../../src/errors/core-error.js";
 import { controlFingerprint } from "../../src/operations-control/operations-control-validator.js";
 import { createLocalOperationsJobHandlerRegistry, ImmutableOperationsJobHandlerRegistry } from "../../src/operations-runtime/operations-handler-registry.js";
@@ -42,7 +43,11 @@ const POST_V26_TABLES = Object.freeze([
   "venture_records",
   "venture_runtime_controls",
 ]);
-afterEach(async () => { await Promise.all(roots.splice(0).map((path) => rm(path, { force: true, recursive: true }))); });
+afterEach(async () => {
+  vi.unstubAllEnvs();
+  await Promise.all(roots.splice(0).map((path) =>
+    rm(path, { force: true, recursive: true })));
+});
 
 describe("supervised Operations Runtime", () => {
   it("projects worker logs without payload, operation identity, receipt, or lease data", () => {
@@ -104,6 +109,17 @@ describe("supervised Operations Runtime", () => {
     }
 
     const repositories = new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 });
+    await new OperationsRuntimeControlService({
+      clock,
+      repositories,
+      workspaceId: "workspace",
+    }).update({
+      expectedVersion: 0,
+      killSwitch: "RELEASED",
+      maintenanceMode: "DISABLED",
+      reasonCode: "TEST_RUNTIME_RELEASE",
+      updatedBy: "fabio",
+    });
     await expect(repositories.transaction(({ operationsRuntime }) => operationsRuntime.getScheduleById(schedule.scheduleId))).resolves.toEqual(schedule);
     await expect(repositories.transaction(({ operationsRuntime }) => operationsRuntime.getJobById(legacyJob.jobId))).resolves.toEqual(legacyJob);
     const first = scheduler(repositories, clock, "scheduler-a");
@@ -122,7 +138,7 @@ describe("supervised Operations Runtime", () => {
       job: await operationsRuntime.getJobByOperationIdentity("workspace", operationIdentity(schedule.scheduleId, schedule.nextRunAt)),
     }));
     expect(state.job).toMatchObject({ attempt: 0, status: "QUEUED", version: 0 });
-    expect(state.events.map(({ eventType }) => eventType)).toEqual(["JOB_QUEUED"]);
+    expect(state.events.map(({ eventType }) => eventType)).toEqual(["KILL_SWITCH_CHANGED", "JOB_QUEUED"]);
     await first.close();
     await second.close();
     await repositories.close();
@@ -140,6 +156,38 @@ describe("supervised Operations Runtime", () => {
     }
   });
 
+  it("stops materializing schedules when the configured durable queue bound is reached", async () => {
+    const { clock, repositories } = await fixture();
+    const service = new OperationsSchedulerService({
+      actorId: "fabio",
+      clock,
+      instanceId: "scheduler-bounded",
+      maxQueueDepth: 1,
+      repositories,
+      schedulerLeaseMs: 30_000,
+      workspaceId: "workspace",
+    });
+    await service.registerSchedule(createSchedule(clock, "schedule-bounded-a"));
+    await expect(service.tick()).resolves.toMatchObject({
+      enqueuedJobIds: [expect.any(String)],
+      status: "SCHEDULED",
+    });
+    await service.registerSchedule(createSchedule(clock, "schedule-bounded-b"));
+    await expect(service.tick()).resolves.toEqual({
+      contractVersion: "1",
+      enqueuedJobIds: [],
+      skippedOccurrences: 0,
+      status: "BACKPRESSURE",
+      unauthorizedExternalEffectOccurred: false,
+    });
+    const counts = await repositories.transaction(({ operationsRuntime }) =>
+      operationsRuntime.summarize("workspace"),
+    );
+    expect(counts.queued + counts.retryScheduled + counts.running).toBe(1);
+    await service.close();
+    await repositories.close();
+  });
+
   it("claims and completes atomically with a durable receipt and redacted events", async () => {
     const { clock, repositories } = await fixture();
     const scheduled = scheduler(repositories, clock, "scheduler-a");
@@ -153,7 +201,7 @@ describe("supervised Operations Runtime", () => {
     expect(result.job).toMatchObject({ attempt: 1, receipt: { costCents: 0, externalEffectsExecuted: false, resultRef: "result-local" }, status: "COMPLETED" });
     const durable = await repositories.transaction(async ({ operationalEvents, operationsRuntime }) => ({ attempts: await operationsRuntime.listAttempts(result.job?.jobId ?? "missing"), events: await operationalEvents.listAfter("workspace", 0, 20) }));
     expect(durable.attempts).toHaveLength(1);
-    expect(durable.events.map(({ eventType }) => eventType)).toEqual(["JOB_QUEUED", "JOB_LEASE_ACQUIRED", "JOB_HEARTBEAT", "JOB_COMPLETED"]);
+    expect(durable.events.map(({ eventType }) => eventType)).toEqual(["KILL_SWITCH_CHANGED", "JOB_QUEUED", "JOB_LEASE_ACQUIRED", "JOB_HEARTBEAT", "JOB_COMPLETED"]);
     expect(JSON.stringify(durable.events)).not.toMatch(/prompt|secret|token/i);
     const overview = await repositories.transaction(async ({ operationsRuntime }) => ({ jobs: await operationsRuntime.listJobsByWorkspaceId("workspace", 10), usage: await operationsRuntime.summarizeUsage("workspace") }));
     expect(overview.usage).toEqual({ attempts: 1, costCents: 0, externalEffectsExecuted: false, providerCalls: 0, toolCalls: 0 });
@@ -406,16 +454,16 @@ describe("supervised Operations Runtime", () => {
     expect(cancelled).toMatchObject({ attempt: 0, receipt: { attempt: 0, outcome: "CANCELLED" }, status: "CANCELLED" });
 
     const controls = new OperationsRuntimeControlService({ clock, repositories, workspaceId: "workspace" });
-    await controls.update({ expectedVersion: 0, killSwitch: "ACTIVE", maintenanceMode: "DISABLED", reasonCode: "OPERATOR_STOP", updatedBy: "fabio" });
+    await controls.update({ expectedVersion: 1, killSwitch: "ACTIVE", maintenanceMode: "DISABLED", reasonCode: "OPERATOR_STOP", updatedBy: "fabio" });
     await repositories.transaction(({ operationsRuntime }) => operationsRuntime.insertJob(createJob(clock, "job-stopped", { automaticRetries: 0, initialBackoffMs: 1_000, maxBackoffMs: 1_000 })));
     await expect(workerA.runOnce()).resolves.toMatchObject({ status: "STOPPED" });
     expect((await controls.health()).status).toBe("STOPPED");
-    await controls.update({ expectedVersion: 1, killSwitch: "RELEASED", maintenanceMode: "DISABLED", reasonCode: "OPERATOR_RESUME", updatedBy: "fabio" });
-    await controls.update({ expectedVersion: 2, killSwitch: "RELEASED", maintenanceMode: "ENABLED", reasonCode: "MAINTENANCE_START", updatedBy: "fabio" });
+    await controls.update({ expectedVersion: 2, killSwitch: "RELEASED", maintenanceMode: "DISABLED", reasonCode: "OPERATOR_RESUME", updatedBy: "fabio" });
+    await controls.update({ expectedVersion: 3, killSwitch: "RELEASED", maintenanceMode: "ENABLED", reasonCode: "MAINTENANCE_START", updatedBy: "fabio" });
     await repositories.transaction(({ operationsRuntime }) => operationsRuntime.insertJob(createJob(clock, "job-maintenance", { automaticRetries: 0, initialBackoffMs: 1_000, maxBackoffMs: 1_000 })));
     await expect(workerA.runOnce()).resolves.toMatchObject({ status: "STOPPED" });
     expect(executions).toBe(0);
-    await controls.update({ expectedVersion: 3, killSwitch: "RELEASED", maintenanceMode: "DISABLED", reasonCode: "MAINTENANCE_END", updatedBy: "fabio" });
+    await controls.update({ expectedVersion: 4, killSwitch: "RELEASED", maintenanceMode: "DISABLED", reasonCode: "MAINTENANCE_END", updatedBy: "fabio" });
 
     await workerA.heartbeat();
     clock.advance(31_000);
@@ -528,13 +576,20 @@ describe("supervised process lock and launchd assets", () => {
   it("keeps backup-verifier directories and durable artifacts private", async () => {
     const root = await tempRoot();
     const databasePath = join(root, "backup-source.sqlite");
+    const adminSecurityStatePath = join(root, "admin-security.json");
     const configPath = join(root, "config.json");
     const backupDirectory = join(root, "backups");
     const repositories = new SqliteRepositoryTransactionRunner({ path: databasePath, timeoutMs: 1_000 });
     await repositories.close();
     await writeFile(configPath, JSON.stringify({ contractVersion: "1", maxRequestBytes: 65_536, runtime: { actorId: "fabio", contentAgentMode: "deterministic", contractVersion: "1", permissions: { actorGrants: [], policyGrants: [], taskGrants: [] }, sqlite: { path: databasePath, timeoutMs: 1_000 }, workspaceId: "workspace" } }), { encoding: "utf8", mode: 0o600 });
+    await writeFile(
+      adminSecurityStatePath,
+      `${JSON.stringify(emptyAdminSecurityState())}\n`,
+      { encoding: "utf8", mode: 0o600 },
+    );
     await mkdir(backupDirectory, { mode: 0o755 });
     await chmod(backupDirectory, 0o755);
+    vi.stubEnv("ONLYWAY_ADMIN_SECURITY_STATE_PATH", adminSecurityStatePath);
     const output = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     try { await runOperationsRuntimeCli(["--config", configPath, "--role", "backup-verifier", "--backup-directory", backupDirectory]); }
     finally { output.mockRestore(); }
@@ -545,7 +600,163 @@ describe("supervised process lock and launchd assets", () => {
     const backupFile = files[0];
     if (backupFile === undefined) throw new Error("Verified backup file is missing");
     expect((await stat(join(backupDirectory, backupFile))).mode & 0o777).toBe(0o600);
+    const adminSecurityBackupPath = join(
+      backupDirectory,
+      `${backupFile}.admin-security.json`,
+    );
+    expect((await stat(adminSecurityBackupPath)).mode & 0o777).toBe(0o600);
+    expect(JSON.parse(await readFile(adminSecurityBackupPath, "utf8")))
+      .toEqual(emptyAdminSecurityState());
+    const manifestPath = join(backupDirectory, `${backupFile}.manifest.json`);
+    expect((await stat(manifestPath)).mode & 0o777).toBe(0o600);
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Record<string, unknown>;
+    expect(manifest).toMatchObject({
+      backupFile,
+      adminSecurityState: {
+        contractVersion: "1",
+        file: `${backupFile}.admin-security.json`,
+        revision: 0,
+        stateVersion: 1,
+      },
+      encryptionState: "BACKUP_AT_REST_ENCRYPTION_REQUIRED",
+      integrityCheck: "ok",
+      rawBootstrapIncluded: false,
+      restoreProbe: "PASSED",
+      secretsIncluded: false,
+    });
+    const { manifestFingerprint, ...manifestBody } = manifest;
+    expect(manifestFingerprint).toBe(
+      createHash("sha256")
+        .update(JSON.stringify(manifestBody), "utf8")
+        .digest("hex"),
+    );
+    expect(manifest.adminSecurityState).toMatchObject({
+      sha256: createHash("sha256")
+        .update(await readFile(adminSecurityBackupPath))
+        .digest("hex"),
+      sizeBytes: (await stat(adminSecurityBackupPath)).size,
+    });
     await expect(readFile(`${databasePath}.operations-backup-verifier.lock`, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("fails closed and removes partial backup artifacts for an invalid admin-security state", async () => {
+    const root = await tempRoot();
+    const databasePath = join(root, "backup-source.sqlite");
+    const adminSecurityStatePath = join(root, "admin-security.json");
+    const configPath = join(root, "config.json");
+    const backupDirectory = join(root, "backups");
+    const repositories = new SqliteRepositoryTransactionRunner({
+      path: databasePath,
+      timeoutMs: 1_000,
+    });
+    await repositories.close();
+    await writeFile(
+      configPath,
+      JSON.stringify({ contractVersion: "1", maxRequestBytes: 65_536, runtime: { actorId: "fabio", contentAgentMode: "deterministic", contractVersion: "1", permissions: { actorGrants: [], policyGrants: [], taskGrants: [] }, sqlite: { path: databasePath, timeoutMs: 1_000 }, workspaceId: "workspace" } }),
+      { encoding: "utf8", mode: 0o600 },
+    );
+    await writeFile(
+      adminSecurityStatePath,
+      JSON.stringify({
+        ...emptyAdminSecurityState(),
+        bootstrapToken: "raw-bootstrap-material-must-never-be-backed-up",
+      }),
+      { encoding: "utf8", mode: 0o600 },
+    );
+    vi.stubEnv("ONLYWAY_ADMIN_SECURITY_STATE_PATH", adminSecurityStatePath);
+    const output = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      await expect(runOperationsRuntimeCli([
+        "--config",
+        configPath,
+        "--role",
+        "backup-verifier",
+        "--backup-directory",
+        backupDirectory,
+      ])).rejects.toThrow("Admin security state schema is invalid");
+    } finally {
+      output.mockRestore();
+    }
+    await expect(readdir(backupDirectory)).resolves.toEqual([]);
+  });
+
+  it("refuses to follow an admin-security state symlink during backup", async () => {
+    const root = await tempRoot();
+    const databasePath = join(root, "backup-source.sqlite");
+    const realAdminSecurityStatePath = join(root, "real-admin-security.json");
+    const adminSecurityStatePath = join(root, "admin-security.json");
+    const configPath = join(root, "config.json");
+    const backupDirectory = join(root, "backups");
+    const repositories = new SqliteRepositoryTransactionRunner({
+      path: databasePath,
+      timeoutMs: 1_000,
+    });
+    await repositories.close();
+    await writeFile(
+      configPath,
+      JSON.stringify({ contractVersion: "1", maxRequestBytes: 65_536, runtime: { actorId: "fabio", contentAgentMode: "deterministic", contractVersion: "1", permissions: { actorGrants: [], policyGrants: [], taskGrants: [] }, sqlite: { path: databasePath, timeoutMs: 1_000 }, workspaceId: "workspace" } }),
+      { encoding: "utf8", mode: 0o600 },
+    );
+    await writeFile(
+      realAdminSecurityStatePath,
+      `${JSON.stringify(emptyAdminSecurityState())}\n`,
+      { encoding: "utf8", mode: 0o600 },
+    );
+    await symlink(realAdminSecurityStatePath, adminSecurityStatePath);
+    vi.stubEnv("ONLYWAY_ADMIN_SECURITY_STATE_PATH", adminSecurityStatePath);
+    const output = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      await expect(runOperationsRuntimeCli([
+        "--config",
+        configPath,
+        "--role",
+        "backup-verifier",
+        "--backup-directory",
+        backupDirectory,
+      ])).rejects.toThrow("unavailable or unsafe");
+    } finally {
+      output.mockRestore();
+    }
+    await expect(readdir(backupDirectory)).resolves.toEqual([]);
+  });
+
+  it("creates no partial artifact when the verified-bundle disk reserve is unavailable", async () => {
+    const root = await tempRoot();
+    const databasePath = join(root, "backup-source.sqlite");
+    const adminSecurityStatePath = join(root, "admin-security.json");
+    const configPath = join(root, "config.json");
+    const backupDirectory = join(root, "backups");
+    const repositories = new SqliteRepositoryTransactionRunner({
+      path: databasePath,
+      timeoutMs: 1_000,
+    });
+    await repositories.close();
+    await writeFile(
+      configPath,
+      JSON.stringify({ contractVersion: "1", maxRequestBytes: 65_536, runtime: { actorId: "fabio", contentAgentMode: "deterministic", contractVersion: "1", permissions: { actorGrants: [], policyGrants: [], taskGrants: [] }, sqlite: { path: databasePath, timeoutMs: 1_000 }, workspaceId: "workspace" } }),
+      { encoding: "utf8", mode: 0o600 },
+    );
+    await writeFile(
+      adminSecurityStatePath,
+      `${JSON.stringify(emptyAdminSecurityState())}\n`,
+      { encoding: "utf8", mode: 0o600 },
+    );
+    vi.stubEnv("ONLYWAY_ADMIN_SECURITY_STATE_PATH", adminSecurityStatePath);
+    vi.stubEnv("ONLYWAY_BACKUP_RESERVE_BYTES", "1000000000000000");
+    const output = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      await expect(runOperationsRuntimeCli([
+        "--config",
+        configPath,
+        "--role",
+        "backup-verifier",
+        "--backup-directory",
+        backupDirectory,
+      ])).rejects.toThrow("Insufficient disk space for verified backup bundle");
+    } finally {
+      output.mockRestore();
+    }
+    await expect(readdir(backupDirectory)).resolves.toEqual([]);
   });
 
   it("rejects a live duplicate and recovers one valid stale PID lock", async () => {
@@ -579,7 +790,19 @@ describe("supervised process lock and launchd assets", () => {
 async function fixture(): Promise<{ readonly clock: MutableClock; readonly repositories: SqliteRepositoryTransactionRunner }> {
   const root = await tempRoot();
   const repositories = new SqliteRepositoryTransactionRunner({ path: join(root, "runtime.sqlite"), timeoutMs: 1_000 });
-  return { clock: new MutableClock("2026-07-19T08:00:00.000Z"), repositories };
+  const clock = new MutableClock("2026-07-19T08:00:00.000Z");
+  await new OperationsRuntimeControlService({
+    clock,
+    repositories,
+    workspaceId: "workspace",
+  }).update({
+    expectedVersion: 0,
+    killSwitch: "RELEASED",
+    maintenanceMode: "DISABLED",
+    reasonCode: "TEST_RUNTIME_RELEASE",
+    updatedBy: "fabio",
+  });
+  return { clock, repositories };
 }
 async function tempRoot(): Promise<string> { const root = await mkdtemp(join(tmpdir(), "mv-ai-os-operations-")); roots.push(root); return root; }
 function scheduler(repositories: SqliteRepositoryTransactionRunner, clock: MutableClock, instanceId: string): OperationsSchedulerService { return new OperationsSchedulerService({ actorId: "fabio", clock, instanceId, repositories, schedulerLeaseMs: 30_000, workspaceId: "workspace" }); }

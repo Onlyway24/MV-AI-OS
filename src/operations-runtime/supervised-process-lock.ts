@@ -3,12 +3,20 @@ import { link, lstat, mkdir, open, unlink } from "node:fs/promises";
 import { dirname } from "node:path";
 
 import { RepositoryConflictError, RepositoryValidationError } from "../errors/core-error.js";
+import {
+  captureCurrentProcessIdentity,
+  isRecordedProcessActive,
+  isVerifiableProcessIdentity,
+  sameProcessIdentity,
+  type VerifiableProcessIdentity,
+} from "../runtime/verifiable-process-identity.js";
 
 interface ProcessLockRecord {
   readonly contractVersion: "1";
   readonly createdAt: string;
   readonly instanceId: string;
   readonly pid: number;
+  readonly processIdentity?: VerifiableProcessIdentity;
   readonly role: string;
   readonly token: string;
 }
@@ -20,6 +28,7 @@ interface RecoveryClaimRecord {
   readonly expectedInode: number;
   readonly expectedToken: string;
   readonly ownerPid: number;
+  readonly ownerProcessIdentity?: VerifiableProcessIdentity;
   readonly token: string;
 }
 
@@ -55,7 +64,8 @@ export class SupervisedProcessLock {
     if (!input.path.startsWith("/") || input.path.includes("\0")) throw new RepositoryValidationError("Process lock path must be absolute");
     const directory = dirname(input.path);
     await mkdir(directory, { mode: 0o700, recursive: true });
-    const record: ProcessLockRecord = Object.freeze({ contractVersion: "1", createdAt: (input.now ?? new Date()).toISOString(), instanceId: input.instanceId, pid: process.pid, role: input.role, token: `lock-${randomUUID()}` });
+    const processIdentity = await captureCurrentProcessIdentity();
+    const record: ProcessLockRecord = Object.freeze({ contractVersion: "1", createdAt: (input.now ?? new Date()).toISOString(), instanceId: input.instanceId, pid: process.pid, processIdentity, role: input.role, token: `lock-${randomUUID()}` });
     const prepared = await prepareFile(input.path, `${JSON.stringify(record)}\n`);
     let published = false;
     let recoveryClaim: RecoveryClaim | undefined;
@@ -72,7 +82,7 @@ export class SupervisedProcessLock {
             throw readError;
           });
           if (existing === undefined) continue;
-          if (isPidAlive(existing.record.pid)) throw new RepositoryConflictError("Supervised process lock is held by an active process", { pid: existing.record.pid, role: existing.record.role });
+          if (await isRecordedProcessActive(existing.record.pid, existing.record.processIdentity)) throw new RepositoryConflictError("Supervised process lock is held by an active process", { pid: existing.record.pid, role: existing.record.role });
           if (attempt > 0) throw new RepositoryConflictError("Supervised process lock stale recovery raced with another process");
           recoveryClaim = await acquireRecoveryClaim(input.path, existing, input.now ?? new Date());
           await removeStaleLock(input.path, existing);
@@ -104,7 +114,7 @@ export class SupervisedProcessLock {
       this.#closed = true;
       return;
     }
-    if (current.record.token !== this.owned.token || current.record.instanceId !== this.owned.instanceId || current.record.pid !== this.owned.pid) throw new RepositoryConflictError("Supervised process lock ownership changed before release");
+    if (current.record.token !== this.owned.token || current.record.instanceId !== this.owned.instanceId || current.record.pid !== this.owned.pid || current.record.processIdentity === undefined || this.owned.processIdentity === undefined || !sameProcessIdentity(current.record.processIdentity, this.owned.processIdentity)) throw new RepositoryConflictError("Supervised process lock ownership changed before release");
     await removeOwnedFile(this.path, current.identity);
     await syncDirectory(dirname(this.path));
     this.#closed = true;
@@ -160,6 +170,7 @@ async function publishPreparedFile(prepared: PreparedFile, targetPath: string): 
 
 async function acquireRecoveryClaim(targetPath: string, expected: FileSnapshot<ProcessLockRecord>, now: Date): Promise<RecoveryClaim> {
   const path = `${targetPath}.recovery`;
+  const ownerProcessIdentity = await captureCurrentProcessIdentity();
   const record: RecoveryClaimRecord = Object.freeze({
     contractVersion: "1",
     createdAt: now.toISOString(),
@@ -167,6 +178,7 @@ async function acquireRecoveryClaim(targetPath: string, expected: FileSnapshot<P
     expectedInode: expected.identity.inode,
     expectedToken: expected.record.token,
     ownerPid: process.pid,
+    ownerProcessIdentity,
     token: `recovery-${randomUUID()}`,
   });
   const prepared = await prepareFile(path, `${JSON.stringify(record)}\n`);
@@ -184,7 +196,7 @@ async function acquireRecoveryClaim(targetPath: string, expected: FileSnapshot<P
           throw readError;
         });
         if (existing === undefined) continue;
-        if (isPidAlive(existing.record.ownerPid)) throw new RepositoryConflictError("Supervised process lock stale recovery is held by an active process", { ownerPid: existing.record.ownerPid });
+        if (await isRecordedProcessActive(existing.record.ownerPid, existing.record.ownerProcessIdentity)) throw new RepositoryConflictError("Supervised process lock stale recovery is held by an active process", { ownerPid: existing.record.ownerPid });
         if (attempt > 0) throw new RepositoryConflictError("Supervised process lock orphan recovery raced with another process", { ownerPid: existing.record.ownerPid });
         const currentTarget = await readProcessLock(targetPath).catch((readError: unknown) => {
           if (hasCode(readError, "ENOENT")) return undefined;
@@ -220,21 +232,21 @@ async function releaseRecoveryClaim(claim: RecoveryClaim | undefined): Promise<v
     throw error;
   });
   if (current === undefined) return;
-  if (!sameIdentity(current.identity, claim.identity) || current.record.token !== claim.record.token || current.record.ownerPid !== claim.record.ownerPid) throw new RepositoryConflictError("Supervised process lock recovery ownership changed before release");
+  if (!sameIdentity(current.identity, claim.identity) || current.record.token !== claim.record.token || current.record.ownerPid !== claim.record.ownerPid || current.record.ownerProcessIdentity === undefined || claim.record.ownerProcessIdentity === undefined || !sameProcessIdentity(current.record.ownerProcessIdentity, claim.record.ownerProcessIdentity)) throw new RepositoryConflictError("Supervised process lock recovery ownership changed before release");
   await removeOwnedFile(claim.path, claim.identity);
 }
 
 async function readProcessLock(path: string): Promise<FileSnapshot<ProcessLockRecord>> {
   const snapshot = await readJsonFile(path, "Supervised process lock record is invalid");
   const parsed = snapshot.record;
-  if (!record(parsed) || parsed.contractVersion !== "1" || typeof parsed.pid !== "number" || !Number.isSafeInteger(parsed.pid) || parsed.pid < 1 || !safeId(parsed.instanceId) || !safeId(parsed.role) || !safeId(parsed.token) || typeof parsed.createdAt !== "string" || !Number.isFinite(Date.parse(parsed.createdAt))) throw new RepositoryConflictError("Supervised process lock record is invalid");
+  if (!record(parsed) || parsed.contractVersion !== "1" || typeof parsed.pid !== "number" || !Number.isSafeInteger(parsed.pid) || parsed.pid < 1 || !optionalProcessIdentity(parsed, "processIdentity") || !safeId(parsed.instanceId) || !safeId(parsed.role) || !safeId(parsed.token) || typeof parsed.createdAt !== "string" || !Number.isFinite(Date.parse(parsed.createdAt))) throw new RepositoryConflictError("Supervised process lock record is invalid");
   return Object.freeze({ identity: snapshot.identity, record: parsed as unknown as ProcessLockRecord });
 }
 
 async function readRecoveryClaim(path: string): Promise<FileSnapshot<RecoveryClaimRecord>> {
   const snapshot = await readJsonFile(path, "Supervised process lock recovery claim is invalid");
   const parsed = snapshot.record;
-  if (!record(parsed) || parsed.contractVersion !== "1" || typeof parsed.ownerPid !== "number" || !Number.isSafeInteger(parsed.ownerPid) || parsed.ownerPid < 1 || !safeId(parsed.token) || !safeId(parsed.expectedToken) || !safeNonNegativeInteger(parsed.expectedDevice) || !safeNonNegativeInteger(parsed.expectedInode) || typeof parsed.createdAt !== "string" || !Number.isFinite(Date.parse(parsed.createdAt))) throw new RepositoryConflictError("Supervised process lock recovery claim is invalid");
+  if (!record(parsed) || parsed.contractVersion !== "1" || typeof parsed.ownerPid !== "number" || !Number.isSafeInteger(parsed.ownerPid) || parsed.ownerPid < 1 || !optionalProcessIdentity(parsed, "ownerProcessIdentity") || !safeId(parsed.token) || !safeId(parsed.expectedToken) || !safeNonNegativeInteger(parsed.expectedDevice) || !safeNonNegativeInteger(parsed.expectedInode) || typeof parsed.createdAt !== "string" || !Number.isFinite(Date.parse(parsed.createdAt))) throw new RepositoryConflictError("Supervised process lock recovery claim is invalid");
   return Object.freeze({ identity: snapshot.identity, record: parsed as unknown as RecoveryClaimRecord });
 }
 
@@ -287,13 +299,10 @@ async function collectCleanupFailure(failures: unknown[], cleanup: () => Promise
   }
 }
 
-function isPidAlive(pid: number): boolean {
-  try { process.kill(pid, 0); return true; }
-  catch (error) { return hasCode(error, "EPERM"); }
-}
 function sameIdentity(left: FileIdentity, right: FileIdentity): boolean { return left.device === right.device && left.inode === right.inode; }
 function hasCode(error: unknown, code: string): boolean { return typeof error === "object" && error !== null && "code" in error && error.code === code; }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
+function optionalProcessIdentity(value: Record<string, unknown>, key: string): boolean { return !(key in value) || isVerifiableProcessIdentity(value[key]); }
 function safeId(value: unknown): value is string { return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9@._:-]{0,127}$/u.test(value); }
 function safeNonNegativeInteger(value: unknown): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0; }
 function assertSafeId(value: unknown, label: string): asserts value is string { if (!safeId(value)) throw new RepositoryValidationError(`${label} is invalid`); }

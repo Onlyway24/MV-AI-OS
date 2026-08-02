@@ -18,6 +18,10 @@ coverage/
 *.cookies
 *.lock
 *.command-center-bootstrap.json
+*.admin-security.json
+*.admin-security.json.*
+*.cost-ledger.json
+*.cost-ledger.json.*
 
 # Fabio's Reference Vault intake is private by default. Keep only directory sentinels.
 assets/reference-vault/incoming/**/*
