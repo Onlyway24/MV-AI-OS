@@ -9,6 +9,7 @@ import {
 import type { RepositoryTransactionRunner } from "../../persistence/repository-transaction.js";
 import type { Clock } from "../../ports/clock.js";
 import type { Validator } from "../../validation/validation.js";
+import { asRecord } from "../../validation/primitives.js";
 import {
   createSpecificationFingerprint,
 } from "../specification/specification-fingerprint.js";
@@ -31,6 +32,7 @@ import type {
   WorkflowAgentSpecificationAttribution,
   WorkflowDefinition,
   WorkflowInstance,
+  WorkflowInstanceInputBinding,
 } from "./workflow-runtime.js";
 import {
   WorkflowDefinitionValidator,
@@ -40,6 +42,8 @@ import {
 const ADMISSION_EVENT_TYPE = "workflow.specification_admitted";
 const ADMISSION_ACTION = "workflow.specification.admit";
 const MAX_ADMITTED_WORKFLOW_STEPS = 100;
+const SENSITIVE_INPUT_PATTERN =
+  /\b(?:secret|prompt|completion|provider payload|transcript|api[_-]?key)\b|\bsk-[A-Za-z0-9_-]{8,}\b|\bbearer\s+[A-Za-z0-9._-]+|-----BEGIN [A-Z ]+PRIVATE KEY-----|(?:\/Users\/|\/home\/)[^\s]+/iu;
 
 export interface RepositoryBackedWorkflowSpecificationAdmissionDependencies {
   readonly actorId: string;
@@ -128,7 +132,7 @@ export class RepositoryBackedWorkflowSpecificationAdmissionService
             workflows,
             workflowCommands,
             valid,
-            resolved.definition,
+            resolved,
           );
           return this.#result(valid, resolved, auditEventId, "REPLAYED");
         }
@@ -155,7 +159,7 @@ export class RepositoryBackedWorkflowSpecificationAdmissionService
 
         const now = readClockTimestamp(this.dependencies.clock);
         const instance = validate(
-          createInstance(valid.instanceId, resolved.definition, now),
+          createInstance(valid.instanceId, resolved.definition, resolved.input, now),
           this.#instanceValidator,
           "Admitted Workflow instance",
         );
@@ -207,6 +211,7 @@ export class RepositoryBackedWorkflowSpecificationAdmissionService
       );
     }
     assertSupportedSpecification(specification);
+    assertSupportedInput(specification, request.input);
 
     const agents = resolveAgentSpecifications(
       specification,
@@ -229,9 +234,20 @@ export class RepositoryBackedWorkflowSpecificationAdmissionService
       this.#definitionValidator,
       "Admitted Workflow definition",
     );
+    const input = freezeWorkflowSpecificationAdmissionValue({
+      contractId: specification.input.contractId,
+      contractVersion: specification.input.contractVersion,
+      data: request.input,
+      fingerprint: createSpecificationFingerprint({
+        contractId: specification.input.contractId,
+        contractVersion: specification.input.contractVersion,
+        data: request.input,
+      }),
+    });
     return freezeWorkflowSpecificationAdmissionValue({
       agentSpecifications: attribution,
       definition,
+      input,
       specificationFingerprint,
     });
   }
@@ -297,6 +313,7 @@ export function createWorkflowSpecificationAdmissionAuditEventId(
 interface ResolvedAdmission {
   readonly agentSpecifications: readonly WorkflowAgentSpecificationAttribution[];
   readonly definition: WorkflowDefinition;
+  readonly input: WorkflowInstanceInputBinding;
   readonly specificationFingerprint: string;
 }
 
@@ -314,6 +331,65 @@ function assertSupportedSpecification(
       "Workflow Specification uses semantics unsupported by Core V1 admission",
     );
   }
+}
+
+function assertSupportedInput(
+  specification: WorkflowSpecification,
+  input: WorkflowSpecificationAdmissionRequest["input"],
+): void {
+  const schema = asRecord(specification.input.schema);
+  const properties = asRecord(schema?.properties);
+  const required = asStringArray(schema?.required);
+  if (
+    !specification.input.strict ||
+    schema?.type !== "object" ||
+    schema.additionalProperties !== false ||
+    properties === undefined ||
+    required === undefined ||
+    Object.values(properties).some((property) => {
+      const record = asRecord(property);
+      return record === undefined ||
+        Object.keys(record).length !== 1 ||
+        record.type !== "string";
+    })
+  ) {
+    throw new RepositoryValidationError(
+      "Workflow Specification input schema is unsupported by Core V1 admission",
+    );
+  }
+  const propertyNames = Object.keys(properties).sort(compareText);
+  const requiredNames = [...required].sort(compareText);
+  const inputNames = Object.keys(input).sort(compareText);
+  if (
+    new Set(requiredNames).size !== requiredNames.length ||
+    requiredNames.some((key) => !propertyNames.includes(key)) ||
+    inputNames.some((key) => !propertyNames.includes(key)) ||
+    requiredNames.some((key) => !inputNames.includes(key)) ||
+    inputNames.some((key) => {
+      const value = input[key];
+      return typeof value !== "string" ||
+        value.trim().length === 0 ||
+        value.length > 500 ||
+        SENSITIVE_INPUT_PATTERN.test(value) ||
+        (key === "missionReference" &&
+          !/^[a-z0-9][a-z0-9@._-]{0,127}$/u.test(value));
+    }) ||
+    JSON.stringify(input).length > 65_536
+  ) {
+    throw new RepositoryValidationError(
+      "Workflow admission input does not satisfy the exact supported input contract",
+    );
+  }
+}
+
+function asStringArray(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const strings: string[] = [];
+  for (const item of value as readonly unknown[]) {
+    if (typeof item !== "string") return undefined;
+    strings.push(item);
+  }
+  return strings;
 }
 
 function resolveAgentSpecifications(
@@ -464,12 +540,14 @@ function compareReadyStepIds(
 function createInstance(
   instanceId: string,
   definition: WorkflowDefinition,
+  input: WorkflowInstanceInputBinding,
   now: string,
 ): WorkflowInstance {
   return freezeWorkflowSpecificationAdmissionValue({
     contractVersion: "1" as const,
     createdAt: now,
     definitionId: definition.definitionId,
+    input,
     instanceId,
     nonExecuting: true as const,
     receipts: [],
@@ -504,6 +582,7 @@ function createAuditEvent(
         resolved.agentSpecifications,
       ),
       definitionId: resolved.definition.definitionId,
+      inputFingerprint: createSpecificationFingerprint(request.input),
       instanceId: request.instanceId,
       requestFingerprint,
       specificationFingerprint: resolved.specificationFingerprint,
@@ -541,6 +620,8 @@ function assertReplayAudit(
     event.metadata.specificationFingerprint !==
       resolved.specificationFingerprint ||
     event.metadata.definitionId !== resolved.definition.definitionId ||
+    event.metadata.inputFingerprint !==
+      createSpecificationFingerprint(request.input) ||
     event.metadata.instanceId !== request.instanceId ||
     event.metadata.workflowId !== request.workflowId ||
     event.metadata.workflowVersion !== request.workflowVersion
@@ -555,8 +636,9 @@ async function assertDurableReplay(
   workflows: import("./workflow-persistence.js").WorkflowPersistenceTransaction,
   workflowCommands: import("../../runtime/local-workflow-command-repository.js").LocalWorkflowCommandRepository,
   request: WorkflowSpecificationAdmissionRequest,
-  expectedDefinition: WorkflowDefinition,
+  resolved: ResolvedAdmission,
 ): Promise<void> {
+  const expectedDefinition = resolved.definition;
   const definition = await workflows.definitions.getById(
     expectedDefinition.definitionId,
   );
@@ -566,6 +648,7 @@ async function assertDurableReplay(
     definition === undefined ||
     !sameValue(definition, expectedDefinition) ||
     instance?.definitionId !== expectedDefinition.definitionId ||
+    !sameValue(instance.input, resolved.input) ||
     ownership?.actorId !== request.actorId ||
     ownership.workspaceId !== request.workspaceId
   ) {

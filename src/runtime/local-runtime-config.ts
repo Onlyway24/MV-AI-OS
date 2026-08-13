@@ -3,6 +3,11 @@ import type { EffectivePermission } from "../policy/effective-permissions.js";
 import type { ModelBudgetConfig } from "../models/model-budget.js";
 import type { ModelOperationLimits } from "../models/model-operation-limits.js";
 import type { ModelUsageAccountingConfig } from "../models/model-pricing.js";
+import type { ReferenceVaultApprovalAuthority } from "../reference-vault/reference-vault-approval-authority.js";
+import type {
+  LivePaidActivation,
+  ProductionProviderMode,
+} from "../production/provider-mode.js";
 
 export const LOCAL_RUNTIME_CONTRACT_VERSION = "1" as const;
 
@@ -34,11 +39,19 @@ export interface LocalRuntimeConfig {
   readonly actorId: string;
   readonly contractVersion: typeof LOCAL_RUNTIME_CONTRACT_VERSION;
   readonly contentAgentMode: LocalContentAgentMode;
+  readonly livePaidActivation?: LivePaidActivation;
   readonly modelBudget?: ModelBudgetConfig;
   readonly modelOperationLimits?: ModelOperationLimits;
   readonly modelProvider?: LocalModelProviderConfig;
   readonly modelUsageAccounting?: ModelUsageAccountingConfig;
   readonly permissions: LocalRuntimePermissionConfig;
+  /**
+   * Omission is intentionally fail-closed and resolves to OFFLINE_REHEARSAL.
+   * The property remains optional so existing deterministic local configs stay
+   * source-compatible.
+   */
+  readonly providerMode?: ProductionProviderMode;
+  readonly referenceVaultApprovalAuthority?: ReferenceVaultApprovalAuthority;
   readonly sqlite: SqliteConnectionConfig;
   readonly workspaceId: string;
 }

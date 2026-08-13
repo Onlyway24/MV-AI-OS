@@ -13,3 +13,25 @@ data/*.sqlite*
 
 *.log
 .DS_Store
+
+# Dati operativi locali e segreti di sessione: non devono entrare nella storia Git.
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.cookie
+*.cookies
+*.lock
+*.command-center-bootstrap.json
+*.admin-security.json
+*.admin-security.json.*
+*.cost-ledger.json
+*.cost-ledger.json.*
+
+# Fabio's Reference Vault intake is private by default. Keep only directory sentinels.
+assets/reference-vault/incoming/**/*
+!assets/reference-vault/incoming/**/
+!assets/reference-vault/incoming/**/.gitkeep
+*.pid
+*.local.json
+screenshots/

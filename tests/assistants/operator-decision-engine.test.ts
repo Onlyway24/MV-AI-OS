@@ -76,7 +76,7 @@ describe("Operator Decision Engine Foundation", () => {
       clarificationQuestions: [],
       decision: "proceed",
       explanation:
-        "Only Way Assistant may proceed inside the current controlled boundaries.",
+        "Onlyway Assistant may proceed inside the current controlled boundaries.",
       guardianDecision: "may_continue",
       requiredApprovals: [],
     });
@@ -96,7 +96,7 @@ describe("Operator Decision Engine Foundation", () => {
       decision: "clarification_required",
     });
     expect(decision.clarificationQuestions).toEqual([
-      "What concrete business outcome should Only Way Assistant optimize for?",
+      "What concrete business outcome should Onlyway Assistant optimize for?",
       "What final output should Fabio receive from this request?",
     ]);
   });
@@ -335,7 +335,7 @@ function createDecision(
     decision: "proceed",
     decisionId: "operator-decision-1",
     explanation:
-      "Only Way Assistant may proceed inside the current controlled boundaries.",
+      "Onlyway Assistant may proceed inside the current controlled boundaries.",
     generatedAt: GENERATED_AT,
     guardianDecision: "may_continue",
     reasons: [

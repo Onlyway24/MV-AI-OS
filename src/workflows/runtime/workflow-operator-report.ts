@@ -21,7 +21,7 @@ export interface WorkflowOperatorReport {
   readonly workflowVersion: string;
   readonly instanceId: string;
   readonly instanceVersion: number;
-  readonly mission: { readonly objective: string; readonly evidenceAvailable: boolean };
+  readonly mission: { readonly objective: string; readonly evidenceAvailable: boolean; readonly reference?: string };
   readonly overallStatus: "ACTIVE" | "CANCELLED" | "COMPLETED" | "FAILED" | "PAUSED";
   readonly progress: { readonly completedSteps: number; readonly totalSteps: number; readonly criticalPath: string };
   readonly completedSteps: readonly WorkflowOperatorStepReport[];
@@ -102,6 +102,7 @@ export class RepositoryBackedWorkflowOperatorReportService {
       const lastDurableEvent = latestEvent(workflowEvents.map((event) => ({ eventId: event.eventId, occurredAt: event.occurredAt, summary: event.commandKind })), lifecycle.map((entry) => ({ eventId: entry.recordId, occurredAt: entry.recordedAt, summary: entry.kind })), invocations.map((entry) => ({ eventId: entry.invocationId, occurredAt: entry.completedAt ?? entry.reservedAt, summary: `INVOCATION_${entry.status}` })));
       const evidenceComplete = workflowEvents.length < EVIDENCE_LIMIT && invocations.length < EVIDENCE_LIMIT && stepEvidence.every(({ lifecycle: records }) => records.length < EVIDENCE_LIMIT);
       const actionableInvocations = invocations.filter((invocation) => instance.steps.find(({ stepId }) => stepId === invocation.stepId)?.status === "AWAITING_RESULT");
+      const mission = missionEvidence(instance, definition);
       const report: WorkflowOperatorReport = {
         approvals: controls.map(({ approval }, index) => ({ ...approval, stepId: definition.steps[index]?.stepId ?? "unknown" })),
         blockedSteps: bounded(blockedSteps, valid.maxItems),
@@ -116,7 +117,7 @@ export class RepositoryBackedWorkflowOperatorReportService {
         instanceId: instance.instanceId,
         instanceVersion: instance.version,
         ...(lastDurableEvent === undefined ? {} : { lastDurableEvent }),
-        mission: { evidenceAvailable: definition.missionObjective !== undefined, objective: definition.missionObjective ?? `Mission objective unavailable for ${definition.workflowId}.` },
+        mission,
         nextAction: nextAction(instance.status, instance.version, controls, stepReports, readySteps, failedSteps, retry, actionableInvocations),
         nonExecuting: true,
         overallStatus: instance.status,
@@ -136,6 +137,33 @@ export class RepositoryBackedWorkflowOperatorReportService {
 }
 
 export function createWorkflowOperatorReportService(repositories: RepositoryTransactionRunner): RepositoryBackedWorkflowOperatorReportService { return new RepositoryBackedWorkflowOperatorReportService(repositories); }
+
+function missionEvidence(
+  instance: import("./workflow-runtime.js").WorkflowInstance,
+  definition: import("./workflow-runtime.js").WorkflowDefinition,
+): WorkflowOperatorReport["mission"] {
+  const objective = instance.input?.data.objective;
+  const reference = instance.input?.data.missionReference;
+  if (
+    typeof objective === "string" &&
+    objective.trim().length > 0 &&
+    typeof reference === "string" &&
+    reference.trim().length > 0
+  ) {
+    return { evidenceAvailable: true, objective, reference };
+  }
+  if (definition.admission !== undefined || instance.input !== undefined) {
+    throw new RepositoryValidationError(
+      "Workflow operator report mission input binding is invalid",
+    );
+  }
+  return {
+    evidenceAvailable: definition.missionObjective !== undefined,
+    objective:
+      definition.missionObjective ??
+      `Mission objective unavailable for ${definition.workflowId}.`,
+  };
+}
 
 interface ControlState { readonly terminal: boolean; readonly stepId: string; readonly approval: { readonly status: "APPROVED" | "REQUIRED" | "NOT_REQUIRED"; readonly evidenceId?: string }; readonly guardian: { readonly status: "BLOCKED" | "CLEAR" | "REQUIRED" | "NOT_REQUIRED"; readonly evidenceId?: string; readonly domain?: string; readonly remediationRequired: boolean } }
 function controlState(step: WorkflowStepDefinition, approval: { readonly evidenceId: string; readonly status: string } | undefined, guardians: readonly WorkflowGuardianCheckpoint[], stepStatus: WorkflowStepInstance["status"] | undefined, workflowStatus: WorkflowOperatorReport["overallStatus"]): ControlState { const terminal = hasTerminalReportPrecedence(workflowStatus, stepStatus); const latestByDomain = new Map<string, WorkflowGuardianCheckpoint>(); for (const guardian of guardians) latestByDomain.set(guardian.domain, guardian); const required = REQUIRED_GUARDIAN_DOMAINS.map((domain) => latestByDomain.get(domain)); const blocked = required.find((entry) => entry?.status === "BLOCKED"); const missingDomain = REQUIRED_GUARDIAN_DOMAINS.find((domain) => latestByDomain.get(domain)?.status !== "CLEAR"); const guardianState: ControlState["guardian"] = terminal ? { remediationRequired: false, status: "NOT_REQUIRED" } : blocked !== undefined ? { domain: blocked.domain, evidenceId: blocked.evidenceId, remediationRequired: true, status: "BLOCKED" } : missingDomain === undefined ? { domain: "quality", evidenceId: requiredGuardianEvidenceId(latestByDomain, "quality"), remediationRequired: false, status: "CLEAR" } : { domain: missingDomain, ...(latestByDomain.get(missingDomain) === undefined ? {} : { evidenceId: requiredGuardianEvidenceId(latestByDomain, missingDomain) }), remediationRequired: true, status: "REQUIRED" }; return { terminal, stepId: step.stepId, approval: terminal || !step.approvalRequired ? { status: "NOT_REQUIRED" } : approval?.status === "APPROVED" ? { evidenceId: approval.evidenceId, status: "APPROVED" } : { ...(approval === undefined ? {} : { evidenceId: approval.evidenceId }), status: "REQUIRED" }, guardian: guardianState }; }

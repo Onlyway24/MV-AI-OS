@@ -130,7 +130,7 @@ describe("Main Assistant / Orchestrator Runtime Boundary", () => {
       invocationId: invocation.invocationId,
       operatorSafetyStatus: "healthy",
       operatorSummary:
-        "Only Way Assistant accepted the bounded operator request within the current safe runtime boundary.",
+        "Onlyway Assistant accepted the bounded operator request within the current safe runtime boundary.",
       recommendedDelegations: [],
       recommendedNextActions: [
         "Proceed with a deterministic operator-facing response through existing MV AI OS boundaries.",
@@ -344,7 +344,7 @@ function createResult(
     intent: "coordinate",
     invocationId: "main-assistant-invocation-1",
     operatorSafetyStatus: "healthy",
-    operatorSummary: "Only Way Assistant accepted the bounded request.",
+    operatorSummary: "Onlyway Assistant accepted the bounded request.",
     recommendedDelegations: [],
     recommendedNextActions: ["Continue inside controlled boundaries."],
     safetyDecision: "safe_to_continue",

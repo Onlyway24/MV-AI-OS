@@ -1,5 +1,11 @@
 # MV-AI-OS — Complete Project Intelligence Dossier
 
+> Historical integration input (superseded): this dossier records the repository
+> state before the Core V1 and advanced feature histories were unified. The canonical
+> current truth is `README.md`, `docs/ARCHITECTURE.md` and `docs/project-state/`.
+> Branch-separation statements below are intentionally retained as audit history and
+> must not be interpreted as the post-integration release state.
+
 **Analysis date:** 2026-08-13 (Europe/Rome)
 
 **Authoritative checkout:** `/Users/onlyway24/AI/MV-AI-OS` (physical worktree `/Users/onlyway24/Desktop/MV-AI-OS`)

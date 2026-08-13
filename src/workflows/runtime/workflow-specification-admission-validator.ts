@@ -1,5 +1,6 @@
 import {
   readRequiredBoolean,
+  readRequiredJsonObject,
   readRequiredString,
 } from "../../validation/field-readers.js";
 import {
@@ -55,6 +56,7 @@ export class WorkflowSpecificationAdmissionRequestValidator
         "workflowId",
         "workflowVersion",
         "instanceId",
+        "input",
         "nonExecuting",
       ],
       issues,
@@ -74,6 +76,7 @@ export class WorkflowSpecificationAdmissionRequestValidator
       issues,
     );
     const instanceId = readRequiredString(record, "instanceId", issues);
+    const input = readRequiredJsonObject(record, "input", issues);
     const nonExecuting = readRequiredBoolean(record, "nonExecuting", issues);
 
     if (contractVersion !== WORKFLOW_SPECIFICATION_ADMISSION_CONTRACT_VERSION) {
@@ -136,6 +139,7 @@ export class WorkflowSpecificationAdmissionRequestValidator
       workflowId === undefined ||
       workflowVersion === undefined ||
       instanceId === undefined ||
+      input === undefined ||
       nonExecuting !== true
     ) {
       return validationFailure(issues);
@@ -145,6 +149,7 @@ export class WorkflowSpecificationAdmissionRequestValidator
         actorId,
         admissionId,
         contractVersion,
+        input,
         instanceId,
         nonExecuting,
         workflowId,

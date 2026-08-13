@@ -1,0 +1,37 @@
+{
+  "authorizationStatus": "AWAITING_FABIO_AUTHORIZATION",
+  "confirmationRequired": "AUTORIZZO_ESATTAMENTE_QUESTI_6_PROFILI",
+  "observationPolicy": "PUBLIC_ONLY_NO_OUTREACH_NO_LOGIN_NO_COPYING",
+  "profiles": [
+    {
+      "accountRef": "maert.ens",
+      "evidenceUrl": "https://www.vice.com/it/article/vinted-come-funziona/",
+      "role": "DIRECT_RESALE"
+    },
+    {
+      "accountRef": "telotrovosu",
+      "evidenceUrl": "https://www.vanityfair.it/article/te-lo-trovo-su-vinted-segreti-shopping-moda-vintage-occasioni",
+      "role": "DIRECT_RESALE"
+    },
+    {
+      "accountRef": "imprenditore.it",
+      "evidenceUrl": "https://socialblade.com/instagram/user/imprenditore.it",
+      "role": "ADJACENT_ENTREPRENEURSHIP"
+    },
+    {
+      "accountRef": "marcelloascani",
+      "evidenceUrl": "https://www.ing.it/vocearancio/soldi/leconomia-sui-social-5-profili-da-seguire.html",
+      "role": "ADJACENT_ENTREPRENEURSHIP"
+    },
+    {
+      "accountRef": "leonpinn",
+      "evidenceUrl": "https://www.ing.it/vocearancio/soldi/leconomia-sui-social-5-profili-da-seguire.html",
+      "role": "VISUAL_REFERENCE"
+    },
+    {
+      "accountRef": "pillole.di.economia",
+      "evidenceUrl": "https://www.ing.it/vocearancio/soldi/leconomia-sui-social-5-profili-da-seguire.html",
+      "role": "CAROUSEL_STRUCTURE"
+    }
+  ]
+}

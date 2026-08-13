@@ -92,7 +92,7 @@ describe("Main Assistant Operator Protocol", () => {
 
     expect(response).toMatchObject({
       decision: "approval_required",
-      summary: "Only Way Assistant needs Fabio approval before continuing.",
+      summary: "Onlyway Assistant needs Fabio approval before continuing.",
     });
     expect(response.approvalPrompts.map(({ approvalId, operation }) => ({
       approvalId,
@@ -147,7 +147,7 @@ describe("Main Assistant Operator Protocol", () => {
         operatorDecision: createOperatorDecision({
           decision: "refused",
           explanation:
-            "Only Way Assistant refused to propose delegation because policy does not allow it.",
+            "Onlyway Assistant refused to propose delegation because policy does not allow it.",
         }),
       }),
     );
@@ -164,7 +164,7 @@ describe("Main Assistant Operator Protocol", () => {
       decision: "refused",
       refusal: {
         reason:
-          "Only Way Assistant refused to propose delegation because policy does not allow it.",
+          "Onlyway Assistant refused to propose delegation because policy does not allow it.",
       },
     });
     expect(blocked).toMatchObject({
@@ -378,7 +378,7 @@ function createOperatorDecision(
     decision: "proceed",
     decisionId: "operator-decision-1",
     explanation:
-      "Only Way Assistant may proceed inside the current controlled boundaries.",
+      "Onlyway Assistant may proceed inside the current controlled boundaries.",
     generatedAt: GENERATED_AT,
     guardianDecision: "may_continue",
     reasons: [
@@ -463,7 +463,7 @@ function createResponse(
       { consulted: true, domain: "quality" },
     ],
     summary:
-      "Only Way Assistant may proceed inside the current controlled boundaries.",
+      "Onlyway Assistant may proceed inside the current controlled boundaries.",
     understoodObjective: "Create a safe launch plan for the next business offer",
     ...overrides,
   };

@@ -67,7 +67,7 @@ function buildDecision(
         ),
       ],
       recommendedNextActions: [
-        "Keep the request inside Only Way Assistant or add a validated future AgentSpecification before delegation.",
+        "Keep the request inside Onlyway Assistant or add a validated future AgentSpecification before delegation.",
       ],
     });
   }
@@ -127,7 +127,7 @@ function buildDecision(
         ),
       ],
       recommendedNextActions: [
-        "Return control to Only Way Assistant instead of re-entering an existing target.",
+        "Return control to Onlyway Assistant instead of re-entering an existing target.",
       ],
     });
   }

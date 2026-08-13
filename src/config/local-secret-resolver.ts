@@ -1,4 +1,4 @@
-import { constants as fileConstants } from "node:fs";
+import { constants as fileConstants, type Stats } from "node:fs";
 import { open } from "node:fs/promises";
 
 import type { JsonObject } from "../contracts/json.js";
@@ -21,19 +21,28 @@ export type LocalSecretResolverReadFile = (
   path: string,
 ) => Promise<Uint8Array>;
 
+export type LocalSecretResolverStatFile = (path: string) => Promise<Stats>;
+
 export interface LocalSecretResolverDependencies {
   readonly environment?: Readonly<Record<string, string | undefined>>;
   readonly readFile?: LocalSecretResolverReadFile;
+  /**
+   * Injectable only so offline tests can exercise permission failures. The
+   * resolver deliberately never returns the file path in a public error.
+   */
+  readonly statFile?: LocalSecretResolverStatFile;
 }
 
 type SecretResolutionErrorCode =
   | "secret_reference_invalid"
   | "secret_environment_missing"
+  | "secret_file_insecure"
   | "secret_file_missing"
   | "secret_file_unavailable"
   | "secret_value_invalid";
 
 class SecretFileTooLargeError extends Error {}
+class SecretFileInsecureError extends Error {}
 
 export class SecretResolutionError extends CoreError {
   public constructor(
@@ -42,7 +51,10 @@ export class SecretResolutionError extends CoreError {
     details?: JsonObject,
   ) {
     super({
-      category: code === "secret_value_invalid" ? "validation" : "not_found",
+      category:
+        code === "secret_value_invalid" || code === "secret_file_insecure"
+          ? "validation"
+          : "not_found",
       code,
       ...(details === undefined ? {} : { details }),
       message,
@@ -54,6 +66,7 @@ export class SecretResolutionError extends CoreError {
 export class LocalSecretResolver implements SecretResolver {
   readonly #environment: Readonly<Record<string, string | undefined>>;
   readonly #readFile: LocalSecretResolverReadFile;
+  readonly #statFile: LocalSecretResolverStatFile | undefined;
   readonly #referenceValidator = new SecretReferenceValidator();
   readonly #resultValidator = new SecretResolutionResultValidator();
 
@@ -63,6 +76,7 @@ export class LocalSecretResolver implements SecretResolver {
       dependencies.readFile ??
       (async (path: string): Promise<Uint8Array> =>
         readBoundedRegularFile(path));
+    this.#statFile = dependencies.statFile;
   }
 
   public async resolve(
@@ -125,12 +139,33 @@ export class LocalSecretResolver implements SecretResolver {
   }
 
   async #resolveLocalFile(path: string): Promise<string> {
+    if (this.#statFile !== undefined) {
+      let details: Stats;
+      try {
+        details = await this.#statFile(path);
+      } catch (error) {
+        throw new SecretResolutionError(
+          isMissingFileError(error)
+            ? "secret_file_missing"
+            : "secret_file_unavailable",
+          "Local secret file is not available",
+          { source: "local-file" },
+        );
+      }
+      if (!isPrivateRegularFile(details)) {
+        throw insecureSecretFileError();
+      }
+    }
+
     let bytes: Uint8Array;
     try {
       bytes = await this.#readFile(path);
     } catch (error) {
       if (error instanceof SecretFileTooLargeError) {
         throw secretValueTooLargeError();
+      }
+      if (error instanceof SecretFileInsecureError) {
+        throw insecureSecretFileError();
       }
       throw new SecretResolutionError(
         isMissingFileError(error)
@@ -175,8 +210,8 @@ async function readBoundedRegularFile(path: string): Promise<Uint8Array> {
   );
   try {
     const metadata = await handle.stat();
-    if (!metadata.isFile()) {
-      throw new Error("Secret path is not a regular file");
+    if (!isPrivateRegularFile(metadata)) {
+      throw new SecretFileInsecureError();
     }
     if (metadata.size > MAX_SECRET_VALUE_BYTES) {
       throw new SecretFileTooLargeError();
@@ -216,6 +251,21 @@ function secretValueTooLargeError(): SecretResolutionError {
       ],
       source: "local-file",
     },
+  );
+}
+
+function isPrivateRegularFile(details: Stats): boolean {
+  const mode = details.mode & 0o777;
+  const ownerMatches =
+    typeof process.getuid !== "function" || details.uid === process.getuid();
+  return details.isFile() && ownerMatches && mode === 0o600;
+}
+
+function insecureSecretFileError(): SecretResolutionError {
+  return new SecretResolutionError(
+    "secret_file_insecure",
+    "Local secret file permissions are not secure",
+    { source: "local-file" },
   );
 }
 

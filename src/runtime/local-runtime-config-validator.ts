@@ -21,7 +21,23 @@ import {
   type EffectivePermission,
 } from "../policy/effective-permissions.js";
 import {
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION,
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE,
+  type ReferenceVaultApprovalAuthority,
+} from "../reference-vault/reference-vault-approval-authority.js";
+import {
+  DEFAULT_PRODUCTION_PROVIDER_MODE,
+  LIVE_PAID_ACTIVATION_CONTRACT_VERSION,
+  LIVE_PAID_ACTIVATION_SCOPE,
+  PRODUCTION_PROVIDER_MODES,
+  isLoopbackProviderBaseUrl,
+  type LivePaidActivation,
+  type ProductionProviderMode,
+} from "../production/provider-mode.js";
+import {
   readOptionalString,
+  readOptionalNumber,
+  readRequiredBoolean,
   readRequiredString,
   readRequiredStringArray,
 } from "../validation/field-readers.js";
@@ -47,8 +63,29 @@ const MODEL_PROVIDER_KEYS = new Set([
   "projectId",
   "providerId",
 ]);
+const REFERENCE_VAULT_APPROVAL_AUTHORITY_KEYS = new Set([
+  "authorityId",
+  "confirmedByFabio",
+  "contractVersion",
+  "scope",
+  "workspaceId",
+]);
+const LIVE_PAID_ACTIVATION_KEYS = new Set([
+  "activationId",
+  "approvalReceiptId",
+  "approvedAt",
+  "approvedBy",
+  "confirmedByFabio",
+  "contractVersion",
+  "expiresAt",
+  "killSwitch",
+  "maxCostUsd",
+  "scope",
+  "workspaceId",
+]);
 const SECRET_ID_PATTERN = /^[a-z][a-z0-9._:-]{2,127}$/u;
 const HEADER_VALUE_PATTERN = /^[A-Za-z0-9_.:-]{1,256}$/u;
+const LOCAL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9@._:-]{0,127}$/u;
 
 export class LocalRuntimeConfigValidator
   implements Validator<LocalRuntimeConfig>
@@ -84,7 +121,19 @@ export class LocalRuntimeConfigValidator
       "contentAgentMode",
       issues,
     );
+    const workspaceId = readRequiredString(record, "workspaceId", issues);
+    const providerMode = readProviderMode(record.providerMode, issues);
+    const livePaidActivation = readLivePaidActivation(
+      record.livePaidActivation,
+      workspaceId,
+      issues,
+    );
     const permissions = readPermissions(record.permissions, issues);
+    const referenceVaultApprovalAuthority = readReferenceVaultApprovalAuthority(
+      record.referenceVaultApprovalAuthority,
+      workspaceId,
+      issues,
+    );
     const modelProvider = readModelProvider(
       record.modelProvider,
       contentAgentMode,
@@ -107,7 +156,6 @@ export class LocalRuntimeConfigValidator
             record.modelUsageAccounting,
           );
     const sqliteValidation = this.#sqliteValidator.validate(record.sqlite);
-    const workspaceId = readRequiredString(record, "workspaceId", issues);
     if (!sqliteValidation.ok) {
       issues.push(
         ...sqliteValidation.issues.map(({ code, message, path }) => ({
@@ -181,6 +229,49 @@ export class LocalRuntimeConfigValidator
         path: "contentAgentMode",
       });
     }
+    if (
+      providerMode === "LIVE_PAID" &&
+      contentAgentMode !== undefined &&
+      contentAgentMode !== "model-backed-openai"
+    ) {
+      issues.push({
+        code: "invalid_value",
+        message:
+          "LIVE_PAID requires contentAgentMode model-backed-openai",
+        path: "providerMode",
+      });
+    }
+    if (providerMode === "LIVE_PAID" && livePaidActivation === undefined) {
+      issues.push({
+        code: "required",
+        message: "livePaidActivation is required in LIVE_PAID mode",
+        path: "livePaidActivation",
+      });
+    }
+    if (
+      providerMode !== "LIVE_PAID" &&
+      livePaidActivation !== undefined &&
+      livePaidActivation !== false
+    ) {
+      issues.push({
+        code: "forbidden",
+        message: "livePaidActivation is only allowed in LIVE_PAID mode",
+        path: "livePaidActivation",
+      });
+    }
+    if (
+      providerMode === "LOCAL_PROVIDER_OPTIONAL" &&
+      modelProvider !== undefined &&
+      modelProvider !== false &&
+      !isLoopbackProviderBaseUrl(modelProvider.baseUrl)
+    ) {
+      issues.push({
+        code: "invalid_value",
+        message:
+          "LOCAL_PROVIDER_OPTIONAL requires a loopback provider endpoint",
+        path: "modelProvider.baseUrl",
+      });
+    }
 
     if (
       issues.length > 0 ||
@@ -191,7 +282,9 @@ export class LocalRuntimeConfigValidator
         contentAgentMode as LocalContentAgentMode,
       ) ||
       permissions === undefined ||
+      livePaidActivation === false ||
       modelProvider === false ||
+      referenceVaultApprovalAuthority === false ||
       (modelBudgetValidation !== undefined &&
         !modelBudgetValidation.ok) ||
       (modelOperationLimitsValidation !== undefined &&
@@ -208,6 +301,9 @@ export class LocalRuntimeConfigValidator
       actorId,
       contentAgentMode: contentAgentMode as LocalContentAgentMode,
       contractVersion,
+      ...(livePaidActivation === undefined
+        ? {}
+        : { livePaidActivation }),
       ...(modelBudgetValidation === undefined
         ? {}
         : {
@@ -227,10 +323,353 @@ export class LocalRuntimeConfigValidator
               modelUsageAccountingValidation.value,
           }),
       permissions,
+      ...(record.providerMode === undefined ? {} : { providerMode }),
+      ...(referenceVaultApprovalAuthority === undefined
+        ? {}
+        : { referenceVaultApprovalAuthority }),
       sqlite: sqliteValidation.value,
       workspaceId,
     });
   }
+}
+
+function readProviderMode(
+  value: unknown,
+  issues: ValidationIssue[],
+): ProductionProviderMode {
+  if (value === undefined) return DEFAULT_PRODUCTION_PROVIDER_MODE;
+  if (
+    typeof value !== "string" ||
+    !(PRODUCTION_PROVIDER_MODES as readonly string[]).includes(value)
+  ) {
+    issues.push({
+      code: "invalid_value",
+      message: "providerMode is not supported",
+      path: "providerMode",
+    });
+    return DEFAULT_PRODUCTION_PROVIDER_MODE;
+  }
+  return value as ProductionProviderMode;
+}
+
+function readLivePaidActivation(
+  value: unknown,
+  runtimeWorkspaceId: string | undefined,
+  issues: ValidationIssue[],
+): LivePaidActivation | false | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value);
+  if (record === undefined) {
+    issues.push({
+      code: "invalid_type",
+      message: "livePaidActivation must be an object",
+      path: "livePaidActivation",
+    });
+    return false;
+  }
+  rejectUnknownKeys(
+    record,
+    LIVE_PAID_ACTIVATION_KEYS,
+    issues,
+    "livePaidActivation",
+  );
+  const activationId = readRequiredString(
+    record,
+    "activationId",
+    issues,
+    "livePaidActivation",
+  );
+  const approvalReceiptId = readRequiredString(
+    record,
+    "approvalReceiptId",
+    issues,
+    "livePaidActivation",
+  );
+  const approvedAt = readRequiredString(
+    record,
+    "approvedAt",
+    issues,
+    "livePaidActivation",
+  );
+  const approvedBy = readRequiredString(
+    record,
+    "approvedBy",
+    issues,
+    "livePaidActivation",
+  );
+  const confirmedByFabio = readRequiredBoolean(
+    record,
+    "confirmedByFabio",
+    issues,
+    "livePaidActivation",
+  );
+  const contractVersion = readRequiredString(
+    record,
+    "contractVersion",
+    issues,
+    "livePaidActivation",
+  );
+  const expiresAt = readRequiredString(
+    record,
+    "expiresAt",
+    issues,
+    "livePaidActivation",
+  );
+  const killSwitch = readRequiredString(
+    record,
+    "killSwitch",
+    issues,
+    "livePaidActivation",
+  );
+  const maxCostUsd = readOptionalNumber(
+    record,
+    "maxCostUsd",
+    issues,
+    "livePaidActivation",
+    Number.MIN_VALUE,
+  );
+  const scope = readRequiredString(
+    record,
+    "scope",
+    issues,
+    "livePaidActivation",
+  );
+  const workspaceId = readRequiredString(
+    record,
+    "workspaceId",
+    issues,
+    "livePaidActivation",
+  );
+
+  const timestampPattern =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
+  for (const [key, timestamp] of [
+    ["approvedAt", approvedAt],
+    ["expiresAt", expiresAt],
+  ] as const) {
+    if (
+      timestamp !== undefined &&
+      (!timestampPattern.test(timestamp) ||
+        !Number.isFinite(Date.parse(timestamp)))
+    ) {
+      issues.push({
+        code: "invalid_format",
+        message: `livePaidActivation.${key} must be an ISO timestamp`,
+        path: `livePaidActivation.${key}`,
+      });
+    }
+  }
+  for (const [key, identifier] of [
+    ["activationId", activationId],
+    ["approvalReceiptId", approvalReceiptId],
+    ["approvedBy", approvedBy],
+  ] as const) {
+    if (identifier !== undefined && !LOCAL_ID_PATTERN.test(identifier)) {
+      issues.push({
+        code: "invalid_format",
+        message: `livePaidActivation.${key} must be an opaque identifier`,
+        path: `livePaidActivation.${key}`,
+      });
+    }
+  }
+  if (confirmedByFabio !== undefined && !confirmedByFabio) {
+    issues.push({
+      code: "invalid_value",
+      message: "livePaidActivation.confirmedByFabio must be true",
+      path: "livePaidActivation.confirmedByFabio",
+    });
+  }
+  if (
+    contractVersion !== undefined &&
+    contractVersion !== LIVE_PAID_ACTIVATION_CONTRACT_VERSION
+  ) {
+    issues.push({
+      code: "unsupported_version",
+      message:
+        `livePaidActivation.contractVersion must be ${LIVE_PAID_ACTIVATION_CONTRACT_VERSION}`,
+      path: "livePaidActivation.contractVersion",
+    });
+  }
+  if (scope !== undefined && scope !== LIVE_PAID_ACTIVATION_SCOPE) {
+    issues.push({
+      code: "invalid_value",
+      message:
+        `livePaidActivation.scope must be ${LIVE_PAID_ACTIVATION_SCOPE}`,
+      path: "livePaidActivation.scope",
+    });
+  }
+  if (killSwitch !== undefined && killSwitch !== "RELEASED") {
+    issues.push({
+      code: "invalid_value",
+      message: "livePaidActivation.killSwitch must be RELEASED",
+      path: "livePaidActivation.killSwitch",
+    });
+  }
+  if (
+    workspaceId !== undefined &&
+    runtimeWorkspaceId !== undefined &&
+    workspaceId !== runtimeWorkspaceId
+  ) {
+    issues.push({
+      code: "invalid_value",
+      message:
+        "livePaidActivation.workspaceId must match the runtime workspaceId",
+      path: "livePaidActivation.workspaceId",
+    });
+  }
+
+  if (
+    activationId === undefined ||
+    !LOCAL_ID_PATTERN.test(activationId) ||
+    approvalReceiptId === undefined ||
+    !LOCAL_ID_PATTERN.test(approvalReceiptId) ||
+    approvedAt === undefined ||
+    !timestampPattern.test(approvedAt) ||
+    !Number.isFinite(Date.parse(approvedAt)) ||
+    approvedBy === undefined ||
+    !LOCAL_ID_PATTERN.test(approvedBy) ||
+    confirmedByFabio !== true ||
+    contractVersion !== LIVE_PAID_ACTIVATION_CONTRACT_VERSION ||
+    expiresAt === undefined ||
+    !timestampPattern.test(expiresAt) ||
+    !Number.isFinite(Date.parse(expiresAt)) ||
+    killSwitch !== "RELEASED" ||
+    maxCostUsd === undefined ||
+    scope !== LIVE_PAID_ACTIVATION_SCOPE ||
+    workspaceId === undefined ||
+    workspaceId !== runtimeWorkspaceId
+  ) {
+    return false;
+  }
+
+  return Object.freeze({
+    activationId,
+    approvalReceiptId,
+    approvedAt,
+    approvedBy,
+    confirmedByFabio,
+    contractVersion,
+    expiresAt,
+    killSwitch,
+    maxCostUsd,
+    scope,
+    workspaceId,
+  });
+}
+
+function readReferenceVaultApprovalAuthority(
+  value: unknown,
+  runtimeWorkspaceId: string | undefined,
+  issues: ValidationIssue[],
+): ReferenceVaultApprovalAuthority | false | undefined {
+  if (value === undefined) return undefined;
+  const record = asRecord(value);
+  if (record === undefined) {
+    issues.push({
+      code: "invalid_type",
+      message: "referenceVaultApprovalAuthority must be an object",
+      path: "referenceVaultApprovalAuthority",
+    });
+    return false;
+  }
+
+  rejectUnknownKeys(
+    record,
+    REFERENCE_VAULT_APPROVAL_AUTHORITY_KEYS,
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const authorityId = readRequiredString(
+    record,
+    "authorityId",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const confirmedByFabio = readRequiredBoolean(
+    record,
+    "confirmedByFabio",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const contractVersion = readRequiredString(
+    record,
+    "contractVersion",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const scope = readRequiredString(
+    record,
+    "scope",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+  const workspaceId = readRequiredString(
+    record,
+    "workspaceId",
+    issues,
+    "referenceVaultApprovalAuthority",
+  );
+
+  if (authorityId !== undefined && !LOCAL_ID_PATTERN.test(authorityId)) {
+    issues.push({
+      code: "invalid_format",
+      message: "referenceVaultApprovalAuthority.authorityId must be an opaque local actor identifier",
+      path: "referenceVaultApprovalAuthority.authorityId",
+    });
+  }
+  if (confirmedByFabio !== undefined && !confirmedByFabio) {
+    issues.push({
+      code: "invalid_value",
+      message: "referenceVaultApprovalAuthority.confirmedByFabio must be true",
+      path: "referenceVaultApprovalAuthority.confirmedByFabio",
+    });
+  }
+  if (
+    contractVersion !== undefined &&
+    contractVersion !== REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION
+  ) {
+    issues.push({
+      code: "unsupported_version",
+      message: `referenceVaultApprovalAuthority.contractVersion must be ${REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION}`,
+      path: "referenceVaultApprovalAuthority.contractVersion",
+    });
+  }
+  if (scope !== undefined && scope !== REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE) {
+    issues.push({
+      code: "invalid_value",
+      message: `referenceVaultApprovalAuthority.scope must be ${REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE}`,
+      path: "referenceVaultApprovalAuthority.scope",
+    });
+  }
+  if (
+    workspaceId !== undefined &&
+    runtimeWorkspaceId !== undefined &&
+    workspaceId !== runtimeWorkspaceId
+  ) {
+    issues.push({
+      code: "invalid_value",
+      message: "referenceVaultApprovalAuthority.workspaceId must match the runtime workspaceId",
+      path: "referenceVaultApprovalAuthority.workspaceId",
+    });
+  }
+
+  if (
+    authorityId === undefined ||
+    !LOCAL_ID_PATTERN.test(authorityId) ||
+    confirmedByFabio !== true ||
+    contractVersion !== REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION ||
+    scope !== REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE ||
+    workspaceId === undefined ||
+    workspaceId !== runtimeWorkspaceId
+  ) return false;
+
+  return {
+    authorityId,
+    confirmedByFabio,
+    contractVersion,
+    scope,
+    workspaceId,
+  };
 }
 
 function readModelProvider(

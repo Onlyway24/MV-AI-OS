@@ -2,11 +2,11 @@
 
 ## What Core V1 is
 
-Core V1 is a controlled local Mission and Workflow runtime for Fabio. It validates a structured Founder Mission Brief, creates deterministic Mission Plans, applies the Only Way Quality Gate, persists Workflows in SQLite, enforces approvals and Guardian decisions, invokes one deterministic local Content Director, validates its structured preparation-only result, and supports explicit completion and lifecycle recovery.
+Core V1 is a controlled local Mission and Workflow runtime for Fabio. It validates a structured Founder Mission Brief, creates deterministic Mission Plans, applies the Onlyway Quality Gate, persists Workflows in SQLite, enforces approvals and Guardian decisions, invokes one deterministic local Content Director, validates its structured preparation-only result, and supports explicit completion and lifecycle recovery.
 
 Every CLI invocation reads one bounded JSON command from standard input, writes one JSON result to standard output, closes the runtime, and performs no unauthorized external action.
 
-Core V1 does not include GPT or Claude calls, provider APIs, tools, browser or network automation, publication, outreach, payments, customer delivery, background workers, scheduling, a Web Console, a public server, or multi-user behavior.
+Core V1 does not include GPT or Claude calls, provider APIs, tools, browser or network automation, publication, outreach, payments, customer delivery, an automatically started background worker or scheduler, a Web Console, a public server, or multi-user behavior. Its controlled production runtime is durable, but runs only when an authorized local operator explicitly requests one worker tick.
 
 ## Build and configure
 
@@ -23,6 +23,7 @@ The safe deterministic configuration is `examples/core-v1/local-config.json`. It
 ```sh
 npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/admit-workflow-specification.json
 npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/get-operator-report.json
+npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/produce-metodo-veloce-content.json
 ```
 
 The response contains `status`, `result`, `unauthorizedExternalEffectOccurred`, and exactly one `nextAction`. Use the returned Workflow version in the next command.
@@ -44,6 +45,25 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `CREATE_WORKFLOW` | Atomically create or replay a definition and instance. |
 | `ADMIT_WORKFLOW_SPECIFICATION` | Resolve one exact immutable Workflow/Agent specification set and atomically derive, own, and audit its durable initial state. |
 | `INSPECT_WORKFLOW` | Read `{ "instanceId": ... }`. |
+| `PRODUCE_METODO_VELOCE_CONTENT` | Create one durable, preparation-only TikTok/Instagram/carousel production from an evidence-bound brief. |
+| `PRODUCE_METODO_VELOCE_CONTENT_FROM_EVIDENCE` | Create the same preparation-only package only when every supplied evidence ID is verified, current, claim-bound, and publicly citable. |
+| `INSPECT_METODO_VELOCE_CONTENT` | Read one production by `{ "productionId": ... }`. |
+| `REVIEW_METODO_VELOCE_CONTENT` | Fabio records an exact-version `APPROVED` or `REJECTED` review. |
+| `SCHEDULE_METODO_VELOCE_CONTENT` | Put one Fabio-approved production on the internal calendar; this never publishes it. |
+| `RECORD_METODO_VELOCE_CONTENT_METRICS` | Record declared views, saves, leads, conversions, and cost after separate human confirmation. |
+| `ARCHIVE_METODO_VELOCE_CONTENT` | Remove one active production from the queue without deleting its history. |
+| `LIST_METODO_VELOCE_CONTENT_QUEUE` | Read up to 25 durable content records ordered for operational review. |
+| `ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION` | Validate and durably queue one Metodo Veloce production brief for a controlled worker. |
+| `RUN_PRODUCTION_RUNTIME_ONCE` | Recover expired work, then claim and prepare at most one due production job. |
+| `GET_PRODUCTION_RUNTIME_HEALTH` | Read queue, running, retry, completed, and dead-letter counts without changing state. |
+| `REGISTER_EVIDENCE_SOURCE` | Register one authorized or forbidden source policy before evidence intake. |
+| `RECORD_EVIDENCE` | Store one attributed, fingerprinted, freshness-bound claim record; this never fetches a URL. |
+| `CREATE_PUBLICATION_DRY_RUN` | Bind exact scheduled content, platform/account, time, package fingerprint, and idempotency key; never publish. |
+| `AUTHORIZE_PUBLICATION_DRY_RUN` | Record final exact-version authorization only if the global kill switch is off. |
+| `RECORD_PUBLICATION_RECEIPT` | Record a separately observed `SUCCEEDED`, `UNCERTAIN`, or `FAILED` outcome; never retry. |
+| `SET_PUBLICATION_KILL_SWITCH` | Enable or disable the durable workspace-global authorization stop. |
+| `IMPORT_FEEDBACK_METRICS` | Append fingerprinted external metrics after a confirmed publication receipt. |
+| `ANALYZE_PUBLICATION_FEEDBACK` | Read the latest uncorrected snapshot plus correction history. |
 | `GET_OPERATOR_REPORT` | Get status, blockers, retry state, evidence, and one action. |
 | `EVALUATE_READINESS` | Evaluate exact-version Step readiness without invocation. |
 | `GET_NEXT_CANDIDATE` | Select exactly one controlled Step candidate. |
@@ -63,7 +83,7 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `EVALUATE_TIMEOUT` | Explicitly evaluate the configured timeout. |
 | `INSPECT_AUDIT_EVENTS` | Return 1–100 events for one correlation ID. |
 
-`ADMIT_WORKFLOW_SPECIFICATION` accepts `{ "request": { "contractVersion": "1", "admissionId": "...", "actorId": "...", "workspaceId": "...", "workflowId": "...", "workflowVersion": "...", "instanceId": "...", "nonExecuting": true } }`. The outer `commandId` must equal `admissionId`; actor and workspace must equal the configured identity. The checked-in Core V1 source is `core-v1-content-direction@1.0.0`.
+`ADMIT_WORKFLOW_SPECIFICATION` accepts `{ "request": { "contractVersion": "1", "admissionId": "...", "actorId": "...", "workspaceId": "...", "workflowId": "...", "workflowVersion": "...", "instanceId": "...", "input": { "missionReference": "...", "objective": "..." }, "nonExecuting": true } }`. The outer `commandId` must equal `admissionId`; actor and workspace must equal the configured identity. Admission validates the exact strict input contract, fingerprints it, and binds it immutably to the durable instance. The checked-in Core V1 source is `core-v1-content-direction@1.0.0`.
 
 Authoritative request shapes are exported TypeScript contracts and exercised in `tests/core-v1/core-v1-local-vertical-slice.test.ts`, `tests/workflows/workflow-specification-admission.test.ts`, and `tests/cli/local-runtime-cli.test.ts`. Copy IDs and exact versions from the latest report; never guess them or edit SQLite.
 
@@ -78,6 +98,20 @@ Authoritative request shapes are exported TypeScript contracts and exercised in 
 7. Inspect the result with `INSPECT_AGENT_RESULT`.
 8. Use `ACCEPT_OUTCOME` only when evidence is acceptable; otherwise use `REJECT_OUTCOME`, then explicitly classify failure or revise through a later command.
 9. Request a fresh Operator Report after every state change.
+10. For a reviewed Metodo Veloce content brief, submit `PRODUCE_METODO_VELOCE_CONTENT`.
+   The resulting durable production contains only declared evidence, carousel copy,
+   TikTok script, Instagram copy, variants, risk findings, quality state, approval
+   status, and metrics to measure later. It is never published automatically.
+11. Fabio records `REVIEW_METODO_VELOCE_CONTENT` on the exact returned version. Only an
+   approved production may be scheduled; rejection archives it. A schedule remains an
+   internal calendar entry and needs a separate future publication decision.
+12. After the separate human confirmation of external performance, record metrics,
+   inspect the queue, or archive the production. None of those commands publish,
+   contact, spend, deploy, or invoke a provider.
+13. For controlled queue processing, submit `ENQUEUE_METODO_VELOCE_CONTENT_PRODUCTION`, inspect `GET_PRODUCTION_RUNTIME_HEALTH`, then explicitly submit `RUN_PRODUCTION_RUNTIME_ONCE`. One tick can prepare at most one due job. It has three bounded attempts, an expiring lease for restart recovery, bounded backoff, and a dead-letter queue. It never publishes or invokes a provider.
+14. Before relying on a factual content claim, register its source policy with `REGISTER_EVIDENCE_SOURCE`, then use `RECORD_EVIDENCE`. Current/verified evidence is imported with source identity, reference, source date, capture date, fingerprint, mapping, limitation and expiry.
+15. For a separately scheduled content record, use `CREATE_PUBLICATION_DRY_RUN` and inspect the exact account, platform, time, fingerprint and idempotency key. Authorization is still not publication. The global kill switch blocks authorization and `UNCERTAIN` receipts must be reconciled, never blindly retried.
+16. Import actual platform snapshots only after a recorded `SUCCEEDED` receipt. A correction is a new append-only record tied to the earlier snapshot; conversions require explicit verified attribution. See `CONTENT_GOVERNANCE_PLANES.md`.
 
 The Content Director prepares direction only. It never publishes, contacts anyone, changes external assets, modifies a logo, pays, deploys, or delivers.
 
@@ -89,6 +123,7 @@ The Content Director prepares direction only. It never publishes, contacts anyon
 - Resume: `RESUME_WORKFLOW`, then obtain fresh readiness, policy, approval, Guardian, specification, executor, and version evidence.
 - Cancel: `CANCEL_WORKFLOW` retains completed and failure evidence and claims no compensation.
 - Timeout: `EVALUATE_TIMEOUT` uses the durable reservation timestamp, injected clock, and fixed 60-second local ceiling. Time passing alone does nothing.
+- Production runtime: a `RUN_PRODUCTION_RUNTIME_ONCE` tick first returns an expired lease to retry eligibility, then claims exactly one due job. A failure waits for bounded exponential backoff and reaches `DEAD_LETTER` after the third failed attempt. Inspect health and dead-letter counts; do not alter SQLite or replay jobs manually.
 
 ## Shutdown, restart, and persisted recovery
 

@@ -1,0 +1,32 @@
+[Unit]
+Description=Onlyway recovery-grade signed backup
+Documentation=file:/srv/onlyway/current/docs/production/BACKUP_AND_RESTORE.md
+After=docker.service mv-ai-os.service
+Requires=docker.service
+AssertPathExists=/srv/onlyway/current/scripts/production/backup.sh
+AssertPathExists=/srv/onlyway/config/compose.env
+AssertPathExists=/srv/onlyway/secrets/deploy/release-acceptance-ed25519.pem
+AssertPathExists=/srv/onlyway/secrets/deploy/release-acceptance-ed25519.pub.pem
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/srv/onlyway/current
+ExecCondition=/usr/bin/systemctl is-active --quiet mv-ai-os.service
+ExecStart=/srv/onlyway/current/scripts/production/backup.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=full
+LockPersonality=true
+RestrictRealtime=true
+TimeoutStartSec=1800

@@ -21,9 +21,10 @@ export const CORE_V1_CONTENT_DIRECTION_WORKFLOW_SPECIFICATION: WorkflowSpecifica
       schema: {
         additionalProperties: false,
         properties: {
+          missionReference: { type: "string" },
           objective: { type: "string" },
         },
-        required: ["objective"],
+        required: ["missionReference", "objective"],
         type: "object",
       },
       strict: true,

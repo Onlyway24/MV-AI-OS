@@ -80,6 +80,21 @@ describe("Controlled Workflow Agent Invocation", () => {
     });
   });
 
+  it("uses the exact durable admitted Mission input for Agent execution", async () => {
+    const runner = createRunner(":memory:");
+    await seed(runner, admittedDefinition());
+    const recording = new RecordingRuntime(runtime());
+    await createInvoker(runner, recording).invoke(request());
+    expect(recording.invocations[0]).toMatchObject({
+      input: {
+        evidenceReferences: ["content-workflow@1.0.0", "mission-approved-001"],
+        objective: "Prepare the approved Metodo Veloce content direction.",
+      },
+      objective: "Prepare the approved Metodo Veloce content direction.",
+    });
+    await runner.close();
+  });
+
   it("fails closed before runtime for stale candidate, unresolved executor, and changed Guardian evidence", async () => {
     const staleRunner = createRunner(":memory:"); await seed(staleRunner);
     const staleRuntime = new RecordingRuntime(runtime());
@@ -231,7 +246,7 @@ async function seed(
   });
 
   await persistenceService.createDefinition(workflowDefinition);
-  await persistenceService.createInstance(instance());
+  await persistenceService.createInstance(instance(workflowDefinition.admission !== undefined));
 
   const checkpointService = createWorkflowControlCheckpointService({
     eventIds: new WorkflowControlEventIds(),
@@ -290,7 +305,30 @@ function admittedDefinition(): WorkflowDefinition {
     ],
   };
 }
-function instance(): WorkflowInstance { return { contractVersion: "1", createdAt: "2026-01-01T00:00:00.000Z", definitionId: "content-workflow@1.0.0", instanceId: "content-instance", nonExecuting: true, receipts: [], status: "ACTIVE", steps: [{ blockers: [], status: "PENDING", stepId: "direction" }], stopReason: "NONE", updatedAt: "2026-01-01T00:00:00.000Z", version: 0 }; }
+function instance(admitted = false): WorkflowInstance {
+  const input = {
+    contractId: "content-workflow-input",
+    contractVersion: "1",
+    data: {
+      missionReference: "mission-approved-001",
+      objective: "Prepare the approved Metodo Veloce content direction.",
+    },
+  };
+  return {
+    contractVersion: "1",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    definitionId: "content-workflow@1.0.0",
+    ...(admitted ? { input: { ...input, fingerprint: createSpecificationFingerprint(input) } } : {}),
+    instanceId: "content-instance",
+    nonExecuting: true,
+    receipts: [],
+    status: "ACTIVE",
+    steps: [{ blockers: [], status: "PENDING", stepId: "direction" }],
+    stopReason: "NONE",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    version: 0,
+  };
+}
 function boundaryRequest(): WorkflowStepExecutionBoundaryRequest { return { actorId: "actor-local", agentAssignment: { agentId: "content-director", capabilityIds: ["content-strategy"], permissionIds: ["content-strategy-permission"], responsibilityAreaId: "content-direction", specificationId: "content-director@1.0.0", specificationVersion: "1.0.0" }, approvalEvidence: [], contractVersion: "1", expectedDefinitionId: "content-workflow@1.0.0", expectedVersion: 0, expectedWorkflowVersion: "1.0.0", guardianEvidence: [], instanceId: "content-instance", maxBlockers: 16, nonExecuting: true, policyDecision: { actorId: "actor-local", agent: { agentId: "content-director", version: "1.0.0" }, contractVersion: "1", decisionId: "policy-content-direction", deniedPermissions: [], effectivePermissions: ["knowledge:search", "model:invoke:content-direction-quality", "workflow:propose:content-director"], evaluatedAt: "2026-01-01T00:00:00.000Z", requestedPermissions: ["knowledge:search", "model:invoke:content-direction-quality", "workflow:propose:content-director"], taskId: "content-instance", workspaceId: "workspace-local" }, selection: { mode: "EXACT_STEP", stepId: "direction" }, workspaceId: "workspace-local" }; }
 function request(overrides: Partial<ControlledWorkflowAgentInvocationRequest> = {}): ControlledWorkflowAgentInvocationRequest { return { boundaryRequest: boundaryRequest(), contractVersion: "1", invocationId: "workflow-invocation-1", ...overrides }; }
 function createRunner(path: string) { return new SqliteRepositoryTransactionRunner({ path, timeoutMs: 1_000 }); }

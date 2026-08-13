@@ -1,0 +1,26 @@
+{
+  "actorId": "actor-local",
+  "commandId": "classify-second-hand-trend-compatible-2026-07-16-v1",
+  "contractVersion": "1",
+  "input": {
+    "trend": {
+      "audience": "Pubblico italiano interessato a second-hand, Vinted e oggetti rivendibili",
+      "classificationEvidenceRecordIds": [
+        "competitor-observation-maert-20260716",
+        "competitor-observation-telotrovosu-20260716"
+      ],
+      "classificationRationale": "Due osservazioni pubbliche, attribuibili e acquisite nello stesso ciclo mostrano interesse corrente per scoperta second-hand, mercatini e selezione Vinted. Il segnale è compatibile con Metodo Veloce; fase, velocità e saturazione restano non classificate.",
+      "compatibility": "COMPATIBLE",
+      "expiresAt": "2026-07-22T22:38:54.000Z",
+      "keyword": "second-hand discovery e rivendita Vinted",
+      "observedAt": "2026-07-15T22:38:54.000Z",
+      "phase": "UNCLASSIFIED",
+      "platform": "INSTAGRAM",
+      "recordId": "trend-instagram-second-hand-vinted-20260716",
+      "sourceId": "social-instagram-public-competitors",
+      "territory": "IT"
+    }
+  },
+  "operation": "CLASSIFY_SOCIAL_TREND",
+  "workspaceId": "workspace-local"
+}

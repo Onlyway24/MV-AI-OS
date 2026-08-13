@@ -58,7 +58,7 @@ beforeAll(async () => {
     { cwd: resolve(".") },
   );
   cliPath = join(buildDirectory, "cli", "local-runtime-cli.js");
-});
+}, 30_000);
 
 afterAll(async () => {
   await rm(buildDirectory, { force: true, recursive: true });
@@ -146,6 +146,10 @@ describe("Controlled local CLI process", () => {
         actorId: "actor-local",
         admissionId: "cli-admission-001",
         contractVersion: "1",
+        input: {
+          missionReference: "cli-mission-001",
+          objective: "Prepare one bounded local content direction.",
+        },
         instanceId: "cli-admitted-instance",
         nonExecuting: true,
         workflowId: "core-v1-content-direction",
@@ -243,6 +247,17 @@ describe("Controlled local CLI process", () => {
       expect(JSON.parse(unsafe.stdout)).toMatchObject({ error: { code: "cli_request_invalid" }, status: "error" });
     });
   });
+
+  it("rejects direct content review because the generic CLI cannot prove the Visual Gate binding", async () => {
+    await withTemporaryDirectory(async (directory) => {
+      const configPath = await writeConfig(directory, { databaseName: "visual-gate-bypass.sqlite" });
+      const result = await runCli(configPath, JSON.stringify(workflowCommand("REVIEW_METODO_VELOCE_CONTENT", { decision: "APPROVED", expectedVersion: 0, note: "Tentativo diretto senza manifest e binding visuale.", productionId: "content-without-visual-gate" })));
+
+      expect(result.exitCode).toBe(LOCAL_CLI_EXIT_CODE.executionFailure);
+      expect(JSON.parse(result.stdout)).toMatchObject({ error: { category: "authorization", code: "cli_visual_gate_required", stage: "workflow_command_visual_gate" }, status: "error" });
+    });
+  });
+
   it("executes a deterministic request and emits one JSON response", async () => {
     await withTemporaryDirectory(async (directory) => {
       const configPath = await writeConfig(directory);

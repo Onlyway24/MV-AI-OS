@@ -1,0 +1,14 @@
+{
+  "actorId": "actor-local",
+  "commandId": "authorize-six-social-competitors-2026-07-16-v1",
+  "contractVersion": "1",
+  "input": {
+    "authorization": {
+      "authorizationId": "competitor-authorization-2026-07-16-v1",
+      "authorizedAt": "2026-07-15T22:25:05.000Z",
+      "confirmationText": "AUTORIZZO_ESATTAMENTE_QUESTI_6_PROFILI"
+    }
+  },
+  "operation": "AUTHORIZE_SOCIAL_COMPETITOR_SET",
+  "workspaceId": "workspace-local"
+}

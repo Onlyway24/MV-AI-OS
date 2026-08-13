@@ -1,60 +1,31 @@
-# Next Task
+# Final integration completion state
 
-## Milestone name
+## Completed scope
 
-Workflow Specification Runtime Semantics Design Review
+- Hardened Core V1 was preserved as checkpoint `11a24b2`.
+- Advanced history through `3b8389d` was merged without flattening or discarding it.
+- Merge conflicts were resolved in favor of exact admission, provider/secret/SQLite
+  and backup safety while retaining advanced mission, operator, research, evidence,
+  media, venture, production and H24 functionality.
+- `LocalWorkflowCommandBoundary` is the common advanced/Core application boundary.
+- Telegram Mission promotion now calls `ADMIT_WORKFLOW_SPECIFICATION`; it does not
+  maintain an alternate workflow creation model.
+- The final deterministic release gates, dependency audit and targeted integration
+  tests are green.
 
-## Goal
+## No queued implementation phase
 
-Define the smallest safe next increment that can execute more of the already validated
-`WorkflowSpecification` semantics without creating a second engine, hidden scheduling,
-or an external-effect path.
+There is no next internal development task created by this integration. New code work
+requires a separately authorized defect or objective.
 
-## Why it matters
+## External checkpoints
 
-Core V1 now admits an exact immutable specification into attributed durable runtime
-state, but admission intentionally accepts only the semantics the current explicit
-runtime can represent: an acyclic, conditionless graph with `fail_workflow`, no
-preserved successful outputs, and at most 100 steps. Expanding that surface without a
-design review could split authority between specification and runtime contracts or
-create implicit execution behavior.
+- Fabio's untracked private Telegram bot/chat acceptance.
+- Instagram/TikTok application configuration and browser consent.
+- Approved live-provider credential and budget when a live call is materially needed.
+- Authenticated VPS deployment/reboot/tunnel/restore evidence and signed host receipts.
+- Explicit business authorization for publication, outreach, spending, payment,
+  capital allocation or other irreversible external effects.
 
-## Required scope
-
-- Map each `WorkflowSpecification` field to current durable runtime behavior and name
-  every semantic gap.
-- Decide whether condition evaluation, output mapping, or alternate failure policy is
-  the smallest independently safe implementation milestone.
-- Specify deterministic ordering, exact input/output contract binding, durable
-  evidence, replay, restart, stale-version, approval, Guardian, and policy invariants.
-- Define compatibility behavior for already admitted and legacy Core V1 definitions.
-- Produce an implementation-ready decision and update the authoritative roadmap and
-  decision log.
-- Add tests only for executable design assertions or contract examples; do not add
-  production execution capability in this review milestone.
-
-## Forbidden scope
-
-- No scheduler, automatic next-step start, automatic retry, timer, polling, worker,
-  callback, n8n, network, provider, tool, dashboard, HTTP, filesystem tool, or external
-  effect.
-- No dynamic Agent selection, version floating, migration of existing instances, or
-  bypass of policy, ownership, approvals, Guardians, repositories, or audit.
-- No implementation of multiple new semantic families in one milestone.
-
-## Acceptance criteria
-
-- The selected next increment has one authoritative state transition model and one
-  bounded admission/runtime contract.
-- Unsupported semantics continue to fail closed with explicit reasons.
-- Compatibility, persistence, replay, rollback, restart, and redaction requirements
-  are testable before implementation begins.
-- The decision identifies security and operational failure modes without speculative
-  infrastructure.
-- Lint, typecheck, full tests, build, and `git diff --check` remain green.
-
-## Definition of done
-
-The repository has an evidence-backed, implementation-ready decision for exactly one
-next Workflow Specification runtime semantic, while current Core V1 behavior and all
-non-execution guarantees remain unchanged.
+These checkpoints must remain truthful and separate; none may be inferred from a
+passing local test suite.

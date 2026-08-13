@@ -1,0 +1,277 @@
+name: onlyway
+
+x-app-common: &app-common
+  image: mv-ai-os:${ONLYWAY_RELEASE_COMMIT:?verified release commit is required}
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: runtime
+  init: true
+  user: "2001:2001"
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  restart: "${ONLYWAY_RESTART_POLICY:-unless-stopped}"
+  stop_grace_period: 45s
+  environment:
+    NODE_ENV: production
+    ONLYWAY_ACCEPTANCE_PUBLIC_KEY_PATH: /run/onlyway/release-acceptance-ed25519.pub.pem
+    ONLYWAY_RELEASE_COMMIT: ${ONLYWAY_RELEASE_COMMIT:?verified release commit is required}
+    TZ: Europe/Rome
+  networks:
+    - onlyway_private
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+      compress: "true"
+
+x-data-mount: &data-mount
+  type: bind
+  source: ${ONLYWAY_DATA_DIR:-/srv/onlyway/data}
+  target: /var/lib/onlyway
+
+x-config-mount: &config-mount
+  type: bind
+  source: ${ONLYWAY_CONFIG_DIR:-/srv/onlyway/config}
+  target: /etc/onlyway
+  read_only: true
+
+x-secrets-mount: &secrets-mount
+  type: bind
+  source: ${ONLYWAY_SECRETS_DIR:-/srv/onlyway/secrets/runtime}
+  target: /run/secrets/onlyway
+  read_only: true
+
+x-admin-pepper-mount: &admin-pepper-mount
+  type: bind
+  source: ${ONLYWAY_ADMIN_PEPPER_FILE:-/srv/onlyway/secrets/admin/admin-source-key-pepper}
+  target: /run/secrets/onlyway/admin-source-key-pepper
+  read_only: true
+
+x-admin-state-mount: &admin-state-mount
+  type: bind
+  source: ${ONLYWAY_ADMIN_STATE_DIR:-/srv/onlyway/admin-state}
+  target: /var/lib/onlyway-admin
+
+x-admin-state-readonly-mount: &admin-state-readonly-mount
+  type: bind
+  source: ${ONLYWAY_ADMIN_STATE_DIR:-/srv/onlyway/admin-state}
+  target: /var/lib/onlyway-admin
+  read_only: true
+
+x-admin-bootstrap-mount: &admin-bootstrap-mount
+  type: bind
+  source: ${ONLYWAY_ADMIN_BOOTSTRAP_DIR:-/srv/onlyway/secrets/bootstrap}
+  target: /run/secrets/onlyway-bootstrap
+
+x-backups-mount: &backups-mount
+  type: bind
+  source: ${ONLYWAY_BACKUP_DIR:-/srv/onlyway/backups}
+  target: /var/backups/onlyway
+
+x-acceptance-public-key-mount: &acceptance-public-key-mount
+  type: bind
+  source: ${ONLYWAY_ACCEPTANCE_PUBLIC_KEY:-/srv/onlyway/secrets/deploy/release-acceptance-ed25519.pub.pem}
+  target: /run/onlyway/release-acceptance-ed25519.pub.pem
+  read_only: true
+
+x-process-healthcheck: &process-healthcheck
+  test:
+    - CMD
+    - node
+    - -e
+    - process.kill(1, 0)
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 15s
+
+services:
+  command-center:
+    <<: *app-common
+    command:
+      - node
+      - ./dist/command-center/command-center-cli.js
+      - --config
+      - /etc/onlyway/runtime.json
+      - --host
+      - 127.0.0.1
+      - --port
+      - "43101"
+      - --external-origin
+      - ${ONLYWAY_EXTERNAL_ORIGIN:-http://localhost:43100}
+    ports:
+      - "127.0.0.1:${ONLYWAY_TUNNEL_PORT:-43100}:8080"
+    volumes:
+      - *data-mount
+      - *config-mount
+      - *acceptance-public-key-mount
+      - *admin-pepper-mount
+      - *admin-state-mount
+      - *admin-bootstrap-mount
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:43101/health/startup',
+          {signal:AbortSignal.timeout(4000)}).then(r=>{if(!r.ok)process.exit(1)})
+          .catch(()=>process.exit(1))
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  scheduler:
+    <<: *app-common
+    command:
+      - node
+      - ./dist/operations-runtime/operations-runtime-cli.js
+      - --config
+      - /etc/onlyway/runtime.json
+      - --role
+      - scheduler
+    depends_on:
+      command-center:
+        condition: service_healthy
+    volumes:
+      - *data-mount
+      - *config-mount
+    healthcheck: *process-healthcheck
+
+  worker:
+    <<: *app-common
+    command:
+      - node
+      - ./dist/operations-runtime/operations-runtime-cli.js
+      - --config
+      - /etc/onlyway/runtime.json
+      - --role
+      - worker
+    depends_on:
+      command-center:
+        condition: service_healthy
+    volumes:
+      - *data-mount
+      - *config-mount
+      - *secrets-mount
+      - *acceptance-public-key-mount
+    healthcheck: *process-healthcheck
+
+  health-monitor:
+    <<: *app-common
+    command:
+      - node
+      - ./dist/operations-runtime/operations-runtime-cli.js
+      - --config
+      - /etc/onlyway/runtime.json
+      - --role
+      - health-monitor
+    depends_on:
+      command-center:
+        condition: service_healthy
+    volumes:
+      - *data-mount
+      - *config-mount
+    healthcheck: *process-healthcheck
+
+  reverse-proxy:
+    image: caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
+    init: true
+    user: "2001:2001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "${ONLYWAY_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: 20s
+    depends_on:
+      command-center:
+        condition: service_healthy
+    network_mode: "service:command-center"
+    volumes:
+      - type: bind
+        source: ./ops/production/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+    tmpfs:
+      - /config:rw,noexec,nosuid,nodev
+      - /data:rw,noexec,nosuid,nodev
+      - /tmp:rw,noexec,nosuid,nodev
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/proxy-health
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        compress: "true"
+
+  backup-verifier:
+    <<: *app-common
+    profiles:
+      - operations
+    restart: "no"
+    command:
+      - node
+      - ./dist/operations-runtime/operations-runtime-cli.js
+      - --config
+      - /etc/onlyway/runtime.json
+      - --role
+      - backup-verifier
+      - --backup-directory
+      - /var/backups/onlyway
+    volumes:
+      - *data-mount
+      - *config-mount
+      - *backups-mount
+      - *admin-state-readonly-mount
+      - *acceptance-public-key-mount
+    healthcheck:
+      disable: true
+
+  production-starter:
+    <<: *app-common
+    profiles:
+      - production-start
+    restart: "no"
+    command:
+      - node
+      - ./dist/production/production-closure-cli.js
+      - private-production-start
+      - --config
+      - /etc/onlyway/runtime.json
+      - --intake
+      - /etc/onlyway/private-production-intake.json
+    networks:
+      - onlyway_research_egress
+    volumes:
+      - *data-mount
+      - *config-mount
+    healthcheck:
+      disable: true
+
+networks:
+  onlyway_private:
+    driver: bridge
+    internal: true
+  onlyway_research_egress:
+    driver: bridge

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { constants as fileConstants } from "node:fs";
 import {
+  chmod,
   copyFile,
   type FileHandle,
   link,
@@ -337,8 +338,10 @@ export async function installSqliteTemporaryFile(
   overwriteDestination: boolean,
   operation: string,
 ): Promise<void> {
+  await chmod(temporaryPath, 0o600);
   if (overwriteDestination) {
     await rename(temporaryPath, destinationPath);
+    await chmod(destinationPath, 0o600);
     return;
   }
   try {

@@ -13,7 +13,7 @@ import {
 } from "../../src/index.js";
 
 describe("Main Assistant / Orchestrator Specification Foundation", () => {
-  it("accepts the valid Only Way Assistant specification", () => {
+  it("accepts the valid Onlyway Assistant specification", () => {
     const result = new MainAssistantSpecificationValidator().validate(
       ONLY_WAY_ASSISTANT_SPECIFICATION,
     );
@@ -23,7 +23,7 @@ describe("Main Assistant / Orchestrator Specification Foundation", () => {
       ok: true,
       value: {
         assistantId: ONLY_WAY_ASSISTANT_ID,
-        displayName: "Only Way Assistant",
+        displayName: "Onlyway Assistant",
       },
     });
     expect(

@@ -1,0 +1,59 @@
+{
+  "costLedger": {
+    "apiBudgetEur": 5,
+    "costClassification": "RESERVED_PENDING_RECONCILIATION",
+    "conservativeBookedUsd": 0.005,
+    "estimatedCumulativeCostUsd": 0.005,
+    "effectiveCostUsd": null,
+    "hardStopUsd": 4,
+    "imageGenerations": 0,
+    "liveCalls": 1,
+    "preflightReservedCostUsd": 0.011,
+    "serverSpendUsd": 0,
+    "sessionResidualBudgetUsd": 0.095,
+    "sessionStatus": "CLOSED",
+    "textCostUsd": 0.005
+  },
+  "externalEffects": {
+    "openAiProviderCalls": 1,
+    "socialPublications": 0,
+    "serverSpendUsd": 0
+  },
+  "imageGeneration": {
+    "model": "gpt-image-1-mini",
+    "status": "DISABLED_DEPRECATED_PENDING_NEW_AUTHORIZATION"
+  },
+  "imageModel": "gpt-image-1-mini",
+  "preflight": [
+    {
+      "authorizedCounts": {
+        "image": 0,
+        "providerCalls": 0,
+        "text": 0
+      },
+      "maxCostUsd": 0.005,
+      "model": "gpt-4o-mini",
+      "residualBudgetUsd": 0.1,
+      "status": "ready"
+    },
+    {
+      "authorizedCounts": {
+        "image": 0,
+        "providerCalls": 0,
+        "text": 0
+      },
+      "maxCostUsd": 0.006,
+      "model": "gpt-image-1-mini",
+      "residualBudgetUsd": 0.1,
+      "status": "ready"
+    }
+  ],
+  "previousFailure": {
+    "observedReasonCode": "text_transport_failed_unpriced",
+    "observedStage": "provider_invocation",
+    "status": "DIAGNOSTIC_REQUIRED"
+  },
+  "reason": "text_generation_failed",
+  "status": "BLOCKED",
+  "textModel": "gpt-4o-mini"
+}

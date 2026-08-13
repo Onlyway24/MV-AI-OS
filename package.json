@@ -7,7 +7,12 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "mv-ai-os": "./dist/cli/local-runtime-cli.js"
+    "mv-ai-os": "./dist/cli/local-runtime-cli.js",
+    "mv-ai-os-command-center": "./dist/command-center/command-center-cli.js",
+    "mv-ai-os-operations": "./dist/operations-runtime/operations-runtime-cli.js",
+    "mv-ai-os-production": "./dist/production/production-closure-cli.js",
+    "mv-ai-os-revenue": "./dist/revenue-os/revenue-os-cli.js",
+    "mv-ai-os-venture": "./dist/venture-holding/venture-holding-cli.js"
   },
   "files": [
     "dist",
@@ -24,7 +29,23 @@
   "scripts": {
     "build": "node ./scripts/clean-dist.mjs && tsc --project tsconfig.build.json",
     "cli": "node ./dist/cli/local-runtime-cli.js",
+    "command-center": "node ./dist/command-center/command-center-cli.js",
+    "live-media-pilot": "node ./dist/media-factory/live-ai-brand-media-pilot-cli.js",
+    "media-quality-closure": "node ./dist/media-factory/media-quality-closure-cli.js",
+    "image-recovery": "node ./dist/media-factory/image-recovery-cli.js",
+    "openai-responses-conformance": "node ./dist/media-factory/openai-responses-conformance-cli.js",
+    "openai-text-diagnosis": "node ./dist/media-factory/openai-text-failure-diagnosis-cli.js",
+    "operations": "node ./dist/operations-runtime/operations-runtime-cli.js",
+    "payment-readiness": "node ./dist/production/production-closure-cli.js payment-readiness",
+    "private-production-start": "node ./dist/production/production-closure-cli.js private-production-start",
+    "production-readiness": "node ./dist/production/production-closure-cli.js readiness",
+    "production-rehearsal": "node ./dist/production/production-closure-cli.js rehearsal",
+    "revenue-os": "node ./dist/revenue-os/revenue-os-cli.js",
+    "security-readiness": "node ./dist/production/production-closure-cli.js security-readiness",
+    "venture-holding": "node ./dist/venture-holding/venture-holding-cli.js",
+    "social-connectors": "node ./dist/social-publishing/social-connector-cli.js",
     "lint": "eslint . --max-warnings 0",
+    "telegram": "node ./dist/telegram/telegram-cli.js",
     "test": "vitest run --dir tests --passWithNoTests",
     "typecheck": "tsc --project tsconfig.json",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
@@ -36,5 +57,9 @@
     "typescript": "6.0.3",
     "typescript-eslint": "8.62.1",
     "vitest": "4.1.9"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "13.3.1",
+    "motion": "12.42.2"
   }
 }

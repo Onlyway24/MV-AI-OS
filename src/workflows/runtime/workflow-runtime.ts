@@ -1,4 +1,5 @@
 import type { AgentReference } from "../../agents/agent-manifest.js";
+import type { JsonObject } from "../../contracts/json.js";
 
 export const WORKFLOW_RUNTIME_CONTRACT_VERSION = "1" as const;
 export type WorkflowInstanceStatus = "ACTIVE" | "CANCELLED" | "COMPLETED" | "FAILED" | "PAUSED";
@@ -13,8 +14,9 @@ export interface WorkflowAgentSpecificationAttribution extends AgentReference { 
 export interface WorkflowDefinitionAdmission { readonly workflowSpecificationFingerprint: string; readonly agentSpecifications: readonly WorkflowAgentSpecificationAttribution[]; }
 export interface WorkflowStepDefinition { readonly stepId: string; readonly dependencies: readonly string[]; readonly approvalRequired: boolean; readonly guardianRequired: boolean; readonly agent?: AgentReference; readonly nonExecuting: true; }
 export interface WorkflowDefinition { readonly contractVersion: typeof WORKFLOW_RUNTIME_CONTRACT_VERSION; readonly definitionId: string; readonly workflowId: string; readonly workflowVersion: string; readonly missionObjective?: string; readonly admission?: WorkflowDefinitionAdmission; readonly steps: readonly WorkflowStepDefinition[]; readonly nonExecuting: true; }
+export interface WorkflowInstanceInputBinding { readonly contractId: string; readonly contractVersion: string; readonly data: JsonObject; readonly fingerprint: string; }
 export interface WorkflowStepInstance { readonly stepId: string; readonly status: WorkflowStepInstanceStatus; readonly blockers: readonly WorkflowBlocker[]; }
 export interface WorkflowCommand { readonly commandId: string; readonly expectedVersion: number; readonly kind: WorkflowCommandKind; readonly stepId?: string; readonly reasonCode: string; readonly nonExecuting: true; }
 export interface WorkflowCommandReceipt { readonly commandId: string; readonly fingerprint: string; readonly resultingVersion: number; }
-export interface WorkflowInstance { readonly contractVersion: typeof WORKFLOW_RUNTIME_CONTRACT_VERSION; readonly definitionId: string; readonly instanceId: string; readonly status: WorkflowInstanceStatus; readonly steps: readonly WorkflowStepInstance[]; readonly version: number; readonly receipts: readonly WorkflowCommandReceipt[]; readonly createdAt: string; readonly updatedAt: string; readonly stopReason: WorkflowStopReason; readonly nonExecuting: true; }
+export interface WorkflowInstance { readonly contractVersion: typeof WORKFLOW_RUNTIME_CONTRACT_VERSION; readonly definitionId: string; readonly instanceId: string; readonly input?: WorkflowInstanceInputBinding; readonly status: WorkflowInstanceStatus; readonly steps: readonly WorkflowStepInstance[]; readonly version: number; readonly receipts: readonly WorkflowCommandReceipt[]; readonly createdAt: string; readonly updatedAt: string; readonly stopReason: WorkflowStopReason; readonly nonExecuting: true; }
 export interface WorkflowTransitionResult { readonly instance: WorkflowInstance; readonly outcome: "APPLIED" | "REPLAYED"; readonly nonExecuting: true; }

@@ -1,0 +1,252 @@
+import { createHash } from "node:crypto";
+
+import type { ContentEvidence } from "../content-production/metodo-veloce-content-production.js";
+import type { MetodoVeloceContentProductionRecord } from "../content-production/metodo-veloce-content-production-record.js";
+import { RepositoryConflictError, RepositoryValidationError } from "../errors/core-error.js";
+import type { RepositoryTransactionRunner } from "../persistence/repository-transaction.js";
+import type { Clock } from "../ports/clock.js";
+import { controlFingerprint } from "../operations-control/operations-control-validator.js";
+import type { EvidencePack, EvidencePackItem, EvidencePackRequest, EvidenceRecord, EvidenceRecordRequest, FeedbackAnalysis, FeedbackMetricImportRequest, FeedbackMetricSnapshot, PublicationAuthorizationRequest, PublicationDryRunRequest, PublicationKillSwitch, PublicationKillSwitchRequest, PublicationPlan, PublicationReceiptRequest, SourceRegistrationRequest, SourceRegistryEntry } from "./operational-plane.js";
+import type { OperationalPlaneRepository } from "./operational-plane-repository.js";
+import { evidencePackFingerprint } from "./evidence-pack-fingerprint.js";
+
+export interface OperationalPlaneServiceDependencies { readonly actorId: string; readonly clock: Clock; readonly repositories: RepositoryTransactionRunner; readonly workspaceId: string; }
+
+export class OperationalPlaneService {
+  public constructor(private readonly dependencies: OperationalPlaneServiceDependencies) {}
+
+  public async registerSource(input: SourceRegistrationRequest): Promise<SourceRegistryEntry> {
+    const createdAt = this.#now();
+    const source: SourceRegistryEntry = { ...input, actorId: this.dependencies.actorId, createdAt, version: 0, workspaceId: this.dependencies.workspaceId };
+    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      if (await operationalPlanes.getSourceById(source.sourceId) !== undefined) throw new RepositoryConflictError("Evidence source already exists");
+      await operationalPlanes.insertSource(source); return source;
+    });
+  }
+
+  public async recordEvidence(input: EvidenceRecordRequest): Promise<EvidenceRecord> {
+    const records = await this.recordEvidenceBatch([input]);
+    const record = records[0];
+    if (record === undefined) throw new RepositoryValidationError("Evidence record batch returned no result");
+    return record;
+  }
+
+  public async recordEvidenceBatch(inputs: readonly EvidenceRecordRequest[]): Promise<readonly EvidenceRecord[]> {
+    if (inputs.length < 1 || inputs.length > 18 || new Set(inputs.map(({ evidenceId }) => evidenceId)).size !== inputs.length) throw new RepositoryValidationError("Evidence record batch must contain unique bounded evidence IDs");
+    const acquiredAt = this.#now();
+    const candidates: readonly EvidenceRecord[] = Object.freeze(inputs.map((input) => Object.freeze({ ...input, acquiredAt, actorId: this.dependencies.actorId, version: 0 as const, workspaceId: this.dependencies.workspaceId })));
+    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      const sources = new Map<string, SourceRegistryEntry>();
+      for (const candidate of candidates) {
+        if (await operationalPlanes.getEvidenceById(candidate.evidenceId) !== undefined) throw new RepositoryConflictError("Evidence record already exists");
+        const source = sources.get(candidate.sourceId) ?? await this.#ownedSource(operationalPlanes, candidate.sourceId);
+        sources.set(candidate.sourceId, source);
+        this.#assertEvidencePolicy(candidate, source);
+      }
+      for (const candidate of candidates) {
+        const source = sources.get(candidate.sourceId);
+        if (source === undefined) throw new RepositoryConflictError("Evidence source is unavailable");
+        if (candidate.status === "VERIFIED") await this.#assertBatchCorroboration(candidate, source, operationalPlanes, candidates);
+      }
+      for (const candidate of candidates) await operationalPlanes.insertEvidence(candidate);
+      return candidates;
+    });
+  }
+
+  public async createEvidencePack(input: EvidencePackRequest): Promise<EvidencePack> {
+    const createdAt = this.#now();
+    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      if (await operationalPlanes.getEvidencePackById(input.packId) !== undefined) throw new RepositoryConflictError("Evidence Pack already exists");
+      const evidence = await this.#currentPackEvidence(operationalPlanes, input.evidenceIds);
+      const pack: EvidencePack = {
+        actorId: this.dependencies.actorId,
+        createdAt,
+        evidence,
+        evidenceIds: [...input.evidenceIds],
+        fingerprint: evidencePackFingerprint({ evidence, evidenceIds: input.evidenceIds, packId: input.packId }),
+        minFreshnessExpiresAt: evidence.map((item) => item.freshnessExpiresAt).sort()[0] ?? createdAt,
+        packId: input.packId,
+        status: "READY",
+        version: 0,
+        workspaceId: this.dependencies.workspaceId,
+      };
+      await operationalPlanes.insertEvidencePack(pack);
+      return pack;
+    });
+  }
+
+  public async inspectEvidencePack(packId: string): Promise<EvidencePack> {
+    return this.dependencies.repositories.transaction(({ operationalPlanes }) => this.#ownedEvidencePack(operationalPlanes, packId));
+  }
+
+  /**
+   * This deliberately receives the current transaction repository. The caller
+   * can validate a pack and persist the resulting content atomically, so a pack
+   * cannot become stale in the gap between validation and creation.
+   */
+  public async assertEvidencePackForContentInTransaction(operationalPlanes: OperationalPlaneRepository, packId: string, evidence: readonly ContentEvidence[]): Promise<EvidencePack> {
+    const pack = await this.#ownedEvidencePack(operationalPlanes, packId);
+    if (evidence.length !== pack.evidence.length || !evidence.every((item, index) => { const packed = pack.evidence[index]; if (packed === undefined) return false; return item.evidenceId === packed.evidenceId && item.sourceRef === packed.source.sourceId && packed.claimMappings.some(({ statement }) => statement === item.statement) && (item.limitations === undefined || sameStrings(item.limitations, packed.limitations)); })) throw new RepositoryConflictError("Content evidence does not exactly match its Evidence Pack");
+    await this.#currentPackEvidence(operationalPlanes, pack.evidenceIds);
+    return pack;
+  }
+
+  public async assertEvidenceForContent(evidence: readonly ContentEvidence[], evidenceIds: readonly string[]): Promise<void> {
+    if (evidence.length !== evidenceIds.length || new Set(evidenceIds).size !== evidenceIds.length || !evidence.every((item, index) => item.evidenceId === evidenceIds[index])) throw new RepositoryValidationError("Content evidence IDs must be exact and unique");
+    await this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      const records = await Promise.all(evidenceIds.map((id) => operationalPlanes.getEvidenceById(id)));
+      for (const [index, item] of evidence.entries()) {
+        const record = records[index];
+        if (record?.workspaceId !== this.dependencies.workspaceId || record.status !== "VERIFIED" || Date.parse(record.freshnessExpiresAt) <= this.dependencies.clock.now().getTime() || record.sourceId !== item.sourceRef || !record.claimMappings.some(({ statement }) => statement === item.statement) || (item.limitations !== undefined && !sameStrings(item.limitations, record.limitations))) throw new RepositoryConflictError("Content evidence is not verified, current, or claim-bound");
+        const source = await this.#ownedSource(operationalPlanes, record.sourceId);
+        if (!source.publicCitationAllowed) throw new RepositoryConflictError("Content evidence source is not eligible for public citation");
+      }
+    });
+  }
+
+  public async createPublicationDryRun(input: PublicationDryRunRequest): Promise<PublicationPlan> {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
+      if (await operationalPlanes.getPublicationById(input.publicationId) !== undefined) throw new RepositoryConflictError("Publication plan already exists");
+      const content = await this.#ownedContent(contentProductions, input.productionId);
+      if (content.status !== "SCHEDULED" || content.version !== input.contentVersion || content.schedule?.scheduledFor !== input.scheduledFor) throw new RepositoryConflictError("Publication dry-run must bind the exact scheduled content version");
+      if (!hasVisualApprovalReceipt(content)) throw new RepositoryConflictError("Publication dry-run requires a Visual Gate approval receipt");
+      const productionControl = await operationsControls.getProductionControl(content.productionId);
+      if (productionControl !== undefined && productionControl.state !== "ACTIVE") throw new RepositoryConflictError("Publication dry-run is blocked by production control state");
+      const now = this.#now();
+      const plan: PublicationPlan = { accountRef: input.accountRef, actorId: this.dependencies.actorId, contentPackageFingerprint: fingerprint(content.package), contentVersion: content.version, createdAt: now, dryRun: true, idempotencyKey: input.idempotencyKey, platform: input.platform, productionControlBinding: { fingerprint: controlFingerprint(productionControl ?? content), kind: productionControl === undefined ? "CONTENT" : "CONTROL", version: productionControl?.version ?? content.version }, productionId: content.productionId, publicationId: input.publicationId, scheduledFor: input.scheduledFor, status: "DRY_RUN", updatedAt: now, version: 0, workspaceId: this.dependencies.workspaceId };
+      await operationalPlanes.insertPublication(plan); return plan;
+    });
+  }
+
+  public async authorizePublication(input: PublicationAuthorizationRequest): Promise<PublicationPlan> {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
+      const control = await operationalPlanes.getPublicationKillSwitch(this.dependencies.workspaceId);
+      if (control?.enabled !== false) throw new RepositoryConflictError("Global publication kill switch is unavailable or enabled");
+      const current = await this.#ownedPublication(operationalPlanes, input.publicationId);
+      if (current.status !== "DRY_RUN" || current.version !== input.expectedVersion) throw new RepositoryConflictError("Publication plan is not eligible for final authorization");
+      await this.#assertCurrentPublicationBinding(current, contentProductions, operationsControls);
+      const now = this.#now();
+      const next: PublicationPlan = { ...current, authorization: { authorizedAt: now, authorizedBy: this.dependencies.actorId }, status: "AUTHORIZED", updatedAt: now, version: current.version + 1 };
+      await operationalPlanes.updatePublication(next, { version: current.version }); return next;
+    });
+  }
+
+  public async recordPublicationReceipt(input: PublicationReceiptRequest): Promise<PublicationPlan> {
+    return this.dependencies.repositories.transaction(async ({ contentProductions, operationalPlanes, operationsControls }) => {
+      const control = await operationalPlanes.getPublicationKillSwitch(this.dependencies.workspaceId);
+      if (control?.enabled !== false) throw new RepositoryConflictError("Global publication kill switch is unavailable or enabled");
+      const current = await this.#ownedPublication(operationalPlanes, input.publicationId);
+      if (current.status !== "AUTHORIZED" || current.version !== input.expectedVersion) throw new RepositoryConflictError("Publication plan is not eligible for a receipt");
+      await this.#assertCurrentPublicationBinding(current, contentProductions, operationsControls);
+      const now = this.#now();
+      const next: PublicationPlan = { ...current, receipt: { outcome: input.outcome, ...(input.platformContentRef === undefined ? {} : { platformContentRef: input.platformContentRef }), receiptFingerprint: input.receiptFingerprint, recordedAt: now }, status: input.outcome, updatedAt: now, version: current.version + 1 };
+      await operationalPlanes.updatePublication(next, { version: current.version }); return next;
+    });
+  }
+
+  public async setPublicationKillSwitch(input: PublicationKillSwitchRequest): Promise<PublicationKillSwitch> {
+    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      const current = await operationalPlanes.getPublicationKillSwitch(this.dependencies.workspaceId);
+      const currentVersion = current?.version ?? 0;
+      if (currentVersion !== input.expectedVersion) throw new RepositoryConflictError("Publication kill switch changed after read");
+      const next: PublicationKillSwitch = { enabled: input.enabled, updatedAt: this.#now(), updatedBy: this.dependencies.actorId, version: currentVersion + 1, workspaceId: this.dependencies.workspaceId };
+      await operationalPlanes.upsertPublicationKillSwitch(next, { version: currentVersion }); return next;
+    });
+  }
+
+  public async importFeedbackMetrics(input: FeedbackMetricImportRequest): Promise<FeedbackMetricSnapshot> {
+    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      const publication = await this.#ownedPublication(operationalPlanes, input.publicationId);
+      if (publication.status !== "SUCCEEDED" || publication.receipt?.receiptFingerprint !== input.publicationReceiptFingerprint) throw new RepositoryConflictError("Feedback import requires a confirmed external publication receipt");
+      if (await operationalPlanes.getFeedbackSnapshotById(input.snapshotId) !== undefined) throw new RepositoryConflictError("Feedback metric snapshot already exists");
+      if (input.correctionOfSnapshotId !== undefined) { const original = await operationalPlanes.getFeedbackSnapshotById(input.correctionOfSnapshotId); if (original?.workspaceId !== this.dependencies.workspaceId || original.publicationId !== publication.publicationId) throw new RepositoryConflictError("Feedback correction must reference a snapshot for the same publication"); }
+      const snapshot: FeedbackMetricSnapshot = { actorId: this.dependencies.actorId, capturedAt: this.#now(), conversionAttribution: input.conversionAttribution, ...(input.correctionOfSnapshotId === undefined ? {} : { correctionOfSnapshotId: input.correctionOfSnapshotId }), metrics: input.metrics, periodEnd: input.periodEnd, periodStart: input.periodStart, platform: publication.platform, productionId: publication.productionId, publicationId: publication.publicationId, publicationReceiptFingerprint: input.publicationReceiptFingerprint, snapshotFingerprint: input.snapshotFingerprint, snapshotId: input.snapshotId, workspaceId: this.dependencies.workspaceId };
+      await operationalPlanes.insertFeedbackSnapshot(snapshot); return snapshot;
+    });
+  }
+
+  public async analyzeFeedback(publicationId: string): Promise<FeedbackAnalysis> {
+    return this.dependencies.repositories.transaction(async ({ operationalPlanes }) => {
+      await this.#ownedPublication(operationalPlanes, publicationId);
+      const snapshots = await operationalPlanes.listFeedbackSnapshots(publicationId);
+      const corrected = new Set(snapshots.flatMap((snapshot) => snapshot.correctionOfSnapshotId === undefined ? [] : [snapshot.correctionOfSnapshotId]));
+      const latest = snapshots.filter((snapshot) => !corrected.has(snapshot.snapshotId)).sort((left, right) => right.capturedAt.localeCompare(left.capturedAt) || right.snapshotId.localeCompare(left.snapshotId))[0];
+      return { contractVersion: "1", correctionCount: corrected.size, ...(latest === undefined ? {} : { latest }), publicationId, snapshotCount: snapshots.length, unauthorizedExternalEffectOccurred: false };
+    });
+  }
+
+  async #ownedSource(repository: OperationalPlaneRepository, sourceId: string): Promise<SourceRegistryEntry> { const source = await repository.getSourceById(sourceId); if (source?.workspaceId !== this.dependencies.workspaceId || source.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Evidence source is unavailable"); return source; }
+  async #ownedEvidencePack(repository: OperationalPlaneRepository, packId: string): Promise<EvidencePack> { const pack = await repository.getEvidencePackById(packId); if (pack?.workspaceId !== this.dependencies.workspaceId || pack.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Evidence Pack is unavailable"); return pack; }
+  async #ownedPublication(repository: OperationalPlaneRepository, publicationId: string): Promise<PublicationPlan> { const publication = await repository.getPublicationById(publicationId); if (publication?.workspaceId !== this.dependencies.workspaceId || publication.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Publication plan is unavailable"); return publication; }
+  async #assertCurrentPublicationBinding(plan: PublicationPlan, contentProductions: { getById(id: string): Promise<MetodoVeloceContentProductionRecord | undefined> }, operationsControls: { getProductionControl(productionId: string): Promise<import("../operations-control/operations-control.js").ProductionControlRecord | undefined> }): Promise<void> {
+    const binding = plan.productionControlBinding;
+    if (binding === undefined) throw new RepositoryConflictError("Publication plan predates production-control binding and must be recreated");
+    const content = await this.#ownedContent(contentProductions, plan.productionId);
+    if (!hasVisualApprovalReceipt(content)) throw new RepositoryConflictError("Publication authorization requires a Visual Gate approval receipt");
+    if (content.status !== "SCHEDULED" || content.version !== plan.contentVersion || content.schedule?.scheduledFor !== plan.scheduledFor || fingerprint(content.package) !== plan.contentPackageFingerprint) throw new RepositoryConflictError("Publication plan content binding is stale");
+    const control = await operationsControls.getProductionControl(plan.productionId);
+    if (control === undefined) {
+      if (binding.kind !== "CONTENT" || binding.version !== content.version || binding.fingerprint !== controlFingerprint(content)) throw new RepositoryConflictError("Publication plan production binding is stale");
+      return;
+    }
+    if (control.state !== "ACTIVE" || binding.kind !== "CONTROL" || binding.version !== control.version || binding.fingerprint !== controlFingerprint(control)) throw new RepositoryConflictError("Publication plan is blocked by changed production control state");
+  }
+  async #ownedContent(repository: { getById(id: string): Promise<MetodoVeloceContentProductionRecord | undefined> }, productionId: string): Promise<MetodoVeloceContentProductionRecord> { const content = await repository.getById(productionId); if (content?.workspaceId !== this.dependencies.workspaceId || content.actorId !== this.dependencies.actorId) throw new RepositoryConflictError("Content production is unavailable"); return content; }
+  #assertEvidencePolicy(evidence: EvidenceRecord, source: SourceRegistryEntry): void {
+    if (source.status !== "AUTHORIZED" || source.category === "FORBIDDEN") throw new RepositoryConflictError("Evidence source is not authorized");
+    if (!referenceWithinAuthorizedSource(evidence.sourceReference, source.canonicalReference) || !source.permittedRiskDomains.includes(evidence.riskDomain)) throw new RepositoryValidationError("Evidence does not match the authorized source policy");
+    const maxExpiry = Date.parse(evidence.acquiredAt) + source.maxFreshnessDays * 86_400_000;
+    if (Date.parse(evidence.freshnessExpiresAt) > maxExpiry) throw new RepositoryValidationError("Evidence freshness exceeds the source policy");
+    const now = this.dependencies.clock.now().getTime();
+    if ((Date.parse(evidence.freshnessExpiresAt) <= now) !== (evidence.status === "STALE")) throw new RepositoryValidationError("Evidence freshness status is inconsistent");
+    if (evidence.status === "VERIFIED" && source.reliability === "LOW") throw new RepositoryValidationError("Low-reliability source evidence cannot be marked verified");
+  }
+  async #currentPackEvidence(repository: OperationalPlaneRepository, evidenceIds: readonly string[]): Promise<readonly EvidencePackItem[]> {
+    if (evidenceIds.length < 1 || evidenceIds.length > 8 || new Set(evidenceIds).size !== evidenceIds.length) throw new RepositoryValidationError("Evidence Pack must contain exact, unique evidence IDs");
+    const records = await Promise.all(evidenceIds.map((evidenceId) => repository.getEvidenceById(evidenceId)));
+    const items: EvidencePackItem[] = [];
+    for (const record of records) {
+      if (record?.workspaceId !== this.dependencies.workspaceId || record.actorId !== this.dependencies.actorId || record.status !== "VERIFIED" || Date.parse(record.freshnessExpiresAt) <= this.dependencies.clock.now().getTime()) throw new RepositoryConflictError("Evidence Pack contains evidence that is not verified and current");
+      const source = await this.#ownedSource(repository, record.sourceId);
+      if (source.status !== "AUTHORIZED" || source.category === "FORBIDDEN" || !source.publicCitationAllowed) throw new RepositoryConflictError("Evidence Pack contains a source that is not eligible for public citation");
+      items.push({ acquiredAt: record.acquiredAt, claimMappings: record.claimMappings, contentPublishedAt: record.contentPublishedAt, evidenceFingerprint: record.fingerprint, evidenceId: record.evidenceId, excerpt: record.excerpt, freshnessExpiresAt: record.freshnessExpiresAt, limitations: record.limitations, riskDomain: record.riskDomain, source: { canonicalReference: source.canonicalReference, name: source.name, reliability: source.reliability, sourceId: source.sourceId }, sourceReference: record.sourceReference });
+    }
+    return Object.freeze(items);
+  }
+  async #assertCorroboration(evidence: EvidenceRecord, source: SourceRegistryEntry, repository: OperationalPlaneRepository): Promise<void> {
+    const needsSecondSource = source.requiresSecondSource || evidence.riskDomain !== "GENERAL";
+    if (!needsSecondSource) return;
+    const corroborations = await Promise.all(evidence.corroboratingEvidenceIds.map((id) => repository.getEvidenceById(id)));
+    const claimIds = new Set(evidence.claimMappings.map(({ claimId }) => claimId));
+    if (!corroborations.some((item) => item?.workspaceId === this.dependencies.workspaceId && item.status === "VERIFIED" && item.sourceId !== evidence.sourceId && item.claimMappings.some(({ claimId }) => claimIds.has(claimId)))) throw new RepositoryValidationError("Verified high-risk or corroborated evidence requires an independent supporting source");
+  }
+  async #assertBatchCorroboration(evidence: EvidenceRecord, source: SourceRegistryEntry, repository: OperationalPlaneRepository, candidates: readonly EvidenceRecord[]): Promise<void> {
+    const needsSecondSource = source.requiresSecondSource || evidence.riskDomain !== "GENERAL";
+    if (!needsSecondSource) return;
+    const candidateIds = new Set(evidence.corroboratingEvidenceIds);
+    const batchSupports = candidates.some((item) => candidateIds.has(item.evidenceId) && item.status === "VERIFIED" && item.sourceId !== evidence.sourceId && sharesClaim(item, evidence));
+    if (batchSupports) return;
+    await this.#assertCorroboration(evidence, source, repository);
+  }
+  #now(): string { const value = this.dependencies.clock.now(); if (Number.isNaN(value.getTime())) throw new RepositoryValidationError("Operational plane clock is invalid"); return value.toISOString(); }
+}
+
+function hasVisualApprovalReceipt(content: MetodoVeloceContentProductionRecord): boolean {
+  return content.review?.decision === "APPROVED" && typeof content.review.visualApprovalBindingFingerprint === "string" && /^[a-f0-9]{64}$/u.test(content.review.visualApprovalBindingFingerprint);
+}
+
+function sharesClaim(left: EvidenceRecord, right: EvidenceRecord): boolean { const claims = new Set(right.claimMappings.map(({ claimId }) => claimId)); return left.claimMappings.some(({ claimId }) => claims.has(claimId)); }
+function sameStrings(left: readonly string[], right: readonly string[]): boolean { return left.length === right.length && left.every((value, index) => value === right[index]); }
+function fingerprint(value: unknown): string { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }
+
+function referenceWithinAuthorizedSource(reference: string, canonicalReference: string): boolean {
+  try {
+    const candidate = new URL(reference);
+    const canonical = new URL(canonicalReference);
+    if (candidate.protocol !== canonical.protocol || candidate.hostname !== canonical.hostname || candidate.port !== canonical.port) return false;
+    const basePath = canonical.pathname.endsWith("/") ? canonical.pathname : `${canonical.pathname}/`;
+    return canonical.pathname === "/" || candidate.pathname === canonical.pathname || candidate.pathname.startsWith(basePath);
+  } catch {
+    return reference === canonicalReference;
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "actorId": "actor-local",
+  "commandId": "import-official-metodo-veloce-tiktok-account-2026-07-16",
+  "contractVersion": "1",
+  "input": {
+    "batch": {
+      "batchId": "official-metodo-veloce-tiktok-account-2026-07-16",
+      "records": [
+        {
+          "accountRef": "metodo_veloce.official",
+          "country": "IT",
+          "kind": "ACCOUNT",
+          "ownership": "OWNED",
+          "platform": "TIKTOK",
+          "publicFollowers": 943,
+          "publicObservedAt": "2026-07-16T00:25:00.000Z",
+          "publicVisibleContentCount": 3,
+          "recordId": "social-account-metodo-veloce-tiktok",
+          "actorId": "actor-local",
+          "contractVersion": "1",
+          "importedAt": "2026-07-16T00:25:00.000Z",
+          "workspaceId": "workspace-local",
+          "fingerprint": "31c85f3bd8df79a4a4c847cb7c964130a8dc3a48c64da978effb24673c8385dc"
+        }
+      ]
+    }
+  },
+  "operation": "IMPORT_SOCIAL_LIVE_BATCH",
+  "workspaceId": "workspace-local"
+}

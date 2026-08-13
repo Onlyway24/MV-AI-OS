@@ -3,6 +3,8 @@ import type { RequestEnvelope } from "../contracts/request-envelope.js";
 import type { CoreBrain } from "../core/core-brain.js";
 import { RequestValidationError } from "../errors/core-error.js";
 import type { Validator } from "../validation/validation.js";
+import type { ReferenceVaultCommand, ReferenceVaultCommandResponse } from "../reference-vault/reference-vault.js";
+import type { ReferenceVaultCommandBoundary } from "../reference-vault/reference-vault-command-boundary.js";
 import type { LocalWorkflowCommand, LocalWorkflowCommandBoundary, LocalWorkflowCommandResponse } from "./local-workflow-command.js";
 import {
   LocalRuntimeIdentityError,
@@ -11,6 +13,7 @@ import {
 
 export interface LocalRuntime {
   execute(request: unknown): Promise<TaskResponse>;
+  executeReferenceVaultCommand?(command: ReferenceVaultCommand): Promise<ReferenceVaultCommandResponse>;
   executeWorkflowCommand?(command: LocalWorkflowCommand): Promise<LocalWorkflowCommandResponse>;
   close(): Promise<void>;
 }
@@ -38,12 +41,22 @@ export class ComposedLocalRuntime implements LocalRuntime {
       readonly workspaceId: string;
     },
     private readonly workflowCommands?: LocalWorkflowCommandBoundary,
+    private readonly referenceVaultCommands?: Pick<ReferenceVaultCommandBoundary, "execute">,
   ) {
     this.#actorId = identity.actorId;
     this.#coreBrain = coreBrain;
     this.#requestValidator = requestValidator;
     this.#resources = Object.freeze([...resources]);
     this.#workspaceId = identity.workspaceId;
+  }
+
+  public executeReferenceVaultCommand(command: ReferenceVaultCommand): Promise<ReferenceVaultCommandResponse> {
+    if (!this.#acceptingRequests) return Promise.reject(new LocalRuntimeStateError());
+    if (this.referenceVaultCommands === undefined) return Promise.reject(new LocalRuntimeStateError());
+    const execution = this.referenceVaultCommands.execute(command);
+    this.#inFlight.add(execution);
+    execution.then(() => this.#inFlight.delete(execution), () => this.#inFlight.delete(execution));
+    return execution;
   }
 
   public executeWorkflowCommand(command: LocalWorkflowCommand): Promise<LocalWorkflowCommandResponse> {

@@ -1,0 +1,13 @@
+[Unit]
+Description=Schedule Onlyway recovery-grade signed backup
+Documentation=file:/srv/onlyway/current/docs/production/BACKUP_AND_RESTORE.md
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 Europe/Rome
+Persistent=true
+RandomizedDelaySec=15m
+AccuracySec=1m
+Unit=mv-ai-os-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -249,7 +249,7 @@ export const ONLY_WAY_ASSISTANT_SPECIFICATION: MainAssistantSpecification =
       },
       mission:
         "Coordinate Fabio's objectives through controlled architecture boundaries while preserving safety, budget, security, backup readiness, quality, and human approval.",
-      name: "Only Way Assistant",
+      name: "Onlyway Assistant",
       outputSchema: {
         contractId: "only-way-assistant-output",
         contractVersion: "1",
@@ -376,7 +376,7 @@ export const ONLY_WAY_ASSISTANT_SPECIFICATION: MainAssistantSpecification =
       requiresOperatorSafetyCheck: true,
       requiresPolicyEvaluation: true,
     },
-    displayName: "Only Way Assistant",
+    displayName: "Onlyway Assistant",
     forbiddenCapabilities: [
       "autonomous_background_execution",
       "autonomous_destructive_action",

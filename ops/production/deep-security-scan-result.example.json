@@ -1,0 +1,19 @@
+{
+  "artifactFingerprint": "",
+  "branch": "main",
+  "completedAt": "",
+  "contractVersion": "1",
+  "executed": false,
+  "fingerprint": "",
+  "kind": "DEEP_SECURITY_SCAN_RESULT",
+  "openCriticalFindings": null,
+  "openHighFindings": null,
+  "openMaterialP2Findings": null,
+  "scanId": "",
+  "scannedCommit": "",
+  "source": "codex-security/deep-scan",
+  "startedAt": "",
+  "status": "NOT_EXECUTED",
+  "targetKind": "COMMIT",
+  "targetRef": ""
+}

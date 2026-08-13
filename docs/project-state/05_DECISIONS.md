@@ -715,7 +715,7 @@ Any future dashboard, alerting, durable safety ledger, scheduler, monitor, or
 automatic pause/remediation behavior requires separate policy, approval, audit,
 idempotency, persistence, and redaction milestones.
 
-## ADR-030 — Only Way Assistant starts as a specification, not a runtime
+## ADR-030 — Onlyway Assistant starts as a specification, not a runtime
 
 **Context:** MV AI OS now has a report-only control-plane safety foundation. The
 next product direction is a single operator-facing assistant so Fabio does not
@@ -724,7 +724,7 @@ agents, memory, knowledge, models, tools, workflows, guardians, and approvals, b
 adding execution too early would risk hidden autonomy, provider calls, tool use,
 workflow side effects, and policy bypass.
 
-**Decision:** Define Only Way Assistant first as a validated Main Assistant /
+**Decision:** Define Onlyway Assistant first as a validated Main Assistant /
 Orchestrator specification built on the existing `AgentSpecification` contract. The
 specification records identity, mission, structured input/output schemas,
 capabilities, policy requirements, forbidden capabilities, safety preflights, human
@@ -749,7 +749,7 @@ Model Gateway, Memory, Knowledge, Workflow Specification, or Tool Gateway bounda
 
 ## ADR-031 — Main Assistant runtime boundary is deterministic and side-effect free
 
-**Context:** Only Way Assistant now has a validated declarative specification, but
+**Context:** Onlyway Assistant now has a validated declarative specification, but
 Fabio needs a controlled first executable boundary before any future multi-agent,
 workflow, tool, dashboard, or autonomous behavior is introduced. A full orchestrator
 at this point would risk mixing operator interaction with provider calls, guardian
@@ -757,7 +757,7 @@ execution, delegation, workflows, tools, persistence, or hidden side effects.
 
 **Decision:** Implement `MainAssistantRuntime` as a narrow deterministic local
 boundary. It validates `MainAssistantInvocation`, consumes only supplied Operator
-Safety context, uses the existing Only Way Assistant specification as its identity
+Safety context, uses the existing Onlyway Assistant specification as its identity
 and contract source, refuses unsafe or under-specified requests, surfaces approval
 requirements for escalation categories, and returns a validated redaction-safe
 `MainAssistantResult`. It does not call models, call providers, execute guardians,
@@ -784,7 +784,7 @@ Core Brain ownership.
 
 ## ADR-032 — Guardian Consultation is a supplied-signal decision gate
 
-**Context:** Only Way Assistant has a validated specification and deterministic
+**Context:** Onlyway Assistant has a validated specification and deterministic
 runtime boundary. It can consume Operator Safety context, but safety consultation
 logic needs to be reusable by later operator decisioning, delegation policy, mission
 planning, and agent-company milestones without running guardians automatically or
@@ -821,7 +821,7 @@ before taking action.
 
 ## ADR-033 — Operator Decision Engine decides but does not execute
 
-**Context:** Only Way Assistant now has a validated specification, a deterministic
+**Context:** Onlyway Assistant now has a validated specification, a deterministic
 runtime boundary, and a Guardian Consultation Boundary. The next product step is a
 single operator-facing command layer that turns Fabio's objective into an explicit
 decision without requiring him to choose which future internal agent to prompt. That
@@ -830,7 +830,7 @@ tool executor.
 
 **Decision:** Implement Operator Decision Engine as a deterministic, redaction-safe
 decision boundary. It consumes a validated `OperatorDecisionContext` containing the
-Only Way Assistant specification, operator objective, requested outcome, requested
+Onlyway Assistant specification, operator objective, requested outcome, requested
 operations, Guardian Consultation decision, optional sanitized cost posture, and
 optional delegation signal. It returns a validated `OperatorDecision`: proceed,
 clarification required, approval required, confirmation required, refused, blocked,
@@ -841,7 +841,7 @@ autonomously.
 
 **Reason:** Fabio needs one clean decision surface before mission planning and future
 delegation. Keeping this layer deterministic and non-executing preserves cost,
-security, policy, approval, and audit boundaries while making Only Way Assistant more
+security, policy, approval, and audit boundaries while making Onlyway Assistant more
 operator-useful.
 
 **Tradeoffs:** The engine cannot complete work by itself. It does not perform
@@ -857,7 +857,7 @@ policy enforcement, and explicit execution boundaries.
 
 ## ADR-034 — Delegation Policy is declarative and non-executing
 
-**Context:** Only Way Assistant now has a validated specification, deterministic
+**Context:** Onlyway Assistant now has a validated specification, deterministic
 runtime boundary, Guardian Consultation Boundary, and Operator Decision Engine. The
 system needs to know which future specialist categories may be proposed before an
 agent-company map or mission planner can be safe, but adding real sub-agent runtime
@@ -894,7 +894,7 @@ tool, and agent runtime milestones are approved.
 
 ## ADR-035 — Operator Protocol is a presentation contract, not a runtime
 
-**Context:** Only Way Assistant now has a validated specification, deterministic
+**Context:** Onlyway Assistant now has a validated specification, deterministic
 runtime boundary, Guardian Consultation Boundary, Operator Decision Engine, and
 Delegation Policy. Fabio needs one operator-facing protocol that can present decisions
 without exposing raw internal payloads or forcing him to manage separate specialist
@@ -932,7 +932,7 @@ approved.
 **Context:** MV AI OS now has a large set of implemented foundations: Core Brain,
 durable SQLite persistence, memory, knowledge, model gateway, OpenAI adapter wiring,
 operation limits, usage accounting, budget enforcement, guardians, Operator Safety
-Report, Only Way Assistant specification/runtime/consultation/decision/delegation
+Report, Onlyway Assistant specification/runtime/consultation/decision/delegation
 boundaries, and Operator Protocol. The project is also being continued across AI
 sessions and tools, which creates risk of context loss, architecture drift,
 over-agentification, or premature autonomy.
@@ -958,14 +958,14 @@ project-state documents, and it must not be used to justify implementing feature
 outside the current `04_NEXT_TASK.md` milestone.
 
 **Future impact:** Agent Company Specification Foundation and every later milestone
-must preserve the constitution's ordering: Fabio -> Only Way Assistant -> Control
+must preserve the constitution's ordering: Fabio -> Onlyway Assistant -> Control
 Plane -> Agent Company -> Workflow Runtime -> Tool Runtime -> Product Layer. If a
 future decision conflicts with the constitution, it must be recorded as an explicit
 ADR rather than silently drifting.
 
 ## ADR-037 — Agent Company starts as a validated non-executing map
 
-**Context:** Only Way Assistant can now present operator-facing decisions and
+**Context:** Onlyway Assistant can now present operator-facing decisions and
 non-executing delegation summaries. The next risk is over-agentification: adding
 specialists without a stable role map would make Fabio manage random agents and would
 blur safety, approval, memory, knowledge, and future specification boundaries.
@@ -1008,7 +1008,7 @@ handoff targets, and instruction references. The specifications do not execute
 agents, call models, call providers, run workflows, execute tools, persist state, use
 network behavior, or act autonomously.
 
-**Reason:** Exact specifications give the Only Way Assistant and future mission
+**Reason:** Exact specifications give the Onlyway Assistant and future mission
 planner stable internal company structure without introducing runtime autonomy.
 Reusing the existing AgentSpecification contract and validator prevents a parallel
 agent-description system.
@@ -1077,7 +1077,7 @@ execute tools, grant permissions, persist state, use network behavior, publish, 
 outreach, deliver customer work, spend money, provide final legal approval, or act
 autonomously.
 
-**Reason:** Fabio should not babysit a swarm of agents, and Only Way Assistant needs
+**Reason:** Fabio should not babysit a swarm of agents, and Onlyway Assistant needs
 a coherent internal organization before it can safely plan work. Ownership clarity is
 a prerequisite for mission planning, capability mapping, permission mapping, and
 handoff contracts.
@@ -1113,7 +1113,7 @@ run workflows, execute tools, persist state, use network behavior, publish, send
 outreach, deliver customer work, spend money, provide final legal approval, or act
 autonomously.
 
-**Reason:** Only Way Assistant needs precise internal capability ownership before it
+**Reason:** Onlyway Assistant needs precise internal capability ownership before it
 can produce safe mission-plan dry runs. Fabio should see coherent business planning,
 not random agent delegation. Capability ownership improves future orchestration
 quality while preserving the default-deny and approval-first architecture.
@@ -1316,7 +1316,7 @@ live evidence. Their value is reliable structure and control, not human-level ma
 judgment. Profiles must remain general across mission families rather than encode one
 restaurant use case.
 
-**Future impact:** The Only Way Quality Gate and Scenario Lab must evaluate these
+**Future impact:** The Onlyway Quality Gate and Scenario Lab must evaluate these
 plans. Any future provider-neutral intelligent planner must preserve this deterministic
 planner as a safe fallback and pass the same Mission Plan validator and quality gate.
 
@@ -1886,3 +1886,339 @@ admitted step conservatively requires explicit operator approval and Guardian ev
 must be designed and added explicitly. It must preserve exact attribution, stable
 ordering, explicit commands, replay/restart behavior, and fail-closed legacy
 compatibility.
+## ADR-071 — Telegram is a dedicated-bot private command transport only
+
+**Decision:** Telegram may use only the standard Bot API with one exact allowlisted
+private user/chat pair. It is fail-closed, stores only bounded replay metadata, and
+cannot access or infer from Fabio's personal account, chats, contacts, history,
+groups, channels, media, or social graph.
+
+**Future impact:** Every Telegram, H24, improvement, Developer Control Plane, and Web
+Console milestone must comply with `TELEGRAM_PERSONAL_PRIVACY_BOUNDARY.md`.
+
+## ADR-072 — Telegram Mission drafts are structured, progressive, and transport-neutral
+
+**Context:** A future guided Mission flow needs to collect intentional Mission data
+without retaining Telegram messages, profile material, transport diagnostics, or a
+premature copy of the complete FounderMissionBrief.
+
+**Decision:** The first Phase 1B Mission artifact is a strict, versioned,
+storage-neutral `TelegramMissionDraft` contract. Its validator accepts bounded,
+JSON-safe, deeply immutable progressive Mission fields using existing Founder Mission
+terminology; rejects unknown fields, personal Telegram/transport fields, sensitive
+material, invalid terminal combinations, malformed nested Mission records, duplicate
+IDs, and unstable ordering. It creates no state transitions, database records,
+receipts, UI command, Mission Brief conversion, plan, Workflow, or external action.
+
+**Reason:** The structured draft gives later guided interaction one privacy-safe
+boundary while preventing a Telegram transcript or partial input from becoming an
+execution path or an implicit FounderMissionBrief.
+
+**Tradeoffs:** The record can be structurally `REVIEW_READY` or `CONFIRMED` without
+proving full FounderMissionBrief readiness; that proof and legal transitions belong to
+later explicitly approved sub-milestones.
+
+**Future impact:** The next Telegram Mission sub-milestone may add only the pure
+in-memory state engine over this exact contract; persistence, conversion, `/mission`,
+and execution remain separate decisions.
+
+## ADR-074 — Telegram Mission conversion uses explicit versioned profiles and explicit Mission data
+
+**Decision:** Telegram Mission conversion uses explicit versioned Founder, Brand, and
+optional Mission-type profiles plus explicitly collected Mission-specific fields.
+Profiles are never hidden defaults: their exact identities, versions, fingerprints,
+and expanded material rules are shown and explicitly confirmed by Fabio. The
+conversion context binds the draft version, actor, workspace, exact profile content,
+and confirmation fingerprint; substitution or stale confirmation fails closed.
+
+**Reason:** This preserves usability without repeating stable boilerplate while never
+assuming deadlines, budgets, market facts, success-metric targets, evidence,
+approval, customer identity, legal conclusions, or external-action authorization.
+
+**Future impact:** Telegram personal metadata is never a profile source. Any later
+storage, session, UI, or planner boundary must retain exact profile references and
+make all profile-derived values reviewable before confirmation.
+
+## ADR-073 — Telegram Mission Draft operations are deterministic and memory-only
+
+**Decision:** Phase 1B.1A-2 adds a strict, versioned operation contract and pure
+state engine for one validated `TelegramMissionDraft`. The engine accepts an injected
+RFC 3339 timestamp, requires exact draft/session/actor/workspace/identity/version
+binding, and returns one immutable next draft or a bounded reason code. It permits
+only collecting-field updates, explicit return from `REVIEW_READY`, cancellation, and
+expiry; it does not create review-ready or confirmed drafts.
+
+**Reason:** A deterministic state boundary makes future storage integration safe to
+add without letting Telegram input, a system clock, or an optimistic update become an
+implicit persistence or execution path.
+
+**Future impact:** FounderMissionBrief readiness/conversion remains Phase 1B.1A-3,
+SQLite operation receipts remain Phase 1B.1B, atomic session/draft integration remains
+Phase 1B.1C, and guided Telegram UX/planning remain Phase 1B.2. `/mission` remains
+inactive; no Mission, Workflow, or external action is executed.
+
+## ADR-075 — Telegram Mission sessions and drafts advance as one durable aggregate
+
+**Decision:** Phase 1B Checkpoint C treats the authorized operator session and its
+single Mission draft as one optimistic-version aggregate. Every logical mutation
+validates the exact session, draft, actor, workspace, authorized identity, version,
+action, context, and expiry, then commits the session, draft, receipt, and callback
+consumption atomically. Terminal cancellation and expiry minimize collected content
+and invalidate prior callbacks. Explicit-discard restart creates a new exact draft on
+the same authorized session only after terminal state.
+
+**Reason:** Independent durable records must not create partial progress, stale
+confirmation authority, ownership confusion, or restart ambiguity.
+
+**Future impact:** Phase 1B.2 may render this coordination boundary through a guided
+Telegram UX, but it must not duplicate its state machine or persistence logic. Public
+`/mission`, Mission planning, Quality Gate, and Workflow admission remain separate
+future authorization points.
+
+## ADR-076 — Operational Agent Company readiness requires an executable durable task
+
+**Decision:** A role is operationally `READY` only when the versioned operational
+catalog binds it to at least one validated executor task whose structured result,
+attempts, measured duration, measured cost, output fingerprint and Quality / Risk /
+Cost Gate are durably persisted. Manifest-only readiness remains a separate legacy
+declaration concept and cannot populate operational telemetry.
+
+The first vertical slice is one shared Agent Company workday. It persists every task
+transition and resumes incomplete work after reopening SQLite. All external actions
+remain forbidden. Publisher is dry-run only; Developer is change-plan only; Research
+may compile only previously acquired authorized evidence.
+
+**Reason:** Fabio needs measurable departments that complete one coherent business
+mission, while MV-AI-OS must not misrepresent planned tools, fabricated metrics or a
+test fixture as autonomous business output.
+
+**Tradeoffs:** Execution is currently synchronous inside the local command process,
+and the catalog exposes a deliberately narrow useful task for Developer and Research.
+This provides real durable work without pretending that the H24 worker, repository
+tool gateway or authorized web acquisition already exists.
+
+**Future impact:** Expanding an agent's supported tasks requires a new validated
+executor and end-to-end test. H24 leases, live Research acquisition and Developer
+repository mutation must extend this boundary rather than replacing it with direct
+database writes or unrestricted tools.
+
+## ADR-077 — Social intelligence must preserve provenance and missing data
+
+**Decision:** A Metodo Veloce Social Publishing Pack may calculate its Opportunity
+Score only when all 12 declared criteria have a value and provenance classification.
+`MISSING` contributes no invented value and suppresses the total score. Trend,
+audience, competitor, hashtag, audio-rights and timing signals retain their source or
+Evidence reference and observation time. Images supplied as creative references may
+shape visual direction but can never prove demand, trend velocity, rights or results.
+
+Audio is selectable only when commercial use and account availability are declared.
+A publication window is dynamic only when backed by sufficient measured history;
+otherwise it is explicitly experimental and uses only supplied candidate windows.
+Metrics start in an awaiting-import state. The entire pack remains preparation-only,
+fingerprinted and subject to Fabio review.
+
+**Reason:** A content system that fills missing social data with plausible values can
+look productive while steering the brand with false evidence. The vertical slice must
+produce a useful six-slide draft and an honest decision at the same time.
+
+**Future impact:** Live social connectors must import append-only snapshots into this
+contract and must not bypass Source Registry, rights checks, expiry, the Evidence Pack
+binding or the controlled publication plane.
+
+## ADR-078 — Social live acquisition is source-bound and atomic
+
+**Decision:** The initial Social Intelligence Live source set is limited to Google
+Trends Trending Now, TikTok Creative Center, the owned Instagram Insights export and
+TikTok Commercial Music Library. Source registration authorizes acquisition policy;
+it does not create a trend, metric, competitor observation or audio authorization.
+Google and TikTok trend observations require separate attributable records and the
+declared corroboration policy.
+
+Multi-record imports are previewed before commit and execute in one repository
+transaction. A valid exact replay returns the original logical result, while partial
+replay, unauthorized sources or invalid dependencies block the entire batch. CSV
+metric cells that are not present remain missing rather than becoming zero.
+
+**Reason:** A partially imported social snapshot can corrupt baselines and make a
+future recommendation appear better supported than it is. Treating a source URL as
+an observation would manufacture evidence.
+
+**Future impact:** Provider adapters must terminate in this batch boundary and retain
+the original acquisition timestamp, account/platform identity and source reference.
+They cannot publish, schedule externally or bypass the Action Plane.
+
+## ADR-079 — H24 is supervised local execution, not implicit autonomy
+
+**Decision:** The H24 plane is an explicitly started local scheduler/worker system
+with durable controls, fenced leases, bounded retries, measured usage and redacted
+events. Repository import, migration, Command Center or Telegram startup cannot install
+or activate it. Founder Workday and Daily Operating Brief perform snapshot, aggregate
+insert and event append in one repository transaction and replay by durable identity.
+
+The Command Center may project events and execute only allowlisted two-step controls.
+Official-social OAuth remains one separate Fabio browser checkpoint. No runtime,
+connection or review state unlocks publication; publication remains `LOCKED`.
+
+**Reason:** “24/7 ready” must describe tested recoverable machinery, not claim a
+running process or transfer Fabio's authority. Atomic aggregate/event persistence and
+fail-closed coverage prevent dashboards or briefings from turning partial data into
+operational success.
+
+**Future impact:** Cloud or multi-user deployment requires a new threat model and
+authorization. New schedules/handlers must declare budgets and external boundaries;
+new UI actions must use the existing proposal/confirmation and event contracts.
+
+## ADR-080 — Operational projections preserve immutable history and bounded coverage
+
+**Decision:** Daily Operating Brief uses the DST-safe `Europe/Rome` business date.
+Unchanged evidence replays the exact record; changed evidence for the same day creates
+a new immutable version. Completed work requires durable task completion evidence from
+Operations, Agent Company or Founder Workday. Command Center and Daily Brief repository
+queries are bounded; reaching any limit yields `LIMIT_REACHED`, a lower bound or
+`UNAVAILABLE`. Cost and external-effect totals remain `UNAVAILABLE` until one
+coverage-attested global ledger spans every relevant subsystem.
+
+**Reason:** Overwriting morning state, treating aggregate status as a task receipt or
+presenting a capped query/placeholder zero as a global measurement would create false
+operational evidence.
+
+**Future impact:** Every new projection source must declare its cap, completeness rule,
+business-time semantics and durable completion evidence. A future global cost/effects
+ledger must attest coverage before it can replace `UNAVAILABLE`.
+
+## ADR-081 — Visual approval is an exact shared binding
+
+**Decision:** Command Center and Telegram use the same fail-closed Visual Gate. A
+manifest must be ready for human decision and bind workspace, production ID/version,
+content package, Social Publishing Pack, Master Content Pack and asset set. The gate
+recomputes manifest and actual-file SHA-256, validates declared dimensions and confines
+paths to the asset root. Proposal/preview and confirmation/callback both revalidate;
+any change invalidates the pending decision. The central command boundary performs the
+same verification for every approved review regardless of adapter and persists the
+exact `visualApprovalBindingFingerprint` on the production record.
+
+**Reason:** A global, stale or path-swapped manifest cannot prove what Fabio actually
+reviewed. Sharing one gate prevents the browser and Telegram paths from granting
+different approval authority.
+
+**Future impact:** Legacy approved reviews without a visual fingerprint remain readable
+for compatibility and archive, but are not eligible for scheduling, publication
+dry-run or authorization. The official original logo exists with SHA-256
+`9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121`;
+the old manifest's `BLOCKED_ORIGINAL_LOGO_MISSING` value is stale historical metadata.
+Its operative blocker is the absence of an exact approval binding and matching
+`READY_FOR_HUMAN_DECISION` state. A passing Visual Gate plus Fabio's review permits
+only a later, separate internal scheduling command; publication remains locked.
+
+## ADR-082 — Social OAuth start is CSRF-bound and credential removal is first
+
+**Decision:** Official-social OAuth begins only through a local operator-root form
+`POST` protected by exact loopback Origin and CSRF; direct start `GET` is unsupported.
+On wrong account, personal Instagram account or explicit disconnect, the local
+credential is deleted before best-effort provider revocation. Revocation failure is
+recorded `UNCERTAIN` and never restores the credential.
+
+**Reason:** A state-changing `GET` enables cross-site login initiation, while
+revoke-before-delete can leave a usable local token after a provider/network failure.
+
+**Future impact:** Browser acceptance must start from the local root, and recovery from
+an uncertain revoke requires fresh OAuth. Connection, Insights, creator-info or audit
+state never unlocks publication.
+
+## ADR-083 — Telegram persists delivery intent before transport and never guesses
+
+**Decision:** SQLite schema v30 validates the complete Telegram outbound intent before
+transport and commits one opaque `UNCERTAIN` delivery record together with the inbound
+transition to `DELIVERY_UNCERTAIN` before the first Bot API byte can leave. Proven
+delivery commits the `DELIVERED` state, terminal `COMPLETED` or `REJECTED` receipt and
+polling offset atomically. If transport may have succeeded without local confirmation,
+the offset is still advanced, the uncertain evidence is retained, and the operator
+receives `DELIVERY_RECONCILIATION_REQUIRED`. Restart and polling must not redeliver the
+same intent or repeat the underlying domain command automatically.
+
+A local validation or handling error that occurs before any delivery intent is opened
+is a distinct update-local condition. If its safe fallback is delivered, the receipt
+is terminal `REJECTED` and the offset advances; this must not be reported as transport
+uncertainty.
+
+**Reason:** Retrying after an ambiguous network boundary can duplicate a Telegram
+response or, worse, repeat an already committed domain action. Treating a local
+validation rejection as uncertain delivery would instead stop unrelated later updates
+and hide a deterministic input failure.
+
+**Future impact:** `DELIVERY_UNCERTAIN` always requires manual reconciliation. Any
+future Telegram transport must preserve durable intent-before-I/O, atomic terminal
+finalization, offset monotonicity, data minimization and the no-automatic-redelivery
+rule.
+
+## ADR-084 — Venture records are evidence-bound proposals, never execution authority
+
+**Context:** Opportunity discovery, scoring, economics, experiments and capital review
+can create a false appearance of commercial certainty or autonomous authority.
+
+**Decision:** Venture state is append-only, actor/workspace isolated and changed only
+through an idempotent command boundary with exact version/fingerprint checks, durable
+receipt, audit and outbox event. Missing facts remain `NOT_AVAILABLE` or
+`FOUNDER_INPUT_REQUIRED`; social signals never prove demand; simulations never count
+as real observations. Capital records are proposals only. Active execution, spend and
+publication require separate Fabio decisions and remain locked in this milestone.
+
+**Reason:** The operating system must preserve evidentiary truth and founder authority
+while still preparing a complete decision package.
+
+**Future impact:** Any research, validation, launch, scale or kill transition must
+consume the current record version and fingerprint, pass the applicable Gates and
+record a new immutable version. No downstream adapter may infer authorization from a
+score, brief or capital proposal.
+
+## ADR-085 — Advanced operator surfaces converge on Core admission and one command boundary
+
+**Context:** Merging the hardened Core checkpoint with the advanced operator history
+exposed a Telegram path that still created a hand-authored Workflow definition and
+instance. Preserving that path would leave two sources of workflow identity,
+attribution and admission semantics.
+
+**Decision:** The integrated runtime keeps one `LocalWorkflowCommandBoundary`, one
+SQLite migration/repository line and one actor/workspace ownership and audit model.
+Telegram promotes an `APPROVAL_READY` Mission only by submitting
+`ADMIT_WORKFLOW_SPECIFICATION` for the exact immutable
+`core-v1-content-direction@1.0.0` declaration. The admission command is bound to its
+outer command ID and identity, resolves and fingerprints all exact Agent
+Specifications, and atomically stores definition, instance, ownership and audit.
+Specialized Business Mission, research, Evidence Pack, content, venture and operations
+aggregates remain typed application domains behind the shared boundary; they are not
+alternate workflow engines.
+
+**Reason:** Canonical admission preserves replay, provenance and immutable registry
+invariants while retaining the advanced operator functionality and history. A
+transport adapter must not decide workflow structure or write a parallel persistence
+model.
+
+**Future impact:** New attributed workflow entry points must use specification
+admission. `CREATE_WORKFLOW` remains compatibility-only for existing unattributed
+definitions and may not synthesize admission metadata. External-effect gates remain
+separate from mission, workflow, content and connector readiness.
+
+## ADR-086 — Mission input is instance-bound and Venture schedules use the canonical repository
+
+**Context:** Telegram promotion selected the canonical Workflow Specification but did
+not carry the approved Mission objective/reference into its admitted instance. The
+H24 catalog also enabled eight Venture jobs while production composition omitted the
+existing Venture service/repository boundary.
+
+**Decision:** Workflow admission validates the strict specification input,
+fingerprints it with its contract identity, stores it immutably on the instance and
+records its fingerprint in admission audit. Controlled invocation and operator
+reporting consume this binding. The supervised worker opens the canonical Venture
+SQLite runner and injects one bounded repository-backed adapter for all eight jobs.
+Missing evidence, policy, portfolio coverage or real observations is returned as a
+durable blocker; external effects remain zero.
+
+**Reason:** Mission intent must survive transport promotion without becoming mutable
+definition metadata, and enabled schedules must use real domain services rather than
+a production placeholder.
+
+**Future impact:** Pre-admission legacy instances remain readable without a mission
+binding; admitted instances fail closed if it is absent or inconsistent. Venture jobs
+may materialize and inspect internal state but cannot infer Founder decisions or real
+market observations.

@@ -1,0 +1,220 @@
+{
+  "contractVersion": "1",
+  "intakeId": "replace-production-20260802-001",
+  "researchMission": {
+    "claims": [
+      {
+        "claimId": "replace-claim-a",
+        "contradictionPhrases": ["replace with an exact contradiction phrase"],
+        "requiredPhrases": ["replace with an exact source phrase"],
+        "riskDomain": "GENERAL",
+        "statement": "Replace with a verifiable opportunity A statement."
+      },
+      {
+        "claimId": "replace-claim-b",
+        "contradictionPhrases": ["replace with an exact contradiction phrase"],
+        "requiredPhrases": ["replace with an exact source phrase"],
+        "riskDomain": "GENERAL",
+        "statement": "Replace with a verifiable opportunity B statement."
+      },
+      {
+        "claimId": "replace-claim-c",
+        "contradictionPhrases": ["replace with an exact contradiction phrase"],
+        "requiredPhrases": ["replace with an exact source phrase"],
+        "riskDomain": "GENERAL",
+        "statement": "Replace with a verifiable opportunity C statement."
+      }
+    ],
+    "maxBytesPerSource": 100000,
+    "maxRedirects": 1,
+    "missionId": "replace-research-20260802-001",
+    "packs": [
+      { "evidenceIds": ["replace-evidence-a"], "opportunityId": "replace-opportunity-a", "packId": "replace-pack-a" },
+      { "evidenceIds": ["replace-evidence-b"], "opportunityId": "replace-opportunity-b", "packId": "replace-pack-b" },
+      { "evidenceIds": ["replace-evidence-c"], "opportunityId": "replace-opportunity-c", "packId": "replace-pack-c" }
+    ],
+    "targets": [
+      { "claimIds": ["replace-claim-a"], "evidenceId": "replace-evidence-a", "limitations": ["Replace with the known limitation of this source."], "sourceId": "replace-official-source", "url": "https://replace-with-authorized-source.example/research/a" },
+      { "claimIds": ["replace-claim-b"], "evidenceId": "replace-evidence-b", "limitations": ["Replace with the known limitation of this source."], "sourceId": "replace-official-source", "url": "https://replace-with-authorized-source.example/research/b" },
+      { "claimIds": ["replace-claim-c"], "evidenceId": "replace-evidence-c", "limitations": ["Replace with the known limitation of this source."], "sourceId": "replace-official-source", "url": "https://replace-with-authorized-source.example/research/c" }
+    ],
+    "timeoutMs": 10000
+  },
+  "safety": {
+    "externalActionsAllowed": false,
+    "maxProviderCalls": 0,
+    "maxSpendCents": 0,
+    "publicationEnabled": false
+  },
+  "sources": [
+    {
+      "canonicalReference": "https://replace-with-authorized-source.example/research/",
+      "category": "OFFICIAL_SITE",
+      "maxFreshnessDays": 30,
+      "name": "Replace with the attributable publisher name",
+      "permittedRiskDomains": ["GENERAL"],
+      "publicCitationAllowed": true,
+      "reliability": "HIGH",
+      "requiresSecondSource": false,
+      "sourceId": "replace-official-source",
+      "status": "AUTHORIZED"
+    }
+  ],
+  "workday": {
+    "businessMission": {
+      "candidates": [
+        {
+          "assumptions": ["Acquisition cost still requires validation."],
+          "capitalRequiredCents": 0,
+          "competition": "Replace with attributable competition evidence.",
+          "customer": "Replace with the evidence-backed ideal customer.",
+          "demand": "Replace with the demand signal from Evidence Pack A.",
+          "entryBarrier": "Replace with the known entry barrier.",
+          "evidencePackId": "replace-pack-a",
+          "marginPotentialBps": 7000,
+          "missingInformation": [],
+          "operationalComplexity": "LOW",
+          "opportunityId": "replace-opportunity-a",
+          "problem": "Replace with the verified customer problem.",
+          "risk": "LOW",
+          "scoreInputs": [
+            { "confidence": "HIGH", "criterion": "VERIFIED_DEMAND", "dataKind": "REAL", "evidenceId": "replace-evidence-a", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 90 },
+            { "confidence": "HIGH", "criterion": "VALIDATION_SPEED", "dataKind": "REAL", "evidenceId": "replace-evidence-a", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 90 },
+            { "confidence": "HIGH", "criterion": "CAPITAL_EFFICIENCY", "dataKind": "REAL", "evidenceId": "replace-evidence-a", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 90 },
+            { "confidence": "HIGH", "criterion": "MARGIN_POTENTIAL", "dataKind": "REAL", "evidenceId": "replace-evidence-a", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 90 },
+            { "confidence": "HIGH", "criterion": "CUSTOMER_ACCESS", "dataKind": "REAL", "evidenceId": "replace-evidence-a", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 90 },
+            { "confidence": "HIGH", "criterion": "FABIO_ADVANTAGE", "dataKind": "REAL", "evidenceId": "replace-evidence-a", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 90 },
+            { "confidence": "HIGH", "criterion": "RISK_CONTROL", "dataKind": "REAL", "evidenceId": "replace-evidence-a", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 90 }
+          ],
+          "title": "Replace opportunity A",
+          "validationSpeedDays": 10
+        },
+        {
+          "assumptions": ["Acquisition cost still requires validation."],
+          "capitalRequiredCents": 0,
+          "competition": "Replace with attributable competition evidence.",
+          "customer": "Replace with the evidence-backed ideal customer.",
+          "demand": "Replace with the demand signal from Evidence Pack B.",
+          "entryBarrier": "Replace with the known entry barrier.",
+          "evidencePackId": "replace-pack-b",
+          "marginPotentialBps": 6500,
+          "missingInformation": [],
+          "operationalComplexity": "LOW",
+          "opportunityId": "replace-opportunity-b",
+          "problem": "Replace with the verified customer problem.",
+          "risk": "LOW",
+          "scoreInputs": [
+            { "confidence": "HIGH", "criterion": "VERIFIED_DEMAND", "dataKind": "REAL", "evidenceId": "replace-evidence-b", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 70 },
+            { "confidence": "HIGH", "criterion": "VALIDATION_SPEED", "dataKind": "REAL", "evidenceId": "replace-evidence-b", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 70 },
+            { "confidence": "HIGH", "criterion": "CAPITAL_EFFICIENCY", "dataKind": "REAL", "evidenceId": "replace-evidence-b", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 70 },
+            { "confidence": "HIGH", "criterion": "MARGIN_POTENTIAL", "dataKind": "REAL", "evidenceId": "replace-evidence-b", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 70 },
+            { "confidence": "HIGH", "criterion": "CUSTOMER_ACCESS", "dataKind": "REAL", "evidenceId": "replace-evidence-b", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 70 },
+            { "confidence": "HIGH", "criterion": "FABIO_ADVANTAGE", "dataKind": "REAL", "evidenceId": "replace-evidence-b", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 70 },
+            { "confidence": "HIGH", "criterion": "RISK_CONTROL", "dataKind": "REAL", "evidenceId": "replace-evidence-b", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 70 }
+          ],
+          "title": "Replace opportunity B",
+          "validationSpeedDays": 12
+        },
+        {
+          "assumptions": ["Acquisition cost still requires validation."],
+          "capitalRequiredCents": 0,
+          "competition": "Replace with attributable competition evidence.",
+          "customer": "Replace with the evidence-backed ideal customer.",
+          "demand": "Replace with the demand signal from Evidence Pack C.",
+          "entryBarrier": "Replace with the known entry barrier.",
+          "evidencePackId": "replace-pack-c",
+          "marginPotentialBps": 6000,
+          "missingInformation": [],
+          "operationalComplexity": "MEDIUM",
+          "opportunityId": "replace-opportunity-c",
+          "problem": "Replace with the verified customer problem.",
+          "risk": "MEDIUM",
+          "scoreInputs": [
+            { "confidence": "HIGH", "criterion": "VERIFIED_DEMAND", "dataKind": "REAL", "evidenceId": "replace-evidence-c", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 50 },
+            { "confidence": "HIGH", "criterion": "VALIDATION_SPEED", "dataKind": "REAL", "evidenceId": "replace-evidence-c", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 50 },
+            { "confidence": "HIGH", "criterion": "CAPITAL_EFFICIENCY", "dataKind": "REAL", "evidenceId": "replace-evidence-c", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 50 },
+            { "confidence": "HIGH", "criterion": "MARGIN_POTENTIAL", "dataKind": "REAL", "evidenceId": "replace-evidence-c", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 50 },
+            { "confidence": "HIGH", "criterion": "CUSTOMER_ACCESS", "dataKind": "REAL", "evidenceId": "replace-evidence-c", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 50 },
+            { "confidence": "HIGH", "criterion": "FABIO_ADVANTAGE", "dataKind": "REAL", "evidenceId": "replace-evidence-c", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 50 },
+            { "confidence": "HIGH", "criterion": "RISK_CONTROL", "dataKind": "REAL", "evidenceId": "replace-evidence-c", "formula": "Replace with the reproducible 0-100 scoring formula.", "value": 50 }
+          ],
+          "title": "Replace opportunity C",
+          "validationSpeedDays": 15
+        }
+      ],
+      "commercialPlan": {
+        "acquisition": {
+          "channels": [{ "channel": "Manual validation", "message": "Internal draft only; no outreach is authorized.", "priority": 1 }],
+          "emailSequence": [{ "body": "Internal draft only; do not send.", "subject": "Replace pilot subject" }],
+          "faq": [{ "answer": "The pilot measures evidence before any expansion.", "question": "Why start with a pilot?" }],
+          "landingCopy": { "callToAction": "Request a private review", "headline": "Replace with the evidence-led headline", "proof": "Replace with attributable proof.", "subheadline": "Replace with the bounded pilot value proposition." },
+          "outreachScript": "Internal draft only; no contact is authorized.",
+          "socialSupport": ["Internal content draft; publication remains locked."]
+        },
+        "economics": [
+          { "acquisitionCostCents": 0, "conversionRateBps": 1000, "deliveryCostCents": 0, "fixedCostsCents": 0, "hourlyCostCents": 0, "humanHoursPerClient": 4, "monthlyVolume": 1, "name": "PRUDENT", "priceCents": 100000, "provenance": [{ "dataKind": "ASSUMPTION", "field": "acquisitionCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "conversionRateBps", "note": "Internal assumption; no external action is authorized." }, { "dataKind": "ASSUMPTION", "field": "deliveryCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "fixedCostsCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "hourlyCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "humanHoursPerClient", "note": "Internal delivery assumption." }, { "dataKind": "ASSUMPTION", "field": "monthlyVolume", "note": "Internal volume assumption." }, { "dataKind": "ASSUMPTION", "field": "priceCents", "note": "Internal price assumption; no sale is authorized." }, { "dataKind": "ASSUMPTION", "field": "refundRateBps", "note": "Internal refund assumption." }, { "dataKind": "ASSUMPTION", "field": "toolCostsCents", "note": "Internal assumption; no spend is authorized." }], "refundRateBps": 0, "toolCostsCents": 0 },
+          { "acquisitionCostCents": 0, "conversionRateBps": 1000, "deliveryCostCents": 0, "fixedCostsCents": 0, "hourlyCostCents": 0, "humanHoursPerClient": 4, "monthlyVolume": 3, "name": "BASE", "priceCents": 100000, "provenance": [{ "dataKind": "ASSUMPTION", "field": "acquisitionCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "conversionRateBps", "note": "Internal assumption; no external action is authorized." }, { "dataKind": "ASSUMPTION", "field": "deliveryCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "fixedCostsCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "hourlyCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "humanHoursPerClient", "note": "Internal delivery assumption." }, { "dataKind": "ASSUMPTION", "field": "monthlyVolume", "note": "Internal volume assumption." }, { "dataKind": "ASSUMPTION", "field": "priceCents", "note": "Internal price assumption; no sale is authorized." }, { "dataKind": "ASSUMPTION", "field": "refundRateBps", "note": "Internal refund assumption." }, { "dataKind": "ASSUMPTION", "field": "toolCostsCents", "note": "Internal assumption; no spend is authorized." }], "refundRateBps": 0, "toolCostsCents": 0 },
+          { "acquisitionCostCents": 0, "conversionRateBps": 1000, "deliveryCostCents": 0, "fixedCostsCents": 0, "hourlyCostCents": 0, "humanHoursPerClient": 4, "monthlyVolume": 5, "name": "AMBITIOUS", "priceCents": 100000, "provenance": [{ "dataKind": "ASSUMPTION", "field": "acquisitionCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "conversionRateBps", "note": "Internal assumption; no external action is authorized." }, { "dataKind": "ASSUMPTION", "field": "deliveryCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "fixedCostsCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "hourlyCostCents", "note": "Internal assumption; no spend is authorized." }, { "dataKind": "ASSUMPTION", "field": "humanHoursPerClient", "note": "Internal delivery assumption." }, { "dataKind": "ASSUMPTION", "field": "monthlyVolume", "note": "Internal volume assumption." }, { "dataKind": "ASSUMPTION", "field": "priceCents", "note": "Internal price assumption; no sale is authorized." }, { "dataKind": "ASSUMPTION", "field": "refundRateBps", "note": "Internal refund assumption." }, { "dataKind": "ASSUMPTION", "field": "toolCostsCents", "note": "Internal assumption; no spend is authorized." }], "refundRateBps": 0, "toolCostsCents": 0 }
+        ],
+        "offer": {
+          "bonuses": ["Replace bonus"],
+          "customerExclusions": ["Customers requiring guaranteed revenue"],
+          "differentiation": "Replace with the evidence-backed differentiation.",
+          "deliverables": ["Audit", "Plan", "Internal package"],
+          "guarantee": "Delivery is limited to the explicitly declared deliverables.",
+          "idealCustomer": "Replace with the evidence-backed ideal customer.",
+          "limits": ["No revenue promise", "No automatic external action"],
+          "mechanism": "Authorized research and controlled validation.",
+          "objections": [{ "objection": "Historical data is limited", "response": "Start with a bounded zero-cost validation." }],
+          "opportunityId": "replace-opportunity-a",
+          "positioning": "Replace with the selected evidence-led positioning.",
+          "primaryProblem": "Replace with the verified primary problem.",
+          "promisedOutcome": "Replace with a bounded outcome supported by evidence.",
+          "tiers": [{ "deliverables": ["Audit", "Plan"], "name": "Private pilot", "priceCents": 100000 }]
+        },
+        "validation": [{ "assetNeeded": "Local landing draft", "audience": "Replace with the validation audience", "authorizationRequired": true, "durationDays": 10, "experimentId": "replace-validation-001", "hypothesis": "Replace with a measurable hypothesis.", "maxCostCents": 0, "method": "MANUAL_OUTREACH", "minimumThreshold": "Replace with the minimum signal.", "nextDecision": "Continue or stop after Fabio review.", "primaryMetric": "Qualified responses", "sampleSize": 10, "stopCondition": "Stop before any unauthorized external action." }]
+      },
+      "mission": {
+        "assets": ["MV-AI-OS", "Metodo Veloce"],
+        "availableDays": 60,
+        "competencies": ["AI", "content", "workflow"],
+        "customerModel": "B2B",
+        "forbiddenActions": ["spend", "automatic outreach", "publication"],
+        "geography": "Italy",
+        "maxCapitalCents": 0,
+        "minimumThresholds": { "maxValidationDays": 30, "minGrossMarginBps": 5000, "minOpportunityScore": 65 },
+        "missionId": "replace-business-20260802-001",
+        "objective": "Replace with the exact comparison objective for three opportunities.",
+        "revenueModels": ["project service"],
+        "riskTolerance": "MEDIUM"
+      }
+    },
+    "content": {
+      "brief": {
+        "audience": "Replace with the evidence-backed audience",
+        "callToAction": "Request a private review",
+        "contractVersion": "1",
+        "evidence": [{ "evidenceId": "replace-evidence-a", "sourceRef": "replace-official-source", "statement": "Replace with a verifiable opportunity A statement." }],
+        "language": "it",
+        "missionReference": "replace-onlyway-production-001",
+        "objective": "lead_generation",
+        "offer": "Replace with the selected bounded offer",
+        "productionId": "replace-content-20260802-001",
+        "topic": "Replace with an evidence-backed content topic"
+      },
+      "evidencePackId": "replace-pack-a"
+    },
+    "developer": { "acceptanceChecks": ["lint", "typecheck", "test", "build"], "filesInScope": ["src"], "isolatedBranch": "codex/example-change", "objective": "Prepare an internal change plan only; no merge or deploy" },
+    "maxBudgetCents": 0,
+    "missionId": "replace-onlyway-production-001",
+    "objective": "Produce an internal offer, content package, sales draft, delivery plan and controls from verified evidence.",
+    "publisher": { "platforms": ["instagram", "tiktok"], "scheduledFor": "2026-08-10T09:00:00.000Z" },
+    "researchMissionId": "replace-research-20260802-001",
+    "researchPacks": [
+      { "evidenceIds": ["replace-evidence-a"], "packId": "replace-pack-a" },
+      { "evidenceIds": ["replace-evidence-b"], "packId": "replace-pack-b" },
+      { "evidenceIds": ["replace-evidence-c"], "packId": "replace-pack-c" }
+    ],
+    "workdayId": "replace-workday-20260802-001"
+  }
+}

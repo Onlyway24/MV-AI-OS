@@ -7,6 +7,10 @@
       "actorId": "actor-local",
       "admissionId": "admit-example-content-workflow",
       "contractVersion": "1",
+      "input": {
+        "missionReference": "example-content-mission",
+        "objective": "Prepare one bounded local content direction for review."
+      },
       "instanceId": "example-admitted-content-instance",
       "nonExecuting": true,
       "workflowId": "core-v1-content-direction",

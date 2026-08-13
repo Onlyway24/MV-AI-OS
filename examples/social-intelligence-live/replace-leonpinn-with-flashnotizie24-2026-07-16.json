@@ -1,0 +1,20 @@
+{
+  "actorId": "actor-local",
+  "commandId": "replace-leonpinn-flashnotizie24-2026-07-16",
+  "contractVersion": "1",
+  "input": {
+    "authorization": {
+      "accountRef": "flashnotizie24",
+      "authorizationId": "competitor-replacement-flashnotizie24-2026-07-16",
+      "authorizedAt": "2026-07-16T00:15:00.000Z",
+      "confirmationText": "AUTORIZZO_SOSTITUZIONE_COMPETITOR",
+      "recordId": "competitor-instagram-flashnotizie24",
+      "replacementReason": "Fabio autorizza un profilo pubblico realmente osservabile come riferimento visuale; leonpinn resta nello storico ma viene escluso dal set attivo.",
+      "replacesCompetitorRecordId": "competitor-instagram-leonpinn",
+      "role": "VISUAL_REFERENCE",
+      "subrole": "HOOK_AND_HEADLINE_REFERENCE"
+    }
+  },
+  "operation": "REPLACE_SOCIAL_COMPETITOR",
+  "workspaceId": "workspace-local"
+}

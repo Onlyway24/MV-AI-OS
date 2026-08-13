@@ -1,0 +1,106 @@
+{
+  "contractVersion": "1",
+  "externalEffects": {
+    "completedImageGenerationsThisSession": 0,
+    "cumulativeOpenAiProviderCalls": 5,
+    "imageRequestsThisSession": 1,
+    "instagramPosts": 0,
+    "messages": 0,
+    "purchases": 0,
+    "serverSpendUsd": 0,
+    "tiktokPosts": 0
+  },
+  "gates": {
+    "cost": "PASS_BUDGET_WITH_RECONCILIATION_PENDING",
+    "evidence": "PASS",
+    "quality": "BLOCKED_NO_MASTER_IMAGE",
+    "risk": "BLOCKED_NO_MASTER_IMAGE",
+    "visual": "BLOCKED_NO_MASTER_IMAGE"
+  },
+  "logo": {
+    "originalSha256": "9a622429e00fdef35e3dfd7472cf945b3a74834018bfd5a57a7c8a3aab97f121",
+    "overlayTechnicalSha256": "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681",
+    "policy": "ORIGINAL_ONLY_LOCAL_RENDERER_OVERLAY"
+  },
+  "milestone": "MEDIA FACTORY QUALITY CLOSURE V1",
+  "pricing": {
+    "checkedOn": "2026-07-17",
+    "image": {
+      "inputTextPerMillionTokensUsd": 5,
+      "model": "gpt-image-2",
+      "officialHigh1024x1536OutputEstimateUsd": 0.165,
+      "prudentEstimateUsd": 0.17,
+      "reservationUsd": 0.2,
+      "snapshot": "gpt-image-2-2026-04-21"
+    },
+    "sources": [
+      "https://developers.openai.com/api/docs/models/gpt-image-2",
+      "https://developers.openai.com/api/docs/guides/image-generation",
+      "https://developers.openai.com/api/docs/pricing"
+    ],
+    "text": {
+      "inputPerMillionTokensUsd": 0.15,
+      "model": "gpt-4o-mini",
+      "outputPerMillionTokensUsd": 0.6
+    }
+  },
+  "publication": "LOCKED",
+  "review": "INTERNAL_PACKAGE_ONLY",
+  "session": {
+    "estimatedCostUsd": 0.00012375,
+    "expiresAt": "2026-07-17T17:42:15.677Z",
+    "imageCalls": 1,
+    "liveCalls": 2,
+    "priorLiveCallsToday": 3,
+    "priorReservedExposureUsd": 0.025,
+    "reconciliationPendingCostUsd": 0.2,
+    "reservedCostUsd": 0.21,
+    "sessionId": "media-quality-bd0bb28b-599a-4091-9aa7-74ebf7a9d5a5",
+    "sessionResidualBudgetUsd": 0.79,
+    "status": "CLOSED",
+    "textCalls": 1,
+    "actor": "Fabio",
+    "dailyHardLimitUsd": 4,
+    "maxCalls": 2,
+    "maxImages": 1,
+    "maxRetries": 0,
+    "operationIdFingerprint": "c0a310e6dea777d8a383bfb6c833153b9fc0d92229a8aa96a0036cc632c4c65f",
+    "sessionHardLimitUsd": 1
+  },
+  "structuredOutput": {
+    "costClassification": "ESTIMATED",
+    "estimatedCostUsd": 0.00012375,
+    "model": "gpt-4o-mini",
+    "modelSnapshot": "gpt-4o-mini-2024-07-18",
+    "operationCompletedAt": "2026-07-17T17:32:20.718Z",
+    "operationStartedAt": "2026-07-17T17:32:15.679Z",
+    "outputPersistence": "MISSING_DUE_TO_CLOSURE_SERIALIZATION_DEFECT",
+    "receiptStatus": "LEDGER_SETTLEMENT_PRESENT_OUTPUT_RECEIPT_NOT_PERSISTED",
+    "status": "VALIDATED"
+  },
+  "image": {
+    "actualProviderCostUsd": null,
+    "completedMasterImages": 0,
+    "costClassification": "RECONCILIATION_PENDING",
+    "elapsedMs": 60003,
+    "model": "gpt-image-2",
+    "modelSnapshot": "gpt-image-2-2026-04-21",
+    "operationCompletedAt": "2026-07-17T17:33:20.723Z",
+    "operationStartedAt": "2026-07-17T17:32:20.720Z",
+    "reasonCode": "IMAGE_PROVIDER_TRANSPORT_TIMEOUT",
+    "reservedCostUsd": 0.2,
+    "status": "TIMED_OUT_AFTER_SUBMISSION"
+  },
+  "cost": {
+    "actualProviderCostUsd": null,
+    "currentSessionEstimatedOrPendingExposureUsd": 0.20012375,
+    "priorReservedExposureUsd": 0.025,
+    "reconciliation": "IMAGE_PROVIDER_BILLING_RECONCILIATION_REQUIRED",
+    "totalEstimatedOrPendingExposureUsd": 0.22512375
+  },
+  "result": {
+    "reasonCode": "IMAGE_PROVIDER_TRANSPORT_TIMEOUT",
+    "status": "BLOCKED"
+  },
+  "fingerprint": "eccffb2ba7a131e75b5b6748161f79e5c1ccacc4365e98a7024861249a8a5565"
+}

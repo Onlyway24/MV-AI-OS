@@ -1,0 +1,134 @@
+{
+  "actorId": "actor-local",
+  "commandId": "produce-first-social-publishing-pack-2026-07-16-v1",
+  "contractVersion": "1",
+  "input": {
+    "brief": {
+      "audience": "Persone in Italia interessate a vendere oggetti usati senza affidarsi a promesse di guadagno.",
+      "callToAction": "Salva la checklist e verifica condizioni, domanda e prezzi osservabili prima di pubblicare un annuncio.",
+      "contractVersion": "1",
+      "evidence": [
+        {
+          "evidenceId": "evidence-maert-public-post-20260716",
+          "sourceRef": "social-instagram-maert-post-20260714",
+          "statement": "Il post osservato usa un carosello esperienziale con mercatini e una domanda finale."
+        },
+        {
+          "evidenceId": "evidence-telotrovosu-public-post-20260716",
+          "sourceRef": "social-instagram-telotrovosu-post-20260705",
+          "statement": "Il post osservato usa una selezione second-hand collegata a newsletter e prodotti."
+        }
+      ],
+      "language": "it",
+      "missionReference": "social-intelligence-live-cycle-20260716",
+      "objective": "educate",
+      "offer": "Una checklist Metodo Veloce per valutare oggetti usati senza claim economici non verificati.",
+      "productionId": "social-pack-five-items-evidence-led-20260716",
+      "topic": "5 oggetti in casa che puoi vendere subito — nuova versione evidence-led"
+    },
+    "evidencePackId": "evidence-pack-social-second-hand-20260716",
+    "socialIntelligence": {
+      "audienceSignals": [],
+      "audioCandidates": [
+        {
+          "accountAvailable": false,
+          "audioId": "no-authorized-result",
+          "dataKind": "MEASURED",
+          "note": "La CML ufficiale è stata verificata, ma manca un account TikTok Metodo Veloce registrato e compatibile; nessuna traccia è autorizzata.",
+          "observedAt": "2026-07-15T22:55:00.000Z",
+          "rightsStatus": "NOT_AUTHORIZED",
+          "sourceId": "social-tiktok-commercial-music-library",
+          "title": "Nessun audio account-specifico verificabile"
+        }
+      ],
+      "brandChecks": [
+        { "component": "CTA", "score": 88 },
+        { "component": "FONT", "score": 90 },
+        { "component": "LOGO", "score": 92 },
+        { "component": "PALETTE", "score": 94 },
+        { "component": "STRUCTURE", "score": 90 },
+        { "component": "TONE", "score": 88 },
+        { "component": "VISUAL_DIRECTION", "score": 92 }
+      ],
+      "competitorSignals": [
+        {
+          "authorized": true,
+          "competitorId": "competitor-instagram-maert-ens",
+          "dataKind": "EVIDENCE",
+          "evidenceId": "evidence-maert-public-post-20260716",
+          "format": "CAROUSEL",
+          "note": "Osservazione pubblica attribuibile e corrente.",
+          "observedAt": "2026-07-15T22:38:54.000Z",
+          "observedGap": "Formato personale credibile, ma nessuna procedura di rivendita o attestazione di prezzi osservata."
+        },
+        {
+          "authorized": true,
+          "competitorId": "competitor-instagram-telotrovosu",
+          "dataKind": "EVIDENCE",
+          "evidenceId": "evidence-telotrovosu-public-post-20260716",
+          "format": "CAROUSEL",
+          "note": "Osservazione pubblica attribuibile e corrente.",
+          "observedAt": "2026-07-15T22:38:54.000Z",
+          "observedGap": "Voce di marca e curation forti, ma mancano passaggi operativi e criteri verificabili di prezzo."
+        }
+      ],
+      "contractVersion": "1",
+      "conversionIntent": {
+        "commercialStep": "Preparare una futura checklist Metodo Veloce solo dopo avere validato domanda e utilità.",
+        "doNext": "Salva la checklist e attendi la versione verificata prima di agire.",
+        "feel": "Prudente e capace di controllare i dati.",
+        "understand": "Un oggetto è un candidato alla vendita, non una promessa di ricavo; servono condizioni, domanda e prezzi osservabili."
+      },
+      "criterionInputs": [
+        { "criterion": "AUDIENCE_DEMAND", "dataKind": "MISSING", "note": "Export Insights e query reali Metodo Veloce non importati.", "observedAt": "2026-07-15T23:02:07.000Z" },
+        { "criterion": "TREND_VELOCITY", "dataKind": "MISSING", "note": "Compatibilità attestata, ma fase, velocità e saturazione non classificate.", "observedAt": "2026-07-15T23:02:07.000Z" },
+        { "criterion": "BRAND_FIT", "dataKind": "ASSUMPTION", "note": "Il tema è coerente con il posizionamento dichiarato di Metodo Veloce; richiede conferma dai risultati.", "observedAt": "2026-07-15T23:02:07.000Z", "value": 82 },
+        { "criterion": "PRACTICAL_VALUE", "dataKind": "ASSUMPTION", "note": "La checklist proposta è pratica, ma l'utilità non è ancora misurata.", "observedAt": "2026-07-15T23:02:07.000Z", "value": 80 },
+        { "criterion": "CONVERSION_POTENTIAL", "dataKind": "MISSING", "note": "Nessun dato reale di click, lead o conversione importato.", "observedAt": "2026-07-15T23:02:07.000Z" },
+        { "criterion": "EVIDENCE_STRENGTH", "dataKind": "EVIDENCE", "evidenceId": "evidence-pack-social-second-hand-20260716", "note": "Due osservazioni indipendenti supportano solo formato e angolo editoriale, non prezzi o domanda.", "observedAt": "2026-07-15T23:02:07.000Z", "value": 58 },
+        { "criterion": "COMPETITOR_GAP", "dataKind": "EVIDENCE", "evidenceId": "evidence-telotrovosu-public-post-20260716", "note": "Gap osservato: curation presente, procedura verificabile di valutazione assente.", "observedAt": "2026-07-15T22:38:54.000Z", "value": 76 },
+        { "criterion": "DISTINCTIVENESS", "dataKind": "ASSUMPTION", "note": "La direzione nero, giallo e checklist è definita, ma non ancora misurata senza nome account.", "observedAt": "2026-07-15T23:02:07.000Z", "value": 84 },
+        { "criterion": "PRODUCTION_FEASIBILITY", "dataKind": "ASSUMPTION", "note": "Il formato a sei slide è già supportato dalla linea di produzione.", "observedAt": "2026-07-15T23:02:07.000Z", "value": 92 },
+        { "criterion": "FRESHNESS", "dataKind": "EVIDENCE", "evidenceId": "evidence-maert-public-post-20260716", "note": "Le osservazioni sono state acquisite nello stesso ciclo operativo.", "observedAt": "2026-07-15T23:02:07.000Z", "value": 90 },
+        { "criterion": "CLAIM_SAFETY", "dataKind": "MISSING", "note": "Categorie, prezzi e velocità di vendita non hanno ancora evidenze specifiche.", "observedAt": "2026-07-15T23:02:07.000Z" },
+        { "criterion": "FATIGUE_RESILIENCE", "dataKind": "MISSING", "note": "Storico contenuti Metodo Veloce non importato.", "observedAt": "2026-07-15T23:02:07.000Z" }
+      ],
+      "culturalRisks": [
+        { "category": "CLAIM", "description": "Non usare prezzi, guadagni o velocità di vendita non attestati da evidenze specifiche.", "severity": "MEDIUM" },
+        { "category": "IMAGE", "description": "Non implicare affiliazioni con marchi o piattaforme rappresentati nelle immagini.", "severity": "MEDIUM" }
+      ],
+      "hashtagCandidates": [
+        { "cluster": "BRAND", "dataKind": "ASSUMPTION", "note": "Hashtag proprietario; performance non misurata.", "observedAt": "2026-07-15T23:02:07.000Z", "relevance": 95, "tag": "#metodoveloce" },
+        { "cluster": "TOPIC", "dataKind": "ASSUMPTION", "note": "Candidato semantico non verificato con analytics.", "observedAt": "2026-07-15T23:02:07.000Z", "relevance": 82, "tag": "#rivendita" },
+        { "cluster": "TOPIC", "dataKind": "ASSUMPTION", "note": "Candidato semantico non verificato con analytics.", "observedAt": "2026-07-15T23:02:07.000Z", "relevance": 80, "tag": "#secondhand" },
+        { "cluster": "NICHE", "dataKind": "ASSUMPTION", "note": "Candidato semantico non verificato con analytics.", "observedAt": "2026-07-15T23:02:07.000Z", "relevance": 78, "tag": "#microbusiness" },
+        { "cluster": "TOPIC", "dataKind": "ASSUMPTION", "note": "Candidato semantico non verificato con analytics.", "observedAt": "2026-07-15T23:02:07.000Z", "relevance": 76, "tag": "#vendereonline" },
+        { "cluster": "EXPERIMENTAL", "dataKind": "ASSUMPTION", "note": "Candidato da testare; saturazione non disponibile.", "observedAt": "2026-07-15T23:02:07.000Z", "relevance": 70, "tag": "#oggettidavendere" }
+      ],
+      "mode": "TREND_REACTIVE",
+      "observedAt": "2026-07-15T23:02:07.000Z",
+      "platforms": ["INSTAGRAM", "TIKTOK"],
+      "portfolioRole": "DISCOVERY",
+      "productionId": "social-pack-five-items-evidence-led-20260716",
+      "recentContents": [],
+      "scheduling": {
+        "audienceSampleCount": 0,
+        "candidateWindows": [],
+        "historicalPostCount": 0
+      },
+      "topic": "5 oggetti in casa che puoi vendere subito — nuova versione evidence-led",
+      "trend": {
+        "expiresAt": "2026-07-22T22:38:54.000Z",
+        "phrase": "second-hand discovery e rivendita Vinted",
+        "phase": "NON_CLASSIFICATO",
+        "provenance": [
+          { "dataKind": "EVIDENCE", "evidenceId": "evidence-maert-public-post-20260716", "note": "Osservazione pubblica corrente su mercatini e scoperta.", "observedAt": "2026-07-15T22:38:54.000Z" },
+          { "dataKind": "EVIDENCE", "evidenceId": "evidence-telotrovosu-public-post-20260716", "note": "Osservazione pubblica corrente su selezione second-hand e Vinted.", "observedAt": "2026-07-15T22:38:54.000Z" }
+        ],
+        "publishBy": "2026-07-22T22:38:54.000Z"
+      }
+    }
+  },
+  "operation": "PRODUCE_METODO_VELOCE_SOCIAL_PACK_FROM_EVIDENCE_PACK",
+  "workspaceId": "workspace-local"
+}

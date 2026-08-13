@@ -188,22 +188,22 @@ function safetyChecksFor(
 
 function summaryFor(decision: OperatorDecision): string {
   if (decision.decision === "proceed") {
-    return "Only Way Assistant may proceed inside the current controlled boundaries.";
+    return "Onlyway Assistant may proceed inside the current controlled boundaries.";
   }
   if (decision.decision === "mission_plan_candidate") {
-    return "Only Way Assistant prepared a non-executing mission-plan candidate for review.";
+    return "Onlyway Assistant prepared a non-executing mission-plan candidate for review.";
   }
   if (decision.decision === "approval_required") {
-    return "Only Way Assistant needs Fabio approval before continuing.";
+    return "Onlyway Assistant needs Fabio approval before continuing.";
   }
   if (decision.decision === "clarification_required") {
-    return "Only Way Assistant needs clarification before deciding the next safe action.";
+    return "Onlyway Assistant needs clarification before deciding the next safe action.";
   }
   if (decision.decision === "confirmation_required") {
-    return "Only Way Assistant needs Fabio confirmation before continuing.";
+    return "Onlyway Assistant needs Fabio confirmation before continuing.";
   }
   if (decision.decision === "refused") {
-    return "Only Way Assistant refused the requested path inside the current safety boundaries.";
+    return "Onlyway Assistant refused the requested path inside the current safety boundaries.";
   }
-  return "Only Way Assistant blocked the requested path inside the current safety boundaries.";
+  return "Onlyway Assistant blocked the requested path inside the current safety boundaries.";
 }

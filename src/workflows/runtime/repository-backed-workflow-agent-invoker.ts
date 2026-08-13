@@ -58,14 +58,18 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
     const specification = this.dependencies.agentSpecifications.get(candidate.agentId, candidate.specificationVersion);
     if (specification === undefined) return blocked("EXECUTOR_UNRESOLVED", "Exact Agent Specification is missing");
 
-    const receipt = await this.dependencies.repositories.transaction(async ({ workflows }) => {
+    const reservation = await this.dependencies.repositories.transaction(async ({ workflows }) => {
       const duplicate = await workflows.agentInvocations.getById(trusted.invocationId);
       if (duplicate !== undefined) {
         if (duplicate.fingerprint !== fingerprint) throw new RepositoryConflictError("Workflow agent invocation ID conflicts with another request");
-        return duplicate;
+        const instance = await workflows.instances.getById(duplicate.instanceId);
+        const definition = await workflows.definitions.getById(duplicate.definitionId);
+        return { mission: invocationMission(instance, duplicate, definition), receipt: duplicate };
       }
       const instance = await workflows.instances.getById(candidate.instanceId);
       if (instance?.version !== candidate.instanceVersion) throw new RepositoryConflictError("Workflow candidate became stale before invocation reservation");
+      const definition = await workflows.definitions.getById(candidate.definitionId);
+      if (definition === undefined) throw new RepositoryValidationError("Workflow invocation definition is missing");
       await assertControlsUnchanged(workflows, candidate);
       const timestamp = now(this.dependencies.clock);
       const reservedVersion = instance.steps.find(({ stepId }) => stepId === candidate.stepId)?.status === "PENDING" ? instance.version + 2 : instance.version + 1;
@@ -95,10 +99,11 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
       await reserveInstance(workflows, instance, reserved, timestamp);
       await workflows.agentInvocations.insert(reserved);
       await workflows.agentInvocationEvents.append(this.#event(reserved, "RESERVED", timestamp));
-      return reserved;
+      return { mission: invocationMission(instance, reserved, definition), receipt: reserved };
     });
+    const { mission, receipt } = reservation;
     if (receipt.status !== "RESERVED") return terminal(receipt, true);
-    return this.#execute(receipt, specification.limits);
+    return this.#execute(receipt, specification.limits, mission);
   }
 
   async #resume(receipt: WorkflowAgentInvocationReceipt, fingerprint: string): Promise<ControlledWorkflowAgentInvocationResult> {
@@ -111,6 +116,7 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
       );
       return {
         definition,
+        mission: invocationMission(instance, receipt, definition),
         resumable:
           instance?.definitionId === receipt.definitionId &&
           instance.status === "ACTIVE" &&
@@ -123,10 +129,10 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
     const resolved = this.dependencies.resolver.resolve({ requiredCapabilityIds: receipt.capabilityIds, specificationId: receipt.specificationId, specificationVersion: receipt.specificationVersion });
     const specification = this.dependencies.agentSpecifications.get(receipt.runtimeAgentId, receipt.specificationVersion);
     if (resolved.status !== "resolved" || specification === undefined || resolved.executor.executorId !== receipt.executorId || resolved.executor.executorVersion !== receipt.executorVersion || !matchesReservedSpecification(snapshot.definition, receipt, specification)) return blocked("INVOCATION_STATE_INVALID", "Reserved invocation binding no longer resolves exactly");
-    return this.#execute(receipt, specification.limits);
+    return this.#execute(receipt, specification.limits, snapshot.mission);
   }
 
-  async #execute(receipt: WorkflowAgentInvocationReceipt, limits: { readonly maxResultBytes: number; readonly maxToolCalls: number; readonly timeoutMs: number; readonly maxTokens?: number; readonly maxCostUsd?: number }): Promise<ControlledWorkflowAgentInvocationResult> {
+  async #execute(receipt: WorkflowAgentInvocationReceipt, limits: { readonly maxResultBytes: number; readonly maxToolCalls: number; readonly timeoutMs: number; readonly maxTokens?: number; readonly maxCostUsd?: number }, mission: InvocationMission): Promise<ControlledWorkflowAgentInvocationResult> {
     const invocation: AgentInvocation = {
       agent: { agentId: receipt.runtimeAgentId, version: receipt.runtimeAgentVersion },
       attempt: 1,
@@ -138,12 +144,12 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
         brandPreferences: [],
         constraints: ["Preparation only", "No external effects", "Use only supplied evidence"],
         deliverableType: "workflow-content-direction",
-        evidenceReferences: [receipt.definitionId],
-        objective: `Prepare content direction for workflow ${receipt.workflowId} step ${receipt.stepId}`,
+        evidenceReferences: mission.evidenceReferences,
+        objective: mission.inputObjective,
       },
       invocationId: receipt.invocationId,
       limits: { ...(limits.maxCostUsd === undefined ? {} : { maxCostUsd: limits.maxCostUsd }), maxResultBytes: limits.maxResultBytes, ...(limits.maxTokens === undefined ? {} : { maxTokens: limits.maxTokens }), maxToolCalls: 0, modelProfile: "deterministic-local", timeoutMs: limits.timeoutMs },
-      objective: `Prepare bounded content direction for step ${receipt.stepId}`,
+      objective: mission.objective,
       outputContract: contractReference(receipt.outputContractId),
       permissions: [],
       taskId: receipt.instanceId,
@@ -175,6 +181,54 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
   #event(receipt: WorkflowAgentInvocationReceipt, status: WorkflowAgentInvocationReceipt["status"], timestamp: string): WorkflowAgentInvocationEvent {
     return freeze({ contractVersion: "1", eventId: `${receipt.invocationId}-${status.toLowerCase()}`, externalEffects: false, instanceId: receipt.instanceId, invocationId: receipt.invocationId, occurredAt: timestamp, status, stepId: receipt.stepId, summaryCode: status === "RESERVED" ? "workflow_agent_invocation_reserved" : status === "COMPLETED" ? "workflow_agent_invocation_completed" : "workflow_agent_invocation_failed" });
   }
+}
+
+interface InvocationMission {
+  readonly evidenceReferences: readonly string[];
+  readonly inputObjective: string;
+  readonly objective: string;
+}
+
+function invocationMission(
+  instance: WorkflowInstance | undefined,
+  receipt: WorkflowAgentInvocationReceipt,
+  definition: WorkflowDefinition | undefined,
+): InvocationMission {
+  if (
+    definition?.definitionId !== receipt.definitionId ||
+    instance?.definitionId !== receipt.definitionId ||
+    instance.instanceId !== receipt.instanceId
+  ) {
+    throw new RepositoryValidationError(
+      "Workflow invocation instance binding is missing",
+    );
+  }
+  const objective = instance.input?.data.objective;
+  const reference = instance.input?.data.missionReference;
+  if (
+    typeof objective === "string" &&
+    objective.trim().length > 0 &&
+    objective.length <= 500 &&
+    typeof reference === "string" &&
+    reference.trim().length > 0 &&
+    reference.length <= 500
+  ) {
+    return {
+      evidenceReferences: [receipt.definitionId, reference],
+      inputObjective: objective,
+      objective,
+    };
+  }
+  if (instance.input !== undefined || definition.admission !== undefined) {
+    throw new RepositoryValidationError(
+      "Workflow invocation input binding is invalid",
+    );
+  }
+  return {
+    evidenceReferences: [receipt.definitionId],
+    inputObjective: `Prepare content direction for workflow ${receipt.workflowId} step ${receipt.stepId}`,
+    objective: `Prepare bounded content direction for step ${receipt.stepId}`,
+  };
 }
 
 export function createWorkflowAgentInvoker(dependencies: Omit<RepositoryBackedWorkflowAgentInvokerDependencies, "requestValidator">): RepositoryBackedWorkflowAgentInvoker { return new RepositoryBackedWorkflowAgentInvoker({ ...dependencies, requestValidator: new ControlledWorkflowAgentInvocationRequestValidator() }); }

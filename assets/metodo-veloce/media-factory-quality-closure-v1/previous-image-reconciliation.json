@@ -1,0 +1,21 @@
+{
+  "classification": "UNCERTAIN_RECONCILIATION_PENDING",
+  "completedAt": "2026-07-17T17:33:20.723Z",
+  "idempotency": {
+    "header": "Idempotency-Key",
+    "keyFingerprint": "3472a88655092cfb45a4f78bdef8b0bf76b4bf5cffbe398534570b5cfdc8d23d",
+    "status": "SENT"
+  },
+  "operationId": "media-quality-bd0bb28b-599a-4091-9aa7-74ebf7a9d5a5:GPT_IMAGE_2_MASTER",
+  "pendingExposureUsd": 0.2,
+  "providerCostUsd": null,
+  "providerUsage": null,
+  "receipt": "CLIENT_LEDGER_ONLY",
+  "startedAt": "2026-07-17T17:32:20.720Z",
+  "xClientRequestId": {
+    "status": "NOT_SENT_BY_PREVIOUS_CLIENT"
+  },
+  "xRequestId": {
+    "status": "UNAVAILABLE_AFTER_CLIENT_TIMEOUT"
+  }
+}

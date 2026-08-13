@@ -139,7 +139,7 @@ function buildResult(input: BuildResultInput): MainAssistantResult {
       checkedSafetyDomains,
       operatorSafetyStatus: reportStatus,
       operatorSummary:
-        "Only Way Assistant refused the request because it needs a clearer objective and desired outcome before coordination.",
+        "Onlyway Assistant refused the request because it needs a clearer objective and desired outcome before coordination.",
       recommendedNextActions: [
         "Provide a concrete objective, desired output, and any relevant constraints.",
       ],
@@ -159,8 +159,8 @@ function buildResult(input: BuildResultInput): MainAssistantResult {
       checkedSafetyDomains,
       operatorSafetyStatus: "missing",
       operatorSummary: riskyRequest
-        ? "Only Way Assistant refused the request because risky escalation requires supplied Operator Safety context first."
-        : "Only Way Assistant can only give bounded guidance until Operator Safety context is supplied.",
+        ? "Onlyway Assistant refused the request because risky escalation requires supplied Operator Safety context first."
+        : "Onlyway Assistant can only give bounded guidance until Operator Safety context is supplied.",
       recommendedNextActions: [
         "Supply an Operator Safety Report before expanding autonomy, tools, workflows, publishing, persistence, or external side effects.",
       ],
@@ -179,8 +179,8 @@ function buildResult(input: BuildResultInput): MainAssistantResult {
       checkedSafetyDomains,
       operatorSafetyStatus: report.summary.status,
       operatorSummary: riskyRequest
-        ? "Only Way Assistant blocked escalation because Operator Safety contains critical findings."
-        : "Only Way Assistant found critical Operator Safety findings and will not move toward expanded capability.",
+        ? "Onlyway Assistant blocked escalation because Operator Safety contains critical findings."
+        : "Onlyway Assistant found critical Operator Safety findings and will not move toward expanded capability.",
       recommendedNextActions: [
         "Resolve critical Operator Safety findings before escalation.",
       ],
@@ -204,8 +204,8 @@ function buildResult(input: BuildResultInput): MainAssistantResult {
       checkedSafetyDomains,
       operatorSafetyStatus: report.summary.status,
       operatorSummary: riskyRequest
-        ? "Only Way Assistant refused escalation because required safety coverage is incomplete."
-        : "Only Way Assistant requires operator confirmation because safety coverage is incomplete.",
+        ? "Onlyway Assistant refused escalation because required safety coverage is incomplete."
+        : "Onlyway Assistant requires operator confirmation because safety coverage is incomplete.",
       recommendedNextActions: [
         "Provide current guardian coverage or explicitly confirm that this remains a bounded planning-only action.",
       ],
@@ -223,7 +223,7 @@ function buildResult(input: BuildResultInput): MainAssistantResult {
       checkedSafetyDomains,
       operatorSafetyStatus: report.summary.status,
       operatorSummary:
-        "Only Way Assistant validated the request boundary, but approval is required before any side-effecting or escalation behavior.",
+        "Onlyway Assistant validated the request boundary, but approval is required before any side-effecting or escalation behavior.",
       recommendedNextActions: [
         "Ask Fabio for explicit approval before executing or delegating the requested escalation.",
       ],
@@ -242,7 +242,7 @@ function buildResult(input: BuildResultInput): MainAssistantResult {
       checkedSafetyDomains,
       operatorSafetyStatus: report.summary.status,
       operatorSummary:
-        "Only Way Assistant accepted the bounded request with safety attention still visible to the operator.",
+        "Onlyway Assistant accepted the bounded request with safety attention still visible to the operator.",
       recommendedNextActions: [
         "Proceed only inside current local, provider-neutral, side-effect-free boundaries.",
       ],
@@ -257,7 +257,7 @@ function buildResult(input: BuildResultInput): MainAssistantResult {
     checkedSafetyDomains,
     operatorSafetyStatus: report.summary.status,
     operatorSummary:
-      "Only Way Assistant accepted the bounded operator request within the current safe runtime boundary.",
+      "Onlyway Assistant accepted the bounded operator request within the current safe runtime boundary.",
     recommendedNextActions: [
       "Proceed with a deterministic operator-facing response through existing MV AI OS boundaries.",
     ],

@@ -1,0 +1,90 @@
+{
+  "batchId": "replace-with-unique-batch-id",
+  "assets": [
+    {
+      "referenceId": "metodo-veloce-logo-overlay-technical",
+      "assetId": "metodo-veloce-logo-overlay-technical",
+      "title": "Derivato tecnico PNG fedele del logo Metodo Veloce",
+      "originalFilename": "metodo-veloce-logo-overlay-technical.png",
+      "declaredSha256": "3f4f433853dc467e03eb56b5451928e6cb908f8187b123ccce542e841737f681",
+      "declaredByteLength": 338446,
+      "contentBase64": "REPLACE_MECHANICALLY_WITH_VERIFIED_LOCAL_BYTES_BASE64",
+      "mimeType": "image/png",
+      "dimensions": {
+        "status": "AVAILABLE",
+        "width": 796,
+        "height": 796
+      },
+      "source": {
+        "sourceId": "metodo-veloce-logo-overlay-technical-manifest",
+        "type": "INTERNAL_GENERATED",
+        "owner": "Fabio",
+        "capturedAt": "REPLACE_WITH_VERIFIED_UTC_TIMESTAMP"
+      },
+      "rights": {
+        "rightsId": "metodo-veloce-logo-overlay-technical-rights",
+        "status": "FABIO_SUPPLIED",
+        "owner": "Fabio",
+        "allowedUse": []
+      },
+      "privacy": {
+        "privacyId": "metodo-veloce-logo-overlay-technical-privacy",
+        "status": "REVIEW_REQUIRED",
+        "dataClasses": [
+          "NONE"
+        ],
+        "consentEvidence": {
+          "status": "NOT_VERIFIED",
+          "reasonCode": "NOT_VERIFIED"
+        },
+        "releaseEvidence": {
+          "status": "NOT_VERIFIED",
+          "reasonCode": "NOT_VERIFIED"
+        },
+        "purpose": "INTERNAL_ANALYSIS",
+        "verifiedAt": "REPLACE_WITH_VERIFIED_UTC_TIMESTAMP",
+        "retentionExpiresAt": "REPLACE_WITH_POLICY_DERIVED_UTC_TIMESTAMP",
+        "policyFingerprint": "REPLACE_WITH_VERIFIED_64_HEX_POLICY_FINGERPRINT"
+      },
+      "roles": [
+        "BRAND_REFERENCE",
+        "LOGO_ASSET"
+      ],
+      "platforms": [
+        "GENERAL",
+        "INSTAGRAM",
+        "TIKTOK"
+      ],
+      "aspectRatio": "1:1",
+      "businessObjective": "Derivato tecnico locale per identità visuale Metodo Veloce; non prova domanda, trend, performance o diritti ulteriori.",
+      "audience": [
+        "Audience Metodo Veloce da verificare"
+      ],
+      "whatToLearn": [
+        "Identità e proporzioni del derivato tecnico fedele del logo ufficiale"
+      ],
+      "whatNotToCopy": [
+        "Non ricreare, deformare o modificare creativamente il logo"
+      ],
+      "fabioApprovalReason": "Import iniziale del derivato PNG in attesa di review Fabio; FABIO_SUPPLIED è sola provenienza e non autorizza alcun uso.",
+      "freshness": {
+        "observedAt": "REPLACE_WITH_VERIFIED_UTC_TIMESTAMP",
+        "freshUntil": "REPLACE_WITH_VERIFIED_UTC_TIMESTAMP"
+      },
+      "links": {
+        "missionIds": [],
+        "packageIds": [],
+        "outcomeIds": []
+      }
+    }
+  ],
+  "collection": {
+    "collectionId": "metodo-veloce-brand-references",
+    "title": "Riferimenti brand Metodo Veloce",
+    "description": "Esempio non esecutivo e fail-closed: ogni marcatore deve essere sostituito e verificato; nessun placeholder è un reference reale.",
+    "roles": [
+      "BRAND_REFERENCE",
+      "LOGO_ASSET"
+    ]
+  }
+}

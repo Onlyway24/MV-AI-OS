@@ -1,0 +1,69 @@
+{
+  "contractVersion": "1",
+  "cost": {
+    "capUsd": 0.02,
+    "classification": "RECONCILIATION_PENDING",
+    "estimatedCostUsd": 0,
+    "reconciliationPendingCostUsd": 0.01,
+    "reservedCostUsd": 0.01
+  },
+  "externalEffects": {
+    "imageGenerations": 0,
+    "openAiProviderCalls": 1,
+    "socialPublications": 0,
+    "serverSpendUsd": 0
+  },
+  "milestone": "OPENAI TEXT FAILURE DIAGNOSIS AND RECOVERY V1",
+  "models": {
+    "image": "DISABLED_DEPRECATED_PENDING_NEW_AUTHORIZATION",
+    "text": "gpt-4o-mini"
+  },
+  "noAutomaticRetries": true,
+  "previousClosure": {
+    "costClassification": "RESERVED_PENDING_RECONCILIATION",
+    "conservativeBookedUsd": 0.005,
+    "effectiveCostUsd": null,
+    "observedReasonCode": "text_transport_failed_unpriced",
+    "observedStage": "provider_invocation",
+    "rootCause": "The previous gateway flattened the adapter-safe failure into model_provider_failed; transport and response extraction were not separately observable."
+  },
+  "providerStatus": "BLOCKED",
+  "rootCause": {
+    "classification": "OpenAI rejected the plain Responses request with HTTP 400.",
+    "preciseRejectedField": "NOT_AVAILABLE_FROM_CLOSED_ONE_SHOT",
+    "remediation": "The adapter now retains only safe provider code/type/parameter identifiers for future diagnostics; no additional live call is permitted in this closed session."
+  },
+  "session": {
+    "estimatedCostUsd": 0,
+    "expiresAt": "2026-07-17T10:23:53.027Z",
+    "liveCalls": 1,
+    "priorLiveCallsToday": 1,
+    "reconciliationPendingCostUsd": 0.01,
+    "reservedCostUsd": 0.01,
+    "sessionId": "openai-text-diagnosis-53efe57d-7e02-402e-9e04-65fb8b3d2027",
+    "sessionResidualBudgetUsd": 0.01,
+    "status": "CLOSED"
+  },
+  "status": "BLOCKED",
+  "reasonCode": "PROVIDER_INVALID_REQUEST",
+  "stage": "provider_response",
+  "tests": {
+    "images": 0,
+    "maxCalls": 2,
+    "retryAttempts": 0,
+    "sessionDurationMinutes": 10
+  },
+  "text": {
+    "plainText": {
+      "costClassification": "RECONCILIATION_PENDING",
+      "operation": "OPENAI_TEXT_PLAIN_DIAGNOSTIC",
+      "reasonCode": "PROVIDER_INVALID_REQUEST",
+      "stage": "provider_response",
+      "status": "BLOCKED"
+    },
+    "structuredOutput": {
+      "status": "NOT_RUN"
+    }
+  },
+  "fingerprint": "cb9eeb99cea81b6e53706332c8ab5755eec3465c9e3e41f3f0a6bd3d2e990a74"
+}

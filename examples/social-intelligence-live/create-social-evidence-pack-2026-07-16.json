@@ -1,0 +1,14 @@
+{
+  "actorId": "actor-local",
+  "commandId": "create-social-evidence-pack-2026-07-16-v1",
+  "contractVersion": "1",
+  "input": {
+    "evidenceIds": [
+      "evidence-maert-public-post-20260716",
+      "evidence-telotrovosu-public-post-20260716"
+    ],
+    "packId": "evidence-pack-social-second-hand-20260716"
+  },
+  "operation": "CREATE_EVIDENCE_PACK",
+  "workspaceId": "workspace-local"
+}

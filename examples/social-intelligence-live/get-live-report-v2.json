@@ -1,0 +1,8 @@
+{
+  "actorId": "actor-local",
+  "commandId": "get-social-live-report-after-trend-import-v2",
+  "contractVersion": "1",
+  "input": {},
+  "operation": "GET_SOCIAL_LIVE_REPORT",
+  "workspaceId": "workspace-local"
+}

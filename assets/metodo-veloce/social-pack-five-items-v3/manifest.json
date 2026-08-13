@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "SOCIAL_PUBLISHING_PACK_V3_VISUAL_REVIEW",
+  "topic": "5 oggetti in casa da controllare prima di vendere",
+  "approvalScope": "INTERNAL_PACKAGE_ONLY",
+  "externalActionsAllowed": false,
+  "publicationAuthorized": false,
+  "visualReview": {
+    "status": "BLOCKED_ORIGINAL_LOGO_MISSING",
+    "logoSource": "EXTRACTED_REFERENCE_UNVERIFIED",
+    "logoRequirement": "Standalone original Metodo Veloce logo required for identity approval",
+    "systemQualityScoreDoesNotReplaceHumanReview": true
+  },
+  "audio": {
+    "status": "NESSUN_AUDIO_SELEZIONATO",
+    "safeFallback": "AUDIO_ORIGINALE_METODO_VELOCE_O_NESSUN_AUDIO",
+    "currentDecision": "NO_AUDIO_UNTIL_ORIGINAL_AUDIO_RIGHTS_ARE_ATTESTED"
+  },
+  "captions": {
+    "instagram": "Prima di mettere in vendita quello che hai in casa, controlla questi dettagli: modello, stato reale, accessori, domanda osservabile e prezzi di articoli già venduti. Non sono promesse di vendita: è una checklist per preparare un annuncio più completo. Salva il carosello e usalo prima di pubblicare.",
+    "tiktok": "Non partire dal prezzo: parti dai riscontri. Questa checklist ti aiuta a controllare cinque categorie prima di creare l’annuncio. Nessuna vendita è garantita. Salvala per il prossimo oggetto che vuoi valutare."
+  },
+  "hashtags": {
+    "instagram": [
+      "#metodoveloce",
+      "#rivendita",
+      "#usato",
+      "#secondhanditalia",
+      "#vendereonline",
+      "#annuncionline"
+    ],
+    "tiktok": [
+      "#metodoveloce",
+      "#coseincasa",
+      "#checklistvendita",
+      "#microbusinessitalia",
+      "#valutazioneusato"
+    ]
+  },
+  "publicationWindows": {
+    "status": "EXPERIMENT_ONLY_NOT_OPTIMAL",
+    "independentPlatformBaselines": true,
+    "singlePublicationCannotEstablishBestTime": true,
+    "windows": [
+      {
+        "platform": "TIKTOK",
+        "variant": "A",
+        "label": "fascia serale",
+        "localTime": "20:00–21:30"
+      },
+      {
+        "platform": "TIKTOK",
+        "variant": "B",
+        "label": "fascia pranzo in un giorno differente",
+        "localTime": "12:00–13:30"
+      },
+      {
+        "platform": "INSTAGRAM",
+        "variant": "A",
+        "label": "fascia serale",
+        "localTime": "19:00–20:30"
+      },
+      {
+        "platform": "INSTAGRAM",
+        "variant": "B",
+        "label": "fascia pranzo in un giorno differente",
+        "localTime": "12:30–14:00"
+      }
+    ]
+  },
+  "measurementSnapshots": [
+    "30M",
+    "2H",
+    "24H",
+    "72H",
+    "7D"
+  ],
+  "assets": {
+    "instagram": [
+      {
+        "slide": 1,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-01.png",
+        "sha256": "b6599a3fee2746c1a30bf8ceb45ff246426ef344c2cfd867c6d1d820f64015f8",
+        "width": 1080,
+        "height": 1350
+      },
+      {
+        "slide": 2,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-02.png",
+        "sha256": "b765f7f658d688fe482e28ce81159fd3d8ada921e17ad0c63254845254fae48e",
+        "width": 1080,
+        "height": 1350
+      },
+      {
+        "slide": 3,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-03.png",
+        "sha256": "62b81e0fd22e6ca2402f41365f9db1cbf456290d71e102452b4e3a772ae07bc0",
+        "width": 1080,
+        "height": 1350
+      },
+      {
+        "slide": 4,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-04.png",
+        "sha256": "2bbe0bd451dde413b7a90628be24836f8a483d058b16e1649379fedf2d4fb5ca",
+        "width": 1080,
+        "height": 1350
+      },
+      {
+        "slide": 5,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-05.png",
+        "sha256": "934c100091017a0556b2f7b0e9541a78d2451b73b4520001bf6867b9e312ad1c",
+        "width": 1080,
+        "height": 1350
+      },
+      {
+        "slide": 6,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/instagram/slide-06.png",
+        "sha256": "bcbc7f8bdb26825bc015b816974aab8993710d5def1503f168bd4dbfe7520eeb",
+        "width": 1080,
+        "height": 1350
+      }
+    ],
+    "tiktok": [
+      {
+        "slide": 1,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/tiktok/slide-01.png",
+        "sha256": "de5824ed73baff9d901b0b349a9fa724d77f7cd95428d723fb55533fce44e360",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "slide": 2,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/tiktok/slide-02.png",
+        "sha256": "447e0d359f856dfff6533428b59121e81e485696ee8e9a19f67fdd565554bd46",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "slide": 3,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/tiktok/slide-03.png",
+        "sha256": "34fd28777afae467c59b9646491ffbab2024db6a96d51faae6c828f95536fbea",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "slide": 4,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/tiktok/slide-04.png",
+        "sha256": "028547df77939f9d1cfa555545cc6f23967d280cd42b95494c62dc3a0869184b",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "slide": 5,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/tiktok/slide-05.png",
+        "sha256": "c49e4f8c793044951db94c771efeb4ed2ea14b9b0ee2bd8e439d86da8335c3ad",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "slide": 6,
+        "path": "assets/metodo-veloce/social-pack-five-items-v3/tiktok/slide-06.png",
+        "sha256": "ccc6ef8ee2fa695e146572d87419d05a582326bc0859c1ef8e9a3afaf190a309",
+        "width": 1080,
+        "height": 1920
+      }
+    ]
+  },
+  "fingerprint": "12cfaba49e28fe12b1419cee6f98693443b47d336a6da2996be48f616c88d5dc"
+}

@@ -1,3 +1,4 @@
+import type { JsonObject } from "../../contracts/json.js";
 import type { WorkflowAgentSpecificationAttribution } from "./workflow-runtime.js";
 
 export const WORKFLOW_SPECIFICATION_ADMISSION_CONTRACT_VERSION = "1" as const;
@@ -10,6 +11,7 @@ export interface WorkflowSpecificationAdmissionRequest {
   readonly workflowId: string;
   readonly workflowVersion: string;
   readonly instanceId: string;
+  readonly input: JsonObject;
   readonly nonExecuting: true;
 }
 

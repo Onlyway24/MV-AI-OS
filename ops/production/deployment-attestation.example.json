@@ -1,0 +1,16 @@
+{
+  "branch": "main",
+  "commit": "",
+  "contractVersion": "2",
+  "deployed": false,
+  "kind": "PRIVATE_DEPLOYMENT_ATTESTATION",
+  "privateTunnelReceiptFingerprint": "",
+  "privateTunnelVerified": false,
+  "publicApplicationPorts": null,
+  "readinessVerified": false,
+  "rehearsalReceiptFingerprint": "",
+  "rebootRecoveryVerified": false,
+  "receiptFingerprint": "",
+  "rollbackVerified": false,
+  "status": "NOT_DEPLOYED"
+}

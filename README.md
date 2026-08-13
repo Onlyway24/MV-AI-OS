@@ -1,10 +1,11 @@
-# MV AI OS
+# MV AI OS · Onlyway
 
 MV AI OS is a contract-first, operator-governed AI runtime for deterministic local
 missions, durable workflows, scoped memory and knowledge, and optional OpenAI model
 execution. The current release is deliberately local-first: SQLite is the durable
-source of truth, every mutation crosses a validated boundary, and workflow actions
-remain explicit rather than autonomously scheduled.
+source of truth, every mutation crosses a validated boundary, and supervised jobs run
+only after explicit startup under bounded policy, budget, lease and kill-switch
+controls.
 
 ## Current capabilities
 
@@ -21,32 +22,64 @@ remain explicit rather than autonomously scheduled.
 - Explicit approval and Guardian checkpoints, readiness evaluation, exact agent
   candidate binding, deterministic local Content Director invocation, outcome
   review, bounded retry, pause/resume/cancel, and timeout evaluation.
-- One-command-per-process local CLI with 23 allowlisted workflow operations,
-  structured responses, SQLite restart recovery, and bounded audit inspection.
-- Controlled SQLite backup and restore plus deterministic offline tests.
+- One-command-per-process local CLI with the canonical Core and advanced operation
+  allowlist, structured responses, SQLite restart recovery, and bounded audit inspection.
+- Private Command Center and Telegram Bot API operator adapters over the same local
+  command boundary.
+- A deterministic 17-role Agent Company, evidence-led Business Missions, authorized
+  research, Evidence Packs, content production, Media Factory/Visual Gate, Venture
+  Holding, and supervised H24 operations.
+- A 19-job durable scheduler/worker with leases, fencing, heartbeats, bounded retry,
+  dead-letter handling, maintenance mode, kill switches, and usage receipts.
+- Controlled SQLite backup/restore and private Docker/Compose/VPS release boundaries.
+- Provider-neutral model and tool contracts; the OpenAI adapter is restricted to the
+  official API origin and all public publication/outreach/payment actions remain gated.
 
-The project does **not** currently provide an HTTP service, dashboard, background
-scheduler, n8n adapter, direct tool execution, multi-user authentication, autonomous
-Guardian evaluation, or workflow-driven external effects.
+The integrated system performs safe internal work locally. Publication, unsolicited
+outreach, payments, spend, destructive changes, OAuth activation, and deployment are
+not silently authorized by a mission, agent, scheduler, Telegram, or the web console.
 
-## Architecture
+## Start locally
+
+```text
+npm run check
+npm run command-center -- --config <private-local-config.json>
+```
+
+The Command Center is loopback-only by default. Never commit private configuration,
+bootstrap material, SQLite databases, OAuth state, provider credentials, or secrets.
+
+Revenue inputs can be validated without contacting providers or customers:
+
+```text
+npm run build
+npm run revenue-os -- --input <private-revenue-mission.json>
+```
+
+See `docs/revenue-os/README.md` and `assets/revenue-os/` for the operating pack and
+empty input contracts.
+
+## Canonical architecture
 
 Dependencies point inward from adapters to application/domain contracts:
 
 ```text
-CLI / composition root
+CLI / Command Center / Telegram / scheduler callback
         |
         v
-validated application boundaries
+validated LocalWorkflowCommandBoundary and application services
         |
         v
-Core Brain / missions / workflow runtime / policy
+Core Brain / Mission + Business domains / canonical Workflow admission
         |
         v
-repository, model, memory, knowledge, and clock ports
+Agent runtime / research / evidence / content / supervised operations
+        |
+        v
+repository, model, memory, knowledge, tool and clock ports
         ^
         |
-SQLite / deterministic executors / optional OpenAI adapter
+SQLite / deterministic executors / optional hardened provider adapters
 ```
 
 The most important invariants are:
@@ -57,6 +90,12 @@ The most important invariants are:
 - durable mutations and their evidence are atomic and replay-safe;
 - provider prompts exclude sensitive memory by default;
 - no candidate, retry, or elapsed timeout implicitly starts work.
+
+Telegram's confirmed Mission-to-Workflow promotion uses the exact registered Core
+Workflow Specification and persists admission, ownership and audit atomically. Domain
+aggregates such as Business Missions, Evidence Packs, content productions and venture
+records use the same command, identity and repository boundaries; they are not
+competing workflow engines.
 
 See [Architecture](docs/ARCHITECTURE.md), the
 [MV AI OS Constitution](docs/MV_AI_OS_CONSTITUTION.md), and the
@@ -133,3 +172,7 @@ git diff --check
 ```
 
 No live-provider call is part of the default test or build path.
+
+Revenue, pipeline, and delivery values are shown only when supported by explicit
+input or durable evidence; missing data stays `NOT_AVAILABLE`. The private UI cannot
+bypass policy or authorize publication, outreach, payments, spend, merge, or deploy.

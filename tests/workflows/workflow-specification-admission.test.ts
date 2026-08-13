@@ -80,11 +80,20 @@ describe("Workflow Specification admission", () => {
       ],
     });
     expect(durable.instance).toMatchObject({
+      input: {
+        contractId: "core-v1-content-direction-input",
+        contractVersion: "1",
+        data: {
+          missionReference: "mission-001",
+          objective: "Prepare one bounded local content direction.",
+        },
+      },
       nonExecuting: true,
       status: "ACTIVE",
       steps: [{ blockers: [], status: "PENDING", stepId: "content-direction" }],
       version: 0,
     });
+    expect(durable.instance?.input?.fingerprint).toMatch(/^[a-f0-9]{64}$/u);
     expect(durable.ownership).toEqual({
       actorId: "actor-local",
       instanceId: "workflow-instance-001",
@@ -102,6 +111,9 @@ describe("Workflow Specification admission", () => {
       },
       outcome: "success",
     });
+    expect(durable.audits[0]?.metadata.inputFingerprint).toMatch(
+      /^[a-f0-9]{64}$/u,
+    );
     const serializedAudit = JSON.stringify(durable.audits[0]);
     expect(serializedAudit).not.toContain(
       CORE_V1_CONTENT_DIRECTION_WORKFLOW_SPECIFICATION.description,
@@ -213,6 +225,18 @@ describe("Workflow Specification admission", () => {
         agents: [changedAgent],
       }).admit(request()),
     ).rejects.toBeInstanceOf(RepositoryConflictError);
+  });
+
+  it("rejects unsafe Mission bindings before creating durable state", async () => {
+    const repositories = new InMemoryRepositoryTransactionRunner();
+    const admission = createAdmissionService(repositories);
+    await expect(admission.admit(request({ input: { missionReference: "../escape", objective: "Prepare content." } }))).rejects.toBeInstanceOf(RepositoryValidationError);
+    await expect(admission.admit(request({ input: { missionReference: "mission-001", objective: "Use bearer abc.def.ghi" } }))).rejects.toBeInstanceOf(RepositoryValidationError);
+    const durable = await repositories.transaction(async ({ audits, workflows }) => ({
+      audits: await audits.listByCorrelationId("admission-001"),
+      instance: await workflows.instances.getById("workflow-instance-001"),
+    }));
+    expect(durable).toEqual({ audits: [], instance: undefined });
   });
 
   it("strictly validates admission requests and results", async () => {
@@ -505,6 +529,10 @@ function request(
     actorId: "actor-local",
     admissionId: "admission-001",
     contractVersion: "1",
+    input: {
+      missionReference: "mission-001",
+      objective: "Prepare one bounded local content direction.",
+    },
     instanceId: "workflow-instance-001",
     nonExecuting: true,
     workflowId: CORE_V1_CONTENT_DIRECTION_WORKFLOW_ID,

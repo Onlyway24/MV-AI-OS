@@ -8,6 +8,252 @@ export type {
   ContractReference,
   MemoryCategory,
 } from "./agents/agent-manifest.js";
+export {
+  TELEGRAM_ALLOWED_UPDATE_TYPES,
+  TELEGRAM_OPERATOR_CONTRACT_VERSION,
+  TelegramInboundUpdateValidator,
+  TelegramOperatorActionValidator,
+  TelegramOperatorConfigValidator,
+  TelegramOutboundMessageIntentValidator,
+  type TelegramInboundUpdate,
+  type TelegramOperatorAction,
+  type TelegramOperatorConfig,
+} from "./telegram/telegram-contracts.js";
+export { FetchTelegramBotApiTransport, TelegramBotApiClient, type TelegramBotApiRequest, type TelegramBotApiTransport } from "./telegram/telegram-bot-api.js";
+export {
+  ImageRecovery,
+  IMAGE_RECOVERY_TIMEOUT_MS,
+  recoveredValidatedDirection,
+  type ImageRecoveryOperationReceipt,
+  type ImageRecoveryReasonCode,
+  type ImageRecoveryResult,
+} from "./media-factory/image-recovery.js";
+export {
+  ImageRecoverySessionLedger,
+  IMAGE_RECOVERY_CONTRACT_VERSION,
+  IMAGE_RECOVERY_DAILY_HARD_LIMIT_USD,
+  IMAGE_RECOVERY_MAX_CALLS,
+  IMAGE_RECOVERY_SESSION_HARD_LIMIT_USD,
+  type ImageRecoveryReceiptRow,
+  type ImageRecoverySnapshot,
+} from "./media-factory/image-recovery-session-ledger.js";
+export { ControlledTelegramOperatorConsole } from "./telegram/telegram-operator-console.js";
+export { TelegramOperatorProcessLock } from "./telegram/telegram-operator-lock.js";
+export { TelegramOperatorLifecycle, type TelegramOperatorLifecycleOptions, type TelegramPollingConsole } from "./telegram/telegram-operator-lifecycle.js";
+export { TELEGRAM_OPERATOR_ERROR_CODES, TelegramOperatorError, isRetryablePollingFailure, safeTelegramOperatorDiagnostic, type TelegramOperatorErrorCode, type TelegramOperatorLifecycleStage } from "./telegram/telegram-operator-errors.js";
+export { TelegramSqliteStateStore } from "./telegram/telegram-sqlite-state-store.js";
+export {
+  TelegramDailyBriefConsole,
+  formatDailyBriefDetail,
+  formatDailyBriefSummary,
+  type TelegramDailyBriefReader,
+} from "./telegram/telegram-daily-brief-console.js";
+export {
+  DAILY_OPERATING_BRIEF_CONTRACT_VERSION,
+  type DailyOperatingBriefRecord,
+  type DailyOperatingBriefSections,
+  type DailyOperatingDecision,
+  type OperatingDataKind,
+  type OperatingDatum,
+} from "./daily-brief/daily-operating-brief.js";
+export type { DailyOperatingBriefRepository } from "./daily-brief/daily-operating-brief-repository.js";
+export {
+  DailyOperatingBriefService,
+  type DailyOperatingBriefSource,
+  type DailyOperatingBriefSourceSnapshot,
+} from "./daily-brief/daily-operating-brief-service.js";
+export {
+  DailyOperatingBriefRecordValidator,
+  dailyOperatingBriefFingerprint,
+} from "./daily-brief/daily-operating-brief-validator.js";
+export { RepositoryBackedDailyOperatingBriefSource } from "./daily-brief/repository-backed-daily-operating-brief-source.js";
+export {
+  FOUNDER_WORKDAY_CONTRACT_VERSION,
+  FOUNDER_WORKDAY_OBJECTIVE,
+  type FounderDataKind,
+  type FounderWorkdayArtifacts,
+  type FounderWorkdayBlocker,
+  type FounderWorkdayDecision,
+  type FounderWorkdayManifest,
+  type FounderWorkdayRecord,
+  type FounderWorkdayStatus,
+  type FounderWorkdayTask,
+  type FounderWorkdayTaskReceipt,
+  type FounderWorkdayTaskStatus,
+} from "./agent-company/founder-workday.js";
+export type { FounderWorkdayRepository } from "./agent-company/founder-workday-repository.js";
+export {
+  FounderWorkdayService,
+  type FounderWorkdayStateSnapshot,
+  type FounderWorkdayStateSource,
+} from "./agent-company/founder-workday-service.js";
+export {
+  FounderWorkdayRecordValidator,
+  founderWorkdayFingerprint,
+} from "./agent-company/founder-workday-validator.js";
+export { RepositoryBackedFounderWorkdayStateSource } from "./agent-company/repository-backed-founder-workday-state-source.js";
+export {
+  COMMAND_CENTER_CONTRACT_VERSION,
+  CommandCenterQueryService,
+  type CommandCenterAgentSummary,
+  type CommandCenterClock,
+  type CommandCenterControlSummary,
+  type CommandCenterControlTarget,
+  type CommandCenterDecisionInboxItem,
+  type CommandCenterEvidenceSummary,
+  type CommandCenterMetric,
+  type CommandCenterOverview,
+  type CommandCenterRuntimeSummary,
+  type CommandCenterSnapshot,
+} from "./command-center/command-center-query-service.js";
+export {
+  ReferenceVaultCommandCenterQuery,
+} from "./command-center/reference-vault-query.js";
+export {
+  buildCommandCenterReferenceVaultView,
+  type CommandCenterBusinessContextView,
+  type CommandCenterCreativeDecisionView,
+  type CommandCenterFingerprintView,
+  type CommandCenterOutcomeLinkView,
+  type CommandCenterReferenceAssetView,
+  type CommandCenterReferenceSequenceView,
+  type CommandCenterReferenceVaultView,
+  type CommandCenterRightsBlockerView,
+} from "./command-center/reference-vault-view.js";
+export * from "./reference-vault/reference-vault.js";
+export {
+  ReferenceVaultCommandBoundary,
+  type ReferenceVaultCommandBoundaryDependencies,
+} from "./reference-vault/reference-vault-command-boundary.js";
+export {
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_CONTRACT_VERSION,
+  REFERENCE_VAULT_APPROVAL_AUTHORITY_SCOPE,
+  type ReferenceVaultApprovalAuthority,
+} from "./reference-vault/reference-vault-approval-authority.js";
+export {
+  ReferenceVaultError,
+  type ReferenceVaultErrorCode,
+} from "./reference-vault/reference-vault-error.js";
+export {
+  evaluateReferenceEligibility,
+  isCompetitorMaterial,
+  type ReferenceEligibilityContext,
+  type ReferenceEligibilityDecision,
+} from "./reference-vault/reference-vault-eligibility.js";
+export {
+  ReferenceVaultQueryAgent,
+  buildCollectionProjection,
+  buildReferenceBriefFromRepository,
+  referenceBriefContainsCompetitorMaterial,
+  type ReferenceCollectionProjectionQuery,
+  type ReferenceVaultBriefQuery,
+  type ReferenceVaultQueryAgentDependencies,
+} from "./reference-vault/reference-vault-query-agent.js";
+export {
+  referenceVaultEntityId,
+  type AuthoritativeContentPackageRef,
+  type ReferenceVaultAppendExpectation,
+  type ReferenceVaultBlob,
+  type ReferenceVaultIdentity,
+  type ReferenceVaultListQuery,
+  type ReferenceVaultRecordQuery,
+  type ReferenceVaultRepository,
+  type ReferenceVaultStorageUsage,
+  type ReferenceVaultTransactionRunner,
+} from "./reference-vault/reference-vault-repository.js";
+export {
+  AudienceSignalValidator,
+  BusinessContextValidator,
+  CreativeDecisionValidator,
+  CreativeFingerprintValidator,
+  CustomerLanguageReferenceValidator,
+  NegativeReferenceValidator,
+  OfferReferenceValidator,
+  OutcomeLinkValidator,
+  ReferenceAssetValidator,
+  ReferenceBlobTombstoneValidator,
+  ReferenceBriefValidator,
+  ReferenceCollectionValidator,
+  ReferenceImportPreviewValidator,
+  ReferenceImportReceiptValidator,
+  ReferenceImportRequestValidator,
+  ReferencePrivacyValidator,
+  ReferenceReviewValidator,
+  ReferenceRightsValidator,
+  ReferenceSourceValidator,
+  ReferenceVaultAuditEventValidator,
+  ReferenceVaultCommandReceiptValidator,
+  ReferenceVaultCommandResultValidator,
+  ReferenceVaultCommandResponseValidator,
+  ReferenceVaultCommandValidator,
+  VisualPreferenceValidator,
+  WritingPreferenceValidator,
+  deepFreezeReference,
+  referenceConfidence,
+  referenceFingerprint,
+  referenceInputFingerprint,
+  validateReferenceVaultRecord,
+} from "./reference-vault/reference-vault-validator.js";
+export { SqliteReferenceVaultTransactionRunner } from "./persistence/sqlite/sqlite-reference-vault-transaction-runner.js";
+export {
+  PrivateCommandCenterServer,
+  type CommandCenterServerOptions,
+  type StartedCommandCenter,
+} from "./command-center/command-center-server.js";
+export {
+  RepositoryBackedCommandCenterEventSource,
+  type CommandCenterEventPlaneOptions,
+  type CommandCenterEventSource,
+} from "./command-center/command-center-event-source.js";
+export {
+  OPERATIONAL_EVENT_AGGREGATE_TYPES,
+  OPERATIONAL_EVENT_CONTRACT_VERSION,
+  OPERATIONAL_EVENT_SEMANTICS,
+  OPERATIONAL_EVENT_SUMMARY_CODES,
+  OPERATIONAL_EVENT_TYPES,
+  type OperationalEvent,
+  type OperationalEventAggregateType,
+  type OperationalEventCursorWindow,
+  type OperationalEventDraft,
+  type OperationalEventSummaryCode,
+  type OperationalEventType,
+} from "./operations-runtime/operational-event.js";
+export type { OperationalEventRepository } from "./operations-runtime/operational-event-repository.js";
+export {
+  OperationalEventDraftValidator,
+  OperationalEventValidator,
+} from "./operations-runtime/operational-event-validator.js";
+export { TelegramMissionDraftSessionCoordinator, telegramMissionCommandFingerprint, type TelegramMissionDraftCallback, type TelegramMissionDraftSessionCommand, type TelegramMissionDraftSessionSnapshot } from "./telegram/telegram-mission-draft-session-coordinator.js";
+export { TelegramMissionPlanningConsole } from "./telegram/telegram-mission-planning-console.js";
+export { TelegramWorkflowOperatorConsole } from "./telegram/telegram-workflow-operator-console.js";
+export { TELEGRAM_MISSION_TEMPLATE_REGISTRY, isTelegramMissionTemplateIntact, telegramMissionTemplate, type TelegramMissionTemplate } from "./telegram/telegram-mission-templates.js";
+export { TELEGRAM_MISSION_REPORT_EXPORT_CONTRACT_VERSION, createTelegramMissionReport, serializeTelegramMissionReport, type TelegramMissionReport, type TelegramMissionReportFormat } from "./telegram/telegram-mission-report-export.js";
+export {
+  TELEGRAM_MISSION_DRAFT_CONTRACT_VERSION,
+  TelegramMissionDraftValidator,
+  validateTelegramMissionDraftFieldValue,
+  type TelegramMissionDraft,
+  type TelegramMissionDraftField,
+  type TelegramMissionDraftMutableField,
+  type TelegramMissionProfileSelection,
+  type TelegramMissionDraftStatus,
+  type TelegramMissionDraftTerminalReasonCode,
+} from "./telegram/telegram-mission-draft.js";
+export {
+  TELEGRAM_MISSION_DRAFT_OPERATION_CONTRACT_VERSION,
+  TelegramMissionDraftApplyFailureValidator,
+  TelegramMissionDraftApplySuccessValidator,
+  TelegramMissionDraftOperationValidator,
+  TelegramMissionDraftStateEngine,
+  type TelegramMissionDraftApplyFailure,
+  type TelegramMissionDraftApplyResult,
+  type TelegramMissionDraftApplySuccess,
+  type TelegramMissionDraftFailureReasonCode,
+  type TelegramMissionDraftOperation,
+  type TelegramMissionDraftOperationKind,
+} from "./telegram/telegram-mission-draft-state-engine.js";
+export { TelegramOperatorSessionValidator, TelegramSessionTransitionValidator, isTelegramSessionTransitionAllowed, type TelegramOperatorSessionRecord, type TelegramSessionAction, type TelegramSessionState, type TelegramSessionTransition } from "./telegram/telegram-operator-session.js";
+export { createTelegramOperatorConsole, preflightTelegramOperator, TelegramApplicationConfigValidator, type TelegramApplicationConfig, type TelegramOperatorPreflightReport } from "./telegram/telegram-runtime.js";
 export type {
   AgentCapability,
   AgentCapabilityType,
@@ -383,6 +629,24 @@ export {
 } from "./missions/founder-mission-brief.js";
 export { FounderMissionBriefValidator } from "./missions/founder-mission-brief-validator.js";
 export {
+  FOUNDER_MISSION_BRIEF_FIELD_SOURCES,
+  MISSION_CONVERSION_CONTEXT_CONTRACT_VERSION,
+  ONLY_WAY_MISSION_CONVERSION_POLICY,
+  ONLY_WAY_MISSION_CONVERSION_POLICY_ID,
+  ONLY_WAY_MISSION_CONVERSION_POLICY_VERSION,
+  DeterministicFounderMissionConverter,
+  ImmutableMissionConversionProfileRegistry,
+  MissionConversionContextValidator,
+  type FounderMissionBriefFieldSource,
+  type FounderMissionConversionPolicyProfile,
+  type FounderMissionConversionResult,
+  type MissionConversionContext,
+  type MissionConversionExpandedReview,
+  type MissionConversionReadiness,
+  type MissionConversionReadinessFinding,
+  type ResolvedMissionConversionProfile,
+} from "./missions/mission-conversion-context.js";
+export {
   DEFAULT_MISSION_PLAN,
   DEFAULT_MISSION_PLAN_ID,
   MISSION_PLAN_CONTRACT_VERSION,
@@ -501,6 +765,75 @@ export {
 } from "./agents/content/model-backed-content-agent.js";
 export type { ContentOutput } from "./agents/content/content-output.js";
 export { ContentOutputValidator } from "./agents/content/content-output-validator.js";
+export {
+  METODO_VELOCE_CONTENT_PRODUCTION_CONTRACT_VERSION,
+  type ContentEvidence,
+  type ContentProductionObjective,
+  type ContentProductionRiskStatus,
+  type ContentProductionStatus,
+  type MetodoVeloceContentAssets,
+  type MetodoVeloceContentProductionBrief,
+  type MetodoVeloceContentProductionPackage,
+} from "./content-production/metodo-veloce-content-production.js";
+export {
+  isMetodoVeloceContentProductionTransitionAllowed,
+  type MetodoVeloceContentArchive,
+  type MetodoVeloceContentPerformanceMetrics,
+  type MetodoVeloceContentProductionArchiveRequest,
+  type MetodoVeloceContentProductionMetricsRequest,
+  type MetodoVeloceContentProductionRecord,
+  type MetodoVeloceContentProductionRecordStatus,
+  type MetodoVeloceContentProductionReview,
+  type MetodoVeloceContentProductionReviewRequest,
+  type MetodoVeloceContentProductionSchedule,
+  type MetodoVeloceContentProductionScheduleRequest,
+  type MetodoVeloceContentReviewDecision,
+} from "./content-production/metodo-veloce-content-production-record.js";
+export type { MetodoVeloceContentProductionRepository, MetodoVeloceContentProductionUpdateExpectation } from "./content-production/metodo-veloce-content-production-repository.js";
+export { DeterministicMetodoVeloceContentProductionLine } from "./content-production/deterministic-metodo-veloce-content-production-line.js";
+export { contentClaimRisk, MetodoVeloceContentProductionArchiveRequestValidator, MetodoVeloceContentProductionBriefValidator, MetodoVeloceContentProductionMetricsRequestValidator, MetodoVeloceContentProductionPackageValidator, MetodoVeloceContentProductionRecordValidator, MetodoVeloceContentProductionReviewRequestValidator, MetodoVeloceContentProductionScheduleRequestValidator } from "./content-production/metodo-veloce-content-production-validator.js";
+export {
+  METODO_VELOCE_SOCIAL_INTELLIGENCE_CONTRACT_VERSION,
+  SOCIAL_OPPORTUNITY_CRITERIA,
+  type MetodoVeloceSocialIntelligenceRequest,
+  type SocialAudioCandidate,
+  type SocialAudienceSignal,
+  type SocialBrandCheck,
+  type SocialCompetitorSignal,
+  type SocialConversionIntent,
+  type SocialCulturalRisk,
+  type SocialDataKind,
+  type SocialHashtagCandidate,
+  type SocialOpportunityCriterion,
+  type SocialOpportunityCriterionInput,
+  type SocialOpportunityDecision,
+  type SocialPlatform,
+  type SocialPublishingPack,
+  type SocialPublishingPackStatus,
+  type SocialRecentContent,
+  type SocialSchedulingInput,
+  type SocialSignalProvenance,
+  type SocialTrendPhase,
+  type SocialTrendSignal,
+} from "./social-intelligence/metodo-veloce-social-intelligence.js";
+export {
+  MetodoVeloceSocialIntelligenceRequestValidator,
+  SocialPublishingPackValidator,
+  socialPublishingPackFingerprint,
+} from "./social-intelligence/metodo-veloce-social-intelligence-validator.js";
+export {
+  DeterministicMetodoVeloceSocialIntelligenceEngine,
+  SOCIAL_OPPORTUNITY_WEIGHTS,
+} from "./social-intelligence/deterministic-metodo-veloce-social-intelligence-engine.js";
+export { DeterministicMetodoVeloceSocialProductionLine } from "./social-intelligence/deterministic-metodo-veloce-social-production-line.js";
+export { PRODUCTION_RUNTIME_CONTRACT_VERSION, isProductionRuntimeJobTransitionAllowed, type ProductionRuntimeEnqueueRequest, type ProductionRuntimeHealthReport, type ProductionRuntimeJob, type ProductionRuntimeJobError, type ProductionRuntimeJobResult, type ProductionRuntimeJobStatus, type ProductionRuntimeRunResult } from "./production-runtime/production-runtime-job.js";
+export type { ProductionRuntimeJobCounts, ProductionRuntimeJobRepository, ProductionRuntimeJobUpdateExpectation } from "./production-runtime/production-runtime-job-repository.js";
+export { ProductionRuntimeService } from "./production-runtime/production-runtime-service.js";
+export { ProductionRuntimeEnqueueRequestValidator, ProductionRuntimeHealthReportValidator, ProductionRuntimeJobValidator, ProductionRuntimeRunResultValidator } from "./production-runtime/production-runtime-validator.js";
+export { OPERATIONAL_PLANE_CONTRACT_VERSION, isPublicationTransitionAllowed, type EvidenceClaimMapping, type EvidencePack, type EvidencePackItem, type EvidencePackRequest, type EvidenceRecord, type EvidenceRecordRequest, type EvidenceStatus, type FeedbackAnalysis, type FeedbackMetricImportRequest, type FeedbackMetricSnapshot, type FeedbackMetrics, type PublicationAuthorizationRequest, type PublicationDryRunRequest, type PublicationKillSwitch, type PublicationKillSwitchRequest, type PublicationPlan, type PublicationPlatform, type PublicationReceiptRequest, type PublicationStatus, type ReliabilityLevel, type RiskDomain, type SourceCategory, type SourceRegistrationRequest, type SourceRegistryEntry } from "./operational-planes/operational-plane.js";
+export type { OperationalPlaneRepository } from "./operational-planes/operational-plane-repository.js";
+export { OperationalPlaneService } from "./operational-planes/operational-plane-service.js";
+export { EvidencePackRequestValidator, EvidencePackValidator, EvidenceRecordRequestValidator, EvidenceRecordValidator, FeedbackMetricImportRequestValidator, FeedbackMetricSnapshotValidator, PublicationAuthorizationRequestValidator, PublicationDryRunRequestValidator, PublicationKillSwitchRequestValidator, PublicationKillSwitchValidator, PublicationPlanValidator, PublicationReceiptRequestValidator, SourceRegistrationRequestValidator, SourceRegistryEntryValidator } from "./operational-planes/operational-plane-validator.js";
 export type {
   AgentInvocation,
   AgentInvocationLimits,
@@ -898,6 +1231,10 @@ export {
 } from "./models/model-gateway-error.js";
 export type { ModelProvider } from "./models/model-provider.js";
 export {
+  isModelProviderFailure,
+  type ModelProviderFailure,
+} from "./models/model-provider-failure.js";
+export {
   DEFAULT_OPENAI_BASE_URL,
   MAX_OPENAI_BASE_URL_LENGTH,
   MAX_OPENAI_HEADER_VALUE_LENGTH,
@@ -920,6 +1257,243 @@ export {
   type OpenAIResponsesTransportRequest,
   type OpenAIResponsesTransportResponse,
 } from "./models/providers/openai-model-provider.js";
+export {
+  buildOpenAiResponsesMediaDirectionRequest,
+  buildOpenAiResponsesPlainTextRequest,
+  buildOpenAiResponsesStructuredOutputRequest,
+  openAiResponsesMediaDirectionSchema,
+  openAiResponsesStructuredStatusSchema,
+  OpenAiResponsesRequestConformanceError,
+  OPENAI_RESPONSES_REQUEST_BUILDER_VERSION,
+  OPENAI_RESPONSES_SDK_TRANSPORT_VERSION,
+  type OpenAiResponsesCanonicalRequest,
+  type OpenAiResponsesRequestMode,
+  type OpenAiResponsesRequestShapeManifest,
+} from "./models/providers/openai-responses-request-builder.js";
+export {
+  FetchOpenAiResponsesConformanceTransport,
+  OpenAiResponsesPlainConformanceProvider,
+  type OpenAiResponsesConformanceTransport,
+  type OpenAiResponsesConformanceTransportRequest,
+  type OpenAiResponsesConformanceTransportResponse,
+  type OpenAiResponsesPlainConformanceProviderDependencies,
+  type OpenAiResponsesPlainConformanceResponse,
+  type OpenAiResponsesProviderDiagnostic,
+} from "./models/providers/openai-responses-conformance-provider.js";
+export {
+  OpenAIImageGenerationProvider,
+  FetchOpenAIImageGenerationTransport,
+  createDefaultOpenAIImageGenerationProviderConfig,
+  OPENAI_IMAGES_GENERATIONS_PATH,
+  type OpenAIImageGenerationProviderConfig,
+  type OpenAIImageGenerationProviderDependencies,
+  type OpenAIImageGenerationTransport,
+  type OpenAIImageGenerationTransportRequest,
+  type OpenAIImageGenerationTransportResponse,
+} from "./media-factory/openai-image-generation-provider.js";
+export {
+  BRAND_MEDIA_FACTORY_CONTRACT_VERSION,
+  MediaGenerationProviderError,
+  type BrandMediaFactoryProviderError,
+  type BrandMediaFactoryProviderErrorCode,
+  type GeneratedMasterImage,
+  type MediaGenerationProvider,
+  type MediaGenerationRequest,
+  type MediaGenerationResponse,
+} from "./media-factory/media-generation-provider.js";
+export {
+  LIVE_AI_BRAND_MEDIA_PILOT_CONTRACT_VERSION,
+  LIVE_AI_BRAND_MEDIA_PILOT_PLAN,
+  LiveAiBrandMediaPilot,
+  type LiveAiBrandMediaCostLedger,
+  type LivePilotAuthorizationPort,
+  type LiveAiBrandMediaPilotDependencies,
+  type LiveAiBrandMediaPilotRequest,
+  type LiveAiBrandMediaPilotResult,
+} from "./media-factory/live-ai-brand-media-pilot.js";
+export {
+  LIVE_PILOT_OPERATIONS,
+  LIVE_PILOT_SESSION_CONTRACT_VERSION,
+  LivePilotSessionError,
+  LivePilotSessionLedger,
+  type CreateLivePilotSessionInput,
+  type LivePilotClock,
+  type LivePilotLedgerSnapshot,
+  type LivePilotOperation,
+  type LivePilotReservation,
+  type LivePilotSessionLedgerOptions,
+  type LivePilotSessionPreflight,
+  type LivePilotSessionStatus,
+} from "./media-factory/live-pilot-session-ledger.js";
+export {
+  MediaQualitySessionError,
+  MediaQualitySessionLedger,
+  MEDIA_QUALITY_DAILY_HARD_LIMIT_USD,
+  MEDIA_QUALITY_MAX_LIVE_CALLS,
+  MEDIA_QUALITY_SESSION_CONTRACT_VERSION,
+  MEDIA_QUALITY_SESSION_HARD_LIMIT_USD,
+  type MediaQualityClock,
+  type MediaQualityCostClassification,
+  type MediaQualityLedgerSnapshot,
+  type MediaQualityOperation,
+  type MediaQualityPreflight,
+  type MediaQualitySessionLedgerOptions,
+  type MediaQualitySessionStatus,
+} from "./media-factory/media-quality-session-ledger.js";
+export {
+  MediaQualityClosure,
+  MEDIA_QUALITY_CLOSURE_CONTRACT_VERSION,
+  MEDIA_QUALITY_IMAGE_MODEL,
+  MEDIA_QUALITY_IMAGE_OUTPUT_ESTIMATE_USD,
+  MEDIA_QUALITY_IMAGE_PRUDENT_ESTIMATE_USD,
+  MEDIA_QUALITY_IMAGE_RESERVATION_USD,
+  MEDIA_QUALITY_IMAGE_SNAPSHOT,
+  MEDIA_QUALITY_TEXT_MODEL,
+  MEDIA_QUALITY_TEXT_RESERVATION_USD,
+  MEDIA_QUALITY_TEXT_SNAPSHOT,
+  type MediaContentDirection,
+  type MediaQualityClosureReasonCode,
+  type MediaQualityClosureResult,
+  type MediaQualityDirectionProvider,
+  type MediaQualityOperationReceipt,
+} from "./media-factory/media-quality-closure.js";
+export { runMediaQualityClosureCli } from "./media-factory/media-quality-closure-cli.js";
+export {
+  OPENAI_TEXT_FAILURE_DIAGNOSIS_CONTRACT_VERSION,
+  OPENAI_TEXT_FAILURE_DIAGNOSIS_MODEL,
+  OPENAI_TEXT_FAILURE_DIAGNOSIS_OPERATION_COST_USD,
+  OpenAiTextFailureDiagnosis,
+  type OpenAiTextDiagnosticAuthorizationPort,
+  type OpenAiTextDiagnosticOperationResult,
+  type OpenAiTextFailureDiagnosisDependencies,
+  type OpenAiTextFailureDiagnosisRequest,
+  type OpenAiTextFailureDiagnosisResult,
+  type OpenAiTextFailureReasonCode,
+  type OpenAiTextFailureStage,
+} from "./media-factory/openai-text-failure-diagnosis.js";
+export {
+  OPENAI_TEXT_DIAGNOSTIC_OPERATIONS,
+  OPENAI_TEXT_DIAGNOSTIC_SESSION_CONTRACT_VERSION,
+  OpenAiTextDiagnosticSessionError,
+  OpenAiTextDiagnosticSessionLedger,
+  type OpenAiTextDiagnosticClock,
+  type OpenAiTextDiagnosticCostClassification,
+  type OpenAiTextDiagnosticOperation,
+  type OpenAiTextDiagnosticPreflight,
+  type OpenAiTextDiagnosticSessionLedgerOptions,
+  type OpenAiTextDiagnosticSessionStatus,
+  type OpenAiTextDiagnosticSnapshot,
+} from "./media-factory/openai-text-diagnostic-session-ledger.js";
+export {
+  OPENAI_RESPONSES_PLAIN_CONFORMANCE_MODEL,
+  OpenAiResponsesPlainConformanceCheck,
+  type OpenAiResponsesPlainConformanceAuthorizationPort,
+  type OpenAiResponsesPlainConformanceDependencies,
+  type OpenAiResponsesPlainConformanceResult,
+  type OpenAiResponsesPlainReasonCode,
+} from "./media-factory/openai-responses-plain-conformance.js";
+export {
+  OPENAI_RESPONSES_CONFORMANCE_COST_CAP_USD,
+  OPENAI_RESPONSES_CONFORMANCE_MAX_LIVE_CALLS,
+  OPENAI_RESPONSES_CONFORMANCE_SESSION_CONTRACT_VERSION,
+  OpenAiResponsesConformanceSessionError,
+  OpenAiResponsesConformanceSessionLedger,
+  type OpenAiResponsesConformanceClock,
+  type OpenAiResponsesConformanceCostClassification,
+  type OpenAiResponsesConformancePreflight,
+  type OpenAiResponsesConformanceSessionLedgerOptions,
+  type OpenAiResponsesConformanceSessionStatus,
+  type OpenAiResponsesConformanceSnapshot,
+} from "./media-factory/openai-responses-conformance-session-ledger.js";
+export {
+  SOCIAL_PUBLICATION_CHECKPOINT_CONTRACT_VERSION,
+  FakeSocialPlatformPublicationTransport,
+  browserCheckpointFor,
+  connectionRequirementsFor,
+  type SocialPlatformConnectionRequirements,
+  type SocialPlatformPublicationTransport,
+  type SocialPublicationBrowserCheckpoint,
+  type SocialPublicationPlatform,
+} from "./social-publishing/social-platform-publication-contract.js";
+export {
+  deleteSecureStore,
+  EncryptedFileOAuthSecureStore,
+  generateOAuthState,
+  generatePkceVerifier,
+  InMemoryOAuthSecureStore,
+  INSTAGRAM_REDIRECT_URI,
+  MediaDeliveryBoundary,
+  OAuthSecurityError,
+  OFFICIAL_SOCIAL_CONNECTOR_CONTRACT_VERSION,
+  redactedIdentifier,
+  SOCIAL_CONNECTOR_LOCAL_PORT,
+  TIKTOK_REDIRECT_URI,
+  tiktokPkceChallenge,
+  type MediaDeliveryState,
+  type OAuthCredentialRecord,
+  type OAuthPendingSession,
+  type OAuthSecureStore,
+  type OfficialSocialAppConfiguration,
+  type OfficialSocialPlatform,
+} from "./social-publishing/oauth-connector-foundation.js";
+export {
+  INSTAGRAM_EXPECTED_USERNAME,
+  INSTAGRAM_REQUIRED_SCOPES,
+  OfficialInstagramConnector,
+  OfficialTikTokConnector,
+  TIKTOK_EXPECTED_USERNAME,
+  TIKTOK_REQUIRED_SCOPES,
+  type InstagramConnectionState,
+  type InstagramConnectorStatus,
+  type InstagramConnectorTransport,
+  type InstagramIdentity,
+  type SocialConnectorReceipt,
+  type SocialTokenExchangeResult,
+  type TikTokConnectionState,
+  type TikTokConnectorStatus,
+  type TikTokConnectorTransport,
+  type TikTokCreatorInfo,
+  type TikTokIdentity,
+} from "./social-publishing/official-social-connectors.js";
+export {
+  FetchInstagramConnectorTransport,
+  FetchTikTokConnectorTransport,
+  SocialProviderHttpError,
+} from "./social-publishing/official-social-http-transports.js";
+export { runSocialConnectorCli } from "./social-publishing/social-connector-cli.js";
+export {
+  LocalSocialConnectorServer,
+  META_APP_DASHBOARD_URL,
+  SOCIAL_CONNECTOR_APP_NAME,
+  SOCIAL_CONNECTOR_RUNTIME_CONTRACT_VERSION,
+  SocialConnectorConfigValidator,
+  TIKTOK_APP_DASHBOARD_URL,
+  TIKTOK_USERNAME_BINDING_RATIONALE,
+  buildSocialConnectorBrowserCheckpoint,
+  createSocialConnectorStatusArtifact,
+  persistSocialConnectorStatusAtomically,
+  preflightSocialConnectors,
+  type LocalSocialConnectorConfig,
+  type SocialConnectorBrowserCheckpoint,
+  type SocialConnectorClient,
+  type SocialConnectorConfigurationValidation,
+  type SocialConnectorPlatformCheckpoint,
+  type SocialConnectorPreflightCheck,
+  type SocialConnectorPreflightReport,
+  type SocialConnectorStatusArtifact,
+  type SocialConnectorStatuses,
+} from "./social-publishing/social-connector-runtime.js";
+export {
+  instagramContainerDryRun,
+  SocialExternalActionPlane,
+  tiktokDirectPostDryRun,
+  tiktokPhotoPostDryRun,
+  type ForbiddenSocialPublicationOperation,
+  type InstagramContainerState,
+  type SocialExternalActionOperation,
+  type SocialExternalActionReceipt,
+  type TikTokPostState,
+} from "./social-publishing/social-external-action-plane.js";
 export type {
   ModelOutputFormat,
   ModelProfile,
@@ -1022,6 +1596,7 @@ export {
 export {
   SqliteRepositoryTransactionRunner,
 } from "./persistence/sqlite/sqlite-repository-transaction-runner.js";
+export { SqliteOperationalPlaneRepository } from "./persistence/sqlite/sqlite-operational-plane-repository.js";
 export {
   SqliteMemoryRepository,
 } from "./persistence/sqlite/sqlite-memory-repository.js";
@@ -1078,6 +1653,35 @@ export {
   createLocalRuntime,
   type LocalRuntimeOverrides,
 } from "./runtime/create-local-runtime.js";
+export {
+  DEFAULT_PRODUCTION_PROVIDER_MODE,
+  LIVE_PAID_ACTIVATION_CONTRACT_VERSION,
+  LIVE_PAID_ACTIVATION_SCOPE,
+  PRODUCTION_PROVIDER_MODES,
+  evaluateProviderModePolicy,
+  isLoopbackProviderBaseUrl,
+  isProductionProviderMode,
+  resolveProductionProviderMode,
+  type LivePaidActivation,
+  type ProductionProviderMode,
+  type ProviderModeEvaluation,
+  type ProviderPolicyReasonCode,
+} from "./production/provider-mode.js";
+export {
+  ProductionDiagnosticsService,
+  type ProductionDiagnosticCheck,
+  type ProductionDiagnosticReport,
+  type ProductionDiagnostics,
+} from "./production/production-diagnostics.js";
+export {
+  DeterministicOfflineProviderSuite,
+  type OfflineProviderReceipt,
+} from "./production/deterministic-offline-provider-suite.js";
+export {
+  runOfflineProductionRehearsal,
+  type OfflineProductionRehearsalConfig,
+  type OfflineProductionRehearsalReceipt,
+} from "./production/offline-production-rehearsal.js";
 export type { LocalRuntime } from "./runtime/local-runtime.js";
 export { createLocalWorkflowCommandBoundary } from "./runtime/create-local-workflow-command-boundary.js";
 export type {
@@ -1135,6 +1739,7 @@ export {
   type WorkflowAgentSpecificationAttribution,
   type WorkflowFailure,
   type WorkflowInstance,
+  type WorkflowInstanceInputBinding,
   type WorkflowInstanceStatus,
   type WorkflowStepDefinition,
   type WorkflowStepInstance,
@@ -1410,3 +2015,331 @@ export type {
 export { ToolResultValidator } from "./tools/tool-result-validator.js";
 export type { ToolRiskLevel } from "./tools/tool-risk-level.js";
 export { ToolRiskLevelValidator } from "./tools/tool-risk-level-validator.js";
+export {
+  BUSINESS_MISSION_CONTRACT_VERSION,
+  BUSINESS_SCORE_CRITERIA,
+  type BusinessAcquisitionPlan,
+  type BusinessArtifact,
+  type BusinessCalculatedValue,
+  type BusinessCommercialPlan,
+  type BusinessCriterionInput,
+  type BusinessCriterionScore,
+  type BusinessEconomicsScenario,
+  type BusinessEconomicsScenarioInput,
+  type BusinessGate,
+  type BusinessMissionDefinition,
+  type BusinessMissionDossier,
+  type BusinessMissionExecutionInput,
+  type BusinessMissionReviewRequest,
+  type BusinessMissionStatus,
+  type BusinessOfferDesign,
+  type BusinessOpportunityCandidate,
+  type BusinessOpportunityScorecard,
+  type BusinessValidationExperiment,
+} from "./business/business-mission.js";
+export { BusinessMissionExecutionInputValidator, BusinessMissionDossierValidator, BusinessMissionReviewRequestValidator, dossierFingerprint } from "./business/business-mission-validator.js";
+export type { BusinessMissionRepository } from "./business/business-mission-repository.js";
+export { BusinessMissionService } from "./business/business-mission-service.js";
+export { DeterministicBusinessEconomicsEngine } from "./business/deterministic-economics-engine.js";
+export { DeterministicBusinessArtifactFactory } from "./business/deterministic-business-artifact-factory.js";
+export { BUSINESS_SCORE_WEIGHTS, DeterministicOpportunityScorer, type OpportunitySelection, type ScoredOpportunityInput } from "./business/deterministic-opportunity-scorer.js";
+export { SqliteBusinessMissionRepository } from "./persistence/sqlite/sqlite-business-mission-repository.js";
+export {
+  OPERATIONAL_AGENT_COMPANY_CATALOG,
+  OPERATIONAL_AGENT_COMPANY_CONTRACT_VERSION,
+  OPERATIONAL_AGENT_IDS,
+  type AgentCompanyResearchPackRequest,
+  type AgentCompanyWorkday,
+  type AgentCompanyWorkdayInput,
+  type AgentCompanyWorkdayStatus,
+  type AgentCompanyWorkItem,
+  type AgentCompanyWorkItemStatus,
+  type OperationalAgentCatalogEntry,
+  type OperationalAgentGate,
+  type OperationalAgentId,
+  type OperationalAgentMetrics,
+  type OperationalAgentState,
+} from "./agent-company/operational-agent-company.js";
+export type { AgentCompanyWorkdayIdentity, AgentCompanyWorkdayRepository } from "./agent-company/agent-company-workday-repository.js";
+export {
+  AgentCompanyWorkdayInputValidator,
+  AgentCompanyWorkdayValidator,
+  createAgentCompanyInputFingerprint,
+  createAgentCompanyOutputFingerprint,
+} from "./agent-company/operational-agent-company-validator.js";
+export { OperationalAgentCompanyService } from "./agent-company/operational-agent-company-service.js";
+export { SqliteAgentCompanyWorkdayRepository } from "./persistence/sqlite/sqlite-agent-company-workday-repository.js";
+export {
+  AUTHORIZED_RESEARCH_CONTRACT_VERSION,
+  type AuthorizedResearchClaimRequest,
+  type AuthorizedResearchClaimResult,
+  type AuthorizedResearchMission,
+  type AuthorizedResearchMissionInput,
+  type AuthorizedResearchPackPlan,
+  type AuthorizedResearchTarget,
+  type ExtractedResearchFact,
+  type ResearchAcquisitionSnapshot,
+  type RestrictedHttpsAcquisition,
+} from "./research/authorized-research.js";
+export type { AuthorizedResearchRepository } from "./research/authorized-research-repository.js";
+export {
+  AuthorizedResearchMissionInputValidator,
+  AuthorizedResearchMissionValidator,
+  ResearchAcquisitionSnapshotValidator,
+  researchInputFingerprint,
+} from "./research/authorized-research-validator.js";
+export { AuthorizedResearchService } from "./research/authorized-research-service.js";
+export { extractAuthorizedDocument, type AuthorizedDocumentExtraction } from "./research/authorized-document-extractor.js";
+export {
+  NodeRestrictedHttpsClient,
+  type RestrictedHttpsClient,
+  type RestrictedHttpsRequestDriver,
+  type RestrictedHttpsResolver,
+} from "./research/restricted-https-client.js";
+export { SqliteAuthorizedResearchRepository } from "./persistence/sqlite/sqlite-authorized-research-repository.js";
+export {
+  SOCIAL_INTELLIGENCE_LIVE_CONTRACT_VERSION,
+  type AuthorizedCompetitorRecord,
+  type CompetitorObservation,
+  type DailySocialOperationsReport,
+  type CompetitorIntelligenceFinding,
+  type CompetitorIntelligencePack,
+  type SocialAccountBaseline,
+  type SocialAccountRecord,
+  type SocialAnalyticsMetrics,
+  type SocialAnalyticsSnapshot,
+  type SocialAudioRightsObservation,
+  type SocialLivePlatform,
+  type SocialLiveImportBatchReceipt,
+  type SocialLiveImportBatchRequest,
+  type SocialLiveRecord,
+  type SocialLiveRecordKind,
+  type SocialPublicationExperiment,
+  type SocialTrendObservation,
+} from "./social-intelligence-live/social-intelligence-live.js";
+export { SocialLiveRecordValidator, payloadForFingerprint, socialLiveFingerprint } from "./social-intelligence-live/social-intelligence-live-validator.js";
+export { SocialIntelligenceLiveService, buildCompetitorIntelligencePack, buildDailySocialOperationsReport, createFirstMetodoVeloceExperiment } from "./social-intelligence-live/social-intelligence-live-service.js";
+export { INITIAL_SOCIAL_SOURCE_BLUEPRINTS, SOCIAL_PUBLIC_OBSERVATION_SOURCE_BLUEPRINTS, SOCIAL_SOURCE_POLICY_NOTES, ensureInitialSocialSources } from "./social-intelligence-live/social-official-sources.js";
+export { parseSocialAnalyticsCsv, socialAnalyticsCsvTemplate, parseBoundedSocialCsv } from "./social-intelligence-live/social-analytics-csv-adapter.js";
+export { parseCompetitorObservationsCsv, competitorObservationsCsvTemplate } from "./social-intelligence-live/social-competitor-observation-csv-adapter.js";
+export { parseAudioRightsCsv, audioRightsCsvTemplate } from "./social-intelligence-live/social-audio-rights-csv-adapter.js";
+export { parseGoogleTrendsRss, googleTrendsBatchRecords, type GoogleTrendsRssImport } from "./social-intelligence-live/google-trends-rss-adapter.js";
+export { GoogleTrendsLiveAcquisitionService, type GoogleTrendsLiveAcquisitionReceipt } from "./social-intelligence-live/google-trends-live-acquisition-service.js";
+export { EXACT_COMPETITOR_AUTHORIZATION_TEXT, INITIAL_SOCIAL_COMPETITOR_CANDIDATES, authorizeInitialSocialCompetitors, type InitialSocialCompetitorAuthorizationRequest } from "./social-intelligence-live/social-competitor-authorization.js";
+export {
+  TREND_INTELLIGENCE_CONTRACT_VERSION,
+  MAX_TREND_ITEMS_PER_REQUEST,
+  MAX_TREND_RECEIPTS,
+  MAX_TREND_SIGNALS,
+  TREND_SOURCE_KEYS,
+  type TrendAcquisitionRequest,
+  type TrendAccessGrant,
+  type TrendConnectorReceipt,
+  type TrendConnectorReasonCode,
+  type TrendConnectorResult,
+  type TrendCredentialBinding,
+  type TrendCredentialRequirement,
+  type TrendPreflightReasonCode,
+  type TrendRightsClass,
+  type TrendSignal,
+  type TrendSignalFamily,
+  type TrendSourceAccessRequirement,
+  type TrendSourceAcquisitionMode,
+  type TrendSourceCatalogEntry,
+  type TrendSourceConnectionProfile,
+  type TrendSourceKey,
+  type TrendSourceLicenseState,
+  type TrendSourcePreflight,
+  type TrendSourceTransport,
+  type TrendTransportItem,
+  type TrendTransportReconciliationRequest,
+  type TrendTransportRequest,
+  type TrendTransportResponse,
+} from "./trend-intelligence/trend-intelligence-contract.js";
+export {
+  PREMIUM_TREND_SOURCE_CATALOG,
+  trendSourceByKey,
+} from "./trend-intelligence/trend-source-catalog.js";
+export { preflightTrendSource } from "./trend-intelligence/trend-source-preflight.js";
+export {
+  TrendConnectorError,
+  TrendSourceConnector,
+  TrendTransportFailureError,
+  TrendTransportTimeoutError,
+} from "./trend-intelligence/trend-source-connector.js";
+export {
+  DeterministicFakeTrendTransport,
+  type FakeTrendTransportOutcome,
+  type FakeTrendTransportScript,
+} from "./trend-intelligence/fake-trend-source-transport.js";
+export {
+  PUBLIC_TREND_SOURCE_BLUEPRINTS,
+  ensurePublicTrendSources,
+} from "./trend-intelligence/trend-source-registry.js";
+export {
+  TrendConsensusValidationError,
+  buildTrendConsensusView,
+  type TrendConsensusCandidate,
+  type TrendConsensusProvenance,
+  type TrendConsensusValidationCode,
+  type TrendConsensusView,
+} from "./trend-intelligence/trend-consensus.js";
+export {
+  TREND_OPERATOR_CELL_CATALOG,
+  TREND_OPERATOR_CELL_IDS,
+  buildTrendIntelligenceReadModel,
+  type TrendAgentObservedWork,
+  type TrendCandidateView,
+  type TrendIntelligenceReadModel,
+  type TrendIntelligenceSourceView,
+  type TrendObservedWorkState,
+  type TrendOperatorCellId,
+  type TrendOperatorCellMemberView,
+  type TrendOperatorCellView,
+  type TrendPipelineStageView,
+} from "./trend-intelligence/trend-intelligence-read-model.js";
+export {
+  buildCommandCenterTrendOperationsView,
+  latestObservedAgentWork,
+  type CommandCenterTrendAgentCallSign,
+  type CommandCenterTrendCandidateView,
+  type CommandCenterTrendCapabilityStatus,
+  type CommandCenterTrendConnectorStatus,
+  type CommandCenterTrendDataStatus,
+  type CommandCenterTrendOperationsView,
+  type CommandCenterTrendOperatorCellView,
+  type CommandCenterTrendPipelineStageView,
+  type CommandCenterTrendPolicyStatus,
+  type CommandCenterTrendSourceView,
+} from "./command-center/command-center-trend-operations-view.js";
+export {
+  CommandCenterActionService,
+  type CommandCenterActionClock,
+  type CommandCenterAnyActionProposal,
+  type CommandCenterAnyActionReceipt,
+  type CommandCenterActionProposal,
+  type CommandCenterActionReceipt,
+  type CommandCenterBusinessAction,
+  type CommandCenterBusinessActionProposal,
+  type CommandCenterBusinessActionReceipt,
+  type CommandCenterContentAction,
+} from "./command-center/command-center-action-service.js";
+export {
+  ORACLE_CREATIVE_DELIVERABLES,
+  ORACLE_CREATIVE_PROMPT_CONTRACT_VERSION,
+  ORACLE_LOCAL_CONTENT_BUNDLE,
+  type OracleCreativeAgentStage,
+  type OracleCreativeCapability,
+  type OracleCreativeDeliverable,
+  type OracleCreativePlatform,
+  type OracleCreativePromptConfirmation,
+  type OracleCreativePromptProposal,
+  type OracleCreativePromptReceipt,
+  type OracleCreativePromptRequest,
+  type OracleCreativeReasonCode,
+} from "./oracle-creative/oracle-creative-prompt.js";
+export { OracleCreativePromptConfirmationValidator, OracleCreativePromptRequestValidator, oraclePromptIsSafe } from "./oracle-creative/oracle-creative-prompt-validator.js";
+export { OracleCreativePromptService } from "./oracle-creative/oracle-creative-prompt-service.js";
+export {
+  DisabledVideoGenerationProvider,
+  VIDEO_GENERATION_PROVIDER_CONTRACT_VERSION,
+  VideoGenerationOperationValidator,
+  VideoGenerationProviderError,
+  VideoGenerationRequestValidator,
+  VideoGenerationSubmissionValidator,
+  bindVideoGenerationOperation,
+  bindVideoGenerationSubmission,
+  type VideoGenerationOperation,
+  type VideoGenerationOperationStatus,
+  type VideoGenerationProvider,
+  type VideoGenerationProviderCapability,
+  type VideoGenerationRequest,
+  type VideoGenerationSubmission,
+} from "./media-factory/video-generation-provider.js";
+export { evidencePackFingerprint, type EvidencePackFingerprintInput } from "./operational-planes/evidence-pack-fingerprint.js";
+export {
+  FileSocialVisualApprovalGate,
+  SOCIAL_VISUAL_PACK_MANIFEST_PATH,
+  verifyVisualApprovalBinding,
+  visualApprovalManifestFingerprint,
+  type CommandCenterContentApprovalGate,
+  type FileSocialVisualApprovalGateConfig,
+  type VisualApprovalBindingReceipt,
+} from "./command-center/visual-approval-gate.js";
+export {
+  FUNNEL_STAGE_KINDS,
+  REVENUE_OS_CONTRACT_VERSION,
+  REVENUE_PERIODS,
+  type ApprovalState,
+  type DeliveryCapacity,
+  type FunnelStage,
+  type FunnelStageKind,
+  type Lead,
+  type Offer,
+  type OfferDeliveryRequirement,
+  type OfferEconomics,
+  type OfferRevenueScore,
+  type RevenueCalculatedMetric,
+  type RevenueDataKind,
+  type RevenueExperiment,
+  type RevenueExperimentPriority,
+  type RevenueMetric,
+  type RevenueMetricProvenance,
+  type RevenueMission,
+  type RevenueNotAvailableReason,
+  type RevenueOpportunity,
+  type RevenuePeriod,
+  type RevenuePlan,
+  type RevenueScorecard,
+  type RevenueTarget,
+} from "./revenue-os/revenue-os.js";
+export {
+  ApprovalStateValidator,
+  DeliveryCapacityValidator,
+  FunnelStageValidator,
+  LeadValidator,
+  OfferEconomicsValidator,
+  OfferValidator,
+  RevenueExperimentValidator,
+  RevenueMissionValidator,
+  RevenueOpportunityValidator,
+  RevenuePlanValidator,
+  RevenueScorecardValidator,
+  RevenueTargetValidator,
+} from "./revenue-os/revenue-os-validator.js";
+export { DeterministicRevenuePlanningService } from "./revenue-os/revenue-planning-service.js";
+export { runRevenueOsCli } from "./revenue-os/revenue-os-cli.js";
+export {
+  COMMAND_CENTER_REVENUE_CONTRACT_VERSION,
+  buildCommandCenterRevenueView,
+  type CommandCenterRevenueMetric,
+  type CommandCenterRevenueReadinessItem,
+  type CommandCenterRevenueReasonCode,
+  type CommandCenterRevenueStage,
+  type CommandCenterRevenueView,
+} from "./command-center/command-center-revenue-view.js";
+export * from "./venture-holding/venture-domain.js";
+export * from "./venture-holding/venture-repository.js";
+export * from "./venture-holding/venture-validator.js";
+export { DeterministicVentureScorecardService, VENTURE_SCORE_CRITERIA, compareVentureScorecards, type DeterministicVentureScorecard, type VentureCriterionInput, type VentureCriterionScore, type VentureScorePolicy, type VentureScorecardComparison, type VentureScorecardOutcome, type VentureScoreDataKind } from "./venture-holding/venture-scorecard.js";
+export { DeterministicVentureEconomicsEngine, type VentureCalculatedEconomicValue, type VentureEconomicBps, type VentureEconomicInputKind, type VentureEconomicValue, type VentureEconomicsScenario as CalculatedVentureEconomicsScenario, type VentureEconomicsScenarioInput } from "./venture-holding/venture-economics.js";
+export * from "./venture-holding/opportunity-radar.js";
+export * from "./venture-holding/venture-experiment-engine.js";
+export { CAPITAL_BOARD_CRITERIA, DeterministicCapitalBoard, type CapitalAllocationProposal as CapitalBoardProposal, type CapitalAllocationCandidateScore, type CapitalBoardCandidate, type CapitalBoardCriterion, type CapitalBoardCriterionInput, type CapitalBoardPolicy } from "./venture-holding/capital-board.js";
+export * from "./venture-holding/venture-launch-pack.js";
+export * from "./venture-holding/venture-stage-machine.js";
+export * from "./venture-holding/venture-command-boundary.js";
+export * from "./venture-holding/venture-holding-service.js";
+export * from "./venture-holding/onlyway-venture-001.js";
+export * from "./venture-holding/venture-cell-service.js";
+export * from "./venture-holding/venture-brief-service.js";
+export { SqliteVentureHoldingRepository } from "./persistence/sqlite/sqlite-venture-holding-repository.js";
+export { SqliteVentureHoldingTransactionRunner } from "./persistence/sqlite/sqlite-venture-holding-transaction-runner.js";
+export { RepositoryBackedVentureOperationsBoundary } from "./operations-runtime/repository-backed-venture-operations-boundary.js";
+export * from "./command-center/command-center-venture-view.js";
+export * from "./command-center/onlyway-station-view.js";
+export * from "./command-center/repository-backed-venture-query.js";
+export * from "./telegram/telegram-venture-brief-console.js";
+export * from "./admin-security/index.js";
+export * from "./cost-control/production-cost-control.js";
+export * from "./production/production-safety-state.js";

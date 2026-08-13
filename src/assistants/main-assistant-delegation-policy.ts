@@ -301,7 +301,7 @@ export const DEFAULT_MAIN_ASSISTANT_DELEGATION_POLICY: MainAssistantDelegationPo
       {
         constraintId: "limit-delegation-depth",
         description:
-          "Only Way Assistant can propose at most one future specialist layer.",
+          "Onlyway Assistant can propose at most one future specialist layer.",
         enforcement: "block",
         kind: "max_delegation_depth",
       },

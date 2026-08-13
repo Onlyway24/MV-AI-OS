@@ -1,0 +1,163 @@
+[
+  {
+    "Id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "Name": "/onlyway-command-center",
+    "Image": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "Config": {
+      "Image": "onlyway/mv-ai-os:1982d7f",
+      "Labels": {},
+      "User": "2001:2001"
+    },
+    "HostConfig": {
+      "NetworkMode": "onlyway-private",
+      "PortBindings": {
+        "43100/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "41479"
+          }
+        ]
+      },
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      }
+    },
+    "Mounts": [
+      {
+        "Destination": "/data",
+        "RW": true,
+        "Source": "/srv/onlyway/data",
+        "Type": "bind"
+      },
+      {
+        "Destination": "/app/config/runtime-private.json",
+        "RW": false,
+        "Source": "/srv/onlyway/config/runtime-private.json",
+        "Type": "bind"
+      }
+    ],
+    "NetworkSettings": {
+      "Networks": {
+        "onlyway-private": {}
+      }
+    },
+    "State": {
+      "Running": true
+    }
+  },
+  {
+    "Id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "Name": "/onlyway-scheduler",
+    "Image": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "Config": {
+      "Image": "onlyway/mv-ai-os:1982d7f",
+      "Labels": {},
+      "User": "2001:2001"
+    },
+    "HostConfig": {
+      "NetworkMode": "onlyway-private",
+      "PortBindings": {},
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      }
+    },
+    "Mounts": [
+      {
+        "Destination": "/data",
+        "RW": true,
+        "Source": "/srv/onlyway/data",
+        "Type": "bind"
+      },
+      {
+        "Destination": "/app/config/runtime-private.json",
+        "RW": false,
+        "Source": "/srv/onlyway/config/runtime-private.json",
+        "Type": "bind"
+      }
+    ],
+    "NetworkSettings": {
+      "Networks": {
+        "onlyway-private": {}
+      }
+    },
+    "State": {
+      "Running": true
+    }
+  },
+  {
+    "Id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "Name": "/onlyway-worker",
+    "Image": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "Config": {
+      "Image": "onlyway/mv-ai-os:1982d7f",
+      "Labels": {},
+      "User": "2001:2001"
+    },
+    "HostConfig": {
+      "NetworkMode": "onlyway-private",
+      "PortBindings": {},
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      }
+    },
+    "Mounts": [
+      {
+        "Destination": "/data",
+        "RW": true,
+        "Source": "/srv/onlyway/data",
+        "Type": "bind"
+      },
+      {
+        "Destination": "/app/config/runtime-private.json",
+        "RW": false,
+        "Source": "/srv/onlyway/config/runtime-private.json",
+        "Type": "bind"
+      }
+    ],
+    "NetworkSettings": {
+      "Networks": {
+        "onlyway-private": {}
+      }
+    },
+    "State": {
+      "Running": true
+    }
+  },
+  {
+    "Id": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "Name": "/onlyway-health-monitor",
+    "Image": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "Config": {
+      "Image": "onlyway/mv-ai-os:1982d7f",
+      "Labels": {},
+      "User": "2001:2001"
+    },
+    "HostConfig": {
+      "NetworkMode": "onlyway-private",
+      "PortBindings": {},
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      }
+    },
+    "Mounts": [
+      {
+        "Destination": "/app/config/runtime-private.json",
+        "RW": false,
+        "Source": "/srv/onlyway/config/runtime-private.json",
+        "Type": "bind"
+      }
+    ],
+    "NetworkSettings": {
+      "Networks": {
+        "onlyway-private": {}
+      }
+    },
+    "State": {
+      "Running": true
+    }
+  }
+]

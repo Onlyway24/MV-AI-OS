@@ -1,5 +1,6 @@
 import {
   asRecord,
+  isJsonObject,
   isRfc3339Timestamp,
   isSemanticVersion,
 } from "../../validation/primitives.js";
@@ -13,7 +14,10 @@ import {
 import {
   isWorkflowCommandFingerprint,
 } from "./workflow-command-fingerprint.js";
-import { isSpecificationFingerprint } from "../specification/specification-fingerprint.js";
+import {
+  createSpecificationFingerprint,
+  isSpecificationFingerprint,
+} from "../specification/specification-fingerprint.js";
 import {
   WORKFLOW_RUNTIME_CONTRACT_VERSION,
   type WorkflowCommand,
@@ -240,6 +244,7 @@ export class WorkflowInstanceValidator implements Validator<WorkflowInstance> {
         "contractVersion",
         "definitionId",
         "instanceId",
+        "input",
         "status",
         "steps",
         "version",
@@ -278,6 +283,7 @@ export class WorkflowInstanceValidator implements Validator<WorkflowInstance> {
     if (record.nonExecuting !== true) {
       issues.push(issue("unsafe_execution", "instance must be non-executing", "nonExecuting"));
     }
+    validateInstanceInput(record.input, issues);
     validateStepInstances(record.steps, issues);
     validateWorkflowStateSemantics(record.status, record.steps, issues);
     validateReceipts(record.receipts, record.version, this.#receiptValidator, issues);
@@ -286,6 +292,87 @@ export class WorkflowInstanceValidator implements Validator<WorkflowInstance> {
     return issues.length > 0
       ? validationFailure(issues)
       : validationSuccess(freeze(value as WorkflowInstance));
+  }
+}
+
+function validateInstanceInput(
+  value: unknown,
+  issues: ValidationIssue[],
+): void {
+  // Optional only for durable compatibility with pre-admission legacy instances.
+  if (value === undefined) return;
+  const binding = asRecord(value);
+  if (binding === undefined) {
+    issues.push(issue("invalid_type", "input must be an object", "input"));
+    return;
+  }
+  assertOnlyKnownKeys(
+    binding,
+    ["contractId", "contractVersion", "data", "fingerprint"],
+    issues,
+    "input",
+  );
+  assertIdentifier(binding, "contractId", issues, "input");
+  if (
+    typeof binding.contractVersion !== "string" ||
+    binding.contractVersion.trim().length === 0 ||
+    binding.contractVersion.length > 128 ||
+    !ID_PATTERN.test(binding.contractVersion)
+  ) {
+    issues.push(
+      issue(
+        "invalid_format",
+        "input contractVersion is invalid",
+        "input.contractVersion",
+      ),
+    );
+  }
+  const data = isJsonObject(binding.data) ? binding.data : undefined;
+  let serialized: string | undefined;
+  try {
+    serialized = JSON.stringify(binding.data);
+  } catch {
+    // The generic JSON validation below reports the stable validation issue.
+  }
+  if (
+    data === undefined ||
+    serialized === undefined ||
+    serialized.length > 65_536
+  ) {
+    issues.push(
+      issue(
+        "invalid_value",
+        "input data must be a bounded JSON object",
+        "input.data",
+      ),
+    );
+  }
+  if (!isSpecificationFingerprint(binding.fingerprint)) {
+    issues.push(
+      issue(
+        "invalid_format",
+        "input fingerprint is invalid",
+        "input.fingerprint",
+      ),
+    );
+  } else if (
+    data !== undefined &&
+    typeof binding.contractId === "string" &&
+    typeof binding.contractVersion === "string" &&
+    binding.fingerprint !==
+      createSpecificationFingerprint({
+        contractId: binding.contractId,
+        contractVersion: binding.contractVersion,
+        data,
+      })
+  ) {
+    issues.push(
+      issue(
+        "identity_mismatch",
+        "input fingerprint does not match its durable binding",
+        "input.fingerprint",
+      ),
+    );
   }
 }
 
