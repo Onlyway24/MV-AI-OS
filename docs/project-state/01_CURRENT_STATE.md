@@ -9,6 +9,8 @@ and tests, not intended future behavior.
 ## Repository baseline
 
 - Current branch at the time of this snapshot: `main`.
+- Current verified base revision before this uncommitted change set:
+  `901c126c3104351b212f6aad1ecc3b0bc4b263c0`.
 - Core V1 `v1.0.0-core` release baseline:
   `08950d412ba249357064d42eb27a3d92587c1f32`.
 - Validated local runtime composition was committed in
@@ -137,7 +139,7 @@ and tests, not intended future behavior.
   invocation receipts, and Workflow events. It returns exactly one evidence-backed
   next action and never invents percentages, cost, effort, or external activity.
 - Local Workflow Command Boundary is completed by the current change set. The
-  existing CLI now accepts either its original local task request or one of 22 exact
+  existing CLI now accepts either its original local task request or one of 23 exact
   Core V1 operations. The command boundary composes the existing Mission Planning,
   Workflow, control, deterministic Content Director, lifecycle, report, and audit
   services; rejects arbitrary operation names and identity mismatches; bounds JSON
@@ -156,7 +158,7 @@ and tests, not intended future behavior.
 - Core V1 Operator and Recovery Guide is completed by the current change set in
   `docs/CORE_V1_OPERATOR_GUIDE.md`, with validated deterministic configuration,
   Workflow creation, and report fixtures under `examples/core-v1/`. The guide covers
-  all 22 allowlisted operations, exact versions and IDs, safe errors, lifecycle,
+  all 23 allowlisted operations, exact versions and IDs, safe errors, lifecycle,
   shutdown, restart, SQLite recovery, Git verification, and intentionally absent
   capabilities without credentials or unsupported claims.
 - Core V1 Adversarial Release Review and closeout is complete. It confirmed no P0/P1
@@ -166,8 +168,25 @@ and tests, not intended future behavior.
   Terminal Workflow and Step state has explicit precedence over stale readiness and
   approval/Guardian remediation in the immutable report projection. Durable approval,
   Guardian, event, invocation, outcome, and audit records are unchanged and remain
-  queryable. The next milestone remains Workflow Specification Admission Boundary.
-- The next milestone is Workflow Specification Admission Boundary.
+  queryable.
+- Workflow Specification Admission Boundary is complete in the current change set.
+  One exact active immutable Workflow Specification and every referenced exact Agent
+  Specification are validated and fingerprinted before deterministic derivation of
+  the existing non-executing durable definition/instance shape. Definition, instance,
+  ownership, and redaction-safe audit evidence are persisted atomically with stable
+  IDs, replay/conflict handling, SQLite restart recovery, and rollback coverage. The
+  admitted candidate boundary enforces the persisted Agent identity, version, and
+  fingerprint; the compatible legacy creation operation cannot forge admission
+  provenance. The existing Local Runtime and CLI expose this as the 23rd allowlisted
+  operation without scheduling, autonomous execution, network access, tools, or
+  external effects.
+- The release-hardening pass in the current change set restricts OpenAI credentials
+  and prompts to the canonical official API origin, bounds provider response bytes,
+  excludes sensitive memory from provider egress, bounds and no-follows production
+  local secret-file reads, applies symmetric byte/nesting bounds to durable SQLite
+  JSON writes and reads, hardens SQLite record and backup boundaries, and revalidates
+  exact admitted Agent fingerprints before interrupted invocation recovery.
+- The next milestone is Workflow Specification Runtime Semantics Design Review.
 
 ## Current architecture
 
@@ -806,8 +825,7 @@ provider, n8n, or external SDK types.
 
 ## Implemented tests
 
-The latest verified Core V1 Operator Report correctness-hotfix suite contains 87 test
-files and 792 tests
+The latest verified current-change-set suite contains 89 test files and 838 tests
 covering:
 
 - Core Brain preparation, routing, execution, failures, and state transitions.
@@ -1446,12 +1464,16 @@ chapter.
 - A caller can explicitly invoke and complete one exact local deterministic Content
   Director step with durable reservation, restart-safe replay, separate outcome
   acceptance, atomic completion, and no automatic dependent-step execution.
-- Fabio can operate the complete Core V1 path through 22 allowlisted local commands:
+- Fabio can operate the complete Core V1 path through 23 allowlisted local commands:
   Mission validation and planning, durable Workflow creation and inspection, exact
   approval/Guardian recording, readiness and candidate evaluation, deterministic
   Content Director invocation, explicit outcome handling, retry/lifecycle controls,
   timeout evaluation, report inspection, and bounded audit lookup. All mutations stay
   local, validated, version-bound, durable, and non-external.
+- Fabio can admit `core-v1-content-direction@1.0.0` through the same local command
+  envelope. The boundary resolves exact immutable Workflow and Agent Specifications,
+  derives attributed runtime state in deterministic topological order, and safely
+  replays that state after process and SQLite restart.
 - The Tool Gateway can authorize a tool invocation and validate a supplied result
   without executing a tool.
 - A future implementation agent can read `docs/MV_AI_OS_CONSTITUTION.md` as the
@@ -1470,7 +1492,8 @@ path.
   ledgers, aggregated budget windows, autonomous guardians, scheduled alerts,
   dashboards, and external notification channels.
 - Approval UI/transport and autonomous Guardian evaluation.
-- General Workflow Specification admission into the durable Core V1 command path.
+- Runtime execution of Workflow Specification conditions, cycles, alternate failure
+  policies, or automatic dependency scheduling.
 - Workflow lifecycle cancellation propagation beyond durable local Workflow state.
 - Any model/provider/tool/network/browser/external execution from a workflow candidate.
 - Production secret management.

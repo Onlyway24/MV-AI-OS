@@ -13,10 +13,11 @@ import type { WorkflowOperatorReportRequest, RepositoryBackedWorkflowOperatorRep
 import type { WorkflowReadinessService } from "../workflows/runtime/workflow-readiness.js";
 import type { WorkflowStepExecutionBoundary } from "../workflows/runtime/workflow-step-execution-boundary.js";
 import type { WorkflowStepOutcomeService } from "../workflows/runtime/workflow-step-outcome.js";
+import type { WorkflowSpecificationAdmissionService } from "../workflows/runtime/workflow-specification-admission.js";
 import { WorkflowDefinitionValidator, WorkflowInstanceValidator } from "../workflows/runtime/workflow-runtime-validator.js";
 
 export const LOCAL_WORKFLOW_COMMAND_CONTRACT_VERSION = "1" as const;
-export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_WORKFLOW", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
+export const LOCAL_WORKFLOW_OPERATIONS = Object.freeze(["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "ADMIT_WORKFLOW_SPECIFICATION", "INSPECT_WORKFLOW", "GET_OPERATOR_REPORT", "EVALUATE_READINESS", "GET_NEXT_CANDIDATE", "RECORD_APPROVAL", "RECORD_GUARDIAN", "INVOKE_AGENT", "INSPECT_AGENT_RESULT", "ACCEPT_OUTCOME", "REJECT_OUTCOME", "FAIL_STEP", "INSPECT_RETRY_ELIGIBILITY", "AUTHORIZE_RETRY", "EXECUTE_RETRY", "PAUSE_WORKFLOW", "RESUME_WORKFLOW", "CANCEL_WORKFLOW", "EVALUATE_TIMEOUT", "INSPECT_AUDIT_EVENTS"] as const);
 export type LocalWorkflowOperation = typeof LOCAL_WORKFLOW_OPERATIONS[number];
 export interface LocalWorkflowCommand { readonly contractVersion: "1"; readonly commandId: string; readonly actorId: string; readonly workspaceId: string; readonly operation: LocalWorkflowOperation; readonly input: Readonly<Record<string, unknown>>; }
 export interface LocalWorkflowCommandResponse { readonly contractVersion: "1"; readonly status: "ok"; readonly operation: LocalWorkflowOperation; readonly commandId: string; readonly result: unknown; readonly nextAction: string; readonly replayed: boolean; readonly unauthorizedExternalEffectOccurred: false; }
@@ -24,6 +25,7 @@ export interface LocalWorkflowCommandResponse { readonly contractVersion: "1"; r
 export interface LocalWorkflowCommandDependencies {
   readonly actorId: string;
   readonly workspaceId: string;
+  readonly admission?: WorkflowSpecificationAdmissionService;
   readonly missionPlanning: LocalMissionPlanningDryRun;
   readonly readiness: WorkflowReadinessService;
   readonly candidates: WorkflowStepExecutionBoundary;
@@ -78,6 +80,7 @@ export class LocalWorkflowCommandBoundary {
     const valid = validate(command, this.#validator, "Local Workflow command");
     if (valid.actorId !== this.dependencies.actorId || valid.workspaceId !== this.dependencies.workspaceId) throw new RepositoryConflictError("Local Workflow command identity is unauthorized");
     if (typeof valid.input.commandId === "string" && valid.input.commandId !== valid.commandId) throw new RepositoryConflictError("Local Workflow command ID does not match the operation request");
+    if (valid.operation === "ADMIT_WORKFLOW_SPECIFICATION") assertAdmissionBinding(valid);
     const fingerprint = createHash("sha256").update(JSON.stringify(valid), "utf8").digest("hex");
     const existing = await this.dependencies.repositories.transaction(({ workflowCommands }) => workflowCommands.getById(valid.commandId));
     if (existing !== undefined) return replay(existing.fingerprint, fingerprint, existing.response);
@@ -97,6 +100,14 @@ export class LocalWorkflowCommandBoundary {
       case "CREATE_MISSION": return validate(input.brief, this.#missionValidator, "Founder Mission Brief");
       case "PLAN_MISSION": return this.dependencies.missionPlanning.run({ brief: validate(input.brief, this.#missionValidator, "Founder Mission Brief"), contractVersion: "1" });
       case "CREATE_WORKFLOW": return this.#createWorkflow(input.definition, input.instance);
+      case "ADMIT_WORKFLOW_SPECIFICATION": {
+        if (this.dependencies.admission === undefined) {
+          throw new RepositoryValidationError(
+            "Workflow Specification admission is unavailable",
+          );
+        }
+        return this.dependencies.admission.admit((input.request ?? {}) as never);
+      }
       case "INSPECT_WORKFLOW": return this.dependencies.repositories.transaction(async ({ workflows }) => { const instance = await workflows.instances.getById(requiredId(input, "instanceId")); if (instance === undefined) throw new RepositoryConflictError("Inspected Workflow does not exist"); return instance; });
       case "GET_OPERATOR_REPORT": return this.dependencies.report.create(input as unknown as WorkflowOperatorReportRequest);
       case "EVALUATE_READINESS": return this.dependencies.readiness.evaluate(input as never);
@@ -122,6 +133,14 @@ export class LocalWorkflowCommandBoundary {
   async #createWorkflow(definitionInput: unknown, instanceInput: unknown): Promise<{ readonly created: boolean }> {
     const definition = validate(definitionInput, this.#definitionValidator, "Workflow definition");
     const instance = validate(instanceInput, this.#instanceValidator, "Workflow instance");
+    if (
+      definition.admission !== undefined ||
+      definition.steps.some(({ agent }) => agent !== undefined)
+    ) {
+      throw new RepositoryValidationError(
+        "Attributed Workflow definitions must use Workflow Specification admission",
+      );
+    }
     if (instance.definitionId !== definition.definitionId || instance.version !== 0 || instance.receipts.length !== 0 || definition.steps.length !== instance.steps.length || definition.steps.some((step, index) => step.stepId !== instance.steps[index]?.stepId)) throw new RepositoryValidationError("Created Workflow identity is invalid");
     return this.dependencies.repositories.transaction(async ({ workflows, workflowCommands }) => {
       const existingDefinition = await workflows.definitions.getById(definition.definitionId);
@@ -140,7 +159,7 @@ export class LocalWorkflowCommandBoundary {
 
   async #resourceInstanceId(command: LocalWorkflowCommand): Promise<string | undefined> {
     const input = command.input;
-    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
+    if (["CREATE_MISSION", "PLAN_MISSION", "CREATE_WORKFLOW", "ADMIT_WORKFLOW_SPECIFICATION", "INSPECT_AUDIT_EVENTS"].includes(command.operation)) return undefined;
     if (typeof input.instanceId === "string") return input.instanceId;
     if (record(input.checkpoint) && typeof input.checkpoint.instanceId === "string") return input.checkpoint.instanceId;
     if (record(input.boundaryRequest) && typeof input.boundaryRequest.instanceId === "string") return input.boundaryRequest.instanceId;
@@ -156,6 +175,7 @@ function action(operation: LocalWorkflowOperation, input: Readonly<Record<string
   if (operation === "CREATE_MISSION") return `Plan validated Mission Brief ${nestedId(input, "brief", "briefId") ?? "mission"}.`;
   if (operation === "PLAN_MISSION") return "Create a durable Workflow from the validated Mission Plan.";
   if (operation === "CREATE_WORKFLOW") return `Request the Operator Workflow Report for Workflow ${nestedId(input, "instance", "instanceId") ?? "unknown"}.`;
+  if (operation === "ADMIT_WORKFLOW_SPECIFICATION") return `Request the Operator Workflow Report for Workflow ${nestedId(input, "request", "instanceId") ?? "unknown"}.`;
   if (operation === "INSPECT_WORKFLOW") return `Request the Operator Workflow Report for Workflow ${id(input.instanceId)}.`;
   if (operation === "EVALUATE_READINESS") return `Request the next controlled candidate for Workflow ${id(input.instanceId)} at version ${number(input.expectedVersion)}.`;
   if (operation === "GET_NEXT_CANDIDATE") return record(result) && result.status === "CANDIDATE_AVAILABLE" ? `Invoke the controlled candidate for step ${nestedId(result, "candidate", "stepId") ?? "unknown"}.` : `Resolve the reported candidate blockers for Workflow ${id(input.instanceId)}.`;
@@ -173,6 +193,19 @@ function nestedId(input: Readonly<Record<string, unknown>>, parent: string, chil
 function nestedNumber(input: Readonly<Record<string, unknown>>, parent: string, child: string): string { const value = input[parent]; return record(value) && typeof value[child] === "number" ? String(value[child]) : "unknown"; }
 function requiredId(input: Readonly<Record<string, unknown>>, key: string): string { const value = input[key]; if (!safeId(value)) throw new RepositoryValidationError(`Local Workflow command ${key} is invalid`); return value; }
 function requiredLimit(input: Readonly<Record<string, unknown>>): number { const value = input.limit; if (!Number.isSafeInteger(value) || (value as number) < 1 || (value as number) > 100) throw new RepositoryValidationError("Local Workflow audit limit is invalid"); return value as number; }
+function assertAdmissionBinding(command: LocalWorkflowCommand): void {
+  const request = command.input.request;
+  if (
+    !record(request) ||
+    request.admissionId !== command.commandId ||
+    request.actorId !== command.actorId ||
+    request.workspaceId !== command.workspaceId
+  ) {
+    throw new RepositoryConflictError(
+      "Workflow specification admission is not bound to its Local Workflow command",
+    );
+  }
+}
 function validate<T>(value: unknown, validator: Validator<T>, label: string): T { const checked = validator.validate(value); if (!checked.ok) throw new RepositoryValidationError(`${label} failed validation`, { issueCount: checked.issues.length }); return checked.value; }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function keys(value: Record<string, unknown>, allowed: readonly string[]): boolean { return Object.keys(value).length === allowed.length && Object.keys(value).every((key) => allowed.includes(key)); }

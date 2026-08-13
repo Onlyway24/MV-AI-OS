@@ -2,59 +2,59 @@
 
 ## Milestone name
 
-Workflow Specification Admission Boundary
+Workflow Specification Runtime Semantics Design Review
 
 ## Goal
 
-Allow Fabio to create a durable Core V1 Workflow only from one exact, already
-validated `WorkflowSpecification` and its declared Agent Specification versions,
-instead of hand-authoring a runtime Workflow definition.
+Define the smallest safe next increment that can execute more of the already validated
+`WorkflowSpecification` semantics without creating a second engine, hidden scheduling,
+or an external-effect path.
 
 ## Why it matters
 
-Core V1 now proves controlled execution for a local Workflow instance. The next safe
-capability is to connect the repository's formal Workflow Specification system to that
-runtime without granting autonomy, adding another execution engine, or weakening the
-existing command, policy, approval, Guardian, repository, and audit boundaries.
+Core V1 now admits an exact immutable specification into attributed durable runtime
+state, but admission intentionally accepts only the semantics the current explicit
+runtime can represent: an acyclic, conditionless graph with `fail_workflow`, no
+preserved successful outputs, and at most 100 steps. Expanding that surface without a
+design review could split authority between specification and runtime contracts or
+create implicit execution behavior.
 
 ## Required scope
 
-- Define a versioned admission request/result contract and strict validators.
-- Resolve one exact Workflow Specification from the existing immutable registry.
-- Verify every referenced exact Agent Specification and declared version before
-  admission.
-- Deterministically derive the existing durable `WorkflowDefinition` and initial
-  `WorkflowInstance` shape from the admitted specification.
-- Persist the derived records through existing Workflow repositories and the existing
-  transaction runner with stable IDs, conflict detection, replay, ownership binding,
-  and durable audit evidence.
-- Expose the boundary through the existing Local Runtime/CLI command mechanism only
-  where the current command validation and response guarantees are preserved.
-- Add deterministic tests for valid admission, missing/changed specifications,
-  duplicate/replay/conflict behavior, restart durability, rollback, and redaction.
+- Map each `WorkflowSpecification` field to current durable runtime behavior and name
+  every semantic gap.
+- Decide whether condition evaluation, output mapping, or alternate failure policy is
+  the smallest independently safe implementation milestone.
+- Specify deterministic ordering, exact input/output contract binding, durable
+  evidence, replay, restart, stale-version, approval, Guardian, and policy invariants.
+- Define compatibility behavior for already admitted and legacy Core V1 definitions.
+- Produce an implementation-ready decision and update the authoritative roadmap and
+  decision log.
+- Add tests only for executable design assertions or contract examples; do not add
+  production execution capability in this review milestone.
 
 ## Forbidden scope
 
-- No new workflow execution engine, scheduler, automatic retry, callback, n8n,
-  network, provider, tool, dashboard, HTTP, filesystem tool, or external effect.
-- No dynamic Agent selection, version floating, or bypass of policy, approvals,
-  Guardians, repositories, or CoreBrain boundaries.
-- No migration of existing Core V1 instances and no incompatible public-contract
-  change.
+- No scheduler, automatic next-step start, automatic retry, timer, polling, worker,
+  callback, n8n, network, provider, tool, dashboard, HTTP, filesystem tool, or external
+  effect.
+- No dynamic Agent selection, version floating, migration of existing instances, or
+  bypass of policy, ownership, approvals, Guardians, repositories, or audit.
+- No implementation of multiple new semantic families in one milestone.
 
 ## Acceptance criteria
 
-- An admitted Workflow is attributable to one exact validated specification and exact
-  declared Agent Specification versions.
-- The resulting durable definition/instance is deterministic, immutable, versioned,
-  replay-safe, conflict-safe, ownership-bound, and transactionally audited.
-- Invalid, missing, changed, or version-incompatible declarations fail closed before
-  persistence.
-- Existing Core V1 commands and vertical-slice behavior remain unchanged.
-- Lint, typecheck, full tests, build, and `git diff --check` pass.
+- The selected next increment has one authoritative state transition model and one
+  bounded admission/runtime contract.
+- Unsupported semantics continue to fail closed with explicit reasons.
+- Compatibility, persistence, replay, rollback, restart, and redaction requirements
+  are testable before implementation begins.
+- The decision identifies security and operational failure modes without speculative
+  infrastructure.
+- Lint, typecheck, full tests, build, and `git diff --check` remain green.
 
 ## Definition of done
 
-The formal Workflow Specification registry is the controlled admission source for a
-new durable local Core V1 Workflow, while all execution remains explicit,
-deterministic, local-only, and operator-governed.
+The repository has an evidence-backed, implementation-ready decision for exactly one
+next Workflow Specification runtime semantic, while current Core V1 behavior and all
+non-execution guarantees remain unchanged.

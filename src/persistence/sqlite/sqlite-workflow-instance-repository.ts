@@ -5,7 +5,6 @@ import {
   RepositoryValidationError,
 } from "../../errors/core-error.js";
 import type { WorkflowInstance } from "../../workflows/runtime/workflow-runtime.js";
-import { WorkflowLifecycleRecordValidator } from "../../workflows/runtime/workflow-lifecycle.js";
 import {
   isWorkflowStepTransitionAllowed,
   isWorkflowTransitionAllowed,
@@ -24,6 +23,10 @@ import {
   readTextColumn,
   SqliteRecordCodec,
 } from "./sqlite-record-codec.js";
+import {
+  decodeWorkflowLifecycleRecordRow,
+  WORKFLOW_LIFECYCLE_RECORD_COLUMNS,
+} from "./sqlite-workflow-lifecycle-repository.js";
 import {
   assertActiveTransaction,
   type SqliteTransactionScope,
@@ -119,32 +122,29 @@ export class SqliteWorkflowInstanceRepository
   ): Promise<void> {
     assertActiveTransaction(this.#scope);
     const row = this.#database
-      .prepare("SELECT record_json FROM workflow_lifecycle_records WHERE record_id = ? AND kind = 'RETRY_AUTHORIZATION'")
+      .prepare(`SELECT ${WORKFLOW_LIFECYCLE_RECORD_COLUMNS} FROM workflow_lifecycle_records WHERE record_id = ? AND kind = 'RETRY_AUTHORIZATION'`)
       .get(authorizationId);
-    const validation = new WorkflowLifecycleRecordValidator().validate(
-      row?.record_json === undefined || typeof row.record_json !== "string"
-        ? undefined
-        : JSON.parse(row.record_json),
-    );
+    const authorization = row === undefined
+      ? undefined
+      : decodeWorkflowLifecycleRecordRow(row, { recordId: authorizationId });
     if (
-      !validation.ok ||
-      validation.value.kind !== "RETRY_AUTHORIZATION" ||
-      validation.value.retryDecision !== "AUTHORIZED" ||
-      validation.value.instanceId !== instance.instanceId ||
-      validation.value.instanceVersion !== expectation.version ||
-      instance.steps.find(({ stepId }) => stepId === validation.value.stepId)?.status !== "READY"
+      authorization?.kind !== "RETRY_AUTHORIZATION" ||
+      authorization.retryDecision !== "AUTHORIZED" ||
+      authorization.instanceId !== instance.instanceId ||
+      authorization.instanceVersion !== expectation.version ||
+      instance.steps.find(({ stepId }) => stepId === authorization.stepId)?.status !== "READY"
     ) {
       throw new RepositoryConflictError("Workflow retry authorization is missing or invalid", {
         authorizationId,
         instanceId: instance.instanceId,
       });
     }
-    const records = this.#database.prepare("SELECT record_json FROM workflow_lifecycle_records WHERE instance_id = ? AND step_id = ? ORDER BY sequence ASC").all(instance.instanceId, validation.value.stepId).map((entry) => { if (typeof entry.record_json !== "string") throw new RepositoryValidationError("Workflow lifecycle evidence is corrupted"); const checked = new WorkflowLifecycleRecordValidator().validate(JSON.parse(entry.record_json)); if (!checked.ok) throw new RepositoryValidationError("Workflow lifecycle evidence is corrupted"); return checked.value; });
+    const records = this.#database.prepare(`SELECT ${WORKFLOW_LIFECYCLE_RECORD_COLUMNS} FROM workflow_lifecycle_records WHERE instance_id = ? AND step_id = ? ORDER BY sequence ASC`).all(instance.instanceId, authorization.stepId).map((entry) => decodeWorkflowLifecycleRecordRow(entry, { instanceId: instance.instanceId, stepId: authorization.stepId }));
     const latestFailure = records.filter(({ kind }) => kind === "FAILURE").at(-1);
-    const latestAuthorization = records.filter(({ kind, failureId }) => kind === "RETRY_AUTHORIZATION" && failureId === validation.value.failureId).at(-1);
+    const latestAuthorization = records.filter(({ kind, failureId }) => kind === "RETRY_AUTHORIZATION" && failureId === authorization.failureId).at(-1);
     const consumed = records.some(({ kind, authorizationId: consumedAuthorizationId }) => kind === "RETRY_EXECUTION" && consumedAuthorizationId === authorizationId);
-    if (latestFailure?.recordId !== validation.value.failureId || latestAuthorization?.recordId !== authorizationId || consumed) throw new RepositoryConflictError("Workflow retry authorization is stale or consumed");
-    return this.#update(instance, expectation, validation.value.stepId);
+    if (latestFailure?.recordId !== authorization.failureId || latestAuthorization?.recordId !== authorizationId || consumed) throw new RepositoryConflictError("Workflow retry authorization is stale or consumed");
+    return this.#update(instance, expectation, authorization.stepId);
   }
 
   public control(
@@ -154,17 +154,15 @@ export class SqliteWorkflowInstanceRepository
   ): Promise<void> {
     assertActiveTransaction(this.#scope);
     const row = this.#database
-      .prepare("SELECT record_json FROM workflow_lifecycle_records WHERE record_id = ? AND kind IN ('PAUSE', 'RESUME', 'CANCELLATION')")
+      .prepare(`SELECT ${WORKFLOW_LIFECYCLE_RECORD_COLUMNS} FROM workflow_lifecycle_records WHERE record_id = ? AND kind IN ('PAUSE', 'RESUME', 'CANCELLATION')`)
       .get(controlId);
-    const validation = new WorkflowLifecycleRecordValidator().validate(
-      row?.record_json === undefined || typeof row.record_json !== "string"
-        ? undefined
-        : JSON.parse(row.record_json),
-    );
-    if (!validation.ok || (validation.value.kind !== "CANCELLATION" && validation.value.kind !== "PAUSE" && validation.value.kind !== "RESUME") || validation.value.instanceId !== instance.instanceId || validation.value.instanceVersion !== instance.version) {
+    const control = row === undefined
+      ? undefined
+      : decodeWorkflowLifecycleRecordRow(row, { recordId: controlId });
+    if (control === undefined || (control.kind !== "CANCELLATION" && control.kind !== "PAUSE" && control.kind !== "RESUME") || control.instanceId !== instance.instanceId || control.instanceVersion !== instance.version) {
       throw new RepositoryConflictError("Workflow control evidence is missing or invalid", { controlId, instanceId: instance.instanceId });
     }
-    return this.#update(instance, expectation, undefined, validation.value.kind);
+    return this.#update(instance, expectation, undefined, control.kind);
   }
 
   #update(

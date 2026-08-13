@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { WorkflowSpecificationRegistryError } from "../../src/index.js";
-import { InMemoryWorkflowSpecificationRegistry } from "../support/in-memory-workflow-specification-registry.js";
+import {
+  ImmutableWorkflowSpecificationRegistry,
+  WorkflowSpecificationRegistryError,
+} from "../../src/index.js";
 import {
   createWorkflowSpecification,
   createWorkflowSpecificationValidator,
 } from "./fixtures.js";
 
-describe("InMemoryWorkflowSpecificationRegistry", () => {
+describe("ImmutableWorkflowSpecificationRegistry", () => {
   const validator = createWorkflowSpecificationValidator();
 
   it("returns deterministic immutable specifications", () => {
-    const registry = new InMemoryWorkflowSpecificationRegistry(
+    const registry = new ImmutableWorkflowSpecificationRegistry(
       [
         createWorkflowSpecification({
           workflowId: "support-triage",
@@ -40,7 +42,7 @@ describe("InMemoryWorkflowSpecificationRegistry", () => {
   });
 
   it("supports multiple versions with exact lookup", () => {
-    const registry = new InMemoryWorkflowSpecificationRegistry(
+    const registry = new ImmutableWorkflowSpecificationRegistry(
       [
         createWorkflowSpecification({ version: "2.0.0" }),
         createWorkflowSpecification({ version: "1.0.0" }),
@@ -64,7 +66,7 @@ describe("InMemoryWorkflowSpecificationRegistry", () => {
   it("rejects duplicate workflow ID and version pairs", () => {
     expect(
       () =>
-        new InMemoryWorkflowSpecificationRegistry(
+        new ImmutableWorkflowSpecificationRegistry(
           [
             createWorkflowSpecification(),
             createWorkflowSpecification(),
@@ -83,7 +85,7 @@ describe("InMemoryWorkflowSpecificationRegistry", () => {
   it("rejects invalid workflows before registration", () => {
     expect(
       () =>
-        new InMemoryWorkflowSpecificationRegistry(
+        new ImmutableWorkflowSpecificationRegistry(
           [createWorkflowSpecification({ version: "latest" })],
           validator,
         ),
@@ -97,7 +99,7 @@ describe("InMemoryWorkflowSpecificationRegistry", () => {
   });
 
   it("lists only active specifications", () => {
-    const registry = new InMemoryWorkflowSpecificationRegistry(
+    const registry = new ImmutableWorkflowSpecificationRegistry(
       [
         createWorkflowSpecification(),
         createWorkflowSpecification({

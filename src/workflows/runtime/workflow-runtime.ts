@@ -1,3 +1,5 @@
+import type { AgentReference } from "../../agents/agent-manifest.js";
+
 export const WORKFLOW_RUNTIME_CONTRACT_VERSION = "1" as const;
 export type WorkflowInstanceStatus = "ACTIVE" | "CANCELLED" | "COMPLETED" | "FAILED" | "PAUSED";
 export type WorkflowStepInstanceStatus = "AWAITING_RESULT" | "CANCELLED" | "FAILED" | "PENDING" | "READY" | "SUCCEEDED";
@@ -7,8 +9,10 @@ export type WorkflowStopReason = "CANCELLED_BY_OPERATOR" | "FAILED_STEP" | "NONE
 export interface WorkflowBlocker { readonly code: WorkflowBlockerCode; readonly stepId: string; }
 export interface WorkflowFailure { readonly code: "STEP_FAILED"; readonly stepId: string; }
 export interface WorkflowNonExecutionDeclaration { readonly nonExecuting: true; readonly externalExecutionAllowed: false; }
-export interface WorkflowStepDefinition { readonly stepId: string; readonly dependencies: readonly string[]; readonly approvalRequired: boolean; readonly guardianRequired: boolean; readonly nonExecuting: true; }
-export interface WorkflowDefinition { readonly contractVersion: typeof WORKFLOW_RUNTIME_CONTRACT_VERSION; readonly definitionId: string; readonly workflowId: string; readonly workflowVersion: string; readonly missionObjective?: string; readonly steps: readonly WorkflowStepDefinition[]; readonly nonExecuting: true; }
+export interface WorkflowAgentSpecificationAttribution extends AgentReference { readonly fingerprint: string; }
+export interface WorkflowDefinitionAdmission { readonly workflowSpecificationFingerprint: string; readonly agentSpecifications: readonly WorkflowAgentSpecificationAttribution[]; }
+export interface WorkflowStepDefinition { readonly stepId: string; readonly dependencies: readonly string[]; readonly approvalRequired: boolean; readonly guardianRequired: boolean; readonly agent?: AgentReference; readonly nonExecuting: true; }
+export interface WorkflowDefinition { readonly contractVersion: typeof WORKFLOW_RUNTIME_CONTRACT_VERSION; readonly definitionId: string; readonly workflowId: string; readonly workflowVersion: string; readonly missionObjective?: string; readonly admission?: WorkflowDefinitionAdmission; readonly steps: readonly WorkflowStepDefinition[]; readonly nonExecuting: true; }
 export interface WorkflowStepInstance { readonly stepId: string; readonly status: WorkflowStepInstanceStatus; readonly blockers: readonly WorkflowBlocker[]; }
 export interface WorkflowCommand { readonly commandId: string; readonly expectedVersion: number; readonly kind: WorkflowCommandKind; readonly stepId?: string; readonly reasonCode: string; readonly nonExecuting: true; }
 export interface WorkflowCommandReceipt { readonly commandId: string; readonly fingerprint: string; readonly resultingVersion: number; }

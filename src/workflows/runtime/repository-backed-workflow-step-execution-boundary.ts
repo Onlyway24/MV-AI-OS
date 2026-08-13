@@ -21,6 +21,7 @@ import {
   type EffectivePermission,
 } from "../../policy/effective-permissions.js";
 import type { Validator } from "../../validation/validation.js";
+import { createSpecificationFingerprint } from "../specification/specification-fingerprint.js";
 import {
   DeterministicWorkflowReadinessEngine,
   isWorkflowReadinessEvaluationWithinBounds,
@@ -147,6 +148,14 @@ export class RepositoryBackedWorkflowStepExecutionBoundary
 
       const declarations = resolveDeclarations(this.#dependencies, controlledRequest.agentAssignment);
       const blockers = [...declarations.blockers];
+      blockers.push(
+        ...evaluateAdmissionAttribution(
+          definition,
+          selected.definition,
+          controlledRequest.agentAssignment,
+          declarations.specification,
+        ),
+      );
       const approval = evaluateApprovalEvidence(
         controlledRequest,
         definition,
@@ -435,6 +444,34 @@ function resolveDeclarations(
     requiredPolicyPermissions,
     ...(specification === undefined ? {} : { specification }),
   };
+}
+
+function evaluateAdmissionAttribution(
+  definition: WorkflowDefinition,
+  step: WorkflowStepDefinition,
+  assignment: WorkflowStepAgentAssignment,
+  specification: AgentSpecification | undefined,
+): readonly WorkflowStepExecutionBlocker[] {
+  if (step.agent === undefined && definition.admission === undefined) {
+    return [];
+  }
+  if (
+    step.agent === undefined ||
+    definition.admission === undefined ||
+    assignment.agentId !== step.agent.agentId ||
+    assignment.specificationVersion !== step.agent.version ||
+    assignment.specificationId !== `${step.agent.agentId}@${step.agent.version}` ||
+    specification === undefined
+  ) {
+    return [{ code: "AGENT_SPECIFICATION_MISMATCH", stepId: step.stepId }];
+  }
+  const attribution = definition.admission.agentSpecifications.find(
+    ({ agentId, version }) =>
+      agentId === step.agent?.agentId && version === step.agent.version,
+  );
+  return attribution?.fingerprint === createSpecificationFingerprint(specification)
+    ? []
+    : [{ code: "AGENT_SPECIFICATION_MISMATCH", stepId: step.stepId }];
 }
 
 function selectStep(

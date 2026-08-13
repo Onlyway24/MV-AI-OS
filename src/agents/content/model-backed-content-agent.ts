@@ -55,11 +55,11 @@ export class ModelBackedContentAgent implements AgentExecutor {
 
   public async execute(invocation: AgentInvocation): Promise<unknown> {
     assertContentAgentInvocation(invocation);
-    const evidence = collectContentEvidence(invocation.context);
+    const localEvidence = collectContentEvidence(invocation.context);
     const requestedOutput = asRecord(invocation.input.requestedOutput);
     if (readString(requestedOutput?.contentType) === undefined) {
       return this.#result(invocation, {
-        evidence,
+        evidence: localEvidence,
         status: "needs_input",
       });
     }
@@ -71,7 +71,7 @@ export class ModelBackedContentAgent implements AgentExecutor {
     if (specification === undefined) {
       return this.#failure(
         invocation,
-        evidence,
+        localEvidence,
         "agent_specification_not_found",
         "The exact Content Agent specification is not registered",
         "not_found",
@@ -85,7 +85,7 @@ export class ModelBackedContentAgent implements AgentExecutor {
     if (compatibilityError !== undefined) {
       return this.#failure(
         invocation,
-        evidence,
+        localEvidence,
         "agent_specification_incompatible",
         compatibilityError,
         "validation",
@@ -98,7 +98,7 @@ export class ModelBackedContentAgent implements AgentExecutor {
     if (!invocation.permissions.includes(modelPermission)) {
       return this.#failure(
         invocation,
-        evidence,
+        localEvidence,
         "model_permission_denied",
         "The invocation does not grant the required model permission",
         "authorization",
@@ -106,8 +106,10 @@ export class ModelBackedContentAgent implements AgentExecutor {
       );
     }
 
+    const providerContext = contextForModelProvider(invocation.context);
+    const providerEvidence = collectContentEvidence(providerContext);
     const payload = {
-      context: invocation.context,
+      context: providerContext,
       input: invocation.input,
       objective: invocation.objective,
     };
@@ -117,7 +119,7 @@ export class ModelBackedContentAgent implements AgentExecutor {
     ) {
       return this.#failure(
         invocation,
-        evidence,
+        localEvidence,
         "agent_input_too_large",
         "The model input exceeds the Agent Specification limit",
         "validation",
@@ -129,12 +131,12 @@ export class ModelBackedContentAgent implements AgentExecutor {
       createModelRequest(invocation, specification, payload),
     );
     if (response.status === "failed") {
-      return this.#modelFailure(invocation, evidence, response);
+      return this.#modelFailure(invocation, providerEvidence, response);
     }
     if (response.output.format !== "json") {
       return this.#failure(
         invocation,
-        evidence,
+        providerEvidence,
         "model_output_format_invalid",
         "The model did not return structured JSON content",
         "validation",
@@ -146,10 +148,10 @@ export class ModelBackedContentAgent implements AgentExecutor {
 
     const candidate = {
       ...response.output.value,
-      memoryRefs: evidence
+      memoryRefs: providerEvidence
         .filter(({ source }) => source !== "knowledge")
         .map(({ referenceId }) => referenceId),
-      sourceRefs: evidence
+      sourceRefs: providerEvidence
         .filter(({ source }) => source === "knowledge")
         .map(({ referenceId }) => referenceId),
     };
@@ -158,7 +160,7 @@ export class ModelBackedContentAgent implements AgentExecutor {
     if (!outputValidation.ok) {
       return this.#failure(
         invocation,
-        evidence,
+        providerEvidence,
         "content_output_invalid",
         "The model output does not satisfy the ContentOutput contract",
         "validation",
@@ -172,7 +174,7 @@ export class ModelBackedContentAgent implements AgentExecutor {
     return this.#result(
       invocation,
       {
-        evidence,
+        evidence: providerEvidence,
         output: outputValidation.value,
         status: "succeeded",
       },
@@ -294,6 +296,36 @@ export class ModelBackedContentAgent implements AgentExecutor {
     }
     return value.toISOString();
   }
+}
+
+function contextForModelProvider(context: JsonObject): JsonObject {
+  const supplementalContext = context.supplementalContext;
+  if (!Array.isArray(supplementalContext)) {
+    return context;
+  }
+
+  const providerSafeContext = supplementalContext.filter(
+    isProviderSafeContextItem,
+  );
+  return providerSafeContext.length === supplementalContext.length
+    ? context
+    : {
+        ...context,
+        supplementalContext: Object.freeze(providerSafeContext),
+      };
+}
+
+function isProviderSafeContextItem(value: unknown): boolean {
+  const item = asRecord(value);
+  if (item?.source !== "memory" && item?.source !== "conversation") {
+    return true;
+  }
+
+  const metadata = asRecord(item.metadata);
+  return (
+    metadata?.sensitivity === "internal" ||
+    metadata?.sensitivity === "public"
+  );
 }
 
 function createModelRequest(

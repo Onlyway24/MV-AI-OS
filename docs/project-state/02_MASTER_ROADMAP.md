@@ -352,11 +352,15 @@ has validated domain state, durable atomic persistence, exact-version readiness 
 candidate selection, durable approval/Guardian checkpoints, one exact deterministic
 Content Director invocation, explicit outcome completion, bounded retry execution,
 pause/resume/cancellation, explicit timeout evaluation, operator reports, and a thin
-allowlisted CLI command boundary. It has no automatic scheduling or retry, workflow
-specification admission path, approval UI/transport, autonomous Guardian evaluation,
-callbacks, n8n, or external effects. The next milestone is Workflow Specification
-Admission Boundary, which will connect an exact validated Workflow Specification to
-the existing durable Core V1 Workflow path without adding execution autonomy.
+allowlisted CLI command boundary. Exact immutable Workflow Specifications and their
+  declared exact Agent Specification versions can now be admitted into deterministic
+  attributed durable state with atomic ownership/audit evidence, stable replay, and
+  restart recovery. The admitted candidate boundary enforces persisted Agent identity,
+  version, and fingerprint. It still has no automatic scheduling or retry, condition
+  evaluation, approval UI/transport, autonomous Guardian evaluation, callbacks, n8n,
+  or external effects. The next milestone is Workflow Specification Runtime Semantics
+  Design Review, which will define the smallest safe next semantics before runtime
+  support expands.
 
 ## Phase 7 — Governed direct tools
 

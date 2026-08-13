@@ -1,194 +1,135 @@
 # MV AI OS
 
-> A modular AI Operating System for coordinating intelligent agents, shared context, automation workflows, and OpenAI models through one extensible architecture.
+MV AI OS is a contract-first, operator-governed AI runtime for deterministic local
+missions, durable workflows, scoped memory and knowledge, and optional OpenAI model
+execution. The current release is deliberately local-first: SQLite is the durable
+source of truth, every mutation crosses a validated boundary, and workflow actions
+remain explicit rather than autonomously scheduled.
 
-## Overview
+## Current capabilities
 
-MV AI OS is designed as a flexible foundation for building and operating AI-powered workflows. Instead of relying on a single assistant for every task, the system combines a central reasoning layer with specialized AI agents, persistent shared memory, and event-driven automation.
+- Strict TypeScript/ESM contracts and runtime validators.
+- Repository-backed Core Brain request lifecycle with replay-safe command IDs.
+- Scoped memory and knowledge retrieval with durable SQLite adapters.
+- Provider-neutral model gateway with permissions, timeouts, token/call limits,
+  usage accounting, and budget enforcement.
+- Optional OpenAI Responses API adapter restricted to the official API origin;
+  credentials are resolved ephemerally and are never accepted in source config.
+- Immutable Agent and Workflow Specification registries.
+- Exact Workflow Specification admission into a durable, non-executing
+  `WorkflowDefinition` and initial `WorkflowInstance`.
+- Explicit approval and Guardian checkpoints, readiness evaluation, exact agent
+  candidate binding, deterministic local Content Director invocation, outcome
+  review, bounded retry, pause/resume/cancel, and timeout evaluation.
+- One-command-per-process local CLI with 23 allowlisted workflow operations,
+  structured responses, SQLite restart recovery, and bounded audit inspection.
+- Controlled SQLite backup and restore plus deterministic offline tests.
 
-The project is currently in its foundational design phase. Its architecture is intended to support incremental development, independent modules, and future expansion without tightly coupling agents, models, or external services.
+The project does **not** currently provide an HTTP service, dashboard, background
+scheduler, n8n adapter, direct tool execution, multi-user authentication, autonomous
+Guardian evaluation, or workflow-driven external effects.
 
-## Vision
+## Architecture
 
-The vision for MV AI OS is to create a dependable operating layer for practical AI systems: one place where users, agents, models, tools, memory, and automations can work together coherently.
-
-MV AI OS aims to make AI capabilities:
-
-- Modular enough to evolve independently
-- Coordinated enough to complete multi-step objectives
-- Context-aware through durable shared memory
-- Observable and controllable by humans
-- Extensible across models, tools, and business workflows
-
-## Goals
-
-- Provide a central orchestration layer for AI-driven tasks
-- Route work to the most appropriate specialized agent
-- Preserve useful context across agents and workflows
-- Integrate OpenAI models according to task complexity and cost
-- Use n8n to connect AI decisions with external applications and services
-- Keep modules replaceable, testable, and independently maintainable
-- Provide clear human oversight for sensitive or high-impact actions
-- Establish a foundation for a unified operational dashboard
-
-## System Architecture
-
-MV AI OS is organized around a modular flow:
-
-**User or external event → Core Brain → Specialized Agent → Shared Memory and tools → n8n workflow → Result**
-
-Each layer has a distinct responsibility. The Core Brain coordinates decisions, agents contribute domain-specific capabilities, Shared Memory maintains context, and n8n handles deterministic workflows and integrations. OpenAI models provide the reasoning and generation capabilities used throughout the system.
-
-## Core Brain
-
-The Core Brain is the central orchestration layer of MV AI OS. It interprets incoming requests, determines intent, assembles relevant context, selects the appropriate agent or workflow, and coordinates execution.
-
-Its planned responsibilities include:
-
-- Intent detection and task decomposition
-- Agent and model selection
-- Context retrieval and prompt assembly
-- Workflow planning and execution routing
-- Policy, permission, and approval enforcement
-- Result validation and response synthesis
-- Failure handling, retries, and escalation
-
-The Core Brain is not intended to contain every capability itself. It acts as the control plane that delegates work to specialized modules.
-
-## Specialized AI Agents
-
-Specialized AI Agents are focused modules designed for specific roles or knowledge domains. Each agent can define its own instructions, tools, memory requirements, permissions, and preferred model configuration.
-
-Planned agent categories may include:
-
-- Research and knowledge synthesis
-- Content and communications
-- Software engineering
-- Data analysis and reporting
-- Operations and administration
-- Workflow monitoring
-- Personal productivity
-
-Agents should remain independently configurable and communicate through consistent interfaces. This allows new agents to be introduced without redesigning the entire system.
-
-## Shared Memory
-
-Shared Memory provides the context layer that allows the system to retain and reuse information across sessions, agents, and workflows.
-
-The planned memory model includes:
-
-- **Working memory** for the active task and current execution state
-- **Conversation memory** for relevant interaction history
-- **Semantic memory** for searchable facts, documents, and learned context
-- **Operational memory** for workflow outcomes, errors, and audit events
-- **User memory** for approved preferences and persistent settings
-
-Memory access should be scoped by relevance, permissions, and retention policy. Sensitive information must not be exposed automatically to every agent.
-
-## n8n Automation Layer
-
-[n8n](https://n8n.io/) serves as the automation and integration layer. It connects AI decisions to repeatable workflows, external APIs, databases, communication platforms, and business systems.
-
-Expected responsibilities include:
-
-- Triggering workflows from events, schedules, and webhooks
-- Connecting third-party services and internal systems
-- Executing deterministic multi-step processes
-- Managing approvals and human-in-the-loop checkpoints
-- Handling retries, branching, notifications, and error paths
-- Returning structured workflow results to the Core Brain
-
-The separation between AI reasoning and workflow execution keeps the architecture easier to observe, debug, and maintain.
-
-## OpenAI Models
-
-OpenAI models provide the reasoning, language, multimodal, and tool-use capabilities behind the Core Brain and specialized agents.
-
-Model usage will be selected according to the requirements of each task:
-
-- Advanced reasoning for planning and complex decisions
-- Fast models for routing, classification, and routine operations
-- Multimodal models for image, audio, and document understanding
-- Embedding models for semantic search and memory retrieval
-
-Model configuration should remain centralized and replaceable. Routing policies will balance quality, latency, reliability, and cost while avoiding unnecessary dependence on a single model.
-
-## Future Dashboard
-
-A future dashboard will provide a unified interface for operating and observing MV AI OS.
-
-Planned capabilities include:
-
-- Submit tasks and review results
-- Monitor active agents and workflow status
-- Inspect execution history, logs, and errors
-- Manage agents, tools, models, and permissions
-- Search and curate shared memory
-- Review pending human approvals
-- Track usage, latency, reliability, and cost
-- Configure n8n integrations and automation triggers
-
-The dashboard is intended to be an operational control surface, not only a chat interface.
-
-## Folder Structure
-
-The repository currently contains the project documentation foundation:
+Dependencies point inward from adapters to application/domain contracts:
 
 ```text
-MV-AI-OS/
-├── README.md
-└── docs/
-    ├── AGENTS.md
-    ├── ARCHITECTURE.md
-    └── ROADMAP.md
+CLI / composition root
+        |
+        v
+validated application boundaries
+        |
+        v
+Core Brain / missions / workflow runtime / policy
+        |
+        v
+repository, model, memory, knowledge, and clock ports
+        ^
+        |
+SQLite / deterministic executors / optional OpenAI adapter
 ```
 
-As implementation begins, the repository is expected to expand into independently maintained areas for orchestration, agents, memory, integrations, workflows, configuration, tests, and the dashboard. The final structure will be documented as technical decisions are validated.
+The most important invariants are:
 
-## Development Roadmap
+- caller-supplied data is validated at every public boundary;
+- exact IDs and versions are resolved, never floated;
+- policy, ownership, approval, and Guardian checks fail closed;
+- durable mutations and their evidence are atomic and replay-safe;
+- provider prompts exclude sensitive memory by default;
+- no candidate, retry, or elapsed timeout implicitly starts work.
 
-### Phase 1 — Foundation
+See [Architecture](docs/ARCHITECTURE.md), the
+[MV AI OS Constitution](docs/MV_AI_OS_CONSTITUTION.md), and the
+[current verified state](docs/project-state/01_CURRENT_STATE.md).
 
-- Define architecture, terminology, and module boundaries
-- Establish configuration and environment conventions
-- Specify contracts between the Core Brain, agents, memory, and workflows
-- Define security, permission, logging, and audit requirements
+## Requirements
 
-### Phase 2 — Core Brain
+- Node.js `22.23.x`
+- npm `10.9.8`
 
-- Implement request intake and intent routing
-- Introduce task planning and agent selection
-- Add model routing and structured responses
-- Establish error handling and observability
+## Install and verify
 
-### Phase 3 — Agents and Memory
+```sh
+npm ci
+npm run check
+```
 
-- Create the initial specialized agents
-- Implement working and conversation memory
-- Add semantic retrieval and memory governance
-- Validate multi-agent handoffs and context isolation
+`npm run check` runs lint, strict typechecking, the deterministic test suite, and the
+production build. Tests discover only the repository's `tests/` tree, so local Codex
+worktrees cannot be mistaken for product tests.
 
-### Phase 4 — n8n Integration
+## Run the deterministic local CLI
 
-- Connect event, webhook, and scheduled triggers
-- Build reusable automation workflows
-- Add approval gates, retries, and failure notifications
-- Standardize structured exchanges between n8n and the Core Brain
+```sh
+mkdir -p data
+npm run build
+npm run cli -- --config examples/core-v1/local-config.json \
+  < examples/core-v1/admit-workflow-specification.json
+```
 
-### Phase 5 — Dashboard
+Each invocation consumes exactly one bounded JSON request from standard input, emits
+exactly one JSON response, and closes all runtime resources. The deterministic Core
+V1 path requires no credentials or network access.
 
-- Build task, agent, workflow, and memory views
-- Add configuration and permission management
-- Surface logs, metrics, costs, and approval queues
-- Introduce real-time execution monitoring
+For exact command shapes, operating sequence, recovery, and backup guidance, read the
+[Core V1 Operator and Recovery Guide](docs/CORE_V1_OPERATOR_GUIDE.md).
 
-### Phase 6 — Production Readiness
+## Workflow Specification admission
 
-- Expand automated testing and evaluation
-- Harden authentication, authorization, and secrets management
-- Add deployment, backup, and recovery processes
-- Optimize performance, reliability, and model cost
+New attributed workflows should use `ADMIT_WORKFLOW_SPECIFICATION`. The request binds
+the outer command ID to `admissionId`, the configured actor/workspace, one exact
+Workflow Specification version, and a new instance ID. Admission resolves every
+declared Agent Specification, fingerprints the immutable declarations,
+deterministically derives runtime state, and atomically persists definition, instance,
+ownership, and redaction-safe audit evidence.
 
-## Project Status
+The legacy `CREATE_WORKFLOW` operation remains compatible for existing un-attributed
+Core V1 definitions, but it cannot forge specification-admission metadata.
 
-MV AI OS is under active design and early development. Interfaces, implementation details, and repository structure may change as the architecture is validated.
+## Repository layout
+
+```text
+src/                    application and domain source
+  agents/               agent contracts and executors
+  core/                 request lifecycle and orchestration kernel
+  models/               provider-neutral gateway and provider adapters
+  persistence/          repository contracts and SQLite adapters
+  runtime/              local composition and command boundary
+  workflows/            specification and durable runtime boundaries
+tests/                  deterministic unit, integration, restart, and CLI tests
+examples/core-v1/       safe local CLI configuration and command fixtures
+docs/                   architecture, operator, release, and project-state records
+```
+
+## Development rules
+
+Read `AI_ENGINEERING_RULES.md` and `docs/AGENTS.md` before changing architecture.
+Keep dependencies pinned, avoid provider/storage types in domain code, preserve user
+data and unrelated worktree changes, and finish changes with:
+
+```sh
+npm run check
+git diff --check
+```
+
+No live-provider call is part of the default test or build path.

@@ -2,7 +2,9 @@ import {
   access,
   mkdir,
   mkdtemp,
+  readFile,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -35,6 +37,7 @@ import {
 } from "../../src/index.js";
 import { createKnowledgeRecord } from "../knowledge/fixtures.js";
 import { createSemanticMemory } from "../memory/fixtures.js";
+import { installSqliteTemporaryFile } from "../../src/persistence/sqlite/sqlite-backup.js";
 import {
   FixedClock,
   createRequest,
@@ -287,6 +290,66 @@ describe("Controlled SQLite backup and restore", () => {
       ).rejects.toMatchObject({
         code: "sqlite_backup_path_invalid",
       });
+    });
+  });
+
+  it("rejects symlinked backup and restore inputs", async () => {
+    await withTemporaryDirectory(async (directory) => {
+      const sourcePath = join(directory, "runtime.sqlite");
+      const sourceLink = join(directory, "runtime-link.sqlite");
+      const backupPath = join(directory, "backup.sqlite");
+      const backupLink = join(directory, "backup-link.sqlite");
+      const restoredPath = join(directory, "restored.sqlite");
+      await seedRuntime(sourcePath, createRequest());
+      await symlink(sourcePath, sourceLink);
+
+      await expect(
+        createSqliteBackup(createBackupConfig(sourceLink, backupPath)),
+      ).rejects.toMatchObject({
+        code: "sqlite_backup_path_invalid",
+      });
+      await expect(access(backupPath)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+
+      await createSqliteBackup(createBackupConfig(sourcePath, backupPath));
+      await symlink(backupPath, backupLink);
+      await expect(
+        restoreSqliteBackup(
+          createRestoreConfig(backupLink, restoredPath),
+        ),
+      ).rejects.toMatchObject({
+        code: "sqlite_restore_path_invalid",
+      });
+      await expect(access(restoredPath)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+    });
+  });
+
+  it("does not replace a destination that appears after preflight", async () => {
+    await withTemporaryDirectory(async (directory) => {
+      const temporaryPath = join(directory, ".backup.tmp");
+      const destinationPath = join(directory, "backup.sqlite");
+      await writeFile(temporaryPath, "verified backup");
+      await writeFile(destinationPath, "racing destination");
+
+      await expect(
+        installSqliteTemporaryFile(
+          temporaryPath,
+          destinationPath,
+          false,
+          "sqlite_backup.destination",
+        ),
+      ).rejects.toMatchObject({
+        code: "sqlite_backup_path_invalid",
+      });
+      await expect(readFile(destinationPath, "utf8")).resolves.toBe(
+        "racing destination",
+      );
+      await expect(readFile(temporaryPath, "utf8")).resolves.toBe(
+        "verified backup",
+      );
     });
   });
 });

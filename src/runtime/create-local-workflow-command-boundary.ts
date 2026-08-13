@@ -17,15 +17,23 @@ import { AgentInvocationValidator } from "../validation/agent-invocation-validat
 import { AgentResultValidator } from "../validation/agent-result-validator.js";
 import { createWorkflowAgentInvoker } from "../workflows/runtime/repository-backed-workflow-agent-invoker.js";
 import { createWorkflowLifecycleService } from "../workflows/runtime/repository-backed-workflow-lifecycle-service.js";
+import { createWorkflowSpecificationAdmissionService } from "../workflows/runtime/repository-backed-workflow-specification-admission-service.js";
 import { createWorkflowStepExecutionBoundary } from "../workflows/runtime/repository-backed-workflow-step-execution-boundary.js";
 import { createWorkflowStepOutcomeService } from "../workflows/runtime/repository-backed-workflow-step-outcome-service.js";
 import { createWorkflowControlCheckpointService } from "../workflows/runtime/workflow-control-checkpoint-service.js";
 import { createWorkflowOperatorReportService } from "../workflows/runtime/workflow-operator-report.js";
 import { createWorkflowReadinessService } from "../workflows/runtime/workflow-readiness-service.js";
+import { CORE_V1_WORKFLOW_SPECIFICATIONS } from "../workflows/specification/core-v1-workflow-specifications.js";
+import { ImmutableWorkflowSpecificationRegistry } from "../workflows/specification/immutable-workflow-specification-registry.js";
+import { WorkflowSpecificationValidator } from "../workflows/specification/workflow-specification-validator.js";
 import { LocalWorkflowCommandBoundary } from "./local-workflow-command.js";
 
 export function createLocalWorkflowCommandBoundary(input: { readonly actorId: string; readonly workspaceId: string; readonly clock: Clock; readonly repositories: RepositoryTransactionRunner }): LocalWorkflowCommandBoundary {
   const specifications = new ImmutableAgentSpecificationRegistry([CONTENT_DIRECTOR_SPECIFICATION], new AgentSpecificationValidator());
+  const workflowSpecifications = new ImmutableWorkflowSpecificationRegistry(
+    CORE_V1_WORKFLOW_SPECIFICATIONS,
+    new WorkflowSpecificationValidator(specifications),
+  );
   const executor = new DeterministicContentDirectorExecutor();
   const catalog = new ImmutableAgentRuntimeCatalog([{ descriptor: DETERMINISTIC_CONTENT_DIRECTOR_DESCRIPTOR, executor }], [DETERMINISTIC_CONTENT_DIRECTOR_BINDING], specifications);
   const resolver = new DefaultDenyAgentRuntimeResolver(catalog, specifications);
@@ -33,6 +41,14 @@ export function createLocalWorkflowCommandBoundary(input: { readonly actorId: st
   const resultValidator = new AgentResultValidator();
   const agentRuntime = new InProcessAgentRuntime([executor], new AgentInvocationValidator(), resultValidator, input.clock);
   return new LocalWorkflowCommandBoundary({
+    admission: createWorkflowSpecificationAdmissionService({
+      actorId: input.actorId,
+      agentSpecifications: specifications,
+      clock: input.clock,
+      repositories: input.repositories,
+      workflowSpecifications,
+      workspaceId: input.workspaceId,
+    }),
     actorId: input.actorId,
     candidates: boundary,
     controls: createWorkflowControlCheckpointService({ eventIds: { nextWorkflowControlCheckpointEventId: () => randomId() }, guardianAuthorities: { operator_safety: "operator_safety-guardian", quality: "quality-guardian" }, operatorActorId: input.actorId, repositories: input.repositories }),

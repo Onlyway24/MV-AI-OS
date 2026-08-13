@@ -1105,6 +1105,17 @@ export {
   type WorkflowSpecification,
   type WorkflowSpecificationStatus,
 } from "./workflows/specification/workflow-specification.js";
+export {
+  CORE_V1_CONTENT_DIRECTION_WORKFLOW_ID,
+  CORE_V1_CONTENT_DIRECTION_WORKFLOW_SPECIFICATION,
+  CORE_V1_CONTENT_DIRECTION_WORKFLOW_VERSION,
+  CORE_V1_WORKFLOW_SPECIFICATIONS,
+} from "./workflows/specification/core-v1-workflow-specifications.js";
+export { ImmutableWorkflowSpecificationRegistry } from "./workflows/specification/immutable-workflow-specification-registry.js";
+export {
+  createSpecificationFingerprint,
+  isSpecificationFingerprint,
+} from "./workflows/specification/specification-fingerprint.js";
 export { WorkflowSpecificationRegistryError } from "./workflows/specification/workflow-specification-error.js";
 export type { WorkflowSpecificationRegistry } from "./workflows/specification/workflow-specification-registry.js";
 export { WorkflowSpecificationValidator } from "./workflows/specification/workflow-specification-validator.js";
@@ -1120,6 +1131,8 @@ export {
   type WorkflowCommandKind,
   type WorkflowCommandReceipt,
   type WorkflowDefinition,
+  type WorkflowDefinitionAdmission,
+  type WorkflowAgentSpecificationAttribution,
   type WorkflowFailure,
   type WorkflowInstance,
   type WorkflowInstanceStatus,
@@ -1129,6 +1142,24 @@ export {
   type WorkflowStopReason,
   type WorkflowTransitionResult,
 } from "./workflows/runtime/workflow-runtime.js";
+export {
+  WORKFLOW_SPECIFICATION_ADMISSION_CONTRACT_VERSION,
+  freezeWorkflowSpecificationAdmissionValue,
+  type WorkflowSpecificationAdmissionOutcome,
+  type WorkflowSpecificationAdmissionRequest,
+  type WorkflowSpecificationAdmissionResult,
+  type WorkflowSpecificationAdmissionService,
+} from "./workflows/runtime/workflow-specification-admission.js";
+export {
+  WorkflowSpecificationAdmissionRequestValidator,
+  WorkflowSpecificationAdmissionResultValidator,
+} from "./workflows/runtime/workflow-specification-admission-validator.js";
+export {
+  RepositoryBackedWorkflowSpecificationAdmissionService,
+  createWorkflowSpecificationAdmissionAuditEventId,
+  createWorkflowSpecificationAdmissionService,
+  type RepositoryBackedWorkflowSpecificationAdmissionDependencies,
+} from "./workflows/runtime/repository-backed-workflow-specification-admission-service.js";
 export {
   createWorkflowCommandFingerprint,
   isWorkflowCommandFingerprint,

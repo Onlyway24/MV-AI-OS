@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
+import { constants as fileConstants } from "node:fs";
 import {
-  constants as fileConstants,
   copyFile,
+  type FileHandle,
+  link,
   lstat,
+  open,
   rename,
   rm,
-  stat,
+  unlink,
 } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { backup, DatabaseSync } from "node:sqlite";
@@ -36,7 +39,6 @@ export async function createSqliteBackup(
   const sourcePath = resolve(config.sourcePath);
   const destinationPath = resolve(config.destinationPath);
   ensureDifferentPaths(sourcePath, destinationPath, "sqlite_backup");
-  await assertReadableFile(sourcePath, "sqlite_backup.source");
   await assertDestinationAvailable(
     destinationPath,
     config.overwriteDestination,
@@ -44,9 +46,14 @@ export async function createSqliteBackup(
   );
 
   const temporaryPath = createTemporarySiblingPath(destinationPath, "backup");
+  let source: Awaited<ReturnType<typeof openVerifiedInputFile>> | undefined;
   let database: DatabaseSync | undefined;
   try {
-    database = openReadOnlyDatabase(sourcePath, config.timeoutMs);
+    source = await openVerifiedInputFile(
+      sourcePath,
+      "sqlite_backup.source",
+    );
+    database = openReadOnlyDatabase(source.descriptorPath, config.timeoutMs);
     verifyCurrentSqliteSchema(database);
     const pageCount = await backup(database, temporaryPath);
     database.close();
@@ -62,7 +69,12 @@ export async function createSqliteBackup(
       temporaryDatabase.close();
     }
 
-    await installTemporaryFile(temporaryPath, destinationPath);
+    await installSqliteTemporaryFile(
+      temporaryPath,
+      destinationPath,
+      config.overwriteDestination,
+      "sqlite_backup.destination",
+    );
     return Object.freeze({
       backupPath: destinationPath,
       contractVersion: SQLITE_BACKUP_CONTRACT_VERSION,
@@ -79,6 +91,7 @@ export async function createSqliteBackup(
     );
   } finally {
     database?.close();
+    await source?.close();
     await removeTemporaryFile(temporaryPath);
   }
 }
@@ -90,7 +103,6 @@ export async function restoreSqliteBackup(
   const backupPath = resolve(config.backupPath);
   const destinationPath = resolve(config.destinationPath);
   ensureDifferentPaths(backupPath, destinationPath, "sqlite_restore");
-  await assertReadableFile(backupPath, "sqlite_restore.backup");
   await assertDestinationAvailable(
     destinationPath,
     config.overwriteDestination,
@@ -98,8 +110,16 @@ export async function restoreSqliteBackup(
   );
 
   const temporaryPath = createTemporarySiblingPath(destinationPath, "restore");
+  let source: Awaited<ReturnType<typeof openVerifiedInputFile>> | undefined;
   try {
-    const backupDatabase = openReadOnlyDatabase(backupPath, config.timeoutMs);
+    source = await openVerifiedInputFile(
+      backupPath,
+      "sqlite_restore.backup",
+    );
+    const backupDatabase = openReadOnlyDatabase(
+      source.descriptorPath,
+      config.timeoutMs,
+    );
     try {
       verifyCurrentSqliteSchema(backupDatabase);
     } finally {
@@ -107,7 +127,7 @@ export async function restoreSqliteBackup(
     }
 
     await copyFile(
-      backupPath,
+      source.descriptorPath,
       temporaryPath,
       fileConstants.COPYFILE_EXCL,
     );
@@ -121,7 +141,12 @@ export async function restoreSqliteBackup(
       temporaryDatabase.close();
     }
 
-    await installTemporaryFile(temporaryPath, destinationPath);
+    await installSqliteTemporaryFile(
+      temporaryPath,
+      destinationPath,
+      config.overwriteDestination,
+      "sqlite_restore.destination",
+    );
     return Object.freeze({
       backupPath,
       contractVersion: SQLITE_BACKUP_CONTRACT_VERSION,
@@ -136,6 +161,7 @@ export async function restoreSqliteBackup(
       "sqlite_restore",
     );
   } finally {
+    await source?.close();
     await removeTemporaryFile(temporaryPath);
   }
 }
@@ -170,12 +196,22 @@ function openReadOnlyDatabase(path: string, timeoutMs: number): DatabaseSync {
   });
 }
 
-async function assertReadableFile(
+async function openVerifiedInputFile(
   path: string,
   operation: string,
-): Promise<void> {
+): Promise<{
+  close(): Promise<void>;
+  readonly descriptorPath: string;
+}> {
+  let handle: FileHandle | undefined;
   try {
-    const file = await stat(path);
+    handle = await open(
+      path,
+      fileConstants.O_RDONLY |
+        fileConstants.O_NOFOLLOW |
+        fileConstants.O_NONBLOCK,
+    );
+    const file = await handle.stat();
     if (!file.isFile()) {
       throw new SqliteBackupRestoreError(
         operation.startsWith("sqlite_restore")
@@ -185,7 +221,14 @@ async function assertReadableFile(
         operation,
       );
     }
+    const descriptorPath = `/dev/fd/${String(handle.fd)}`;
+    const verifiedHandle = handle;
+    return {
+      close: () => verifiedHandle.close(),
+      descriptorPath,
+    };
   } catch (error) {
+    await handle?.close();
     if (error instanceof SqliteBackupRestoreError) {
       throw error;
     }
@@ -238,7 +281,7 @@ async function assertParentDirectory(
   operation: string,
 ): Promise<void> {
   try {
-    const parent = await stat(parentPath);
+    const parent = await lstat(parentPath);
     if (!parent.isDirectory()) {
       throw new SqliteBackupRestoreError(
         operation.startsWith("sqlite_restore")
@@ -288,11 +331,31 @@ function createTemporarySiblingPath(
   );
 }
 
-async function installTemporaryFile(
+export async function installSqliteTemporaryFile(
   temporaryPath: string,
   destinationPath: string,
+  overwriteDestination: boolean,
+  operation: string,
 ): Promise<void> {
-  await rename(temporaryPath, destinationPath);
+  if (overwriteDestination) {
+    await rename(temporaryPath, destinationPath);
+    return;
+  }
+  try {
+    await link(temporaryPath, destinationPath);
+    await unlink(temporaryPath);
+  } catch (error) {
+    if (isDestinationConflictError(error)) {
+      throw new SqliteBackupRestoreError(
+        operation.startsWith("sqlite_restore")
+          ? "sqlite_restore_path_invalid"
+          : "sqlite_backup_path_invalid",
+        "SQLite backup destination already exists",
+        operation,
+      );
+    }
+    throw error;
+  }
 }
 
 async function removeTemporaryFile(path: string): Promise<void> {
@@ -323,5 +386,17 @@ function isMissingFileError(error: unknown): boolean {
     error !== null &&
     "code" in error &&
     error.code === "ENOENT"
+  );
+}
+
+function isDestinationConflictError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error.code === "EEXIST" ||
+      error.code === "EISDIR" ||
+      error.code === "ENOTDIR" ||
+      error.code === "ELOOP")
   );
 }

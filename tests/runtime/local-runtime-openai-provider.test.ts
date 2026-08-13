@@ -9,6 +9,7 @@ import {
   LocalApplicationConfigValidator,
   LocalConfigurationLoader,
   LocalSecretResolver,
+  LocalRuntimeConfigValidator,
   type EffectivePermission,
   type EnvironmentSecretReference,
   type LocalApplicationConfig,
@@ -227,6 +228,35 @@ describe("Controlled local OpenAI provider wiring", () => {
         ],
         ok: false,
       });
+  });
+
+  it.each([
+    "https://attacker.example/v1",
+    "https://api.openai.com.attacker.example/v1",
+    "https://localhost/v1",
+  ])("rejects non-official runtime provider origin %s", (baseUrl) => {
+    const config = createRuntimeConfig(
+      "/tmp/runtime-provider-origin-not-opened.sqlite",
+      "model-backed-openai",
+    );
+
+    expect(
+      new LocalRuntimeConfigValidator().validate({
+        ...config,
+        modelProvider: {
+          ...config.modelProvider,
+          baseUrl,
+        },
+      }),
+    ).toMatchObject({
+      issues: [
+        {
+          code: "invalid_value",
+          path: "modelProvider.baseUrl",
+        },
+      ],
+      ok: false,
+    });
   });
 
   it("redacts secret identifiers and provider diagnostics from public errors", async () => {

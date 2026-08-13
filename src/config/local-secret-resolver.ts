@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { constants as fileConstants } from "node:fs";
+import { open } from "node:fs/promises";
 
 import type { JsonObject } from "../contracts/json.js";
 import { CoreError } from "../errors/core-error.js";
@@ -32,6 +33,8 @@ type SecretResolutionErrorCode =
   | "secret_file_unavailable"
   | "secret_value_invalid";
 
+class SecretFileTooLargeError extends Error {}
+
 export class SecretResolutionError extends CoreError {
   public constructor(
     code: SecretResolutionErrorCode,
@@ -58,7 +61,8 @@ export class LocalSecretResolver implements SecretResolver {
     this.#environment = dependencies.environment ?? {};
     this.#readFile =
       dependencies.readFile ??
-      (async (path: string): Promise<Uint8Array> => readFile(path));
+      (async (path: string): Promise<Uint8Array> =>
+        readBoundedRegularFile(path));
   }
 
   public async resolve(
@@ -125,6 +129,9 @@ export class LocalSecretResolver implements SecretResolver {
     try {
       bytes = await this.#readFile(path);
     } catch (error) {
+      if (error instanceof SecretFileTooLargeError) {
+        throw secretValueTooLargeError();
+      }
       throw new SecretResolutionError(
         isMissingFileError(error)
           ? "secret_file_missing"
@@ -135,20 +142,7 @@ export class LocalSecretResolver implements SecretResolver {
     }
 
     if (bytes.byteLength > MAX_SECRET_VALUE_BYTES) {
-      throw new SecretResolutionError(
-        "secret_value_invalid",
-        "Resolved secret value is invalid",
-        {
-          issues: [
-            {
-              code: "too_large",
-              message: "secret value exceeds the size limit",
-              path: "<redacted>",
-            },
-          ],
-          source: "local-file",
-        },
-      );
+      throw secretValueTooLargeError();
     }
 
     try {
@@ -170,6 +164,59 @@ export class LocalSecretResolver implements SecretResolver {
       );
     }
   }
+}
+
+async function readBoundedRegularFile(path: string): Promise<Uint8Array> {
+  const handle = await open(
+    path,
+    fileConstants.O_RDONLY |
+      fileConstants.O_NOFOLLOW |
+      fileConstants.O_NONBLOCK,
+  );
+  try {
+    const metadata = await handle.stat();
+    if (!metadata.isFile()) {
+      throw new Error("Secret path is not a regular file");
+    }
+    if (metadata.size > MAX_SECRET_VALUE_BYTES) {
+      throw new SecretFileTooLargeError();
+    }
+
+    const buffer = Buffer.alloc(MAX_SECRET_VALUE_BYTES + 1);
+    let totalBytes = 0;
+    while (totalBytes < buffer.byteLength) {
+      const { bytesRead } = await handle.read(
+        buffer,
+        totalBytes,
+        buffer.byteLength - totalBytes,
+        totalBytes,
+      );
+      if (bytesRead === 0) {
+        break;
+      }
+      totalBytes += bytesRead;
+    }
+    return buffer.subarray(0, totalBytes);
+  } finally {
+    await handle.close();
+  }
+}
+
+function secretValueTooLargeError(): SecretResolutionError {
+  return new SecretResolutionError(
+    "secret_value_invalid",
+    "Resolved secret value is invalid",
+    {
+      issues: [
+        {
+          code: "too_large",
+          message: "secret value exceeds the size limit",
+          path: "<redacted>",
+        },
+      ],
+      source: "local-file",
+    },
+  );
 }
 
 function validationIssuesToJson(

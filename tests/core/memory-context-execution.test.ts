@@ -39,6 +39,10 @@ describe("Core Brain memory context", () => {
         createSemanticMemory("semantic-brand", {
           content: { brand: "MV AI OS" },
         }),
+        createSemanticMemory("semantic-sensitive", {
+          content: { confidential: "available-to-local-agent" },
+          sensitivity: "sensitive",
+        }),
         createUserMemory("user-tone", {
           content: { preferredTone: "concise" },
         }),
@@ -97,6 +101,7 @@ describe("Core Brain memory context", () => {
     expect(response.status).toBe("completed");
     expect(response.result?.memoryRefs).toEqual([
       "semantic-brand",
+      "semantic-sensitive",
       "user-tone",
     ]);
     expect(response.result?.memoryRefs).not.toContain("other-user");

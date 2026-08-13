@@ -137,6 +137,85 @@ describe("Controlled local CLI contracts", () => {
 });
 
 describe("Controlled local CLI process", () => {
+  it("admits an exact Workflow Specification and replays it across CLI restarts", async () => {
+    await withTemporaryDirectory(async (directory) => {
+      const configPath = await writeConfig(directory, {
+        databaseName: "workflow-admission.sqlite",
+      });
+      const request = {
+        actorId: "actor-local",
+        admissionId: "cli-admission-001",
+        contractVersion: "1",
+        instanceId: "cli-admitted-instance",
+        nonExecuting: true,
+        workflowId: "core-v1-content-direction",
+        workflowVersion: "1.0.0",
+        workspaceId: "workspace-local",
+      } as const;
+      const command = {
+        actorId: "actor-local",
+        commandId: request.admissionId,
+        contractVersion: "1",
+        input: { request },
+        operation: "ADMIT_WORKFLOW_SPECIFICATION",
+        workspaceId: "workspace-local",
+      } as const;
+
+      const first = await runCli(configPath, JSON.stringify(command));
+      expect(first).toMatchObject({ exitCode: 0, stderr: "" });
+      expect(first.stdout.trim().split("\n")).toHaveLength(1);
+      expect(JSON.parse(first.stdout)).toMatchObject({
+        commandId: request.admissionId,
+        nextAction:
+          "Request the Operator Workflow Report for Workflow cli-admitted-instance.",
+        operation: "ADMIT_WORKFLOW_SPECIFICATION",
+        replayed: false,
+        result: {
+          definitionId: "core-v1-content-direction@1.0.0",
+          externalEffectsAllowed: false,
+          instanceId: request.instanceId,
+          nonExecuting: true,
+          outcome: "ADMITTED",
+        },
+        status: "ok",
+        unauthorizedExternalEffectOccurred: false,
+      });
+
+      const replayed = await runCli(configPath, JSON.stringify(command));
+      expect(replayed).toMatchObject({ exitCode: 0, stderr: "" });
+      expect(replayed.stdout.trim().split("\n")).toHaveLength(1);
+      expect(JSON.parse(replayed.stdout)).toMatchObject({
+        replayed: true,
+        result: { instanceId: request.instanceId, outcome: "ADMITTED" },
+      });
+
+      const inspected = await runCli(
+        configPath,
+        JSON.stringify(
+          workflowCommand("INSPECT_WORKFLOW", {
+            instanceId: request.instanceId,
+          }),
+        ),
+      );
+      expect(inspected.exitCode).toBe(0);
+      expect(JSON.parse(inspected.stdout)).toMatchObject({
+        result: {
+          definitionId: "core-v1-content-direction@1.0.0",
+          instanceId: request.instanceId,
+          status: "ACTIVE",
+          version: 0,
+        },
+      });
+
+      const mismatched = await runCli(
+        configPath,
+        JSON.stringify({ ...command, commandId: "cli-admission-mismatch" }),
+      );
+      expect(mismatched.exitCode).not.toBe(0);
+      expect(JSON.parse(mismatched.stdout)).toMatchObject({ status: "error" });
+    });
+  });
+
   it("executes allowlisted Workflow commands through the existing CLI and survives restart", async () => {
     await withTemporaryDirectory(async (directory) => {
       const configPath = await writeConfig(directory, { databaseName: "workflow-command.sqlite" });

@@ -44,6 +44,40 @@ describe("OpenAIModelProvider", () => {
     });
   });
 
+  it("canonicalizes the exact official OpenAI API base URL", () => {
+    expect(
+      new OpenAIModelProviderConfigValidator().validate({
+        ...createConfig(),
+        baseUrl: "HTTPS://API.OPENAI.COM:443/v1/",
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        baseUrl: "https://api.openai.com/v1",
+      },
+    });
+  });
+
+  it.each([
+    "https://attacker.example/v1",
+    "https://api.openai.com.attacker.example/v1",
+    "https://127.0.0.1/v1",
+    "http://api.openai.com/v1",
+    "https://api.openai.com/v2",
+    "https://api.openai.com/v1?destination=attacker",
+    "https://api.openai.com/v1#attacker",
+  ])("rejects non-official OpenAI base URL %s", (baseUrl) => {
+    expect(
+      new OpenAIModelProviderConfigValidator().validate({
+        ...createConfig(),
+        baseUrl,
+      }),
+    ).toMatchObject({
+      issues: [{ code: "invalid_value", path: "baseUrl" }],
+      ok: false,
+    });
+  });
+
   it("translates provider-neutral text requests into OpenAI Responses requests", async () => {
     const clock = new FixedClock();
     const transport = new FakeOpenAITransport({

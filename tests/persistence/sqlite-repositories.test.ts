@@ -19,6 +19,7 @@ import {
   RegistryRouter,
   RequestEnvelopeValidator,
   RequestExecutionContextBuilder,
+  type RepositoryTransaction,
   SqliteRepositoryTransactionRunner,
   STORED_REQUEST_SCHEMA_VERSION,
   TaskResponseValidator,
@@ -37,6 +38,12 @@ import {
   createRequest,
 } from "../support/fixtures.js";
 import { runRepositoryConformance } from "./repository-conformance.js";
+import {
+  MAX_SQLITE_RECORD_JSON_BYTES,
+  MAX_SQLITE_RECORD_JSON_DEPTH,
+  parseSqliteRecordJson,
+  stringifySqliteRecordJson,
+} from "../../src/persistence/sqlite/sqlite-record-codec.js";
 
 runRepositoryConformance(
   "SQLite",
@@ -222,7 +229,274 @@ describe("SQLite repository transaction runner", () => {
       await reopened.close();
     });
   });
+
+  it("reads workflow evidence whose indexed columns match its JSON", async () => {
+    await withSeededWorkflowEvidence(async (databasePath) => {
+      const runner = createRunner(databasePath);
+      const records = await runner.transaction(async ({ workflows }) => ({
+        invocation: await workflows.agentInvocations.getById("invocation-1"),
+        invocationEvents:
+          await workflows.agentInvocationEvents.listByInvocationId(
+            "invocation-1",
+          ),
+        lifecycleEvents:
+          await workflows.lifecycleEvents.listByRecordId("cancel-1"),
+        lifecycleRecords: await workflows.lifecycleRecords.listByStep(
+          "instance-1",
+          "workflow",
+        ),
+        outcome: await workflows.stepOutcomes.getByInvocationId(
+          "invocation-1",
+        ),
+      }));
+
+      expect(records.invocation).toEqual(reservedInvocation());
+      expect(records.invocationEvents).toEqual([invocationEvent()]);
+      expect(records.lifecycleEvents).toEqual([lifecycleEvent()]);
+      expect(records.lifecycleRecords).toEqual([cancellationRecord()]);
+      expect(records.outcome).toEqual(blockedOutcome());
+      await runner.close();
+    });
+  });
+
+  it.each([
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_agent_invocations SET status = ? WHERE invocation_id = ?",
+          )
+          .run("FAILED", "invocation-1");
+      },
+      name: "invocation indexed status",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.agentInvocations.getById("invocation-1"),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_agent_invocations SET record_json = ? WHERE invocation_id = ?",
+          )
+          .run(
+            JSON.stringify({
+              ...reservedInvocation(),
+              instanceId: "instance-other",
+            }),
+            "invocation-1",
+          );
+      },
+      name: "invocation list query identity",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.agentInvocations.listByInstanceId("instance-1", 10),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_agent_invocation_events SET record_json = ? WHERE event_id = ?",
+          )
+          .run(
+            JSON.stringify({
+              ...invocationEvent(),
+              invocationId: "invocation-other",
+            }),
+            "invocation-event-1",
+          );
+      },
+      name: "invocation event query identity",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.agentInvocationEvents.listByInvocationId("invocation-1"),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_step_outcomes SET record_json = ? WHERE outcome_id = ?",
+          )
+          .run(
+            JSON.stringify({
+              ...blockedOutcome(),
+              outcomeId: "outcome-other",
+            }),
+            "outcome-1",
+          );
+      },
+      name: "outcome primary query identity",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.stepOutcomes.getById("outcome-1"),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_step_outcomes SET record_json = ? WHERE outcome_id = ?",
+          )
+          .run(
+            JSON.stringify({
+              ...blockedOutcome(),
+              invocationId: "invocation-other",
+            }),
+            "outcome-1",
+          );
+      },
+      name: "outcome invocation query identity",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.stepOutcomes.getByInvocationId("invocation-1"),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_step_outcomes SET decision = ? WHERE outcome_id = ?",
+          )
+          .run("FAILED", "outcome-1");
+      },
+      name: "outcome indexed decision",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.stepOutcomes.getById("outcome-1"),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_lifecycle_records SET record_json = ? WHERE record_id = ?",
+          )
+          .run(
+            JSON.stringify({
+              ...cancellationRecord(),
+              recordId: "cancel-other",
+            }),
+            "cancel-1",
+          );
+      },
+      name: "lifecycle primary query identity",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.lifecycleRecords.getById("cancel-1"),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_lifecycle_records SET record_json = ? WHERE record_id = ?",
+          )
+          .run(
+            JSON.stringify({
+              ...cancellationRecord(),
+              instanceId: "instance-other",
+            }),
+            "cancel-1",
+          );
+      },
+      name: "lifecycle list query identity",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.lifecycleRecords.listByStep("instance-1", "workflow"),
+    },
+    {
+      corrupt(database: DatabaseSync): void {
+        database
+          .prepare(
+            "UPDATE workflow_lifecycle_events SET record_json = ? WHERE event_id = ?",
+          )
+          .run(
+            JSON.stringify({
+              ...lifecycleEvent(),
+              recordId: "cancel-other",
+            }),
+            "lifecycle-event-1",
+          );
+      },
+      name: "lifecycle event query identity",
+      read: ({ workflows }: RepositoryTransaction) =>
+        workflows.lifecycleEvents.listByRecordId("cancel-1"),
+    },
+  ])("rejects corrupted $name", async (testCase) => {
+    await withSeededWorkflowEvidence(async (databasePath) => {
+      const database = new DatabaseSync(databasePath);
+      try {
+        testCase.corrupt(database);
+      } finally {
+        database.close();
+      }
+
+      const runner = createRunner(databasePath);
+      try {
+        const readCorrupted = testCase.read as (
+          repositories: RepositoryTransaction,
+        ) => Promise<unknown>;
+        await expect(runner.transaction(readCorrupted)).rejects.toMatchObject({
+          code: "repository_record_invalid",
+          stage: "persistence",
+        });
+      } finally {
+        await runner.close();
+      }
+    });
+  });
+
+  it("bounds durable JSON before parsing", () => {
+    expect(
+      parseSqliteRecordJson('{"contractVersion":"1"}', "Test record"),
+    ).toEqual({ contractVersion: "1" });
+    expect(() =>
+      parseSqliteRecordJson(
+        JSON.stringify({ value: "x".repeat(MAX_SQLITE_RECORD_JSON_BYTES) }),
+        "Test record",
+      ),
+    ).toThrow(/byte limit/iu);
+    expect(() =>
+      parseSqliteRecordJson(
+        `${"[".repeat(MAX_SQLITE_RECORD_JSON_DEPTH + 1)}0${"]".repeat(MAX_SQLITE_RECORD_JSON_DEPTH + 1)}`,
+        "Test record",
+      ),
+    ).toThrow(/nesting limit/iu);
+    expect(() =>
+      stringifySqliteRecordJson(
+        { value: "x".repeat(MAX_SQLITE_RECORD_JSON_BYTES) },
+        "Test record",
+      ),
+    ).toThrow(/byte limit/iu);
+    expect(() =>
+      stringifySqliteRecordJson(
+        nestedRecord(MAX_SQLITE_RECORD_JSON_DEPTH + 1),
+        "Test record",
+      ),
+    ).toThrow(/nesting limit/iu);
+  });
+
+  it("rejects oversized validated records before writing any durable row", async () => {
+    const runner = createRunner(":memory:");
+    const oversizedAudit = {
+      ...createAuditEvent("task-oversized-audit"),
+      correlationId: "correlation-oversized-audit",
+      eventId: "audit-oversized",
+      metadata: {
+        payload: "x".repeat(MAX_SQLITE_RECORD_JSON_BYTES),
+      },
+    };
+
+    await expect(
+      runner.transaction(({ audits }) => audits.append(oversizedAudit)),
+    ).rejects.toMatchObject({
+      code: "repository_record_invalid",
+      stage: "persistence",
+    });
+    expect(
+      await runner.transaction(({ audits }) =>
+        audits.listByCorrelationId(oversizedAudit.correlationId),
+      ),
+    ).toEqual([]);
+    await runner.close();
+  });
 });
+
+function nestedRecord(depth: number): unknown {
+  let value: unknown = 0;
+  for (let index = 0; index < depth; index += 1) {
+    value = { value };
+  }
+  return value;
+}
 
 class CountingExecutor implements AgentExecutor {
   public readonly agent = Object.freeze({
@@ -333,6 +607,178 @@ function createAuditEvent(taskId: string): AuditEvent {
     taskId,
     workspaceId: "workspace-local",
   };
+}
+
+function reservedInvocation() {
+  return {
+    capabilityIds: ["content-strategy"],
+    contractVersion: "1" as const,
+    definitionId: "workflow@1.0.0",
+    executorId: "deterministic-content-director",
+    executorVersion: "1.0.0",
+    externalEffectsAllowed: false as const,
+    fingerprint: "a".repeat(64),
+    instanceId: "instance-1",
+    invocationId: "invocation-1",
+    reservedAt: "2026-07-12T00:00:00.000Z",
+    reservedInstanceVersion: 2,
+    runtimeAgentId: "content-director",
+    runtimeAgentVersion: "1.0.0",
+    specificationId: "content-director@1.0.0",
+    specificationVersion: "1.0.0",
+    status: "RESERVED" as const,
+    stepId: "direction",
+    workflowId: "workflow",
+    workflowVersion: "1.0.0",
+  };
+}
+
+function invocationEvent() {
+  return {
+    contractVersion: "1" as const,
+    eventId: "invocation-event-1",
+    externalEffects: false as const,
+    instanceId: "instance-1",
+    invocationId: "invocation-1",
+    occurredAt: "2026-07-12T00:00:00.000Z",
+    status: "RESERVED" as const,
+    stepId: "direction",
+    summaryCode: "workflow_agent_invocation_reserved" as const,
+  };
+}
+
+function blockedOutcome() {
+  return {
+    contractVersion: "1" as const,
+    decision: "BLOCKED" as const,
+    externalEffects: false as const,
+    fingerprint: "b".repeat(64),
+    instanceId: "instance-1",
+    invocationFingerprint: "a".repeat(64),
+    invocationId: "invocation-1",
+    outcomeId: "outcome-1",
+    remediation: ["Durable invocation is missing"],
+    reviewedAt: "2026-07-12T00:00:01.000Z",
+    stepId: "direction",
+  };
+}
+
+function cancellationRecord() {
+  return {
+    actorId: "fabio",
+    contractVersion: "1" as const,
+    definitionId: "workflow@1.0.0",
+    externalEffects: false as const,
+    fingerprint: "c".repeat(64),
+    instanceId: "instance-1",
+    instanceVersion: 1,
+    kind: "CANCELLATION" as const,
+    recordedAt: "2026-07-12T00:00:01.000Z",
+    recordId: "cancel-1",
+    recoveryInstructions: [
+      "Workflow is cancelled and no further step invocation is authorized.",
+    ],
+    stepId: "workflow",
+    workflowVersion: "1.0.0",
+  };
+}
+
+function lifecycleEvent() {
+  return {
+    contractVersion: "1" as const,
+    eventId: "lifecycle-event-1",
+    externalEffects: false as const,
+    instanceId: "instance-1",
+    kind: "CANCELLATION" as const,
+    occurredAt: "2026-07-12T00:00:01.000Z",
+    recordId: "cancel-1",
+    stepId: "workflow",
+    summaryCode: "workflow_cancellation_recorded" as const,
+  };
+}
+
+async function withSeededWorkflowEvidence(
+  test: (databasePath: string) => Promise<void>,
+): Promise<void> {
+  await withTemporaryDatabase(async (databasePath) => {
+    const initializer = createRunner(databasePath);
+    await initializer.close();
+
+    const database = new DatabaseSync(databasePath);
+    try {
+      database.exec("PRAGMA foreign_keys = OFF");
+      const invocation = reservedInvocation();
+      database
+        .prepare(
+          "INSERT INTO workflow_agent_invocations (invocation_id, fingerprint, instance_id, step_id, status, record_json) VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          invocation.invocationId,
+          invocation.fingerprint,
+          invocation.instanceId,
+          invocation.stepId,
+          invocation.status,
+          JSON.stringify(invocation),
+        );
+      const invocationRecord = invocationEvent();
+      database
+        .prepare(
+          "INSERT INTO workflow_agent_invocation_events (event_id, invocation_id, instance_id, status, occurred_at, record_json) VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          invocationRecord.eventId,
+          invocationRecord.invocationId,
+          invocationRecord.instanceId,
+          invocationRecord.status,
+          invocationRecord.occurredAt,
+          JSON.stringify(invocationRecord),
+        );
+      const outcome = blockedOutcome();
+      database
+        .prepare(
+          "INSERT INTO workflow_step_outcomes (outcome_id, invocation_id, fingerprint, instance_id, step_id, decision, record_json) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          outcome.outcomeId,
+          outcome.invocationId,
+          outcome.fingerprint,
+          outcome.instanceId,
+          outcome.stepId,
+          outcome.decision,
+          JSON.stringify(outcome),
+        );
+      const lifecycle = cancellationRecord();
+      database
+        .prepare(
+          "INSERT INTO workflow_lifecycle_records (record_id, fingerprint, kind, instance_id, instance_version, step_id, recorded_at, record_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          lifecycle.recordId,
+          lifecycle.fingerprint,
+          lifecycle.kind,
+          lifecycle.instanceId,
+          lifecycle.instanceVersion,
+          lifecycle.stepId,
+          lifecycle.recordedAt,
+          JSON.stringify(lifecycle),
+        );
+      const event = lifecycleEvent();
+      database
+        .prepare(
+          "INSERT INTO workflow_lifecycle_events (event_id, record_id, instance_id, occurred_at, record_json) VALUES (?, ?, ?, ?, ?)",
+        )
+        .run(
+          event.eventId,
+          event.recordId,
+          event.instanceId,
+          event.occurredAt,
+          JSON.stringify(event),
+        );
+    } finally {
+      database.close();
+    }
+    await test(databasePath);
+  });
 }
 
 async function withTemporaryDatabase(

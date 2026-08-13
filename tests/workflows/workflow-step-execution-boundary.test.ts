@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
   AgentSpecificationValidator,
   createWorkflowPersistenceService,
+  createSpecificationFingerprint,
   createWorkflowStepExecutionBoundary,
   DEFAULT_AGENT_CAPABILITY_REGISTRY,
   DEFAULT_AGENT_COMPANY_MAP,
@@ -248,6 +249,63 @@ describe("Workflow Step Execution Boundary", () => {
     );
     expect(blockerCodes(mismatch)).toContain("POLICY_MISMATCH");
     await runner.close();
+  });
+
+  it("binds an admitted step to the persisted Agent Specification fingerprint", async () => {
+    const researchSpecification = INITIAL_CORE_AGENT_SPECIFICATIONS.find(
+      ({ agentId, version }) =>
+        agentId === "research-agent" && version === "1.0.0",
+    );
+    if (researchSpecification === undefined) {
+      throw new Error("missing research Agent Specification fixture");
+    }
+    const admitted = definition({
+      admission: {
+        agentSpecifications: [
+          {
+            agentId: "research-agent",
+            fingerprint: createSpecificationFingerprint(researchSpecification),
+            version: "1.0.0",
+          },
+        ],
+        workflowSpecificationFingerprint: "a".repeat(64),
+      },
+      steps: [
+        {
+          ...definitionStep("research", []),
+          agent: { agentId: "research-agent", version: "1.0.0" },
+        },
+      ],
+    });
+    const validRunner = createRunner(":memory:");
+    await seed(validRunner, admitted, instance());
+    expect(await createBoundary(validRunner).prepare(request())).toMatchObject({
+      status: "CANDIDATE_AVAILABLE",
+    });
+    await validRunner.close();
+
+    const changedRunner = createRunner(":memory:");
+    await seed(
+      changedRunner,
+      {
+        ...admitted,
+        admission: {
+          agentSpecifications: [
+            {
+              agentId: "research-agent",
+              fingerprint: "b".repeat(64),
+              version: "1.0.0",
+            },
+          ],
+          workflowSpecificationFingerprint: "a".repeat(64),
+        },
+      },
+      instance(),
+    );
+    expect(
+      blockerCodes(await createBoundary(changedRunner).prepare(request())),
+    ).toContain("AGENT_SPECIFICATION_MISMATCH");
+    await changedRunner.close();
   });
 
   it("binds approval and Guardian evidence to the exact snapshot and Fabio authority", async () => {

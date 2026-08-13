@@ -13,6 +13,7 @@ import {
 import {
   isWorkflowCommandFingerprint,
 } from "./workflow-command-fingerprint.js";
+import { isSpecificationFingerprint } from "../specification/specification-fingerprint.js";
 import {
   WORKFLOW_RUNTIME_CONTRACT_VERSION,
   type WorkflowCommand,
@@ -77,6 +78,7 @@ export class WorkflowDefinitionValidator
         "workflowId",
         "workflowVersion",
         "missionObjective",
+        "admission",
         "steps",
         "nonExecuting",
       ],
@@ -109,7 +111,8 @@ export class WorkflowDefinitionValidator
         issue("unsafe_execution", "definition must be non-executing", "nonExecuting"),
       );
     }
-    validateDefinitionSteps(record.steps, issues);
+    const admittedAgentKeys = validateDefinitionAdmission(record.admission, issues);
+    validateDefinitionSteps(record.steps, admittedAgentKeys, issues);
 
     return issues.length > 0
       ? validationFailure(issues)
@@ -288,6 +291,7 @@ export class WorkflowInstanceValidator implements Validator<WorkflowInstance> {
 
 function validateDefinitionSteps(
   value: unknown,
+  admittedAgentKeys: ReadonlySet<string> | undefined,
   issues: ValidationIssue[],
 ): void {
   if (!Array.isArray(value) || value.length === 0) {
@@ -315,12 +319,14 @@ function validateDefinitionSteps(
         "dependencies",
         "approvalRequired",
         "guardianRequired",
+        "agent",
         "nonExecuting",
       ],
       issues,
       path,
     );
     assertIdentifier(step, "stepId", issues, path);
+    validateDefinitionStepAgent(step.agent, path, admittedAgentKeys, issues);
     if (typeof step.stepId === "string" && ID_PATTERN.test(step.stepId)) {
       stepIds.push(step.stepId);
       if (
@@ -359,6 +365,31 @@ function validateDefinitionSteps(
       issues.push(issue("unsafe_execution", "step must be non-executing", `${path}.nonExecuting`));
     }
   }
+
+  if (admittedAgentKeys !== undefined) {
+    const referencedAgentKeys = new Set(
+      value.flatMap((entry) => {
+        const step = asRecord(entry);
+        const agent = asRecord(step?.agent);
+        return typeof agent?.agentId === "string" &&
+          typeof agent.version === "string"
+          ? [`${agent.agentId}@${agent.version}`]
+          : [];
+      }),
+    );
+    if (
+      referencedAgentKeys.size !== admittedAgentKeys.size ||
+      [...admittedAgentKeys].some((key) => !referencedAgentKeys.has(key))
+    ) {
+      issues.push(
+        issue(
+          "invalid_value",
+          "admitted agent specifications must exactly match workflow steps",
+          "admission.agentSpecifications",
+        ),
+      );
+    }
+  }
   if (new Set(stepIds).size !== stepIds.length) {
     issues.push(issue("duplicate", "step IDs must be unique", "steps"));
   }
@@ -383,6 +414,147 @@ function validateDefinitionSteps(
         );
       }
     }
+  }
+}
+
+function validateDefinitionAdmission(
+  value: unknown,
+  issues: ValidationIssue[],
+): ReadonlySet<string> | undefined {
+  if (value === undefined) return undefined;
+  const admission = asRecord(value);
+  if (admission === undefined) {
+    issues.push(issue("invalid_type", "admission must be an object", "admission"));
+    return new Set<string>();
+  }
+  assertOnlyKnownKeys(
+    admission,
+    ["workflowSpecificationFingerprint", "agentSpecifications"],
+    issues,
+    "admission",
+  );
+  if (!isSpecificationFingerprint(admission.workflowSpecificationFingerprint)) {
+    issues.push(
+      issue(
+        "invalid_format",
+        "workflow specification fingerprint is invalid",
+        "admission.workflowSpecificationFingerprint",
+      ),
+    );
+  }
+  if (
+    !Array.isArray(admission.agentSpecifications) ||
+    admission.agentSpecifications.length === 0
+  ) {
+    issues.push(
+      issue(
+        "invalid_type",
+        "agentSpecifications must be a non-empty array",
+        "admission.agentSpecifications",
+      ),
+    );
+    return new Set<string>();
+  }
+
+  const keys: string[] = [];
+  for (const [index, candidate] of admission.agentSpecifications.entries()) {
+    const path = `admission.agentSpecifications[${String(index)}]`;
+    const attribution = asRecord(candidate);
+    if (attribution === undefined) {
+      issues.push(issue("invalid_type", "agent attribution must be an object", path));
+      continue;
+    }
+    assertOnlyKnownKeys(
+      attribution,
+      ["agentId", "version", "fingerprint"],
+      issues,
+      path,
+    );
+    assertIdentifier(attribution, "agentId", issues, path);
+    if (
+      typeof attribution.version !== "string" ||
+      !isSemanticVersion(attribution.version)
+    ) {
+      issues.push(
+        issue("invalid_format", "agent version must be semantic", `${path}.version`),
+      );
+    }
+    if (!isSpecificationFingerprint(attribution.fingerprint)) {
+      issues.push(
+        issue("invalid_format", "agent fingerprint is invalid", `${path}.fingerprint`),
+      );
+    }
+    if (
+      typeof attribution.agentId === "string" &&
+      typeof attribution.version === "string"
+    ) {
+      keys.push(`${attribution.agentId}@${attribution.version}`);
+    }
+  }
+  if (new Set(keys).size !== keys.length) {
+    issues.push(
+      issue(
+        "duplicate",
+        "agent specification attributions must be unique",
+        "admission.agentSpecifications",
+      ),
+    );
+  }
+  if (keys.some((key, index) => index > 0 && key <= (keys[index - 1] ?? ""))) {
+    issues.push(
+      issue(
+        "invalid_value",
+        "agent specification attributions must use deterministic order",
+        "admission.agentSpecifications",
+      ),
+    );
+  }
+  return new Set(keys);
+}
+
+function validateDefinitionStepAgent(
+  value: unknown,
+  path: string,
+  admittedAgentKeys: ReadonlySet<string> | undefined,
+  issues: ValidationIssue[],
+): void {
+  if (value === undefined) {
+    if (admittedAgentKeys !== undefined) {
+      issues.push(
+        issue(
+          "required",
+          "admitted workflow steps require an exact agent specification",
+          `${path}.agent`,
+        ),
+      );
+    }
+    return;
+  }
+  const agent = asRecord(value);
+  if (agent === undefined) {
+    issues.push(issue("invalid_type", "agent must be an object", `${path}.agent`));
+    return;
+  }
+  assertOnlyKnownKeys(agent, ["agentId", "version"], issues, `${path}.agent`);
+  assertIdentifier(agent, "agentId", issues, `${path}.agent`);
+  if (typeof agent.version !== "string" || !isSemanticVersion(agent.version)) {
+    issues.push(
+      issue("invalid_format", "agent version must be semantic", `${path}.agent.version`),
+    );
+  }
+  if (
+    admittedAgentKeys === undefined ||
+    typeof agent.agentId !== "string" ||
+    typeof agent.version !== "string" ||
+    !admittedAgentKeys.has(`${agent.agentId}@${agent.version}`)
+  ) {
+    issues.push(
+      issue(
+        "invalid_value",
+        "step agent is not covered by admission attribution",
+        `${path}.agent`,
+      ),
+    );
   }
 }
 

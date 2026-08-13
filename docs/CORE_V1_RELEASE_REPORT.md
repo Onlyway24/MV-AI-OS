@@ -9,20 +9,23 @@ evidence, exact candidate selection, one deterministic local Content Director re
 explicit outcome review, lifecycle recovery controls, operator reporting, restart, and
 bounded audit inspection.
 
-The `v1.0.1-core` correctness hotfix preserves this scope and durable state. It fixes
-only the Operator Workflow Report projection: terminal Workflow and Step state now
-takes precedence over stale readiness and control findings, so completed or cancelled
-work is never presented as requiring approval or Guardian remediation.
+This report describes the current unreleased change set based on `v1.0.1-core`; it
+does not redefine that tag. The change set preserves the tagged correctness fix for
+the Operator Workflow Report, adds exact Workflow Specification admission, hardens
+provider, secret, memory, SQLite, backup, and replay boundaries, and makes build
+output deterministic by cleaning `dist/` before compilation.
 
 The path is version-bound, default-deny, durable, redaction-safe, and local-only. All
 mutations pass through existing validators, command/service boundaries, transaction
-repositories, and append-only evidence. The implementation uses no live model call,
-provider credential, network, browser, tool execution, n8n, scheduler, background
-worker, HTTP server, dashboard, publication, outreach, payment, or customer delivery.
+repositories, and append-only evidence. The deterministic Core V1 path and default
+verification use no live model call, provider credential, network, browser, tool
+execution, n8n, scheduler, background worker, HTTP server, dashboard, publication,
+outreach, payment, or customer delivery.
 
 ## Included capabilities
 
-- 22 allowlisted Core V1 commands on the existing controlled local CLI.
+- 23 allowlisted Core V1 commands on the existing controlled local CLI, including
+  exact Workflow Specification admission.
 - SQLite schema version 12 with task/request/audit, memory, knowledge, Workflow,
   lifecycle, command-receipt, and local Workflow ownership durability.
 - Exact request/command IDs, fingerprints, expected-version checks, conflict rejection,
@@ -55,24 +58,30 @@ No P0 or unresolved P1 finding remains.
   indexed command ID/operation consistency, and reject corrupt or unsafe replay data.
 - Durable Agent invocation, Step outcome, and lifecycle records reject unsupported
   fields and invalid result/failure shapes before storage or replay.
+- Interrupted admitted invocations revalidate the persisted exact Agent Specification
+  fingerprint before deterministic restart recovery; specification drift blocks
+  reinvocation.
+- Durable JSON applies the same one-MiB and 64-level bounds before both write and
+  parse, so a transaction cannot create an application-unreadable record.
 - The Core V1 retry slice records fresh Guardian `CLEAR` evidence at the post-retry
   version. Invocation tests create Guardian evidence through the authorized checkpoint
   service, including atomic audit events.
 
 ## Verification evidence
 
-At the Core V1 Operator Report correctness hotfix closeout the deterministic local
-suite passes:
+For the current unreleased change set, the deterministic local suite passes:
 
 - `npm run lint`
 - `npm run typecheck`
-- `npm run test` — 87 test files, 792 tests
+- `npm run test` — 89 test files, 838 tests
 - `npm run build`
 - `git diff --check`
 
-Focused tests cover local command receipt validation, Core V1 restart slices,
-invocation/outcome/lifecycle state, checkpoints, persistence, terminal-report
-precedence, and report behavior.
+Focused tests cover exact specification admission, local CLI restart/replay, local
+command receipt validation, Core V1 restart slices, invocation/outcome/lifecycle
+state, SQLite corruption and resource-bound rejection, backup race handling,
+provider/secret/memory hardening, checkpoints, terminal-report precedence, and
+report behavior.
 
 ## Known limits and future admission criteria
 
@@ -82,7 +91,9 @@ no external effects. Any future provider, tool, network, or side-effecting execu
 requires an explicit at-most-once/idempotency design before it may participate in this
 recovery path.
 
-Formal Workflow Specifications exist but are not yet the admission source for a durable
-Core V1 Workflow. The next milestone is **Workflow Specification Admission Boundary**:
-it will admit one exact existing specification into the current durable runtime without
-adding scheduling, autonomy, network behavior, or external effects.
+Formal Workflow Specifications are now the controlled source for new attributed Core
+V1 Workflows. Admission resolves exact immutable Workflow and Agent Specification
+versions, derives deterministic non-executing runtime state, binds ownership, and
+persists stable redaction-safe audit evidence in one transaction. The compatible
+legacy creation command cannot forge this provenance. Condition evaluation,
+automatic scheduling, n8n, network behavior, and external effects remain absent.

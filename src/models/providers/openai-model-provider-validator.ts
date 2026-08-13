@@ -1,4 +1,5 @@
 import {
+  canonicalizeOpenAIBaseUrl,
   DEFAULT_OPENAI_BASE_URL,
   MAX_OPENAI_BASE_URL_LENGTH,
   MAX_OPENAI_HEADER_VALUE_LENGTH,
@@ -55,6 +56,8 @@ export class OpenAIModelProviderConfigValidator
     const baseUrl = readRequiredString(record, "baseUrl", issues, "", {
       maxLength: MAX_OPENAI_BASE_URL_LENGTH,
     });
+    const canonicalBaseUrl =
+      baseUrl === undefined ? undefined : canonicalizeOpenAIBaseUrl(baseUrl);
     const organizationId = readOptionalHeaderValue(
       record,
       "organizationId",
@@ -82,10 +85,10 @@ export class OpenAIModelProviderConfigValidator
         path: "providerId",
       });
     }
-    if (baseUrl !== undefined && !isValidOpenAIBaseUrl(baseUrl)) {
+    if (baseUrl !== undefined && canonicalBaseUrl === undefined) {
       issues.push({
         code: "invalid_value",
-        message: "baseUrl must be an absolute HTTPS URL without credentials",
+        message: "baseUrl must resolve to the official OpenAI API base URL",
         path: "baseUrl",
       });
     }
@@ -103,8 +106,7 @@ export class OpenAIModelProviderConfigValidator
       issues.length > 0 ||
       contractVersion !== OPENAI_MODEL_PROVIDER_CONFIG_CONTRACT_VERSION ||
       providerId !== OPENAI_MODEL_PROVIDER_ID ||
-      baseUrl === undefined ||
-      !isValidOpenAIBaseUrl(baseUrl) ||
+      canonicalBaseUrl === undefined ||
       !apiKeyValidation.ok
     ) {
       return validationFailure(issues);
@@ -112,7 +114,7 @@ export class OpenAIModelProviderConfigValidator
 
     return validationSuccess({
       apiKey: apiKeyValidation.value,
-      baseUrl: stripTrailingSlash(baseUrl),
+      baseUrl: canonicalBaseUrl,
       contractVersion,
       ...(organizationId === undefined ? {} : { organizationId }),
       ...(projectId === undefined ? {} : { projectId }),
@@ -149,25 +151,6 @@ function readOptionalHeaderValue(
     return undefined;
   }
   return value;
-}
-
-function isValidOpenAIBaseUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      url.username.length === 0 &&
-      url.password.length === 0 &&
-      url.hash.length === 0 &&
-      url.search.length === 0
-    );
-  } catch {
-    return false;
-  }
-}
-
-function stripTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
 function rejectUnknownKeys(

@@ -8,6 +8,7 @@ import {
 import { ModelBudgetConfigValidator } from "../models/model-budget-validator.js";
 import { ModelUsageAccountingConfigValidator } from "../models/model-pricing-validator.js";
 import {
+  canonicalizeOpenAIBaseUrl,
   DEFAULT_OPENAI_BASE_URL,
   MAX_OPENAI_BASE_URL_LENGTH,
   MAX_OPENAI_HEADER_VALUE_LENGTH,
@@ -278,6 +279,7 @@ function readModelProvider(
     readOptionalString(record, "baseUrl", issues, "modelProvider", {
       maxLength: MAX_OPENAI_BASE_URL_LENGTH,
     }) ?? DEFAULT_OPENAI_BASE_URL;
+  const canonicalBaseUrl = canonicalizeOpenAIBaseUrl(baseUrl);
   const modelId = readRequiredString(
     record,
     "modelId",
@@ -309,11 +311,10 @@ function readModelProvider(
       path: "modelProvider.apiKeySecretId",
     });
   }
-  if (!isValidOpenAIBaseUrl(baseUrl)) {
+  if (canonicalBaseUrl === undefined) {
     issues.push({
       code: "invalid_value",
-      message:
-        "modelProvider.baseUrl must be an absolute HTTPS URL without credentials",
+      message: "modelProvider.baseUrl must resolve to the official OpenAI API base URL",
       path: "modelProvider.baseUrl",
     });
   }
@@ -323,14 +324,14 @@ function readModelProvider(
     apiKeySecretId === undefined ||
     !SECRET_ID_PATTERN.test(apiKeySecretId) ||
     modelId === undefined ||
-    !isValidOpenAIBaseUrl(baseUrl)
+    canonicalBaseUrl === undefined
   ) {
     return false;
   }
 
   return {
     apiKeySecretId,
-    baseUrl: stripTrailingSlash(baseUrl),
+    baseUrl: canonicalBaseUrl,
     modelId,
     ...(organizationId === undefined ? {} : { organizationId }),
     ...(projectId === undefined ? {} : { projectId }),
@@ -359,25 +360,6 @@ function readOptionalHeaderValue(
     return undefined;
   }
   return value;
-}
-
-function isValidOpenAIBaseUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      url.username.length === 0 &&
-      url.password.length === 0 &&
-      url.hash.length === 0 &&
-      url.search.length === 0
-    );
-  } catch {
-    return false;
-  }
-}
-
-function stripTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
 function rejectUnknownKeys(

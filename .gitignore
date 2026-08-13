@@ -1,6 +1,11 @@
 node_modules/
 dist/
 coverage/
+.codex-worktrees/
+
+# Local runtime configuration and durable state
+config/*.local.json
+data/*.sqlite*
 
 .env
 .env.*

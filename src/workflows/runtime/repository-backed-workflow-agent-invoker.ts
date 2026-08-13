@@ -1,5 +1,6 @@
 import type { AgentRuntime } from "../../agents/agent-runtime.js";
 import type { AgentRuntimeResolver } from "../../agents/agent-runtime-resolution.js";
+import type { AgentSpecification } from "../../agents/specification/agent-specification.js";
 import type { AgentSpecificationRegistry } from "../../agents/specification/agent-specification-registry.js";
 import { ContentDirectionArtifactValidator } from "../../agents/content/deterministic-content-director.js";
 import type { AgentInvocation, AgentResult } from "../../contracts/agent-execution.js";
@@ -8,7 +9,8 @@ import type { RepositoryTransactionRunner } from "../../persistence/repository-t
 import type { Clock } from "../../ports/clock.js";
 import type { Validator } from "../../validation/validation.js";
 import { createWorkflowCommandFingerprint } from "./workflow-command-fingerprint.js";
-import type { WorkflowInstance } from "./workflow-runtime.js";
+import { createSpecificationFingerprint } from "../specification/specification-fingerprint.js";
+import type { WorkflowDefinition, WorkflowInstance } from "./workflow-runtime.js";
 import type { WorkflowStepExecutionBoundary } from "./workflow-step-execution-boundary.js";
 import {
   ControlledWorkflowAgentInvocationRequestValidator,
@@ -102,14 +104,25 @@ export class RepositoryBackedWorkflowAgentInvoker implements ControlledWorkflowA
   async #resume(receipt: WorkflowAgentInvocationReceipt, fingerprint: string): Promise<ControlledWorkflowAgentInvocationResult> {
     if (receipt.fingerprint !== fingerprint) return blocked("INVOCATION_CONFLICT", "Invocation ID has a conflicting fingerprint");
     if (receipt.status !== "RESERVED") return terminal(receipt, true);
-    const resumable = await this.dependencies.repositories.transaction(async ({ workflows }) => {
+    const snapshot = await this.dependencies.repositories.transaction(async ({ workflows }) => {
       const instance = await workflows.instances.getById(receipt.instanceId);
-      return instance?.status === "ACTIVE" && instance.version === receipt.reservedInstanceVersion && instance.steps.find(({ stepId }) => stepId === receipt.stepId)?.status === "AWAITING_RESULT";
+      const definition = await workflows.definitions.getById(
+        receipt.definitionId,
+      );
+      return {
+        definition,
+        resumable:
+          instance?.definitionId === receipt.definitionId &&
+          instance.status === "ACTIVE" &&
+          instance.version === receipt.reservedInstanceVersion &&
+          instance.steps.find(({ stepId }) => stepId === receipt.stepId)
+            ?.status === "AWAITING_RESULT",
+      };
     });
-    if (!resumable) return blocked("INVOCATION_STATE_INVALID", "Reserved invocation cannot resume while its Workflow is stopped");
+    if (!snapshot.resumable || snapshot.definition === undefined) return blocked("INVOCATION_STATE_INVALID", "Reserved invocation cannot resume while its Workflow is stopped");
     const resolved = this.dependencies.resolver.resolve({ requiredCapabilityIds: receipt.capabilityIds, specificationId: receipt.specificationId, specificationVersion: receipt.specificationVersion });
     const specification = this.dependencies.agentSpecifications.get(receipt.runtimeAgentId, receipt.specificationVersion);
-    if (resolved.status !== "resolved" || specification === undefined || resolved.executor.executorId !== receipt.executorId || resolved.executor.executorVersion !== receipt.executorVersion) return blocked("INVOCATION_STATE_INVALID", "Reserved invocation binding no longer resolves exactly");
+    if (resolved.status !== "resolved" || specification === undefined || resolved.executor.executorId !== receipt.executorId || resolved.executor.executorVersion !== receipt.executorVersion || !matchesReservedSpecification(snapshot.definition, receipt, specification)) return blocked("INVOCATION_STATE_INVALID", "Reserved invocation binding no longer resolves exactly");
     return this.#execute(receipt, specification.limits);
   }
 
@@ -199,6 +212,42 @@ async function assertControlsUnchanged(workflows: Parameters<Parameters<Reposito
   if (!sameIds(candidate.guardianEvidenceIds, guardianIds)) throw new RepositoryConflictError("Workflow Guardian evidence changed before invocation reservation");
 }
 function sameIds(left: readonly string[], right: readonly string[]): boolean { return [...left].sort().join("\n") === [...right].sort().join("\n"); }
+function matchesReservedSpecification(
+  definition: WorkflowDefinition,
+  receipt: WorkflowAgentInvocationReceipt,
+  specification: AgentSpecification,
+): boolean {
+  const step = definition.steps.find(
+    ({ stepId }) => stepId === receipt.stepId,
+  );
+  if (
+    definition.definitionId !== receipt.definitionId ||
+    definition.workflowId !== receipt.workflowId ||
+    definition.workflowVersion !== receipt.workflowVersion ||
+    step === undefined
+  ) {
+    return false;
+  }
+  if (definition.admission === undefined) return true;
+  if (
+    step.agent?.agentId !== receipt.runtimeAgentId ||
+    step.agent.version !== receipt.runtimeAgentVersion ||
+    receipt.specificationId !==
+      `${step.agent.agentId}@${step.agent.version}` ||
+    receipt.specificationVersion !== step.agent.version ||
+    specification.agentId !== step.agent.agentId ||
+    specification.version !== step.agent.version
+  ) {
+    return false;
+  }
+  const attribution = definition.admission.agentSpecifications.find(
+    ({ agentId, version }) =>
+      agentId === step.agent?.agentId && version === step.agent.version,
+  );
+  return (
+    attribution?.fingerprint === createSpecificationFingerprint(specification)
+  );
+}
 function validate<T>(value: unknown, validator: Validator<T>, label: string): T { const result = validator.validate(value); if (!result.ok) throw new RepositoryValidationError(`${label} failed validation`, { issueCount: result.issues.length }); return result.value; }
 function now(clock: Clock): string { const value = clock.now(); if (Number.isNaN(value.getTime())) throw new RepositoryValidationError("Workflow invocation clock is invalid"); return value.toISOString(); }
 function blocked(code: "CANDIDATE_BLOCKED" | "EXECUTOR_UNRESOLVED" | "INVOCATION_CONFLICT" | "INVOCATION_STATE_INVALID", reason: string): ControlledWorkflowAgentInvocationResult { return freeze({ blocker: { code, reason }, contractVersion: "1", status: "BLOCKED" }); }

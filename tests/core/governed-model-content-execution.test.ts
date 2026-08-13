@@ -98,6 +98,12 @@ describe("governed model-backed content execution", () => {
       "knowledge-brand",
     );
     expect(modelRequest?.messages[1]?.content).toContain("memory-brand");
+    expect(modelRequest?.messages[1]?.content).not.toContain(
+      "memory-sensitive",
+    );
+    expect(modelRequest?.messages[1]?.content).not.toContain(
+      "must-not-egress",
+    );
     expect(CONTENT_AGENT_MANIFEST.tools).toEqual([]);
     expect(CONTENT_AGENT_MANIFEST.workflowProposals).toEqual([]);
 
@@ -261,6 +267,10 @@ function createFixture(options: FixtureOptions = {}): {
     [
       createSemanticMemory("memory-brand", {
         content: { brand: "MV AI OS" },
+      }),
+      createSemanticMemory("memory-sensitive", {
+        content: { confidential: "must-not-egress" },
+        sensitivity: "sensitive",
       }),
       createUserMemory("memory-tone", {
         content: { preferredTone: "concise" },

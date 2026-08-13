@@ -46,6 +46,9 @@ import type {
   Validator,
 } from "../../validation/validation.js";
 
+export const MAX_SQLITE_RECORD_JSON_BYTES = 1_048_576;
+export const MAX_SQLITE_RECORD_JSON_DEPTH = 64;
+
 export class SqliteRecordCodec {
   readonly #auditValidator = new AuditEventValidator();
   readonly #knowledgeValidator = new KnowledgeRecordValidator();
@@ -325,16 +328,18 @@ function encodeValidated<T>(
   label: string,
 ): { readonly json: string; readonly value: T } {
   const valid = validated(value, validator, label);
-  let json: string;
-  try {
-    json = JSON.stringify(valid);
-  } catch {
-    throw new RepositoryValidationError(`${label} is not serializable`);
-  }
-  return { json, value: valid };
+  return { json: stringifySqliteRecordJson(valid, label), value: valid };
 }
 
 function parseJson(json: string, label: string): unknown {
+  return parseSqliteRecordJson(json, label);
+}
+
+export function parseSqliteRecordJson(
+  json: string,
+  label: string,
+): unknown {
+  assertSqliteRecordJsonBounds(json, label);
   try {
     return JSON.parse(json) as unknown;
   } catch {
@@ -342,6 +347,65 @@ function parseJson(json: string, label: string): unknown {
       `${label} contains invalid JSON`,
     );
   }
+}
+
+export function stringifySqliteRecordJson(
+  value: unknown,
+  label: string,
+): string {
+  let json: unknown;
+  try {
+    json = JSON.stringify(value);
+  } catch {
+    throw new RepositoryValidationError(`${label} is not serializable`);
+  }
+  if (typeof json !== "string") {
+    throw new RepositoryValidationError(`${label} is not serializable`);
+  }
+  assertSqliteRecordJsonBounds(json, label);
+  return json;
+}
+
+function assertSqliteRecordJsonBounds(json: string, label: string): void {
+  if (Buffer.byteLength(json, "utf8") > MAX_SQLITE_RECORD_JSON_BYTES) {
+    throw new RepositoryValidationError(
+      `${label} exceeds the durable JSON byte limit`,
+    );
+  }
+  if (exceedsJsonNestingLimit(json, MAX_SQLITE_RECORD_JSON_DEPTH)) {
+    throw new RepositoryValidationError(
+      `${label} exceeds the durable JSON nesting limit`,
+    );
+  }
+}
+
+function exceedsJsonNestingLimit(json: string, maximumDepth: number): boolean {
+  let depth = 0;
+  let escaped = false;
+  let insideString = false;
+  for (const character of json) {
+    if (insideString) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === '"') {
+        insideString = false;
+      }
+      continue;
+    }
+    if (character === '"') {
+      insideString = true;
+    } else if (character === "{" || character === "[") {
+      depth += 1;
+      if (depth > maximumDepth) {
+        return true;
+      }
+    } else if (character === "}" || character === "]") {
+      depth -= 1;
+    }
+  }
+  return false;
 }
 
 function validated<T>(

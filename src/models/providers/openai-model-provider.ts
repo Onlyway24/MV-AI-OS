@@ -14,6 +14,8 @@ import {
 } from "./openai-model-provider-config.js";
 import { OpenAIModelProviderConfigValidator } from "./openai-model-provider-validator.js";
 
+const MAX_OPENAI_RESPONSE_BYTES = 1_048_576;
+
 export interface OpenAIResponsesTransportRequest {
   readonly body: JsonObject;
   readonly headers: Readonly<Record<string, string>>;
@@ -189,6 +191,12 @@ export class OpenAIModelProvider implements ModelProvider {
 export class FetchOpenAIResponsesTransport
   implements OpenAIResponsesTransport
 {
+  readonly #fetch: typeof fetch;
+
+  public constructor(fetchImplementation: typeof fetch = globalThis.fetch) {
+    this.#fetch = fetchImplementation;
+  }
+
   public async send(
     request: OpenAIResponsesTransportRequest,
   ): Promise<OpenAIResponsesTransportResponse> {
@@ -197,19 +205,92 @@ export class FetchOpenAIResponsesTransport
       controller.abort();
     }, request.timeoutMs);
     try {
-      const response = await fetch(request.url, {
+      const response = await this.#fetch(request.url, {
         body: JSON.stringify(request.body),
         headers: request.headers,
         method: request.method,
+        redirect: "error",
         signal: controller.signal,
       });
       return {
-        body: await response.json(),
+        body: await readBoundedJsonResponse(response),
         status: response.status,
       };
     } finally {
       clearTimeout(timeout);
     }
+  }
+}
+
+async function readBoundedJsonResponse(response: Response): Promise<unknown> {
+  const declaredLength = readDeclaredContentLength(response);
+  if (
+    declaredLength !== undefined &&
+    declaredLength > MAX_OPENAI_RESPONSE_BYTES
+  ) {
+    await cancelBody(response.body);
+    throw new Error("OpenAI response exceeds the byte limit");
+  }
+
+  const body = response.body as ReadableStream<Uint8Array> | null;
+  const reader = body?.getReader();
+  if (reader === undefined) {
+    throw new Error("OpenAI response body is unavailable");
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      if (value.byteLength > MAX_OPENAI_RESPONSE_BYTES - totalBytes) {
+        await cancelReader(reader);
+        throw new Error("OpenAI response exceeds the byte limit");
+      }
+      chunks.push(value);
+      totalBytes += value.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(
+    Buffer.concat(chunks, totalBytes),
+  );
+  return JSON.parse(text) as unknown;
+}
+
+function readDeclaredContentLength(response: Response): number | undefined {
+  const header = response.headers.get("content-length")?.trim();
+  if (header === undefined || !/^\d+$/u.test(header)) {
+    return undefined;
+  }
+  const value = Number(header);
+  return Number.isSafeInteger(value)
+    ? value
+    : MAX_OPENAI_RESPONSE_BYTES + 1;
+}
+
+async function cancelBody(
+  body: ReadableStream<Uint8Array> | null,
+): Promise<void> {
+  try {
+    await body?.cancel();
+  } catch {
+    return;
+  }
+}
+
+async function cancelReader(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+): Promise<void> {
+  try {
+    await reader.cancel();
+  } catch {
+    return;
   }
 }
 

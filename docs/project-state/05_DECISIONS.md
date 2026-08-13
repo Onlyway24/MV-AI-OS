@@ -1853,3 +1853,36 @@ the existing bounded evidence path when they need history.
 **Future impact:** Any later operator projection, dashboard, API, or workflow report
 must use the same terminal-state precedence rule and preserve the distinction between
 historical evidence and active remediation.
+
+## ADR-070 — Exact immutable specifications are the only source of attributed Workflows
+
+**Context:** Core V1 could durably execute compatible local Workflow definitions, and
+the repository separately validated formal Workflow and Agent Specifications. A caller
+still had to hand-author runtime state, so the durable definition could not prove which
+exact immutable declarations produced it.
+
+**Decision:** A new versioned admission boundary resolves one exact active Workflow
+Specification and every exact referenced Agent Specification from immutable registries.
+It fingerprints the canonical declarations, rejects semantics the current runtime
+cannot faithfully represent, topologically derives the existing non-executing
+definition and initial instance, and atomically persists definition, instance,
+ownership, and a deterministic redaction-safe audit receipt. Replay locates its stable
+event ID inside the correlation stream and revalidates all durable state. Admitted
+steps bind candidate preparation to the persisted Agent identity, version, and current
+registry fingerprint. The existing `CREATE_WORKFLOW` command remains compatible only
+for legacy un-attributed definitions and cannot write admission provenance.
+
+**Reason:** Specification provenance is a security and correctness boundary, not
+caller metadata. Exact resolution and atomic evidence prevent version floating,
+forged attribution, partial admission, and silent drift between declared and selected
+agents.
+
+**Tradeoffs:** Admission currently rejects cycles, conditional transitions, alternate
+failure strategies, preserved successful outputs, non-active Workflow Specifications,
+disabled Agent Specifications, and graphs above the runtime's 100-step bound. Every
+admitted step conservatively requires explicit operator approval and Guardian evidence.
+
+**Future impact:** Runtime support for any additional Workflow Specification semantic
+must be designed and added explicitly. It must preserve exact attribution, stable
+ordering, explicit commands, replay/restart behavior, and fail-closed legacy
+compatibility.

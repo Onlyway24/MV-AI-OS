@@ -13,7 +13,7 @@ Core V1 does not include GPT or Claude calls, provider APIs, tools, browser or n
 Requirements: Node.js 22.23.x and npm 10.9.8.
 
 ```sh
-npm install
+npm ci
 npm run build
 mkdir -p data
 ```
@@ -21,7 +21,7 @@ mkdir -p data
 The safe deterministic configuration is `examples/core-v1/local-config.json`. Its SQLite path is `./data/mv-ai-os-core-v1.sqlite`. Keep this file to recover state after restart. Deterministic Core V1 needs no credentials.
 
 ```sh
-npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/create-workflow.json
+npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/admit-workflow-specification.json
 npm run cli -- --config examples/core-v1/local-config.json < examples/core-v1/get-operator-report.json
 ```
 
@@ -42,6 +42,7 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `CREATE_MISSION` | Validate `{ "brief": <FounderMissionBrief> }`. |
 | `PLAN_MISSION` | Generate the deterministic Mission Plan and Quality Gate report. |
 | `CREATE_WORKFLOW` | Atomically create or replay a definition and instance. |
+| `ADMIT_WORKFLOW_SPECIFICATION` | Resolve one exact immutable Workflow/Agent specification set and atomically derive, own, and audit its durable initial state. |
 | `INSPECT_WORKFLOW` | Read `{ "instanceId": ... }`. |
 | `GET_OPERATOR_REPORT` | Get status, blockers, retry state, evidence, and one action. |
 | `EVALUATE_READINESS` | Evaluate exact-version Step readiness without invocation. |
@@ -62,12 +63,14 @@ Unknown operations, fields, identities, stale versions, oversized input, unsafe 
 | `EVALUATE_TIMEOUT` | Explicitly evaluate the configured timeout. |
 | `INSPECT_AUDIT_EVENTS` | Return 1–100 events for one correlation ID. |
 
-Authoritative request shapes are exported TypeScript contracts and exercised in `tests/core-v1/core-v1-local-vertical-slice.test.ts`. Copy IDs and exact versions from the latest report; never guess them or edit SQLite.
+`ADMIT_WORKFLOW_SPECIFICATION` accepts `{ "request": { "contractVersion": "1", "admissionId": "...", "actorId": "...", "workspaceId": "...", "workflowId": "...", "workflowVersion": "...", "instanceId": "...", "nonExecuting": true } }`. The outer `commandId` must equal `admissionId`; actor and workspace must equal the configured identity. The checked-in Core V1 source is `core-v1-content-direction@1.0.0`.
+
+Authoritative request shapes are exported TypeScript contracts and exercised in `tests/core-v1/core-v1-local-vertical-slice.test.ts`, `tests/workflows/workflow-specification-admission.test.ts`, and `tests/cli/local-runtime-cli.test.ts`. Copy IDs and exact versions from the latest report; never guess them or edit SQLite.
 
 ## Normal operating sequence
 
 1. Submit `CREATE_MISSION`, then `PLAN_MISSION`.
-2. Create the reviewed Workflow with `CREATE_WORKFLOW`.
+2. Admit the reviewed exact specification with `ADMIT_WORKFLOW_SPECIFICATION`. Use `CREATE_WORKFLOW` only for compatible legacy, un-attributed Core V1 definitions.
 3. Call `GET_OPERATOR_REPORT` and follow its one `nextAction`.
 4. Call `EVALUATE_READINESS`.
 5. Record required Fabio approval and each Guardian decision independently.

@@ -5,7 +5,12 @@ const typescriptFiles = ["src/**/*.ts", "tests/**/*.ts"];
 
 export default tseslint.config(
   {
-    ignores: ["coverage/**", "dist/**", "node_modules/**"],
+    ignores: [
+      ".codex-worktrees/**",
+      "coverage/**",
+      "dist/**",
+      "node_modules/**",
+    ],
   },
   {
     ...eslint.configs.recommended,

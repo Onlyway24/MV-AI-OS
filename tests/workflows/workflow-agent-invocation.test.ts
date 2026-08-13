@@ -22,12 +22,14 @@ import {
   InProcessAgentRuntime,
   SqliteRepositoryTransactionRunner,
   createWorkflowAgentInvoker,
+  createSpecificationFingerprint,
   createWorkflowControlCheckpointService,
   createWorkflowLifecycleService,
   createWorkflowPersistenceService,
   createWorkflowStepExecutionBoundary,
   type AgentInvocation,
   type AgentRuntime,
+  type AgentSpecification,
   type ControlledWorkflowAgentInvocationRequest,
   type WorkflowControlCheckpointEventIdentifierGenerator,
   type WorkflowDefinition,
@@ -146,10 +148,51 @@ describe("Controlled Workflow Agent Invocation", () => {
     expect(pausedRuntime.invocations).toEqual([]);
     await runner.close();
   });
+
+  it("does not resume an admitted reservation after its exact Agent Specification changes", async () => {
+    await withDatabase(async (path) => {
+      const first = createRunner(path);
+      await seed(first, admittedDefinition());
+      const interruptedRuntime = new RecordingRuntime(runtime());
+      await expect(
+        createInvoker(
+          new FailOnTransactionRunner(first, 4),
+          interruptedRuntime,
+        ).invoke(request()),
+      ).rejects.toThrow("injected transaction failure");
+      expect(interruptedRuntime.invocations).toHaveLength(1);
+      await first.close();
+
+      const changedSpecification = {
+        ...CONTENT_DIRECTOR_SPECIFICATION,
+        mission: "Changed after the durable invocation reservation.",
+      } satisfies AgentSpecification;
+      const reopened = createRunner(path);
+      const replayRuntime = new RecordingRuntime(runtime());
+      expect(
+        await createInvoker(
+          reopened,
+          replayRuntime,
+          true,
+          changedSpecification,
+        ).invoke(request()),
+      ).toMatchObject({
+        blocker: { code: "INVOCATION_STATE_INVALID" },
+        status: "BLOCKED",
+      });
+      expect(replayRuntime.invocations).toEqual([]);
+      expect(
+        await reopened.transaction(({ workflows }) =>
+          workflows.agentInvocations.getById("workflow-invocation-1"),
+        ),
+      ).toMatchObject({ status: "RESERVED" });
+      await reopened.close();
+    });
+  });
 });
 
-function createInvoker(runner: RepositoryTransactionRunner, agentRuntime: AgentRuntime, includeBinding = true) {
-  const specifications = new ImmutableAgentSpecificationRegistry([CONTENT_DIRECTOR_SPECIFICATION], new AgentSpecificationValidator());
+function createInvoker(runner: RepositoryTransactionRunner, agentRuntime: AgentRuntime, includeBinding = true, specification: AgentSpecification = CONTENT_DIRECTOR_SPECIFICATION) {
+  const specifications = new ImmutableAgentSpecificationRegistry([specification], new AgentSpecificationValidator());
   const executor = new DeterministicContentDirectorExecutor();
   const catalog = new ImmutableAgentRuntimeCatalog([{ descriptor: DETERMINISTIC_CONTENT_DIRECTOR_DESCRIPTOR, executor }], includeBinding ? [DETERMINISTIC_CONTENT_DIRECTOR_BINDING] : [], specifications);
   const boundary = createWorkflowStepExecutionBoundary({ agentCompany: DEFAULT_AGENT_COMPANY_MAP, agentSpecifications: specifications, capabilities: DEFAULT_AGENT_CAPABILITY_REGISTRY, controlEvidenceMode: "DURABLE_ONLY", operatorActorId: "fabio", permissionMatrix: DEFAULT_AGENT_PERMISSION_MATRIX, repositories: runner, responsibilities: DEFAULT_INTER_AGENT_RESPONSIBILITY_MATRIX });
@@ -177,14 +220,17 @@ class WorkflowControlEventIds
   }
 }
 
-async function seed(runner: SqliteRepositoryTransactionRunner): Promise<void> {
+async function seed(
+  runner: SqliteRepositoryTransactionRunner,
+  workflowDefinition: WorkflowDefinition = definition(),
+): Promise<void> {
   const persistenceService = createWorkflowPersistenceService({
     eventIds: new WorkflowEventIds(),
     repositories: runner,
     stateMachine: new DeterministicWorkflowStateMachine(new FixedClock()),
   });
 
-  await persistenceService.createDefinition(definition());
+  await persistenceService.createDefinition(workflowDefinition);
   await persistenceService.createInstance(instance());
 
   const checkpointService = createWorkflowControlCheckpointService({
@@ -211,6 +257,39 @@ async function seed(runner: SqliteRepositoryTransactionRunner): Promise<void> {
   }
 }
 function definition(): WorkflowDefinition { return { contractVersion: "1", definitionId: "content-workflow@1.0.0", nonExecuting: true, steps: [{ approvalRequired: false, dependencies: [], guardianRequired: false, nonExecuting: true, stepId: "direction" }], workflowId: "content-workflow", workflowVersion: "1.0.0" }; }
+function admittedDefinition(): WorkflowDefinition {
+  return {
+    ...definition(),
+    admission: {
+      agentSpecifications: [
+        {
+          agentId: CONTENT_DIRECTOR_SPECIFICATION.agentId,
+          fingerprint: createSpecificationFingerprint(
+            CONTENT_DIRECTOR_SPECIFICATION,
+          ),
+          version: CONTENT_DIRECTOR_SPECIFICATION.version,
+        },
+      ],
+      workflowSpecificationFingerprint: createSpecificationFingerprint({
+        version: "1.0.0",
+        workflowId: "content-workflow",
+      }),
+    },
+    steps: [
+      {
+        agent: {
+          agentId: CONTENT_DIRECTOR_SPECIFICATION.agentId,
+          version: CONTENT_DIRECTOR_SPECIFICATION.version,
+        },
+        approvalRequired: false,
+        dependencies: [],
+        guardianRequired: false,
+        nonExecuting: true,
+        stepId: "direction",
+      },
+    ],
+  };
+}
 function instance(): WorkflowInstance { return { contractVersion: "1", createdAt: "2026-01-01T00:00:00.000Z", definitionId: "content-workflow@1.0.0", instanceId: "content-instance", nonExecuting: true, receipts: [], status: "ACTIVE", steps: [{ blockers: [], status: "PENDING", stepId: "direction" }], stopReason: "NONE", updatedAt: "2026-01-01T00:00:00.000Z", version: 0 }; }
 function boundaryRequest(): WorkflowStepExecutionBoundaryRequest { return { actorId: "actor-local", agentAssignment: { agentId: "content-director", capabilityIds: ["content-strategy"], permissionIds: ["content-strategy-permission"], responsibilityAreaId: "content-direction", specificationId: "content-director@1.0.0", specificationVersion: "1.0.0" }, approvalEvidence: [], contractVersion: "1", expectedDefinitionId: "content-workflow@1.0.0", expectedVersion: 0, expectedWorkflowVersion: "1.0.0", guardianEvidence: [], instanceId: "content-instance", maxBlockers: 16, nonExecuting: true, policyDecision: { actorId: "actor-local", agent: { agentId: "content-director", version: "1.0.0" }, contractVersion: "1", decisionId: "policy-content-direction", deniedPermissions: [], effectivePermissions: ["knowledge:search", "model:invoke:content-direction-quality", "workflow:propose:content-director"], evaluatedAt: "2026-01-01T00:00:00.000Z", requestedPermissions: ["knowledge:search", "model:invoke:content-direction-quality", "workflow:propose:content-director"], taskId: "content-instance", workspaceId: "workspace-local" }, selection: { mode: "EXACT_STEP", stepId: "direction" }, workspaceId: "workspace-local" }; }
 function request(overrides: Partial<ControlledWorkflowAgentInvocationRequest> = {}): ControlledWorkflowAgentInvocationRequest { return { boundaryRequest: boundaryRequest(), contractVersion: "1", invocationId: "workflow-invocation-1", ...overrides }; }

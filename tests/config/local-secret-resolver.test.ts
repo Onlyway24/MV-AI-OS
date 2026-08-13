@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -87,6 +87,67 @@ describe("Controlled local secret resolution", () => {
     } finally {
       await rm(directory, { force: true, recursive: true });
     }
+  });
+
+  it("rejects oversized local files before decoding their content", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-secrets-"));
+    try {
+      const secretPath = join(directory, "oversized-provider-token.txt");
+      await writeFile(
+        secretPath,
+        Buffer.alloc(MAX_SECRET_VALUE_BYTES + 1, "x"),
+      );
+
+      await expect(
+        new LocalSecretResolver().resolve(
+          createLocalFileSecretReference(secretPath),
+        ),
+      ).rejects.toMatchObject({
+        code: "secret_value_invalid",
+        details: {
+          source: "local-file",
+        },
+      });
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it("fails closed when a local secret path is a symbolic link", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mv-ai-os-secrets-"));
+    try {
+      const targetPath = join(directory, "provider-token-target.txt");
+      const linkPath = join(directory, "provider-token-link.txt");
+      await writeFile(targetPath, "file-secret-value", "utf8");
+      await symlink(targetPath, linkPath);
+
+      await expect(
+        new LocalSecretResolver().resolve(
+          createLocalFileSecretReference(linkPath),
+        ),
+      ).rejects.toMatchObject({
+        code: "secret_file_unavailable",
+      });
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it("preserves the injectable reader boundary", async () => {
+    const resolver = new LocalSecretResolver({
+      readFile: (path) => {
+        expect(path).toBe("/virtual/provider-token.txt");
+        return Promise.resolve(new TextEncoder().encode("injected-secret"));
+      },
+    });
+
+    await expect(
+      resolver.resolve(
+        createLocalFileSecretReference("/virtual/provider-token.txt"),
+      ),
+    ).resolves.toMatchObject({
+      value: { value: "injected-secret" },
+    });
   });
 
   it("rejects invalid secret references before resolution", async () => {

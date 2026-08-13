@@ -3,6 +3,7 @@ import { RepositoryConflictError, RepositoryValidationError } from "../../errors
 import type { LocalWorkflowCommandReceipt, LocalWorkflowCommandRepository, LocalWorkflowOwnership } from "../../runtime/local-workflow-command-repository.js";
 import { LocalWorkflowCommandResponseValidator } from "../../runtime/local-workflow-command.js";
 import { isSqliteConstraintError, SqliteRepositoryError } from "./sqlite-error.js";
+import { parseSqliteRecordJson, stringifySqliteRecordJson } from "./sqlite-record-codec.js";
 import { assertActiveTransaction, type SqliteTransactionScope } from "./sqlite-transaction-scope.js";
 
 export class SqliteLocalWorkflowCommandRepository implements LocalWorkflowCommandRepository {
@@ -24,7 +25,8 @@ export class SqliteLocalWorkflowCommandRepository implements LocalWorkflowComman
     if (!fingerprint(receipt.fingerprint)) throw new RepositoryValidationError("Local Workflow command receipt is invalid");
     const response = this.#validateResponse(receipt.response);
     if (response.commandId !== receipt.commandId) throw new RepositoryValidationError("Local Workflow command receipt response does not match the command ID");
-    try { this.database.prepare("INSERT INTO local_workflow_commands (command_id, fingerprint, operation, response_json) VALUES (?, ?, ?, ?)").run(receipt.commandId, receipt.fingerprint, response.operation, JSON.stringify(response)); } catch (error) { if (isSqliteConstraintError(error)) throw new RepositoryConflictError("Local Workflow command ID already exists"); throw new SqliteRepositoryError("Local Workflow command receipt write failed", "local_workflow_command.write"); }
+    const json = stringifySqliteRecordJson(response, "Local Workflow command receipt");
+    try { this.database.prepare("INSERT INTO local_workflow_commands (command_id, fingerprint, operation, response_json) VALUES (?, ?, ?, ?)").run(receipt.commandId, receipt.fingerprint, response.operation, json); } catch (error) { if (isSqliteConstraintError(error)) throw new RepositoryConflictError("Local Workflow command ID already exists"); throw new SqliteRepositoryError("Local Workflow command receipt write failed", "local_workflow_command.write"); }
     return Promise.resolve();
   }
   public getOwnership(instanceId: string): Promise<LocalWorkflowOwnership | undefined> {
@@ -43,7 +45,7 @@ export class SqliteLocalWorkflowCommandRepository implements LocalWorkflowComman
     try { this.database.prepare("INSERT INTO local_workflow_ownership (instance_id, workspace_id, actor_id) VALUES (?, ?, ?)").run(ownership.instanceId, ownership.workspaceId, ownership.actorId); } catch (error) { if (isSqliteConstraintError(error)) throw new RepositoryConflictError("Local Workflow ownership already exists"); throw new SqliteRepositoryError("Local Workflow ownership write failed", "local_workflow_ownership.write"); }
     return Promise.resolve();
   }
-  #decodeResponse(serialized: string): LocalWorkflowCommandReceipt["response"] { try { return this.#validateResponse(JSON.parse(serialized)); } catch (error) { if (error instanceof RepositoryValidationError) throw error; throw new RepositoryValidationError("Local Workflow command receipt is corrupted"); } }
+  #decodeResponse(serialized: string): LocalWorkflowCommandReceipt["response"] { return this.#validateResponse(parseSqliteRecordJson(serialized, "Local Workflow command receipt")); }
   #validateResponse(value: unknown): LocalWorkflowCommandReceipt["response"] { const checked = this.#responseValidator.validate(value); if (!checked.ok) throw new RepositoryValidationError("Local Workflow command response is invalid", { issueCount: checked.issues.length }); return checked.value; }
 }
 

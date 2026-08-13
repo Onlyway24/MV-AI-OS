@@ -10,6 +10,30 @@ export const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1" as const;
 export const MAX_OPENAI_BASE_URL_LENGTH = 256;
 export const MAX_OPENAI_HEADER_VALUE_LENGTH = 256;
 
+export function canonicalizeOpenAIBaseUrl(
+  value: string,
+): typeof DEFAULT_OPENAI_BASE_URL | undefined {
+  try {
+    const url = new URL(value);
+    if (
+      url.protocol !== "https:" ||
+      url.username.length > 0 ||
+      url.password.length > 0
+    ) {
+      return undefined;
+    }
+
+    const canonical = url.href.endsWith("/")
+      ? url.href.slice(0, -1)
+      : url.href;
+    return canonical === DEFAULT_OPENAI_BASE_URL
+      ? DEFAULT_OPENAI_BASE_URL
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface OpenAIModelProviderConfig {
   readonly apiKey: SecretValue;
   readonly baseUrl: string;
