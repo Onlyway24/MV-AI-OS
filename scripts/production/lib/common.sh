@@ -227,7 +227,8 @@ ensure_acceptance_signing_identity() {
     -in "$challenge" \
     -sigfile "$challenge_signature" >/dev/null \
     || die "release acceptance signing key pair does not match"
-  unlink "$challenge" "$challenge_signature"
+  unlink "$challenge"
+  unlink -- "$challenge_signature"
 }
 
 write_release_acceptance_marker() {
@@ -303,7 +304,8 @@ write_release_acceptance_marker() {
   chmod 0640 "$temporary"
   mv -T -- "$temporary" "$target"
   sync -f "$ONLYWAY_ACCEPTED_RELEASES_DIR"
-  unlink "$unsigned" "$signature"
+  unlink "$unsigned"
+  unlink -- "$signature"
   printf '%s\n' "$target"
 }
 
@@ -374,7 +376,8 @@ verify_release_acceptance_marker() {
     -in "$unsigned" \
     -sigfile "$signature" >/dev/null \
     || die "release acceptance marker signature is invalid"
-  unlink "$unsigned" "$signature"
+  unlink "$unsigned"
+  unlink -- "$signature"
   printf '%s\n' "$marker"
 }
 

@@ -272,7 +272,8 @@ restore_previous_on_failure() {
   fi
   ((status == 0)) && status=1
   set +e
-  unlink "$TEMPORARY_DATABASE" "$TEMPORARY_ADMIN_STATE" 2>/dev/null
+  unlink "$TEMPORARY_DATABASE" 2>/dev/null
+  unlink "$TEMPORARY_ADMIN_STATE" 2>/dev/null
   if ((STACK_STOP_ATTEMPTED == 1)); then
     systemctl stop "$ONLYWAY_SYSTEMD_UNIT"
     if running=$(compose ps --status running --quiet 2>/dev/null); then

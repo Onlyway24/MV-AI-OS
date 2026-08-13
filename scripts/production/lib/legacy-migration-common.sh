@@ -785,7 +785,8 @@ legacy_require_existing_trust_anchor() {
   openssl pkeyutl -verify -rawin -pubin -inkey "$public_key" \
     -in "$challenge" -sigfile "$signature" >/dev/null 2>&1 \
     || legacy_die "legacy receipt trust anchor key pair does not match"
-  unlink "$challenge" "$signature"
+  unlink "$challenge"
+  unlink -- "$signature"
 }
 
 legacy_publish_exclusive_file() (
@@ -902,7 +903,8 @@ legacy_publish_signed_json() (
   legacy_verify_signed_json "$target" "$signature_target" "$public_key" "$gid" \
     >/dev/null
   sync -f "$parent"
-  unlink "$raw_signature" "$signature_document"
+  unlink "$raw_signature"
+  unlink -- "$signature_document"
   raw_signature=
   signature_document=
   complete=true
@@ -1051,7 +1053,8 @@ legacy_verify_release_acceptance() (
   [[ $(legacy_file_identity "$marker") == "$marker_identity" \
     && $(legacy_file_identity "$public_key") == "$key_identity" ]] \
     || legacy_die "release acceptance verification inputs changed"
-  unlink "$unsigned" "$raw_signature"
+  unlink "$unsigned"
+  unlink -- "$raw_signature"
   unsigned=
   raw_signature=
   printf '%s\n' "$(legacy_sha256_file "$marker")"
