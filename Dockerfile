@@ -18,6 +18,9 @@ COPY src ./src
 RUN npm run build
 
 FROM build AS verification
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends jq \
+    && rm -rf /var/lib/apt/lists/*
 COPY eslint.config.js ./
 COPY tests ./tests
 COPY assets ./assets
