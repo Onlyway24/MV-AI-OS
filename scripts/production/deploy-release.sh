@@ -966,7 +966,7 @@ CANDIDATE_RUN_ID="candidate-${COMMIT:0:12}-$(date -u +%Y%m%d%H%M%S)"
 install -d -o "$ONLYWAY_SERVICE_USER" -g "$ONLYWAY_SERVICE_GROUP" -m 0700 \
   "${CANDIDATE_ROOT}/data/rehearsals/${CANDIDATE_RUN_ID}"
 candidate_compose --profile operations run --rm --no-deps backup-verifier \
-  npm run production-rehearsal -- \
+  npm run --silent production-rehearsal -- \
   --database "/var/lib/onlyway/rehearsals/${CANDIDATE_RUN_ID}/source.sqlite" \
   --backup "/var/lib/onlyway/rehearsals/${CANDIDATE_RUN_ID}/backup.sqlite" \
   --restore "/var/lib/onlyway/rehearsals/${CANDIDATE_RUN_ID}/restored.sqlite" \
