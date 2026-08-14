@@ -116,6 +116,8 @@ require_text 'image: mv-ai-os:\$\{ONLYWAY_RELEASE_COMMIT:\?' "$COMPOSE"
 reject_text '^[[:space:]]+user: "(0|root)(:0|:root)?"$' "$COMPOSE"
 require_text '127\.0\.0\.1:\$\{ONLYWAY_TUNNEL_PORT:-43100\}:8080' "$COMPOSE"
 require_text 'caddy:2\.11\.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648' "$COMPOSE"
+require_text '^[[:space:]]+cap_add:$' "$COMPOSE"
+require_text '^[[:space:]]+- NET_BIND_SERVICE$' "$COMPOSE"
 require_text 'ONLYWAY_ACCEPTANCE_PUBLIC_KEY_PATH: /run/onlyway/release-acceptance-ed25519\.pub\.pem' "$COMPOSE"
 require_text '- \*acceptance-public-key-mount' "$COMPOSE"
 [[ $(grep -Ec 'restart: "\$\{ONLYWAY_RESTART_POLICY:-unless-stopped\}"' \

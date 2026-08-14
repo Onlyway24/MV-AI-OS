@@ -792,7 +792,8 @@ ONLYWAY_ADMIN_PEPPER_FILE="$ONLYWAY_ADMIN_PEPPER_FILE" \
     config --quiet
 docker pull --quiet "$ONLYWAY_CADDY_IMAGE" >/dev/null
 docker run --rm --network none --read-only \
-  --cap-drop ALL --security-opt no-new-privileges:true \
+  --cap-drop ALL --cap-add NET_BIND_SERVICE \
+  --security-opt no-new-privileges:true \
   --tmpfs /config:rw,noexec,nosuid,nodev \
   --tmpfs /data:rw,noexec,nosuid,nodev \
   --mount "type=bind,src=${SOURCE}/ops/production/Caddyfile,dst=/etc/caddy/Caddyfile,readonly" \
