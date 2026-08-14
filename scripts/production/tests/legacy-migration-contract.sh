@@ -17,6 +17,13 @@ DATABASE="/srv/onlyway/data/onlyway.sqlite"
 CONFIG="/srv/onlyway/config/runtime-private.json"
 EXCLUDED_SECRET="/srv/onlyway/secrets/openai-api-key"
 
+grep -F -- '--cookie "$cookie_jar" --cookie-jar "$cookie_jar"' \
+  "${ROOT}/scripts/production/lib/legacy-migration-common.sh" >/dev/null \
+  || {
+    printf '%s\n' "legacy bootstrap probe does not preserve its redirect session" >&2
+    exit 1
+  }
+
 validate() {
   local inspect_file=$1
   legacy_validate_inventory_file \

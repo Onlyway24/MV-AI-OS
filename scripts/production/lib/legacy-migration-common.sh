@@ -481,17 +481,22 @@ legacy_validate_legacy_bootstrap() {
     || legacy_die "legacy bootstrap channel contract is invalid"
 }
 
-legacy_probe_legacy_bootstrap() {
+legacy_probe_legacy_bootstrap() (
   local path=$1
   local expected_origin=$2
   local access_url
+  local cookie_jar
   legacy_validate_legacy_bootstrap "$path" "$expected_origin"
+  cookie_jar=$(mktemp /tmp/onlyway-legacy-bootstrap-cookie.XXXXXX)
+  chmod 0600 "$cookie_jar"
+  trap 'unlink "$cookie_jar" 2>/dev/null || true' EXIT
   access_url=$(jq -er '.accessUrl' "$path")
   curl --silent --fail --location --max-redirs 3 --max-time 10 \
+    --cookie "$cookie_jar" --cookie-jar "$cookie_jar" \
     --output /dev/null "$access_url" 2>/dev/null \
     || legacy_die "authenticated legacy Command Center probe failed"
   unset access_url
-}
+)
 
 legacy_wait_for_legacy_bootstrap() {
   local path=$1
