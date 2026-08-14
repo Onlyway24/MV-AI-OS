@@ -122,6 +122,23 @@ expect_rejection() {
 }
 
 validate "$BASE"
+jq '
+  .inventory.containers |= map(
+    if .name == "onlyway-command-center" then
+      .configuration.networkMode = "host" |
+      .configuration.portBindings = []
+    else . end
+  )
+' "$BASE" >"${TMP}/accepted-host-command-center.json"
+validate "${TMP}/accepted-host-command-center.json"
+expect_rejection \
+  "non-command-center host network" \
+  '.inventory.containers |= map(
+    if .name == "onlyway-scheduler" then
+      .configuration.networkMode = "host"
+    else . end
+  )' \
+  "wrong-host-network-container"
 expect_rejection \
   "receipt ID drift" \
   '.inventory.containers[0].id =

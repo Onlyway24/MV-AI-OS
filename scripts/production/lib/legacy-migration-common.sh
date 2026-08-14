@@ -1276,9 +1276,13 @@ legacy_validate_install_preflight_contract() {
           (.name | test("^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")) and
           .configuration.imageId == $preflight.inventory.expectedImageId and
           .configuration.restartPolicy == "unless-stopped" and
-          (.configuration.user | split(":")[0]) == "2001" and
-          .configuration.networkMode != "host"
+          (.configuration.user | split(":")[0]) == "2001"
         ) and
+        (([.inventory.containers[] |
+            select(.configuration.networkMode == "host")] | length == 0) or
+          ([.inventory.containers[] |
+            select(.configuration.networkMode == "host")] |
+            length == 1 and .[0].name == "onlyway-command-center")) and
         .migrationPolicy.adminSecurityContinuity ==
           "NOT_APPLICABLE_PRE_ADMIN_SECURITY" and
         .migrationPolicy.copyOnMigrate == true and
