@@ -564,7 +564,8 @@ legacy_create_sqlite_copy() {
   temporary=$(mktemp "$(dirname -- "$target")/.legacy-sqlite-copy.XXXXXX")
   chmod 0600 "$temporary"
   unlink "$temporary"
-  sqlite3 -readonly "$source" ".backup '${temporary}'" 2>/dev/null \
+  sqlite3 -readonly "$source" \
+    '.timeout 30000' ".backup '${temporary}'" 2>/dev/null \
     || legacy_die "coherent SQLite backup failed"
   [[ -f $temporary && ! -L $temporary ]] \
     || legacy_die "coherent SQLite backup was not created"

@@ -23,6 +23,12 @@ grep -F -- '--cookie "$cookie_jar" --cookie-jar "$cookie_jar"' \
     printf '%s\n' "legacy bootstrap probe does not preserve its redirect session" >&2
     exit 1
   }
+grep -F -- "'.timeout 30000'" \
+  "${ROOT}/scripts/production/lib/legacy-migration-common.sh" >/dev/null \
+  || {
+    printf '%s\n' "legacy SQLite backup lacks a bounded busy timeout" >&2
+    exit 1
+  }
 
 validate() {
   local inspect_file=$1
