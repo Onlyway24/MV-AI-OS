@@ -61,10 +61,7 @@ jq -e \
     .services["health-monitor"].image == $image and
     .services["backup-verifier"].image == $image and
     .services["reverse-proxy"].image == $caddyImage and
-    ([.services[].ports[]?] | length) == 1 and
-    ([.services[].ports[]?] |
-      all(.host_ip == "127.0.0.1" and
-        (.published | tostring) == "43100"))
+    ([.services[].ports[]?] | length) == 0
   ' "$COMPOSE_JSON" >/dev/null \
   || die "Compose release identity or private-only port contract is invalid"
 

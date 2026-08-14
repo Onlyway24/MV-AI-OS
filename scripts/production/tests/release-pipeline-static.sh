@@ -114,7 +114,7 @@ require_text 'image: mv-ai-os:\$\{ONLYWAY_RELEASE_COMMIT:\?' "$COMPOSE"
     exit 1
   }
 reject_text '^[[:space:]]+user: "(0|root)(:0|:root)?"$' "$COMPOSE"
-require_text '127\.0\.0\.1:\$\{ONLYWAY_TUNNEL_PORT:-43100\}:8080' "$COMPOSE"
+reject_text '^[[:space:]]+ports:$' "$COMPOSE"
 require_text 'caddy:2\.11\.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648' "$COMPOSE"
 require_text '^[[:space:]]+cap_add:$' "$COMPOSE"
 require_text '^[[:space:]]+- NET_BIND_SERVICE$' "$COMPOSE"
@@ -145,6 +145,9 @@ require_text '^EXPOSE 43101$' "$DOCKERFILE"
 require_text 'install -d -o root -g root -m 0755 /run/onlyway' "$DOCKERFILE"
 reject_text '^USER (0|root)(:0|:root)?$' "$DOCKERFILE"
 require_text '^:8080 \{$' "$CADDYFILE"
+require_text 'header_up Host \{http\.request\.hostport\}' "$CADDYFILE"
+require_text 'header_up X-Forwarded-Host \{http\.request\.hostport\}' "$CADDYFILE"
+reject_text 'header_up (Host|X-Forwarded-Host) \{http\.request\.host\}$' "$CADDYFILE"
 reject_text '^:(80|443) \{' "$CADDYFILE"
 WORKER_BLOCK=$(sed -n '/^  worker:/,/^  health-monitor:/p' "$COMPOSE")
 COMMAND_CENTER_BLOCK=$(sed -n '/^  command-center:/,/^  scheduler:/p' "$COMPOSE")
@@ -170,7 +173,8 @@ if printf '%s\n' "$WORKER_BLOCK" \
 fi
 
 require_text 'org\.opencontainers\.image\.revision' "$DEPLOY"
-require_text 'candidate_compose up --detach --remove-orphans' "$DEPLOY"
+require_text '^candidate_compose up --detach --remove-orphans$' "$DEPLOY"
+require_text 'loopback-proxy\.sh' "$DEPLOY"
 require_text 'create_verified_live_backup' "$DEPLOY"
 require_text 'write_release_acceptance_marker' "$DEPLOY"
 require_text 'begin_release_transaction' "$DEPLOY"
@@ -193,7 +197,7 @@ require_order 'trap early_legacy_on_exit EXIT' \
 require_order 'LEGACY_ROLLBACK_ARMED=true' \
   'legacy-deploy-quiesce-contract\.jq' "$DEPLOY"
 require_order 'CANDIDATE_START_ATTEMPTED=true' \
-  'candidate_compose up --detach --remove-orphans' "$DEPLOY"
+  '^candidate_compose up --detach --remove-orphans$' "$DEPLOY"
 require_order 'candidate_recovery_recover_all' \
   'PREEXISTING_INVENTORY=' "$DEPLOY"
 require_order 'candidate_recovery_arm_guard' \
@@ -297,6 +301,10 @@ FINAL_BUNDLE_VALIDATION_LINE=$(grep -nE '^validate_recovery_bundle$' "$RESTORE" 
 require_text '^AssertPathExists=/srv/onlyway/current/compose\.production\.yml$' "$UNIT"
 require_text '^AssertPathExists=/srv/onlyway/config/compose\.env$' "$UNIT"
 require_text '^ExecStartPre=.*/release-preflight\.sh --expected-commit' "$UNIT"
+require_text '^ExecStart=.*/loopback-proxy\.sh --compose-project onlyway --listen-port 43100$' "$UNIT"
+require_text '^Type=simple$' "$UNIT"
+require_text '^KillMode=control-group$' "$UNIT"
+reject_text '^RemainAfterExit=' "$UNIT"
 require_text '^ExecStartPost=.*/readiness\.sh --expected-commit .*--expected-kind STARTUP' "$UNIT"
 require_text '^ExecStopPost=/usr/bin/docker compose .* down --remove-orphans --timeout 45$' "$UNIT"
 reject_text '^ConditionPathExists=' "$UNIT"

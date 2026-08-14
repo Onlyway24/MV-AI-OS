@@ -216,7 +216,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
-  ca-certificates curl fail2ban git gnupg iproute2 jq openssl rsync sqlite3 \
+  ca-certificates curl fail2ban git gnupg iproute2 jq openssl rsync socat sqlite3 \
   ufw unattended-upgrades
 
 install -d -m 0755 /etc/apt/keyrings

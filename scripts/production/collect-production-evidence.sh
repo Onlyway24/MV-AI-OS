@@ -1273,9 +1273,7 @@ jq -e \
       end
     ) and
     ([.[] | (.NetworkSettings.Ports // {}) | to_entries[] | .value[]?] |
-      length == 1 and
-      .[0].HostIp == "127.0.0.1" and
-      .[0].HostPort == "43100") and
+      length == 0) and
     ([.[] | .Mounts[]? |
       select(.Destination == "/etc/onlyway" or
         .Destination == "/run/secrets/onlyway" or
@@ -1303,7 +1301,7 @@ jq -S -n \
     checks: [
       "exact-image", "non-root", "not-privileged", "cap-drop-all",
       "no-new-privileges", "read-only-root", "no-docker-socket",
-      "no-host-network", "internal-network", "loopback-publish-only",
+      "no-host-network", "internal-network", "host-loopback-proxy-only",
       "bounded-log-rotation", "external-data", "external-secrets"
     ],
     commit: $commit,

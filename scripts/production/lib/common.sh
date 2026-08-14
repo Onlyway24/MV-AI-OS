@@ -636,11 +636,13 @@ assert_private_running_stack() (
         end
       ) and
       ([.[] | (.NetworkSettings.Ports // {}) | to_entries[] | .value[]?] |
-        length == 1 and
-        .[0].HostIp == "127.0.0.1" and
-        .[0].HostPort == $port)
+        length == 0)
     ' "$inspect_file" >/dev/null \
     || die "container identity, confinement or loopback-only port contract failed"
+  ss -H -lnt "sport = :${port}" \
+    | awk '{print $4}' \
+    | grep -Eq "^127\\.0\\.0\\.1:${port}$" \
+    || die "host loopback proxy is not listening on the expected port"
 )
 
 validate_release_systemd_units() {

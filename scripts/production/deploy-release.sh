@@ -401,6 +401,7 @@ CANDIDATE_STARTED=false
 CANDIDATE_START_ATTEMPTED=false
 CANDIDATE_PROJECT="onlyway-candidate-${COMMIT:0:12}"
 CANDIDATE_PORT=$((44000 + (16#${COMMIT:0:4} % 1000)))
+CANDIDATE_PROXY_PID=
 CANDIDATE_GUARD_ARMED=false
 PROMOTION_STEP=preflight
 FAILURE_RECEIPT_WRITTEN=false
@@ -436,6 +437,7 @@ remove_candidate() {
   local result=0
   local remaining_containers=
   local remaining_networks=
+  stop_candidate_proxy || result=1
   if [[ $CANDIDATE_START_ATTEMPTED == "true" \
     && -n $CANDIDATE_ROOT && -n $SOURCE ]]; then
     candidate_compose down --remove-orphans --volumes >/dev/null 2>&1 \
@@ -471,6 +473,18 @@ remove_candidate() {
   fi
   if ((result == 0)); then
     CANDIDATE_ROOT=
+  fi
+  return "$result"
+}
+
+stop_candidate_proxy() {
+  local result=0
+  if [[ -n $CANDIDATE_PROXY_PID ]]; then
+    if kill -0 "$CANDIDATE_PROXY_PID" 2>/dev/null; then
+      kill -TERM "$CANDIDATE_PROXY_PID" 2>/dev/null || result=1
+      wait "$CANDIDATE_PROXY_PID" 2>/dev/null || true
+    fi
+    CANDIDATE_PROXY_PID=
   fi
   return "$result"
 }
@@ -924,6 +938,10 @@ PROMOTION_STEP=candidate-start
 CANDIDATE_START_ATTEMPTED=true
 candidate_compose up --detach --remove-orphans
 CANDIDATE_STARTED=true
+"${SOURCE}/scripts/production/loopback-proxy.sh" \
+  --compose-project "$CANDIDATE_PROJECT" \
+  --listen-port "$CANDIDATE_PORT" &
+CANDIDATE_PROXY_PID=$!
 CANDIDATE_CONTAINER=$(candidate_compose ps --quiet command-center)
 [[ $CANDIDATE_CONTAINER =~ ^[0-9a-f]{64}$ ]] \
   || die "candidate Command Center container identity is invalid"
@@ -970,6 +988,7 @@ CANDIDATE_READINESS_FINGERPRINT=$(sha256sum "$CANDIDATE_READINESS" | awk '{print
 [[ $CANDIDATE_READINESS_FINGERPRINT =~ ^[0-9a-f]{64}$ ]] \
   || die "candidate readiness fingerprint is invalid"
 PROMOTION_STEP=candidate-cleanup
+stop_candidate_proxy
 candidate_compose down --remove-orphans --volumes
 CANDIDATE_REMAINING_CONTAINERS=$(docker ps --all --quiet \
   --filter "label=com.docker.compose.project=${CANDIDATE_PROJECT}") \

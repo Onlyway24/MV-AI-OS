@@ -106,8 +106,6 @@ services:
       - "43101"
       - --external-origin
       - ${ONLYWAY_EXTERNAL_ORIGIN:-http://localhost:43100}
-    ports:
-      - "127.0.0.1:${ONLYWAY_TUNNEL_PORT:-43100}:8080"
     volumes:
       - *data-mount
       - *config-mount
