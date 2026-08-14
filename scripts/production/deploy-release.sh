@@ -962,7 +962,7 @@ assert_private_running_stack \
 candidate_recovery_assert_no_restart "$CANDIDATE_PROJECT"
 
 PROMOTION_STEP=candidate-offline-rehearsal
-CANDIDATE_RUN_ID="candidate-${COMMIT:0:12}-$(date -u +%Y%m%dT%H%M%SZ)"
+CANDIDATE_RUN_ID="candidate-${COMMIT:0:12}-$(date -u +%Y%m%d%H%M%S)"
 install -d -o "$ONLYWAY_SERVICE_USER" -g "$ONLYWAY_SERVICE_GROUP" -m 0700 \
   "${CANDIDATE_ROOT}/data/rehearsals/${CANDIDATE_RUN_ID}"
 candidate_compose --profile operations run --rm --no-deps backup-verifier \

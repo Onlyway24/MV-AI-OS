@@ -175,6 +175,8 @@ fi
 require_text 'org\.opencontainers\.image\.revision' "$DEPLOY"
 require_text '^candidate_compose up --detach --remove-orphans$' "$DEPLOY"
 require_text 'loopback-proxy\.sh' "$DEPLOY"
+require_text 'CANDIDATE_RUN_ID="candidate-\$\{COMMIT:0:12\}-\$\(date -u \+%Y%m%d%H%M%S\)"' "$DEPLOY"
+reject_text 'CANDIDATE_RUN_ID=.*%Y%m%dT%H%M%SZ' "$DEPLOY"
 require_text 'create_verified_live_backup' "$DEPLOY"
 require_text 'write_release_acceptance_marker' "$DEPLOY"
 require_text 'begin_release_transaction' "$DEPLOY"
