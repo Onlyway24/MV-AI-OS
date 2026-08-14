@@ -430,6 +430,8 @@ require_text '^bantime = 3600$' "$INSTALL_HOST"
 require_text 'systemctl enable --now fail2ban\.service' "$INSTALL_HOST"
 require_text 'conv=excl' "$COMMON"
 require_text 'conv=excl' "$EVIDENCE"
+require_order '^candidate_compose\(\) \{$' '^[[:space:]]*env \\$' "$DEPLOY"
+require_order '^env \\$' '^ONLYWAY_RELEASE_COMMIT="\$COMMIT" \\$' "$DEPLOY"
 require_order 'systemctl restart fail2ban\.service' \
   'fail2ban-client ping' "$INSTALL_HOST"
 require_text 'systemctl enable --now apt-daily\.timer apt-daily-upgrade\.timer' \

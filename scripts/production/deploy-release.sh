@@ -412,6 +412,7 @@ MIGRATED_LIVE_STATE_MUTATED=false
 LIVE_ADMIN_PEPPER_CREATED=false
 
 candidate_compose() {
+  env \
   COMPOSE_PROJECT_NAME="$CANDIDATE_PROJECT" \
   ONLYWAY_RELEASE_COMMIT="$COMMIT" \
   ONLYWAY_DATA_DIR="${CANDIDATE_ROOT}/data" \
@@ -539,6 +540,7 @@ remove_first_deploy_application_state() {
   local artifact
   if [[ $PROMOTION_START_ATTEMPTED == "true" ]]; then
     if [[ -d $RELEASE && -f "${RELEASE}/compose.production.yml" ]]; then
+      env \
       COMPOSE_PROJECT_NAME="$ONLYWAY_COMPOSE_PROJECT" \
       ONLYWAY_RELEASE_COMMIT="$COMMIT" \
       ONLYWAY_DATA_DIR="$ONLYWAY_DATA_DIR" \
@@ -774,6 +776,7 @@ fi
 PROMOTION_STEP=compose-and-unit-validation
 ensure_acceptance_signing_identity
 "${SOURCE}/scripts/production/tests/release-pipeline-static.sh" "$SOURCE"
+env \
 ONLYWAY_RELEASE_COMMIT="$COMMIT" \
 ONLYWAY_DATA_DIR="$ONLYWAY_DATA_DIR" \
 ONLYWAY_BACKUP_DIR="$ONLYWAY_BACKUP_DIR" \
