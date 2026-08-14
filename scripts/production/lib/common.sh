@@ -799,11 +799,11 @@ verify_host_receipt_signature() (
   public_key_identity=$(stat -c '%d:%i:%u:%g:%a:%s' \
     "$ONLYWAY_ACCEPTANCE_PUBLIC_KEY")
   dd if="$receipt" of="$receipt_snapshot" \
-    iflag=nofollow,fullblock oflag=excl status=none
+    iflag=nofollow,fullblock conv=excl status=none
   dd if="$signature" of="$signature_snapshot" \
-    iflag=nofollow,fullblock oflag=excl status=none
+    iflag=nofollow,fullblock conv=excl status=none
   dd if="$ONLYWAY_ACCEPTANCE_PUBLIC_KEY" of="$public_key_snapshot" \
-    iflag=nofollow,fullblock oflag=excl status=none
+    iflag=nofollow,fullblock conv=excl status=none
   chmod 0600 "$receipt_snapshot" "$signature_snapshot" "$public_key_snapshot"
   [[ $(stat -c '%d:%i:%u:%g:%a:%s' "$receipt") == \
       "$receipt_identity" \

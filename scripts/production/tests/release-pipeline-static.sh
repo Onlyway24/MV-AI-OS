@@ -338,7 +338,7 @@ require_order 'chmod 0644 "\$ONLYWAY_ACCEPTANCE_PUBLIC_KEY"' \
   'openssl pkey -pubin -in "\$ONLYWAY_ACCEPTANCE_PUBLIC_KEY" -noout' "$COMMON"
 require_text '^verify_host_receipt_signature\(\) \($' "$COMMON"
 require_text 'local signature="\$\{receipt\}\.sig"' "$COMMON"
-require_text 'iflag=nofollow,fullblock oflag=excl' "$COMMON"
+require_text 'iflag=nofollow,fullblock conv=excl' "$COMMON"
 require_text 'signature_size == "64"' "$COMMON"
 require_text 'host receipt trust anchor metadata is invalid' "$COMMON"
 require_text 'host receipt detached Ed25519 signature is invalid' "$COMMON"
@@ -428,6 +428,8 @@ require_text '^maxretry = 5$' "$INSTALL_HOST"
 require_text '^findtime = 600$' "$INSTALL_HOST"
 require_text '^bantime = 3600$' "$INSTALL_HOST"
 require_text 'systemctl enable --now fail2ban\.service' "$INSTALL_HOST"
+require_text 'conv=excl' "$COMMON"
+require_text 'conv=excl' "$EVIDENCE"
 require_order 'systemctl restart fail2ban\.service' \
   'fail2ban-client ping' "$INSTALL_HOST"
 require_text 'systemctl enable --now apt-daily\.timer apt-daily-upgrade\.timer' \

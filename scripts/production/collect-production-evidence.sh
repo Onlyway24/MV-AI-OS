@@ -223,7 +223,7 @@ snapshot_nofollow() {
     if="$source" \
     of="$target" \
     iflag=nofollow,fullblock \
-    oflag=excl \
+    conv=excl \
     status=none \
     || die "evidence snapshot could not be read without following links"
   identity_after=$(stat -c '%d:%i:%u:%g:%a:%s' "$source")
