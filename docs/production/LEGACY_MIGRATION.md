@@ -11,7 +11,8 @@ The accepted source boundary is:
 - one immutable, operator-supplied Docker image ID; the mutable
   `onlyway/mv-ai-os:1982d7f` reference is never trusted;
 - runtime UID `2001`, restart policy `unless-stopped`, no Compose labels and one
-  published endpoint, `127.0.0.1:41479`;
+  exact host listener, `127.0.0.1:41479`; it may be the sole Docker-published
+  endpoint or the sole host-networked `onlyway-command-center` listener;
 - `/srv/onlyway/data/onlyway.sqlite`, owner UID `2001`, mode `0600`, SQLite
   integrity `ok` and schema version `32`;
 - `/srv/onlyway/config/runtime-private.json`, mode `0640`, with actor `fabio`,

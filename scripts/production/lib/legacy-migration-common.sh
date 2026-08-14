@@ -294,6 +294,18 @@ legacy_validate_inventory_file() {
               hostPort: .HostPort
             }
         ];
+      def listener_geometry_is_safe:
+        ((all(.[]; .HostConfig.NetworkMode != "host")) and
+          (port_bindings | length == 1) and
+          (port_bindings[0].hostIp == $expectedHost) and
+          (port_bindings[0].hostPort == $expectedPort)) or
+        (([.[] | select(.HostConfig.NetworkMode == "host")] | length == 1) and
+          all(.[];
+            if .HostConfig.NetworkMode == "host" then
+              (.Name | ltrimstr("/")) == "onlyway-command-center"
+            else true end
+          ) and
+          (port_bindings | length == 0));
       length == 4 and
       ([.[].Id] | length == (unique | length)) and
       ([.[].Name] | length == (unique | length)) and
@@ -305,7 +317,6 @@ legacy_validate_inventory_file() {
         .State.Running == true and
         ((.Config.User // "") | split(":")[0]) == $expectedUid and
         .HostConfig.RestartPolicy.Name == $expectedRestartPolicy and
-        .HostConfig.NetworkMode != "host" and
         ([((.Config.Labels // {}) | keys[]) |
           select(startswith("com.docker.compose."))] | length == 0) and
         all(.Mounts[]?;
@@ -314,9 +325,7 @@ legacy_validate_inventory_file() {
           (.Destination | type == "string" and startswith("/"))
         )
       ) and
-      (port_bindings | length == 1) and
-      (port_bindings[0].hostIp == $expectedHost) and
-      (port_bindings[0].hostPort == $expectedPort) and
+      listener_geometry_is_safe and
       covered_by_bind($database) and
       covered_by_bind($runtimeConfig) and
       (covered_by_bind($excludedSecret) | not)

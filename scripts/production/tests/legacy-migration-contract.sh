@@ -37,6 +37,17 @@ validate "$VALID"
 TMP=$(mktemp -d)
 trap 'find "$TMP" -xdev -depth -delete' EXIT
 
+jq '.[0].HostConfig.NetworkMode = "host" |
+  .[0].HostConfig.PortBindings = {}' \
+  "$VALID" >"${TMP}/host-network-command-center.json"
+validate "${TMP}/host-network-command-center.json"
+
+jq '.[1].HostConfig.NetworkMode = "host" |
+  .[0].HostConfig.PortBindings = {}' \
+  "$VALID" >"${TMP}/wrong-host-network-container.json"
+expect_rejection \
+  "${TMP}/wrong-host-network-container.json" "non-command-center host network"
+
 jq '.[0].Image = "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"' \
   "$VALID" >"${TMP}/wrong-image.json"
 expect_rejection "${TMP}/wrong-image.json" "changed immutable image ID"
