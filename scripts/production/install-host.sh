@@ -365,6 +365,16 @@ chmod 0644 "$FAIL2BAN_TEMPORARY"
 mv -fT -- "$FAIL2BAN_TEMPORARY" "$FAIL2BAN_JAIL"
 systemctl enable --now fail2ban.service
 systemctl restart fail2ban.service
+FAIL2BAN_READY=false
+for _ in $(seq 1 15); do
+  if fail2ban-client ping >/dev/null 2>&1; then
+    FAIL2BAN_READY=true
+    break
+  fi
+  sleep 1
+done
+[[ $FAIL2BAN_READY == "true" ]] \
+  || die "fail2ban control socket did not become ready"
 systemctl is-enabled --quiet fail2ban.service \
   || die "fail2ban is not enabled"
 systemctl is-active --quiet fail2ban.service \
