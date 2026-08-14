@@ -135,6 +135,8 @@ if grep -R -Eq -- 'caddy:2\.10\.0|caddy:2\.11\.4-alpine([^@]|$)' \
   exit 1
 fi
 require_text '^RUN ! getent passwd 2001 >/dev/null' "$DOCKERFILE"
+require_order '^COPY scripts/clean-dist\.mjs ./scripts/clean-dist\.mjs$' \
+  '^RUN npm run build$' "$DOCKERFILE"
 require_text '&& ! getent group 2001 >/dev/null' "$DOCKERFILE"
 require_text 'groupadd --gid 2001 onlyway' "$DOCKERFILE"
 require_text 'useradd --uid 2001 --gid 2001 --system' "$DOCKERFILE"

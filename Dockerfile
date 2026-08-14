@@ -13,6 +13,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY tsconfig.json tsconfig.build.json ./
+COPY scripts/clean-dist.mjs ./scripts/clean-dist.mjs
 COPY src ./src
 RUN npm run build
 
