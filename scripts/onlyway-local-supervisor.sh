@@ -42,6 +42,16 @@ escape_xml_sed() {
     | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \
     | sed 's/[&|\\]/\\&/g'
 }
+lint_plist() {
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -lint "$1" >/dev/null
+  elif command -v plistutil >/dev/null 2>&1; then
+    plistutil -i "$1" -o /dev/null
+  else
+    echo "A plist validator (plutil or plistutil) is required" >&2
+    return 1
+  fi
+}
 render_one() {
   LABEL=$1
   SOURCE="$REPO/ops/launchd/ai.onlyway.mv-ai-os.$LABEL.plist.template"
@@ -52,7 +62,7 @@ render_one() {
       -e "s|__LOG_DIR__|$(escape_xml_sed "$LOG_DIR")|g" \
       -e "s|__BACKUP_DIR__|$(escape_xml_sed "$BACKUP_DIR")|g" "$SOURCE" > "$TARGET"
   chmod 600 "$TARGET"
-  plutil -lint "$TARGET" >/dev/null
+  lint_plist "$TARGET"
 }
 render_all() { for LABEL in $LABELS; do render_one "$LABEL"; done; }
 stop_all() { for LABEL in $LABELS; do launchctl bootout "$DOMAIN" "$DEST/ai.onlyway.mv-ai-os.$LABEL.plist" >/dev/null 2>&1 || true; done; }
