@@ -19,7 +19,7 @@ RUN npm run build
 
 FROM build AS verification
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends jq \
+    && apt-get install --yes --no-install-recommends jq libplist-utils \
     && rm -rf /var/lib/apt/lists/*
 COPY eslint.config.js ./
 COPY tests ./tests
@@ -29,6 +29,8 @@ COPY examples ./examples
 COPY ops ./ops
 COPY scripts ./scripts
 COPY compose.production.yml Dockerfile ./
+RUN chown --recursive node:node /app
+USER node
 RUN npm run check
 
 FROM ${NODE_IMAGE} AS runtime
