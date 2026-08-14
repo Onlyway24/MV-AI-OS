@@ -442,14 +442,22 @@ legacy_validate_runtime_config() {
     --arg sqlitePath "$sqlite_path" \
     --arg workspaceId "$workspace_id" \
     '
-      type == "object" and
-      .contractVersion == "1" and
-      .actorId == $actorId and
-      .workspaceId == $workspaceId and
-      .contentAgentMode == $contentAgentMode and
-      .sqlite.path == $sqlitePath and
-      (has("providerMode") | not) and
-      (has("modelProvider") | not)
+      . as $source |
+      (if ($source | has("runtime")) then $source.runtime else $source end) as $runtime |
+      ($source | type == "object") and
+      ($runtime | type == "object") and
+      (if ($source | has("runtime")) then
+        ($source | keys | sort) == ["contractVersion", "maxRequestBytes", "runtime"] and
+        $source.contractVersion == "1" and
+        ($source.maxRequestBytes | type == "number" and floor == . and . >= 1 and . <= 1048576)
+      else true end) and
+      $runtime.contractVersion == "1" and
+      $runtime.actorId == $actorId and
+      $runtime.workspaceId == $workspaceId and
+      $runtime.contentAgentMode == $contentAgentMode and
+      $runtime.sqlite.path == $sqlitePath and
+      ($runtime | has("providerMode") | not) and
+      ($runtime | has("modelProvider") | not)
     ' "$path" >/dev/null \
     || legacy_die "legacy runtime configuration contract is invalid"
 }

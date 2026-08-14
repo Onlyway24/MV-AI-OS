@@ -48,6 +48,28 @@ jq '.[1].HostConfig.NetworkMode = "host" |
 expect_rejection \
   "${TMP}/wrong-host-network-container.json" "non-command-center host network"
 
+jq -n '{
+  contractVersion: "1",
+  maxRequestBytes: 262144,
+  runtime: {
+    actorId: "fabio",
+    contentAgentMode: "deterministic",
+    contractVersion: "1",
+    permissions: {actorGrants: [], policyGrants: [], taskGrants: []},
+    sqlite: {path: "/data/onlyway.sqlite", timeoutMs: 5000},
+    workspaceId: "onlyway-private"
+  }
+}' >"${TMP}/wrapped-runtime.json"
+legacy_validate_runtime_config \
+  "${TMP}/wrapped-runtime.json" fabio onlyway-private deterministic \
+  /data/onlyway.sqlite
+jq -S -e -f "${ROOT}/scripts/production/lib/render-legacy-runtime.jq" \
+  "${TMP}/wrapped-runtime.json" >"${TMP}/rendered-runtime.json"
+jq -e '
+  .runtime.providerMode == "OFFLINE_REHEARSAL" and
+  .runtime.sqlite.path == "/var/lib/onlyway/mv-ai-os.sqlite"
+' "${TMP}/rendered-runtime.json" >/dev/null
+
 jq '.[0].Image = "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"' \
   "$VALID" >"${TMP}/wrong-image.json"
 expect_rejection "${TMP}/wrong-image.json" "changed immutable image ID"
