@@ -258,6 +258,12 @@ require_text '\.unauthorizedExternalEffectOccurred == false' "$READINESS"
 require_text '\.kind == \$kind' "$READINESS"
 require_text 'org\.opencontainers\.image\.revision' "$READINESS"
 require_text 'require_ssh_hardening_confirmed' "$PREFLIGHT"
+[[ $(grep -Ec 'compose --profile operations config' "$PREFLIGHT") -eq 2 ]] \
+  || {
+    printf '%s\n' \
+      "release preflight must render the operations profile for validation" >&2
+    exit 1
+  }
 
 require_text 'write_backup_manifest_signature "\$MANIFEST"' "$BACKUP"
 require_text 'verify_backup_manifest_signature "\$MANIFEST"' "$BACKUP"

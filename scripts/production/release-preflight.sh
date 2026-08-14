@@ -49,8 +49,13 @@ cleanup() {
   [[ -f $COMPOSE_JSON ]] && unlink "$COMPOSE_JSON"
 }
 trap cleanup EXIT
-compose config --quiet
-compose config --format json >"$COMPOSE_JSON"
+# Include the operations profile so the one-shot backup verifier is covered by
+# the same immutable image and private-network checks as the continuously
+# running services. Docker Compose otherwise omits profiled services from the
+# rendered model, which would make the assertion below fail closed on every
+# valid production release.
+compose --profile operations config --quiet
+compose --profile operations config --format json >"$COMPOSE_JSON"
 jq -e \
   --arg caddyImage "$ONLYWAY_CADDY_IMAGE" \
   --arg image "mv-ai-os:${EXPECTED_COMMIT}" \
