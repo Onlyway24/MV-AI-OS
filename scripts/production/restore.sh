@@ -24,11 +24,17 @@ ensure_layout_exists
 acquire_operation_lock restore
 source_compose_environment
 require_command curl
+require_command gpg
 require_command jq
 require_command sha256sum
 require_command sqlite3
 require_command sync
 require_command systemctl
+
+BACKUP_ENCRYPTION_KEY=${ONLYWAY_BACKUP_ENCRYPTION_KEY_FILE:-/srv/onlyway/secrets/backup/backup-encryption-passphrase}
+[[ -f $BACKUP_ENCRYPTION_KEY && ! -L $BACKUP_ENCRYPTION_KEY \
+  && $(stat -c '%u:%g:%a' "$BACKUP_ENCRYPTION_KEY") == "0:0:600" ]] \
+  || die "backup encryption key is unavailable or unsafe"
 
 validate_private_service_file() {
   local path=$1
@@ -119,30 +125,46 @@ CANONICAL_BACKUP=$(readlink -f -- "$BACKUP")
 CANONICAL_BACKUP_DIR=$(readlink -f -- "$ONLYWAY_BACKUP_DIR")
 [[ $(dirname -- "$CANONICAL_BACKUP") == "$CANONICAL_BACKUP_DIR" ]] \
   || die "backup is outside the authorized backup directory"
-[[ $(basename -- "$CANONICAL_BACKUP") =~ ^mv-ai-os--[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\.[0-9]{3}Z--[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.sqlite$ ]] \
+[[ $(basename -- "$CANONICAL_BACKUP") =~ ^mv-ai-os--[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\.[0-9]{3}Z--[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.sqlite\.gpg$ ]] \
   || die "backup filename is not canonical"
 validate_private_service_file "$CANONICAL_BACKUP" "backup" $((1024 * 1024 * 1024 * 1024))
 
+ENCRYPTED_BACKUP=$CANONICAL_BACKUP
+BACKUP_RECEIPT_DETAIL=$(basename -- "$ENCRYPTED_BACKUP")
 MANIFEST="${CANONICAL_BACKUP}.manifest.json"
-ADMIN_SECURITY_BACKUP="${CANONICAL_BACKUP}.admin-security.json"
+ENCRYPTED_ADMIN_SECURITY_BACKUP="${CANONICAL_BACKUP}.admin-security.json.gpg"
+DECRYPTED_BACKUP=$(mktemp /dev/shm/onlyway-restore-database.XXXXXX)
+DECRYPTED_ADMIN_SECURITY_BACKUP=$(mktemp /dev/shm/onlyway-restore-admin.XXXXXX)
+GPG_HOME=$(mktemp -d "${ONLYWAY_RUN_DIR}/.restore-gpg.XXXXXX")
+chmod 0700 "$GPG_HOME"
+
+cleanup_decrypted_bundle() {
+  [[ ! -e $DECRYPTED_BACKUP ]] || unlink "$DECRYPTED_BACKUP"
+  [[ ! -e $DECRYPTED_ADMIN_SECURITY_BACKUP ]] \
+    || unlink "$DECRYPTED_ADMIN_SECURITY_BACKUP"
+  if [[ $GPG_HOME == "${ONLYWAY_RUN_DIR}/.restore-gpg."* && -d $GPG_HOME ]]; then
+    rm -rf -- "$GPG_HOME"
+  fi
+}
+trap cleanup_decrypted_bundle EXIT
 
 validate_recovery_bundle() {
   validate_private_service_file "$MANIFEST" "backup manifest" $((1024 * 1024))
   verify_backup_manifest_signature "$MANIFEST" >/dev/null
-  [[ $(jq -er '.backupFile' "$MANIFEST") == "$(basename -- "$CANONICAL_BACKUP")" ]] \
+  [[ $(jq -er '.backupFile' "$MANIFEST") == "$(basename -- "$ENCRYPTED_BACKUP")" ]] \
     || die "backup manifest file binding is invalid"
   EXPECTED_SHA=$(jq -er '.sha256 | select(test("^[0-9a-f]{64}$"))' "$MANIFEST")
-  ACTUAL_SHA=$(sha256sum "$CANONICAL_BACKUP" | awk '{print $1}')
+  ACTUAL_SHA=$(sha256sum "$ENCRYPTED_BACKUP" | awk '{print $1}')
   [[ $ACTUAL_SHA == "$EXPECTED_SHA" ]] \
     || die "backup fingerprint does not match its manifest"
-  [[ $(stat -c '%s' "$CANONICAL_BACKUP") == \
+  [[ $(stat -c '%s' "$ENCRYPTED_BACKUP") == \
     "$(jq -er '.sizeBytes' "$MANIFEST")" ]] \
     || die "backup size does not match its manifest"
   jq -e '
     .contractVersion == "1"
     and .integrityCheck == "ok"
     and .restoreProbe == "PASSED"
-    and .encryptionState == "BACKUP_AT_REST_ENCRYPTION_REQUIRED"
+    and .encryptionState == "GPG_AES256_SYMMETRIC"
     and .secretsIncluded == false
     and .rawBootstrapIncluded == false
     and (.releaseCommit | type == "string" and test("^[0-9a-f]{40}$"))
@@ -154,38 +176,49 @@ validate_recovery_bundle() {
   [[ $MANIFEST_FINGERPRINT == \
     "$(jq -er '.manifestFingerprint' "$MANIFEST")" ]] \
     || die "backup manifest self-fingerprint is invalid"
-  [[ $(sqlite3 -batch "$CANONICAL_BACKUP" 'PRAGMA integrity_check;') == "ok" ]] \
-    || die "backup failed the pre-restore integrity check"
-  [[ $(sqlite3 -batch "$CANONICAL_BACKUP" 'PRAGMA user_version;') == \
-    "$(jq -er '.schemaVersion' "$MANIFEST")" ]] \
-    || die "backup schema does not match its manifest"
-
-  validate_private_service_file "$ADMIN_SECURITY_BACKUP" \
+  validate_private_service_file "$ENCRYPTED_ADMIN_SECURITY_BACKUP" \
     "admin-security backup" $((5 * 1024 * 1024))
-  [[ $(basename -- "$ADMIN_SECURITY_BACKUP") == \
+  [[ $(basename -- "$ENCRYPTED_ADMIN_SECURITY_BACKUP") == \
     "$(jq -er '.adminSecurityState.file' "$MANIFEST")" ]] \
     || die "admin-security backup filename binding is invalid"
-  [[ $(stat -c '%s' "$ADMIN_SECURITY_BACKUP") == \
+  [[ $(stat -c '%s' "$ENCRYPTED_ADMIN_SECURITY_BACKUP") == \
     "$(jq -er '.adminSecurityState.sizeBytes' "$MANIFEST")" ]] \
     || die "admin-security backup size does not match its manifest"
-  [[ $(sha256sum "$ADMIN_SECURITY_BACKUP" | awk '{print $1}') == \
+  [[ $(sha256sum "$ENCRYPTED_ADMIN_SECURITY_BACKUP" | awk '{print $1}') == \
     "$(jq -er \
       '.adminSecurityState.sha256 | select(test("^[0-9a-f]{64}$"))' \
       "$MANIFEST")" ]] \
     || die "admin-security backup fingerprint does not match its manifest"
-  validate_admin_security_schema "$ADMIN_SECURITY_BACKUP"
-  [[ $(jq -er '.contractVersion' "$ADMIN_SECURITY_BACKUP") == \
+  gpg --homedir "$GPG_HOME" --no-options --batch --yes --pinentry-mode loopback \
+    --passphrase-file "$BACKUP_ENCRYPTION_KEY" --decrypt \
+    --output "$DECRYPTED_BACKUP" "$ENCRYPTED_BACKUP"
+  gpg --homedir "$GPG_HOME" --no-options --batch --yes --pinentry-mode loopback \
+    --passphrase-file "$BACKUP_ENCRYPTION_KEY" --decrypt \
+    --output "$DECRYPTED_ADMIN_SECURITY_BACKUP" \
+    "$ENCRYPTED_ADMIN_SECURITY_BACKUP"
+  chown "${ONLYWAY_UID}:${ONLYWAY_GID}" \
+    "$DECRYPTED_BACKUP" "$DECRYPTED_ADMIN_SECURITY_BACKUP"
+  chmod 0600 "$DECRYPTED_BACKUP" "$DECRYPTED_ADMIN_SECURITY_BACKUP"
+  [[ $(sqlite3 -batch "$DECRYPTED_BACKUP" 'PRAGMA integrity_check;') == "ok" ]] \
+    || die "decrypted backup failed the pre-restore integrity check"
+  [[ $(sqlite3 -batch "$DECRYPTED_BACKUP" 'PRAGMA user_version;') == \
+    "$(jq -er '.schemaVersion' "$MANIFEST")" ]] \
+    || die "decrypted backup schema does not match its manifest"
+  validate_admin_security_schema "$DECRYPTED_ADMIN_SECURITY_BACKUP"
+  [[ $(jq -er '.contractVersion' "$DECRYPTED_ADMIN_SECURITY_BACKUP") == \
     "$(jq -er '.adminSecurityState.contractVersion' "$MANIFEST")" ]] \
     || die "admin-security contract does not match its manifest"
-  [[ $(jq -er '.stateVersion' "$ADMIN_SECURITY_BACKUP") == \
+  [[ $(jq -er '.stateVersion' "$DECRYPTED_ADMIN_SECURITY_BACKUP") == \
     "$(jq -er '.adminSecurityState.stateVersion' "$MANIFEST")" ]] \
     || die "admin-security state version does not match its manifest"
-  [[ $(jq -er '.revision' "$ADMIN_SECURITY_BACKUP") == \
+  [[ $(jq -er '.revision' "$DECRYPTED_ADMIN_SECURITY_BACKUP") == \
     "$(jq -er '.adminSecurityState.revision' "$MANIFEST")" ]] \
     || die "admin-security revision does not match its manifest"
 }
 
 validate_recovery_bundle
+CANONICAL_BACKUP=$DECRYPTED_BACKUP
+ADMIN_SECURITY_BACKUP=$DECRYPTED_ADMIN_SECURITY_BACKUP
 
 DATABASE="${ONLYWAY_DATA_DIR}/mv-ai-os.sqlite"
 [[ $(stat -c '%d' "$ONLYWAY_DATA_DIR") == \
@@ -267,6 +300,7 @@ restore_previous_on_failure() {
   local service_recovered=0
   local running=
   trap - EXIT ERR
+  cleanup_decrypted_bundle
   if ((RESTORE_SUCCEEDED == 1)); then
     return 0
   fi
@@ -361,15 +395,15 @@ restore_previous_on_failure() {
   if ((rollback_completed == 0)); then
     systemctl stop "$ONLYWAY_SYSTEMD_UNIT"
     write_receipt "restore" "FAILED_ROLLBACK_INCOMPLETE" \
-      "$CURRENT_COMMIT" "$(basename -- "$CANONICAL_BACKUP")" >/dev/null
+      "$CURRENT_COMMIT" "$BACKUP_RECEIPT_DETAIL" >/dev/null
     log "CRITICAL: restore rollback is incomplete; the unit remains stopped"
   elif ((service_recovered == 1)); then
     write_receipt "restore" "FAILED_PREVIOUS_BUNDLE_RESTORED" \
-      "$CURRENT_COMMIT" "$(basename -- "$CANONICAL_BACKUP")" >/dev/null
+      "$CURRENT_COMMIT" "$BACKUP_RECEIPT_DETAIL" >/dev/null
   else
     systemctl stop "$ONLYWAY_SYSTEMD_UNIT"
     write_receipt "restore" "FAILED_PREVIOUS_BUNDLE_RESTORED_UNIT_STOPPED" \
-      "$CURRENT_COMMIT" "$(basename -- "$CANONICAL_BACKUP")" >/dev/null
+      "$CURRENT_COMMIT" "$BACKUP_RECEIPT_DETAIL" >/dev/null
     log "previous bundle was restored, but it was degraded or did not restart; the unit remains stopped"
   fi
   exit "$status"
@@ -659,9 +693,10 @@ if ((RECOVERY_DEGRADED == 1)); then
   RESTORE_STATUS=RESTORE_COMPLETED_FAIL_CLOSED_DEGRADED_SOURCE
 fi
 write_receipt "restore" "$RESTORE_STATUS" "$CURRENT_COMMIT" \
-  "$(basename -- "$CANONICAL_BACKUP"):recovery-epoch-${RECOVERY_EPOCH}" >/dev/null
+  "${BACKUP_RECEIPT_DETAIL}:recovery-epoch-${RECOVERY_EPOCH}" >/dev/null
 RESTORE_SUCCEEDED=1
 trap - EXIT ERR
+cleanup_decrypted_bundle
 log "restore completed fail-closed; rollback bundle retained as $(basename -- "$ROLLBACK_COPY")"
 if ((RECOVERY_DEGRADED == 1)); then
   log "break-glass recovery used because current DB or Admin Security state was missing/corrupt"

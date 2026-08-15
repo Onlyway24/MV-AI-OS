@@ -40,7 +40,7 @@ export async function preflightTelegramOperator(candidate: unknown, overrides: T
   await preparePrivateDatabasePath(validated.runtime.sqlite.path);
   let runtime: Awaited<ReturnType<typeof createLocalRuntime>> | undefined;
   let state: TelegramSqliteStateStore | undefined;
-  try { runtime = await createLocalRuntime(validated.runtime); state = new TelegramSqliteStateStore(validated.runtime.sqlite, overrides.clock ?? new TelegramSystemClock()); await chmod(validated.runtime.sqlite.path, 0o600); }
+  try { runtime = await createLocalRuntime(validated.runtime, modelRuntimeOverrides(validated.runtime, resolver)); state = new TelegramSqliteStateStore(validated.runtime.sqlite, overrides.clock ?? new TelegramSystemClock()); await chmod(validated.runtime.sqlite.path, 0o600); }
   catch (error) { if (error instanceof TelegramOperatorError) throw error; throw new TelegramOperatorError("DATABASE_UNAVAILABLE", "CONFIGURATION", false); }
   finally { await Promise.allSettled([runtime?.close(), state?.close()]); }
   return Object.freeze({ checks: Object.freeze(["APPLICATION_COMPOSITION_READY" as const]), contractVersion: "1" as const, secretReferenceId: validated.telegram.botToken.secretId, status: "READY" as const });
@@ -58,7 +58,7 @@ export async function createTelegramOperatorConsole(candidate: unknown, override
   let dailyBriefRepositories: SqliteRepositoryTransactionRunner | undefined;
   let ventureBriefRepositories: SqliteVentureHoldingTransactionRunner | undefined;
   try {
-    runtime = await createLocalRuntime(validated.runtime);
+    runtime = await createLocalRuntime(validated.runtime, modelRuntimeOverrides(validated.runtime, resolver));
     state = new TelegramSqliteStateStore(validated.runtime.sqlite, clock);
     dailyBriefRepositories = new SqliteRepositoryTransactionRunner(validated.runtime.sqlite);
     ventureBriefRepositories = new SqliteVentureHoldingTransactionRunner(validated.runtime.sqlite);
@@ -88,3 +88,16 @@ async function preparePrivateDatabasePath(path: string): Promise<void> {
 }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function freeze<T>(value: T): T { if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value; Object.freeze(value); for (const child of Object.values(value)) freeze(child); return value; }
+function modelRuntimeOverrides(runtime: LocalRuntimeConfig, resolver: LocalSecretResolver) {
+  if (runtime.providerMode !== "LIVE_PAID" || runtime.modelProvider === undefined) return {};
+  return {
+    secretReferences: [{
+      contractVersion: "1" as const,
+      encoding: "utf8" as const,
+      path: `/run/secrets/onlyway/${runtime.modelProvider.apiKeySecretId}`,
+      secretId: runtime.modelProvider.apiKeySecretId,
+      source: "local-file" as const,
+    }],
+    secretResolver: resolver,
+  };
+}

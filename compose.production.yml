@@ -156,6 +156,9 @@ services:
     depends_on:
       command-center:
         condition: service_healthy
+    networks:
+      - onlyway_private
+      - onlyway_research_egress
     volumes:
       - *data-mount
       - *config-mount

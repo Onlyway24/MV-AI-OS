@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { dirname, join } from "node:path";
 
 import type { AgentExecutor } from "../agents/agent-runtime.js";
 import { ImmutableAgentRegistry } from "../agents/agent-registry.js";
@@ -80,6 +81,11 @@ import { createLocalWorkflowCommandBoundary } from "./create-local-workflow-comm
 import { ReferenceVaultQueryAgent } from "../reference-vault/reference-vault-query-agent.js";
 import { ReferenceVaultCommandBoundary } from "../reference-vault/reference-vault-command-boundary.js";
 import { evaluateProviderModePolicy } from "../production/provider-mode.js";
+import { CostControlledLlmGateway } from "../cost-control/cost-controlled-llm-gateway.js";
+import {
+  FileProductionCostLedgerRepository,
+  ProductionCostControl,
+} from "../cost-control/production-cost-control.js";
 
 export interface LocalRuntimeOverrides {
   readonly clock?: Clock;
@@ -101,6 +107,16 @@ export async function createLocalRuntime(
   }
   const config = freezeConfig(validation.value);
   const clock = overrides.clock ?? new SystemClock();
+  if (
+    config.providerMode === "LIVE_PAID" &&
+    overrides.contentAgentExecutor !== undefined
+  ) {
+    throw new LocalRuntimeConfigurationError([{
+      code: "forbidden",
+      message: "LIVE_PAID forbids replacing the Cost-Controlled Content Agent",
+      path: "overrides.contentAgentExecutor",
+    }]);
+  }
   assertProviderModePolicy(config, clock, overrides);
   const identifiers =
     overrides.identifiers ?? new RandomIdentifierGenerator();
@@ -242,6 +258,8 @@ function assertProviderModePolicy(
       : { providerMode: config.providerMode }),
     trustedOfflineTransportInstalled:
       overrides.openAIResponsesTransport !== undefined,
+    trustedLiveCostControlBoundaryInstalled:
+      config.providerMode === "LIVE_PAID",
     workspaceId: config.workspaceId,
   });
   if (evaluation.ready) return;
@@ -275,7 +293,7 @@ async function createContentAgent(
     config.contentAgentMode === "model-backed-openai"
       ? createOpenAIModelProfile(config)
       : LOCAL_DETERMINISTIC_MODEL_PROFILE;
-  const gateway = new ValidatedLlmGateway({
+  const validatedGateway = new ValidatedLlmGateway({
     clock,
     ...(config.modelBudget === undefined
       ? {}
@@ -291,11 +309,76 @@ async function createContentAgent(
       ? {}
       : { usageAccountingConfig: config.modelUsageAccounting }),
   });
+  const gateway = config.providerMode === "LIVE_PAID"
+    ? createCostControlledGateway(config, clock, validatedGateway)
+    : validatedGateway;
   return new ModelBackedContentAgent({
     clock,
     gateway,
     outputValidator: new ContentOutputValidator(),
     specifications,
+  });
+}
+
+function createCostControlledGateway(
+  config: LocalRuntimeConfig,
+  clock: Clock,
+  gateway: ValidatedLlmGateway,
+): CostControlledLlmGateway {
+  const activation = config.livePaidActivation;
+  const modelProvider = config.modelProvider;
+  if (activation === undefined || modelProvider === undefined) {
+    throw new LocalRuntimeConfigurationError([{
+      code: "required",
+      message: "LIVE_PAID Cost Control requires activation and provider configuration",
+      path: "providerMode",
+    }]);
+  }
+  const hardLimitCents = Math.min(25, Math.floor(activation.maxCostUsd * 100));
+  if (hardLimitCents < 1) {
+    throw new LocalRuntimeConfigurationError([{
+      code: "invalid_value",
+      message: "LIVE_PAID Cost Control requires a positive bounded activation",
+      path: "livePaidActivation.maxCostUsd",
+    }]);
+  }
+  const costControl = new ProductionCostControl({
+    approvalVerifier: {
+      verify: ({ approval, request }) => Promise.resolve(
+        approval.actorId === activation.approvedBy &&
+        approval.approvedAt === activation.approvedAt &&
+        approval.receiptId === activation.approvalReceiptId &&
+        request.estimatedCostCents <= hardLimitCents,
+      ),
+    },
+    clock,
+    policy: {
+      currency: "EUR",
+      dailyLimitCents: hardLimitCents,
+      monthlyLimitCents: hardLimitCents,
+      perAgentLimitCents: hardLimitCents,
+      perMissionLimitCents: hardLimitCents,
+      perProviderLimitCents: hardLimitCents,
+      spendingAuthorized: true,
+    },
+    repository: new FileProductionCostLedgerRepository(
+      join(dirname(config.sqlite.path), "production-cost-ledger.json"),
+    ),
+  });
+  return new CostControlledLlmGateway({
+    agentId: CONTENT_AGENT_MANIFEST.agentId,
+    approval: {
+      actorId: activation.approvedBy,
+      approvedAt: activation.approvedAt,
+      receiptId: activation.approvalReceiptId,
+    },
+    clock,
+    costControl,
+    gateway,
+    maxCostUsd: Math.min(activation.maxCostUsd, hardLimitCents / 100),
+    maxOutputTokens: config.modelOperationLimits?.maxOutputTokens ?? 2_048,
+    modelId: modelProvider.modelId,
+    providerId: modelProvider.providerId,
   });
 }
 

@@ -269,7 +269,11 @@ require_text 'write_backup_manifest_signature "\$MANIFEST"' "$BACKUP"
 require_text 'verify_backup_manifest_signature "\$MANIFEST"' "$BACKUP"
 require_text 'BACKUP_SIGNATURE=%s' "$BACKUP"
 require_order '^ensure_acceptance_signing_identity$' \
-  '^compose --profile operations run --rm --no-deps backup-verifier$' "$BACKUP"
+  '^STAGING=' "$BACKUP"
+require_text '/dev/shm/onlyway-backup' "$BACKUP"
+require_text 'GPG_AES256_SYMMETRIC' "$BACKUP"
+require_text 'passphrase-file "\$BACKUP_ENCRYPTION_KEY"' "$BACKUP"
+require_text 'GPG_AES256_SYMMETRIC' "$RESTORE"
 require_order 'write_backup_manifest_signature "\$MANIFEST"' \
   'write_receipt "backup"' "$BACKUP"
 require_text 'verify_backup_manifest_signature "\$MANIFEST"' "$RESTORE"

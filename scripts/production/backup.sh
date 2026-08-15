@@ -11,10 +11,22 @@ ensure_layout_exists
 acquire_operation_lock backup
 source_compose_environment
 require_command docker
+require_command gpg
 require_command jq
 require_command sha256sum
 require_command sqlite3
 ensure_acceptance_signing_identity
+
+BACKUP_ENCRYPTION_KEY=${ONLYWAY_BACKUP_ENCRYPTION_KEY_FILE:-/srv/onlyway/secrets/backup/backup-encryption-passphrase}
+[[ -f $BACKUP_ENCRYPTION_KEY && ! -L $BACKUP_ENCRYPTION_KEY ]] \
+  || die "backup encryption key is unavailable"
+[[ $(stat -c '%u:%g' "$BACKUP_ENCRYPTION_KEY") == "0:0" ]] \
+  || die "backup encryption key ownership is invalid"
+[[ $(stat -c '%a' "$BACKUP_ENCRYPTION_KEY") == "600" ]] \
+  || die "backup encryption key mode must be 0600"
+KEY_BYTES=$(stat -c '%s' "$BACKUP_ENCRYPTION_KEY")
+[[ $KEY_BYTES =~ ^[1-9][0-9]{1,3}$ ]] \
+  || die "backup encryption key size is invalid"
 
 DATABASE="${ONLYWAY_DATA_DIR}/mv-ai-os.sqlite"
 [[ -f $DATABASE && ! -L $DATABASE ]] || die "SQLite database is unavailable"
@@ -44,16 +56,30 @@ REQUIRED_KIB=$((DATABASE_KIB * 3 + ADMIN_SECURITY_KIB * 2 + 524288))
 ((AVAILABLE_KIB >= REQUIRED_KIB)) \
   || die "insufficient free space for backup and restore verification"
 
-MARKER=$(mktemp "${ONLYWAY_RUN_DIR}/.backup-marker.XXXXXX")
+STAGING=$(mktemp -d /dev/shm/onlyway-backup.XXXXXX)
+chown "${ONLYWAY_UID}:${ONLYWAY_GID}" "$STAGING"
+chmod 0700 "$STAGING"
+GPG_HOME=$(mktemp -d "${ONLYWAY_RUN_DIR}/.backup-gpg.XXXXXX")
+chmod 0700 "$GPG_HOME"
+RESTORE_PROBE=$(mktemp /dev/shm/onlyway-backup-restore.XXXXXX)
+ADMIN_RESTORE_PROBE=$(mktemp /dev/shm/onlyway-admin-restore.XXXXXX)
 cleanup() {
-  [[ -f $MARKER ]] && unlink "$MARKER"
+  [[ ! -e $RESTORE_PROBE ]] || unlink "$RESTORE_PROBE"
+  [[ ! -e $ADMIN_RESTORE_PROBE ]] || unlink "$ADMIN_RESTORE_PROBE"
+  if [[ $STAGING == /dev/shm/onlyway-backup.* && -d $STAGING ]]; then
+    rm -rf -- "$STAGING"
+  fi
+  if [[ $GPG_HOME == "${ONLYWAY_RUN_DIR}/.backup-gpg."* && -d $GPG_HOME ]]; then
+    rm -rf -- "$GPG_HOME"
+  fi
 }
 trap cleanup EXIT
 
-compose --profile operations run --rm --no-deps backup-verifier
+compose --profile operations run --rm --no-deps \
+  --volume "${STAGING}:/var/backups/onlyway" backup-verifier
 
-BACKUP=$(find "$ONLYWAY_BACKUP_DIR" -maxdepth 1 -type f \
-  -name 'mv-ai-os--*.sqlite' -newer "$MARKER" \
+BACKUP=$(find "$STAGING" -maxdepth 1 -type f \
+  -name 'mv-ai-os--*.sqlite' \
   -printf '%T@ %p\n' \
   | sort -nr \
   | awk 'NR == 1 {sub(/^[^ ]+ /, ""); print; exit}')
@@ -154,6 +180,80 @@ jq -e '
   "$(jq -er '.revision' "$ADMIN_SECURITY_BACKUP")" ]] \
   || die "admin-security manifest revision binding is invalid"
 
+ENCRYPTED_BACKUP="${ONLYWAY_BACKUP_DIR}/$(basename -- "$BACKUP").gpg"
+ENCRYPTED_ADMIN_SECURITY_BACKUP="${ENCRYPTED_BACKUP}.admin-security.json.gpg"
+ENCRYPTED_MANIFEST="${ENCRYPTED_BACKUP}.manifest.json"
+for output in "$ENCRYPTED_BACKUP" "$ENCRYPTED_ADMIN_SECURITY_BACKUP" \
+  "$ENCRYPTED_MANIFEST" "${ENCRYPTED_MANIFEST}.sig"; do
+  [[ ! -e $output && ! -L $output ]] || die "encrypted backup output already exists"
+done
+
+gpg --homedir "$GPG_HOME" --no-options --batch --yes --pinentry-mode loopback \
+  --passphrase-file "$BACKUP_ENCRYPTION_KEY" \
+  --symmetric --cipher-algo AES256 --s2k-mode 3 --s2k-digest-algo SHA512 \
+  --compress-algo none --output "$ENCRYPTED_BACKUP" "$BACKUP"
+gpg --homedir "$GPG_HOME" --no-options --batch --yes --pinentry-mode loopback \
+  --passphrase-file "$BACKUP_ENCRYPTION_KEY" \
+  --symmetric --cipher-algo AES256 --s2k-mode 3 --s2k-digest-algo SHA512 \
+  --compress-algo none --output "$ENCRYPTED_ADMIN_SECURITY_BACKUP" \
+  "$ADMIN_SECURITY_BACKUP"
+chown "${ONLYWAY_UID}:${ONLYWAY_GID}" \
+  "$ENCRYPTED_BACKUP" "$ENCRYPTED_ADMIN_SECURITY_BACKUP"
+chmod 0600 "$ENCRYPTED_BACKUP" "$ENCRYPTED_ADMIN_SECURITY_BACKUP"
+
+gpg --homedir "$GPG_HOME" --no-options --batch --yes --pinentry-mode loopback \
+  --passphrase-file "$BACKUP_ENCRYPTION_KEY" \
+  --decrypt --output "$RESTORE_PROBE" "$ENCRYPTED_BACKUP"
+gpg --homedir "$GPG_HOME" --no-options --batch --yes --pinentry-mode loopback \
+  --passphrase-file "$BACKUP_ENCRYPTION_KEY" \
+  --decrypt --output "$ADMIN_RESTORE_PROBE" \
+  "$ENCRYPTED_ADMIN_SECURITY_BACKUP"
+[[ $(sqlite3 -batch "$RESTORE_PROBE" 'PRAGMA integrity_check;') == "ok" ]] \
+  || die "encrypted backup restore probe failed SQLite integrity"
+[[ $(sqlite3 -batch "$RESTORE_PROBE" 'PRAGMA user_version;') == "$SCHEMA_VERSION" ]] \
+  || die "encrypted backup restore probe schema is invalid"
+[[ $(sha256sum "$RESTORE_PROBE" | awk '{print $1}') == "$SHA256" ]] \
+  || die "encrypted backup restore probe fingerprint is invalid"
+[[ $(sha256sum "$ADMIN_RESTORE_PROBE" | awk '{print $1}') == \
+  "$ADMIN_SECURITY_SHA" ]] \
+  || die "encrypted admin-security restore probe fingerprint is invalid"
+
+ENCRYPTED_SHA256=$(sha256sum "$ENCRYPTED_BACKUP" | awk '{print $1}')
+ENCRYPTED_SIZE_BYTES=$(stat -c '%s' "$ENCRYPTED_BACKUP")
+ENCRYPTED_ADMIN_SHA=$(sha256sum "$ENCRYPTED_ADMIN_SECURITY_BACKUP" | awk '{print $1}')
+ENCRYPTED_ADMIN_SIZE=$(stat -c '%s' "$ENCRYPTED_ADMIN_SECURITY_BACKUP")
+MANIFEST_TEMP=$(mktemp "${ONLYWAY_BACKUP_DIR}/.backup-manifest.XXXXXX")
+jq -c \
+  --arg backupFile "$(basename -- "$ENCRYPTED_BACKUP")" \
+  --arg sha256 "$ENCRYPTED_SHA256" \
+  --arg adminFile "$(basename -- "$ENCRYPTED_ADMIN_SECURITY_BACKUP")" \
+  --arg adminSha "$ENCRYPTED_ADMIN_SHA" \
+  --argjson sizeBytes "$ENCRYPTED_SIZE_BYTES" \
+  --argjson adminSize "$ENCRYPTED_ADMIN_SIZE" '
+    .backupFile = $backupFile
+    | .sha256 = $sha256
+    | .sizeBytes = $sizeBytes
+    | .encryptionState = "GPG_AES256_SYMMETRIC"
+    | .adminSecurityState.file = $adminFile
+    | .adminSecurityState.sha256 = $adminSha
+    | .adminSecurityState.sizeBytes = $adminSize
+    | del(.manifestFingerprint)
+  ' "$MANIFEST" >"$MANIFEST_TEMP"
+MANIFEST_BODY=$(jq -c . "$MANIFEST_TEMP")
+MANIFEST_FINGERPRINT=$(printf '%s' "$MANIFEST_BODY" | sha256sum | awk '{print $1}')
+jq -c --arg fingerprint "$MANIFEST_FINGERPRINT" \
+  '. + {manifestFingerprint: $fingerprint}' "$MANIFEST_TEMP" >"$ENCRYPTED_MANIFEST"
+unlink "$MANIFEST_TEMP"
+chown "${ONLYWAY_UID}:${ONLYWAY_GID}" "$ENCRYPTED_MANIFEST"
+chmod 0600 "$ENCRYPTED_MANIFEST"
+
+BACKUP=$ENCRYPTED_BACKUP
+ADMIN_SECURITY_BACKUP=$ENCRYPTED_ADMIN_SECURITY_BACKUP
+MANIFEST=$ENCRYPTED_MANIFEST
+SHA256=$ENCRYPTED_SHA256
+SIZE_BYTES=$ENCRYPTED_SIZE_BYTES
+ADMIN_SECURITY_SHA=$ENCRYPTED_ADMIN_SHA
+ADMIN_SECURITY_SIZE=$ENCRYPTED_ADMIN_SIZE
 SIGNATURE=$(write_backup_manifest_signature "$MANIFEST")
 [[ $(verify_backup_manifest_signature "$MANIFEST") == "$SIGNATURE" ]] \
   || die "host backup manifest signature path is invalid"
@@ -170,4 +270,4 @@ write_receipt "backup" "VERIFIED_RESTORE_PROBE_PASSED" "$COMMIT" \
 printf 'BACKUP_FILE=%s\n' "$BACKUP"
 printf 'BACKUP_MANIFEST=%s\n' "$MANIFEST"
 printf 'BACKUP_SIGNATURE=%s\n' "$SIGNATURE"
-printf 'BACKUP_AT_REST_ENCRYPTION_REQUIRED\n'
+printf 'BACKUP_AT_REST_ENCRYPTION=GPG_AES256_SYMMETRIC\n'

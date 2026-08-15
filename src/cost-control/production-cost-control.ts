@@ -48,16 +48,23 @@ export interface CostReservationRequest {
   readonly approval?: FabioCostApproval;
   readonly estimatedCostCents: number;
   readonly estimatedProviderCalls: number;
+  readonly invocationId: string;
   readonly missionId: string;
+  readonly modelId: string;
   readonly providerId: string;
   readonly reservationId: string;
+  readonly workflowId: string;
 }
 
 export interface CostSettlementRequest {
   readonly actualCostCents: number;
+  readonly actualCostUsd: number;
   readonly actualProviderCalls: number;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
   readonly providerReceiptRef: string;
   readonly reservationId: string;
+  readonly totalTokens: number;
 }
 
 export interface CostReservationReceipt {
@@ -66,7 +73,7 @@ export interface CostReservationReceipt {
   readonly providerCalls: number;
   readonly receiptId: string;
   readonly reservationId: string;
-  readonly status: "RESERVED";
+  readonly status: "EXISTS_OPEN" | "EXISTS_SETTLED" | "RESERVED";
 }
 
 export interface CostSettlementReceipt {
@@ -84,7 +91,10 @@ export interface CostControlStatus {
   readonly killSwitch: "ACTIVE" | "RELEASED";
   readonly openReservations: number;
   readonly paidProviderCallsAllowed: boolean;
+  readonly remainingBudgetCents: number;
+  readonly reservedCostCents: number;
   readonly settledCostCents: number;
+  readonly settledProviderCalls: number;
   readonly spendingAuthorized: boolean;
 }
 
@@ -93,23 +103,30 @@ interface ReservationRecord {
   readonly createdAt: string;
   readonly estimatedCostCents: number;
   readonly estimatedProviderCalls: number;
+  readonly invocationId: string;
   readonly missionId: string;
+  readonly modelId: string;
   readonly providerId: string;
   readonly reservationId: string;
   readonly status: "OPEN" | "SETTLED";
+  readonly workflowId: string;
 }
 
 interface SettlementRecord {
   readonly actualCostCents: number;
+  readonly actualCostUsd: number;
   readonly actualProviderCalls: number;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
   readonly providerReceiptRef: string;
   readonly recordedAt: string;
   readonly reservationId: string;
+  readonly totalTokens: number;
 }
 
 export interface ProductionCostLedgerState {
   readonly anomalyStop: boolean;
-  readonly contractVersion: "1";
+  readonly contractVersion: "2";
   readonly killSwitch: "ACTIVE" | "RELEASED";
   readonly reservations: readonly ReservationRecord[];
   readonly settlements: readonly SettlementRecord[];
@@ -155,9 +172,12 @@ export class ProductionCostControl {
         agentId: request.agentId,
         estimatedCostCents: request.estimatedCostCents,
         estimatedProviderCalls: request.estimatedProviderCalls,
+        invocationId: request.invocationId,
         missionId: request.missionId,
+        modelId: request.modelId,
         providerId: request.providerId,
         reservationId: request.reservationId,
+        workflowId: request.workflowId,
       });
       if (
         approval === undefined ||
@@ -182,7 +202,10 @@ export class ProductionCostControl {
         }
         return {
           next: current,
-          result: reservationReceipt(existing),
+          result: reservationReceipt(
+            existing,
+            existing.status === "OPEN" ? "EXISTS_OPEN" : "EXISTS_SETTLED",
+          ),
         };
       }
       assertCostControlOpen(current);
@@ -194,10 +217,13 @@ export class ProductionCostControl {
         createdAt: this.input.clock.now().toISOString(),
         estimatedCostCents: request.estimatedCostCents,
         estimatedProviderCalls: request.estimatedProviderCalls,
+        invocationId: request.invocationId,
         missionId: request.missionId,
+        modelId: request.modelId,
         providerId: request.providerId,
         reservationId: request.reservationId,
         status: "OPEN",
+        workflowId: request.workflowId,
       });
       const next = state({
         ...current,
@@ -220,8 +246,12 @@ export class ProductionCostControl {
       if (prior !== undefined) {
         if (
           prior.actualCostCents !== request.actualCostCents ||
+          prior.actualCostUsd !== request.actualCostUsd ||
           prior.actualProviderCalls !== request.actualProviderCalls ||
-          prior.providerReceiptRef !== request.providerReceiptRef
+          prior.inputTokens !== request.inputTokens ||
+          prior.outputTokens !== request.outputTokens ||
+          prior.providerReceiptRef !== request.providerReceiptRef ||
+          prior.totalTokens !== request.totalTokens
         ) {
           throw new Error("Cost settlement identity conflicts with durable state");
         }
@@ -241,10 +271,14 @@ export class ProductionCostControl {
         request.actualProviderCalls > reservation.estimatedProviderCalls;
       const settlement: SettlementRecord = Object.freeze({
         actualCostCents: request.actualCostCents,
+        actualCostUsd: request.actualCostUsd,
         actualProviderCalls: request.actualProviderCalls,
+        inputTokens: request.inputTokens,
+        outputTokens: request.outputTokens,
         providerReceiptRef: request.providerReceiptRef,
         recordedAt: this.input.clock.now().toISOString(),
         reservationId: request.reservationId,
+        totalTokens: request.totalTokens,
       });
       const reservations = current.reservations.map((entry) =>
         entry.reservationId === request.reservationId
@@ -278,28 +312,44 @@ export class ProductionCostControl {
   public async status(): Promise<CostControlStatus> {
     return this.input.repository.transaction((current) => ({
       next: current,
-      result: Object.freeze({
-        anomalyStop: current.anomalyStop,
-        currency: this.#policy.currency,
-        killSwitch: current.killSwitch,
-        openReservations: current.reservations.filter(({ status }) => status === "OPEN").length,
-        paidProviderCallsAllowed:
-          this.#policy.spendingAuthorized &&
-          Math.min(
-            this.#policy.dailyLimitCents,
-            this.#policy.monthlyLimitCents,
-            this.#policy.perAgentLimitCents,
-            this.#policy.perMissionLimitCents,
-            this.#policy.perProviderLimitCents,
-          ) > 0 &&
-          !current.anomalyStop &&
-          current.killSwitch === "RELEASED",
-        settledCostCents: current.settlements.reduce(
+      result: Object.freeze((() => {
+        const settledCostCents = current.settlements.reduce(
           (total, { actualCostCents }) => total + actualCostCents,
           0,
-        ),
-        spendingAuthorized: this.#policy.spendingAuthorized,
-      }),
+        );
+        const reservedCostCents = current.reservations
+          .filter(({ status }) => status === "OPEN")
+          .reduce((total, { estimatedCostCents }) => total + estimatedCostCents, 0);
+        const hardLimitCents = Math.min(
+          this.#policy.dailyLimitCents,
+          this.#policy.monthlyLimitCents,
+          this.#policy.perAgentLimitCents,
+          this.#policy.perMissionLimitCents,
+          this.#policy.perProviderLimitCents,
+        );
+        return {
+          anomalyStop: current.anomalyStop,
+          currency: this.#policy.currency,
+          killSwitch: current.killSwitch,
+          openReservations: current.reservations.filter(({ status }) => status === "OPEN").length,
+          paidProviderCallsAllowed:
+            this.#policy.spendingAuthorized &&
+            hardLimitCents > 0 &&
+            !current.anomalyStop &&
+            current.killSwitch === "RELEASED",
+          remainingBudgetCents: Math.max(
+            0,
+            hardLimitCents - settledCostCents - reservedCostCents,
+          ),
+          reservedCostCents,
+          settledCostCents,
+          settledProviderCalls: current.settlements.reduce(
+            (total, { actualProviderCalls }) => total + actualProviderCalls,
+            0,
+          ),
+          spendingAuthorized: this.#policy.spendingAuthorized,
+        };
+      })()),
     }));
   }
 }
@@ -314,6 +364,9 @@ export function costApprovalFingerprint(
         request.missionId,
         request.agentId,
         request.providerId,
+        request.modelId,
+        request.workflowId,
+        request.invocationId,
         String(request.estimatedCostCents),
         String(request.estimatedProviderCalls),
       ].join("\n"),
@@ -366,7 +419,7 @@ export class FileProductionCostLedgerRepository
 function emptyState(): ProductionCostLedgerState {
   return state({
     anomalyStop: false,
-    contractVersion: "1",
+    contractVersion: "2",
     killSwitch: "RELEASED",
     reservations: [],
     settlements: [],
@@ -611,14 +664,17 @@ function assertWithinBudgets(
   }
 }
 
-function reservationReceipt(record: ReservationRecord): CostReservationReceipt {
+function reservationReceipt(
+  record: ReservationRecord,
+  status: CostReservationReceipt["status"] = "RESERVED",
+): CostReservationReceipt {
   return Object.freeze({
     costCents: record.estimatedCostCents,
     currency: "EUR",
     providerCalls: record.estimatedProviderCalls,
     receiptId: `cost-reservation-${record.reservationId}`,
     reservationId: record.reservationId,
-    status: "RESERVED",
+    status,
   });
 }
 
@@ -669,9 +725,12 @@ function validatePolicy(policy: ProductionCostPolicy): ProductionCostPolicy {
 function validateReservationRequest(value: CostReservationRequest): void {
   if (
     !identifier(value.agentId) ||
+    !identifier(value.invocationId) ||
     !identifier(value.missionId) ||
+    !identifier(value.modelId) ||
     !identifier(value.providerId) ||
     !identifier(value.reservationId) ||
+    !identifier(value.workflowId) ||
     !nonNegativeInteger(value.estimatedCostCents) ||
     !nonNegativeInteger(value.estimatedProviderCalls) ||
     value.estimatedProviderCalls > 100
@@ -685,8 +744,13 @@ function validateSettlementRequest(value: CostSettlementRequest): void {
     !identifier(value.reservationId) ||
     !identifier(value.providerReceiptRef) ||
     !nonNegativeInteger(value.actualCostCents) ||
+    !nonNegativeFinite(value.actualCostUsd) ||
     !nonNegativeInteger(value.actualProviderCalls) ||
-    value.actualProviderCalls > 100
+    value.actualProviderCalls > 100 ||
+    !nonNegativeInteger(value.inputTokens) ||
+    !nonNegativeInteger(value.outputTokens) ||
+    !nonNegativeInteger(value.totalTokens) ||
+    value.inputTokens + value.outputTokens > value.totalTokens
   ) {
     throw new Error("Cost settlement request is invalid");
   }
@@ -702,7 +766,7 @@ function validateState(value: unknown): asserts value is ProductionCostLedgerSta
       "reservations",
       "settlements",
     ]) ||
-    value.contractVersion !== "1" ||
+    value.contractVersion !== "2" ||
     typeof value.anomalyStop !== "boolean" ||
     !["ACTIVE", "RELEASED"].includes(String(value.killSwitch)) ||
     !Array.isArray(value.reservations) ||
@@ -720,37 +784,52 @@ function validateState(value: unknown): asserts value is ProductionCostLedgerSta
         "createdAt",
         "estimatedCostCents",
         "estimatedProviderCalls",
+        "invocationId",
         "missionId",
+        "modelId",
         "providerId",
         "reservationId",
         "status",
+        "workflowId",
       ]) &&
       identifier(entry.agentId) &&
       timestamp(entry.createdAt) &&
       nonNegativeInteger(entry.estimatedCostCents) &&
       nonNegativeInteger(entry.estimatedProviderCalls) &&
       entry.estimatedProviderCalls <= 100 &&
+      identifier(entry.invocationId) &&
       identifier(entry.missionId) &&
+      identifier(entry.modelId) &&
       identifier(entry.providerId) &&
       identifier(entry.reservationId) &&
-      ["OPEN", "SETTLED"].includes(String(entry.status)),
+      ["OPEN", "SETTLED"].includes(String(entry.status)) &&
+      identifier(entry.workflowId),
   );
   const settlementsValid = value.settlements.every(
     (entry) =>
       record(entry) &&
       exactKeys(entry, [
         "actualCostCents",
+        "actualCostUsd",
         "actualProviderCalls",
+        "inputTokens",
+        "outputTokens",
         "providerReceiptRef",
         "recordedAt",
         "reservationId",
+        "totalTokens",
       ]) &&
       nonNegativeInteger(entry.actualCostCents) &&
+      nonNegativeFinite(entry.actualCostUsd) &&
       nonNegativeInteger(entry.actualProviderCalls) &&
       entry.actualProviderCalls <= 100 &&
+      nonNegativeInteger(entry.inputTokens) &&
+      nonNegativeInteger(entry.outputTokens) &&
       identifier(entry.providerReceiptRef) &&
       timestamp(entry.recordedAt) &&
-      identifier(entry.reservationId),
+      identifier(entry.reservationId) &&
+      nonNegativeInteger(entry.totalTokens) &&
+      entry.inputTokens + entry.outputTokens <= entry.totalTokens,
   );
   const reservationIds = new Set(
     value.reservations
@@ -787,8 +866,11 @@ function sameReservation(left: ReservationRecord, right: CostReservationRequest)
     left.agentId === right.agentId &&
     left.estimatedCostCents === right.estimatedCostCents &&
     left.estimatedProviderCalls === right.estimatedProviderCalls &&
+    left.invocationId === right.invocationId &&
     left.missionId === right.missionId &&
-    left.providerId === right.providerId
+    left.modelId === right.modelId &&
+    left.providerId === right.providerId &&
+    left.workflowId === right.workflowId
   );
 }
 
@@ -806,6 +888,10 @@ function timestamp(value: unknown): value is string {
 
 function nonNegativeInteger(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function nonNegativeFinite(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
 function record(value: unknown): value is Readonly<Record<string, unknown>> {

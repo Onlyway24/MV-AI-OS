@@ -91,21 +91,32 @@ describe("Production cost control", () => {
       estimatedProviderCalls: 1,
     }, 10);
     const first = await service.reserve(request);
-    await expect(service.reserve(request)).resolves.toEqual(first);
+    await expect(service.reserve(request)).resolves.toMatchObject({
+      ...first,
+      status: "EXISTS_OPEN",
+    });
     await expect(
       service.settle({
         actualCostCents: 11,
+        actualCostUsd: 0.11,
         actualProviderCalls: 2,
+        inputTokens: 10,
+        outputTokens: 5,
         providerReceiptRef: "provider-receipt-1",
         reservationId: request.reservationId,
+        totalTokens: 15,
       }),
     ).resolves.toMatchObject({ status: "BLOCKED_ANOMALY" });
     await expect(
       service.settle({
         actualCostCents: 11,
+        actualCostUsd: 0.11,
         actualProviderCalls: 2,
+        inputTokens: 10,
+        outputTokens: 5,
         providerReceiptRef: "provider-receipt-1",
         reservationId: request.reservationId,
+        totalTokens: 15,
       }),
     ).resolves.toMatchObject({ status: "BLOCKED_ANOMALY" });
     await expect(service.status()).resolves.toMatchObject({
@@ -129,9 +140,13 @@ describe("Production cost control", () => {
     await first.reserve(reservation({ estimatedCostCents: 0, estimatedProviderCalls: 0 }));
     await first.settle({
       actualCostCents: 0,
+      actualCostUsd: 0,
       actualProviderCalls: 0,
+      inputTokens: 0,
+      outputTokens: 0,
       providerReceiptRef: "fake-provider-receipt",
       reservationId: "reservation-1",
+      totalTokens: 0,
     });
     const recovered = new ProductionCostControl({
       clock,
@@ -174,7 +189,7 @@ describe("Production cost control", () => {
     const link = join(root, "linked-ledger.json");
     await writeFile(target, JSON.stringify({
       anomalyStop: false,
-      contractVersion: "1",
+      contractVersion: "2",
       killSwitch: "RELEASED",
       reservations: [],
       settlements: [],
@@ -190,17 +205,20 @@ describe("Production cost control", () => {
     const inconsistent = join(root, "inconsistent-ledger.json");
     await writeFile(inconsistent, JSON.stringify({
       anomalyStop: false,
-      contractVersion: "1",
+      contractVersion: "2",
       killSwitch: "RELEASED",
       reservations: [{
         agentId: "content-agent",
         createdAt: "2026-07-26T00:00:00.000Z",
         estimatedCostCents: 0,
         estimatedProviderCalls: 0,
+        invocationId: "invocation-1",
         missionId: "mission-1",
+        modelId: "fake-model",
         providerId: "fake-text",
         reservationId: "reservation-1",
         status: "SETTLED",
+        workflowId: "workflow-1",
       }],
       settlements: [],
     }), { mode: 0o600 });
@@ -250,9 +268,12 @@ function reservation(overrides: Partial<Parameters<ProductionCostControl["reserv
     agentId: "content-agent",
     estimatedCostCents: 0,
     estimatedProviderCalls: 0,
+    invocationId: "invocation-1",
     missionId: "mission-1",
+    modelId: "fake-model",
     providerId: "fake-text",
     reservationId: "reservation-1",
+    workflowId: "workflow-1",
     ...overrides,
   };
 }

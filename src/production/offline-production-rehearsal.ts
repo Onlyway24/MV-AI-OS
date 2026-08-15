@@ -772,16 +772,23 @@ async function executeDurableWorkflow(
       agentId: "content-director",
       estimatedCostCents: 0,
       estimatedProviderCalls: 0,
+      invocationId: `${config.runId}-zero-cost-invocation`,
       missionId: `${config.runId}-mission`,
+      modelId: "deterministic-offline",
       providerId: "onlyway-offline-rehearsal",
       reservationId: `${config.runId}-zero-cost`,
+      workflowId: `${config.runId}-workflow`,
     });
     const settlement = await costControl.settle({
       actualCostCents: 0,
+      actualCostUsd: 0,
       actualProviderCalls: 0,
+      inputTokens: 0,
+      outputTokens: 0,
       providerReceiptRef: providerReceipts[0]?.receiptId ??
         `${config.runId}-no-provider-call`,
       reservationId: reservation.reservationId,
+      totalTokens: 0,
     });
     const costStatus = await costControl.status();
     if (

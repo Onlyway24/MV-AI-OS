@@ -1,6 +1,6 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -106,6 +106,109 @@ describe("Controlled local OpenAI provider wiring", () => {
         url: "https://api.openai.com/v1/responses",
       });
       await runtime.close();
+    });
+  });
+
+  it("reserves, settles, and replays LIVE_PAID through durable Cost Control", async () => {
+    await withTemporaryDatabase(async (databasePath) => {
+      const clock = new FixedClock();
+      const transport = new FakeOpenAITransport({
+        body: createOpenAIContentResponse(),
+        status: 200,
+      });
+      const config: LocalRuntimeConfig = {
+        ...createRuntimeConfig(databasePath, "model-backed-openai"),
+        livePaidActivation: {
+          activationId: "activation-live-test",
+          approvalReceiptId: "approval-live-test",
+          approvedAt: "2026-07-02T09:59:00.000Z",
+          approvedBy: "fabio",
+          confirmedByFabio: true,
+          contractVersion: "1",
+          expiresAt: "2026-07-02T11:00:00.000Z",
+          killSwitch: "RELEASED",
+          maxCostUsd: 0.1,
+          scope: "OPENAI_RESPONSES_PAID",
+          workspaceId: "workspace-local",
+        },
+        modelBudget: {
+          contractVersion: "1",
+          required: true,
+          rules: [{
+            contractVersion: "1",
+            maxEstimatedCostUsd: 0.1,
+            maxRequestedCostUsd: 0.1,
+            modelId: "gpt-5.5",
+            profileId: "content-quality",
+            providerId: "openai",
+            requireEstimatedCost: true,
+            requireRequestCost: true,
+          }],
+        },
+        modelOperationLimits: {
+          contractVersion: "1",
+          maxCostUsd: 0.1,
+          maxInputCharacters: 300_000,
+          maxOutputTokens: 512,
+          maxProviderCalls: 1,
+          maxTotalTokens: 32_000,
+          timeoutMs: 30_000,
+        },
+        modelUsageAccounting: {
+          contractVersion: "1",
+          pricing: [{
+            contractVersion: "1",
+            currency: "USD",
+            inputTokenUsdPerMillion: 1.25,
+            modelId: "gpt-5.5",
+            outputTokenUsdPerMillion: 10,
+            profileId: "content-quality",
+            providerId: "openai",
+          }],
+          required: true,
+        },
+        providerMode: "LIVE_PAID",
+      };
+      const overrides = {
+        clock,
+        openAIResponsesTransport: transport,
+        secretReferences: [createEnvironmentSecretReference()],
+        secretResolver: new LocalSecretResolver({
+          environment: { MV_AI_OS_OPENAI_API_KEY: "resolved-openai-key" },
+        }),
+      };
+      const request = createRequest({ correlationId: "mission-live-test" });
+      const first = await createLocalRuntime(config, overrides);
+      await expect(first.execute(request)).resolves.toMatchObject({ status: "completed" });
+      await first.close();
+      expect(transport.requests[0]?.body).toMatchObject({ max_output_tokens: 512 });
+
+      const restarted = await createLocalRuntime(config, overrides);
+      await expect(restarted.execute(request)).resolves.toMatchObject({ status: "completed" });
+      await restarted.close();
+      expect(transport.requests).toHaveLength(1);
+
+      const ledger = JSON.parse(await readFile(
+        join(dirname(databasePath), "production-cost-ledger.json"),
+        "utf8",
+      )) as Record<string, unknown>;
+      expect(ledger).toMatchObject({
+        contractVersion: "2",
+        reservations: [{
+          agentId: "content",
+          missionId: "mission-live-test",
+          modelId: "gpt-5.5",
+          providerId: "openai",
+          status: "SETTLED",
+        }],
+        settlements: [{
+          actualCostCents: 1,
+          actualProviderCalls: 1,
+          inputTokens: 10,
+          outputTokens: 5,
+          totalTokens: 15,
+        }],
+      });
     });
   });
 

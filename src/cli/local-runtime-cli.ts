@@ -9,6 +9,7 @@ import type { TaskResponse } from "../contracts/task-response.js";
 import type { LocalWorkflowCommandResponse } from "../runtime/local-workflow-command.js";
 import type { LocalRuntimeConfig } from "../runtime/local-runtime-config.js";
 import { createLocalRuntime } from "../runtime/create-local-runtime.js";
+import { LocalSecretResolver } from "../config/local-secret-resolver.js";
 import type { LocalRuntime } from "../runtime/local-runtime.js";
 import {
   CliBoundaryError,
@@ -241,7 +242,21 @@ async function readBoundedFile(
 function createProcessHost(): LocalCliHost {
   return {
     arguments: process.argv.slice(2),
-    createRuntime: (config) => createLocalRuntime(config),
+    createRuntime: (config) => createLocalRuntime(
+      config,
+      config.providerMode === "LIVE_PAID" && config.modelProvider !== undefined
+        ? {
+            secretReferences: [{
+              contractVersion: "1",
+              encoding: "utf8",
+              path: `/run/secrets/onlyway/${config.modelProvider.apiKeySecretId}`,
+              secretId: config.modelProvider.apiKeySecretId,
+              source: "local-file",
+            }],
+            secretResolver: new LocalSecretResolver({ environment: process.env }),
+          }
+        : {},
+    ),
     input: process.stdin,
     onSignal: (signal, listener) => process.on(signal, listener),
     readConfig: readBoundedFile,

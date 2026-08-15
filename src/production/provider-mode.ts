@@ -195,6 +195,7 @@ function evaluateLivePaidPolicy(
   if (
     input.modelBudget?.required !== true ||
     matchingBudget === undefined ||
+    input.modelOperationLimits?.maxProviderCalls !== 1 ||
     operationCost === undefined ||
     operationCost <= 0 ||
     operationCost > activation.maxCostUsd ||
