@@ -807,6 +807,50 @@ create_verified_live_backup() {
     || die "verified backup manifest fingerprint is invalid"
 }
 
+install_verified_candidate_database() {
+  local encrypted_backup=$1
+  local destination=$2
+  local manifest="${encrypted_backup}.manifest.json"
+  local encryption_key=${ONLYWAY_BACKUP_ENCRYPTION_KEY_FILE:-/srv/onlyway/secrets/backup/backup-encryption-passphrase}
+  local gpg_home
+  local temporary
+
+  [[ -f $encrypted_backup && ! -L $encrypted_backup \
+    && -f $manifest && ! -L $manifest ]] \
+    || die "candidate database backup bundle is unavailable"
+  [[ -f $encryption_key && ! -L $encryption_key \
+    && $(stat -c '%u:%g:%a' "$encryption_key") == "0:0:600" ]] \
+    || die "candidate database backup encryption key is unavailable or unsafe"
+  verify_backup_manifest_signature "$manifest" >/dev/null
+  [[ $(jq -er '.encryptionState' "$manifest") == "GPG_AES256_SYMMETRIC" \
+    && $(jq -er '.backupFile' "$manifest") == "$(basename -- "$encrypted_backup")" \
+    && $(jq -er '.sha256' "$manifest") == \
+      "$(sha256sum "$encrypted_backup" | awk '{print $1}')" ]] \
+    || die "candidate database encrypted backup binding is invalid"
+
+  gpg_home=$(mktemp -d "${ONLYWAY_RUN_DIR}/.candidate-gpg.XXXXXX")
+  chmod 0700 "$gpg_home"
+  temporary=$(mktemp "${CANDIDATE_ROOT}/data/.candidate-database.XXXXXX")
+  if ! gpg --homedir "$gpg_home" --no-options --batch --yes \
+    --pinentry-mode loopback --passphrase-file "$encryption_key" \
+    --decrypt --output "$temporary" "$encrypted_backup"; then
+    unlink "$temporary"
+    rm -rf -- "$gpg_home"
+    die "candidate database backup decryption failed"
+  fi
+  rm -rf -- "$gpg_home"
+  chown "$ONLYWAY_SERVICE_USER:$ONLYWAY_SERVICE_GROUP" "$temporary"
+  chmod 0600 "$temporary"
+  [[ $(sqlite3 -batch "$temporary" 'PRAGMA integrity_check;') == "ok" \
+    && $(sqlite3 -batch "$temporary" 'PRAGMA user_version;') == \
+      "$(jq -er '.schemaVersion' "$manifest")" ]] \
+    || {
+      unlink "$temporary"
+      die "candidate database decrypted snapshot is invalid"
+    }
+  mv -T -- "$temporary" "$destination"
+}
+
 PROMOTION_STEP=remote-identity
 if [[ -d $RELEASE ]]; then
   verify_release_checkout "$RELEASE" "$COMMIT"
@@ -982,7 +1026,10 @@ elif [[ -e "${ONLYWAY_CONFIG_DIR}/security-attestation.json" \
   || -L "${ONLYWAY_CONFIG_DIR}/security-attestation.json" ]]; then
   die "security attestation is not a regular file"
 fi
-if [[ $LEGACY_MIGRATION == "true" || $LIVE_PRESENT == "true" ]]; then
+if [[ $LIVE_PRESENT == "true" ]]; then
+  install_verified_candidate_database \
+    "$CANDIDATE_DATABASE" "${CANDIDATE_ROOT}/data/mv-ai-os.sqlite"
+elif [[ $LEGACY_MIGRATION == "true" ]]; then
   install -o "$ONLYWAY_SERVICE_USER" -g "$ONLYWAY_SERVICE_GROUP" -m 0600 \
     "$CANDIDATE_DATABASE" "${CANDIDATE_ROOT}/data/mv-ai-os.sqlite"
 fi

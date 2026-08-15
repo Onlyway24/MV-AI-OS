@@ -94,6 +94,12 @@ describe("legacy deployment integration", () => {
     expect(script).toContain(
       'CANDIDATE_DATABASE=$LEGACY_DATABASE_COPY',
     );
+    expect(script).toContain("install_verified_candidate_database");
+    expect(script).toContain('GPG_AES256_SYMMETRIC');
+    expect(script).toContain('--decrypt --output "$temporary" "$encrypted_backup"');
+    expect(script).toContain(
+      '"$CANDIDATE_DATABASE" "${CANDIDATE_ROOT}/data/mv-ai-os.sqlite"',
+    );
     expect(script).toContain("install_migrated_live_state");
     expect(script).toContain("rollback_quiesced_legacy");
     expect(script).toContain("ROLLBACK_QUIESCED_LEGACY_V1");
