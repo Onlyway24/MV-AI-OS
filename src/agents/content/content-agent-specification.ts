@@ -14,21 +14,33 @@ export const CONTENT_OUTPUT_MODEL_SCHEMA: JsonObject = deepFreeze({
       type: "array",
     },
     audience: { type: "string" },
-    body: { type: "object" },
-    callToAction: { type: "string" },
+    body: {
+      additionalProperties: false,
+      properties: {
+        message: { type: "string" },
+      },
+      required: ["message"],
+      type: "object",
+    },
     contentType: { type: "string" },
     language: { type: "string" },
     memoryRefs: {
       items: { type: "string" },
       type: "array",
     },
-    metadata: { type: "object" },
+    metadata: {
+      additionalProperties: false,
+      properties: {
+        generator: { type: "string" },
+      },
+      required: ["generator"],
+      type: "object",
+    },
     sourceRefs: {
       items: { type: "string" },
       type: "array",
     },
     summary: { type: "string" },
-    title: { type: "string" },
     tone: { type: "string" },
     warnings: {
       items: { type: "string" },

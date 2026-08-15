@@ -85,6 +85,12 @@ describe("Controlled local OpenAI provider wiring", () => {
         status: "completed",
       });
       expect(transport.requests).toHaveLength(1);
+      const schema = transport.requests[0]?.body.text as {
+        format?: { schema?: { properties?: Record<string, unknown>; required?: string[] } };
+      } | undefined;
+      expect([...(schema?.format?.schema?.required ?? [])].sort()).toEqual(
+        Object.keys(schema?.format?.schema?.properties ?? {}).sort(),
+      );
       expect(transport.requests[0]).toMatchObject({
         body: {
           max_output_tokens: 2_048,
@@ -93,6 +99,19 @@ describe("Controlled local OpenAI provider wiring", () => {
           text: {
             format: {
               name: "mv_ai_os_output",
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  body: {
+                    additionalProperties: false,
+                    required: ["message"],
+                  },
+                  metadata: {
+                    additionalProperties: false,
+                    required: ["generator"],
+                  },
+                },
+              },
               strict: true,
               type: "json_schema",
             },
