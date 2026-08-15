@@ -339,8 +339,62 @@ require_ssh_hardening_confirmed
 if [[ $LEGACY_MIGRATION == "false" ]]; then
   PREEXISTING_CONTAINER_COUNT=0
   PREEXISTING_CURRENT_RELEASE=false
+  declare -A RETAINED_LEGACY_CONTAINER_IDS=()
   if current_release >/dev/null 2>&1; then
     PREEXISTING_CURRENT_RELEASE=true
+  fi
+  if [[ $PREEXISTING_CURRENT_RELEASE == "true" ]]; then
+    mapfile -t LEGACY_SUCCESS_MARKERS < <(
+      find "${ONLYWAY_RUN_DIR}/legacy-migration" -maxdepth 1 -type f \
+        -name 'legacy-final-success-*.json' -print 2>/dev/null | sort
+    )
+    if ((${#LEGACY_SUCCESS_MARKERS[@]} == 1)); then
+      LEGACY_SUCCESS_MARKER=${LEGACY_SUCCESS_MARKERS[0]}
+      legacy_verify_signed_json \
+        "$LEGACY_SUCCESS_MARKER" "${LEGACY_SUCCESS_MARKER}.sig" \
+        "$ONLYWAY_ACCEPTANCE_PUBLIC_KEY" "$ONLYWAY_GID" >/dev/null
+      jq -e \
+        --arg project "$ONLYWAY_COMPOSE_PROJECT" '
+          .contractVersion == "1" and
+          .kind == "LEGACY_MIGRATION_SUCCESS" and
+          .status == "CUTOVER_ACCEPTED_LEGACY_ROLLBACK_RETAINED" and
+          .confirmedAction == "RETAIN_LEGACY_ROLLBACK_V1" and
+          .secretsExposed == false and
+          .newStack.composeProject == $project and
+          .newStack.status == "PRIVATE_READINESS_VERIFIED" and
+          .legacyRollbackBoundary.legacyContainersRemoved == false and
+          .legacyRollbackBoundary.legacyContainersRunning == false and
+          .legacyRollbackBoundary.legacyContainersRestartPolicy == "no" and
+          .legacyRollbackBoundary.originalSourcesRemoved == false
+        ' "$LEGACY_SUCCESS_MARKER" >/dev/null \
+        || die "retained legacy success marker is invalid"
+      RETAINED_QUIESCE_RECEIPT=$(jq -er \
+        '.legacyRollbackBoundary.quiesceReceipt' "$LEGACY_SUCCESS_MARKER")
+      legacy_verify_signed_json \
+        "$RETAINED_QUIESCE_RECEIPT" "${RETAINED_QUIESCE_RECEIPT}.sig" \
+        "$ONLYWAY_ACCEPTANCE_PUBLIC_KEY" "$ONLYWAY_GID" >/dev/null
+      [[ $(legacy_sha256_file "$RETAINED_QUIESCE_RECEIPT") == \
+        "$(jq -er '.legacyRollbackBoundary.quiesceReceiptSha256' \
+          "$LEGACY_SUCCESS_MARKER")" \
+        && $(legacy_sha256_file "${RETAINED_QUIESCE_RECEIPT}.sig") == \
+        "$(jq -er '.legacyRollbackBoundary.quiesceSignatureSha256' \
+          "$LEGACY_SUCCESS_MARKER")" ]] \
+        || die "retained legacy receipt binding is invalid"
+      while IFS= read -r retained_id; do
+        [[ $retained_id =~ ^[0-9a-f]{64}$ ]] \
+          || die "retained legacy container identity is invalid"
+        [[ $(docker inspect --format \
+          '{{.State.Running}}|{{.HostConfig.RestartPolicy.Name}}' \
+          "$retained_id") == "false|no" ]] \
+          || die "retained legacy container is not dormant"
+        RETAINED_LEGACY_CONTAINER_IDS[$retained_id]=1
+      done < <(jq -er '.containers.exactIdentities[].id' \
+        "$RETAINED_QUIESCE_RECEIPT")
+      ((${#RETAINED_LEGACY_CONTAINER_IDS[@]} > 0)) \
+        || die "retained legacy container inventory is empty"
+    elif ((${#LEGACY_SUCCESS_MARKERS[@]} > 1)); then
+      die "multiple retained legacy success markers require operator review"
+    fi
   fi
   PREEXISTING_INVENTORY=$(docker ps --all --no-trunc \
     --format '{{.ID}}|{{.Label "com.docker.compose.project"}}') \
@@ -350,8 +404,9 @@ if [[ $LEGACY_MIGRATION == "false" ]]; then
     [[ $preexisting_id =~ ^[0-9a-f]{64}$ ]] \
       || die "pre-existing Docker container identity is invalid"
     ((PREEXISTING_CONTAINER_COUNT += 1))
-    [[ $PREEXISTING_CURRENT_RELEASE == "true" \
-      && $preexisting_project == "$ONLYWAY_COMPOSE_PROJECT" ]] \
+    [[ ($PREEXISTING_CURRENT_RELEASE == "true" \
+      && $preexisting_project == "$ONLYWAY_COMPOSE_PROJECT") \
+      || -n ${RETAINED_LEGACY_CONTAINER_IDS[$preexisting_id]+present} ]] \
       || die "pre-existing containers require the signed legacy migration boundary"
   done <<<"$PREEXISTING_INVENTORY"
   if [[ $PREEXISTING_CURRENT_RELEASE == "false" \

@@ -195,6 +195,10 @@ require_text 'legacy-deploy-quiesce-contract\.jq' "$DEPLOY"
 require_text 'render-legacy-runtime\.jq' "$DEPLOY"
 require_text 'pre-existing containers require the signed legacy migration boundary' \
   "$DEPLOY"
+require_text 'RETAINED_LEGACY_CONTAINER_IDS' "$DEPLOY"
+require_text 'retained legacy container is not dormant' "$DEPLOY"
+require_text 'multiple retained legacy success markers require operator review' \
+  "$DEPLOY"
 require_text 'FAILED_ROLLBACK_INCOMPLETE' "$DEPLOY"
 require_order 'trap early_legacy_on_exit EXIT' \
   'LEGACY_ROLLBACK_ARMED=true' "$DEPLOY"
